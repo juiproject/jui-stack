@@ -47,7 +47,7 @@
   <!-- Various versions and settings -->
   <properties>
     <!-- Revision -->
-    <revision>0.0.7.M</revision>
+    <revision>0.0.8.M-SNAPSHOT</revision>
 
     <!-- Tests -->
     <skip.tests>false</skip.tests>

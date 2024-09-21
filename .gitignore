@@ -1,0 +1,9 @@
+.settings/
+.flattened-pom.xml
+.project/
+.vscode/
+.hprof
+.DS_Store
+target/
+target-ide/
+tmp/

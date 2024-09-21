@@ -1,0 +1,51 @@
+.component {
+    --cpt-filedownloadernotifier-bg: #ffebc5;
+    --cpt-filedownloadernotifier-border: #f0ab29;
+    --cpt-filedownloadernotifier-text: #9b6500;
+    --cpt-filedownloadernotifier-shadow: #ccc;
+    --cpt-filedownloadernotifier-width: 300px;
+}
+
+.component {
+    width: var(--cpt-filedownloadernotifier-width);
+    background: var(--cpt-filedownloadernotifier-bg);
+    border: 1px solid var(--cpt-filedownloadernotifier-border);
+    border-radius: 4px;
+    box-shadow: 0px 2px 30px 0px var(--cpt-filedownloadernotifier-shadow);
+}
+
+.component p {
+    padding: 10px 15px;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--cpt-filedownloadernotifier-text);
+}
+
+.component em {
+    width: 1em;
+    height: 1em;
+    margin-right: 14px;
+}
+
+.component em.cancel {
+    display: none;
+    position: absolute;
+    right: -5px;
+    top: 12px;
+    cursor: pointer;
+    text-align: center;
+    line-height: 1em;
+    border-radius: 100%;
+    color: linkColor;
+    border: 1px solid transparent;
+    transition: transform .2s ease-in-out, border .2s;
+    transform: rotate(0deg);
+}
+
+.component em.cancel:hover {
+    transform: rotate(90deg);
+}
+
+.component.cancel em.cancel {
+    display: inline-block;
+}

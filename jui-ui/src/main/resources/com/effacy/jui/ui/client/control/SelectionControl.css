@@ -1,0 +1,121 @@
+.component {
+    --jui-selectctl-border: var(--jui-ctl-border);
+    --jui-selectctl-text: var(--jui-ctl-text);
+    --jui-selectctl-text-light: var(--jui-ctl-text-placeholder);
+    --jui-selectctl-bg: var(--jui-ctl-bg);
+}
+
+.component {
+	position: relative;
+	cursor: pointer;
+}
+
+.component .inner {
+    height: var(--jui-ctl-height);
+	outline: none;
+	border: 1px solid var(--jui-selectctl-border);
+	border-radius: var(--jui-ctl-border-radius);
+	box-sizing: content-box;
+	padding: 0 0.75em;
+	background: var(--jui-selectctl-bg);
+	display: flex;
+	flex-direction: row;
+	gap: 0.75em;
+	align-items: center;
+	color: var(--jui-selectctl-text);
+}
+
+.component.read_only .inner em.read_only {
+	display: inline;
+}
+
+.component .inner em.read_only {
+	display: none;
+}
+
+.component.waiting .inner {
+	animation: eff-waiting-bg 1s infinite;
+	border: transparent;
+}
+
+.component.waiting .inner * {
+	visibility: hidden;
+}
+
+.component .inner #content {
+	flex-grow: 1;
+	display: block;
+	min-width: 3em;
+	min-height: 1em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.component.empty .inner #content {
+	color: var(--jui-ctl-text-placeholder);
+}
+
+.component .inner #content span {
+	font-family: var(--jui-ctl-font);
+}
+
+.component .inner #remove {
+	color: var(--jui-action);
+	cursor: pointer;
+}
+
+.component.empty .inner #remove {
+	visibility: hidden;
+}
+
+.component:hover .inner #remove {
+	color: var(-jui-action);
+}
+
+.component #selector {
+	z-index: 10;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    padding: 0.25em 0;
+    display: none;
+    width: 100%;
+}
+
+.component #selector.selector_top {
+	bottom: 100%;
+	top: auto;
+}
+
+.component #selector.selector_left {
+	left: 0;
+}
+
+.component.open #selector {
+    display: block;
+    animation: eff-open .1s ease-in-out;
+}
+
+.component .inner em.open {
+    transition: transform 0.1s;
+    color: var(--jui-selectctl-text-light);
+}
+
+.component .inner em.open:hover {
+    color: var(--jui-selectctl-text);
+}
+
+.component.open .inner em.open {
+    transform: rotate(180deg);
+}
+
+.component .inner em#remove {
+    transition: transform 0.3s;
+    color: var(--jui-selectctl-text-light);
+}
+
+.component .inner em#remove:hover {
+    color: var(--jui-selectctl-text);
+    transform: rotate(90deg);
+}

@@ -1,0 +1,155 @@
+.component .dialog {
+	display: flex;
+	flex-direction: column;
+	max-height: 100%;
+	width: 100%;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 10px;
+	box-sizing: border-box;
+	overflow: hidden;
+	box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.50);
+	margin: 0;
+    position: relative;
+}
+
+.component.slider {
+	border: none;
+	border-left: 1px solid #ddd;
+}
+
+.component .wrap {
+	padding: 0 10px;
+}
+
+.component.slider .wrap {
+	padding: 0 0 0 10px;
+}
+
+.component.slider .dialog {
+	height: 100%;
+	border-radius: 0px;
+	margin-right: 0;
+	border: none;
+}
+
+.component .dialog .header {
+	position: relative;
+	background: #f6f6f6;
+	border-bottom: 1px solid #ddd;
+	flex: none;
+	padding-left: 10px;
+}
+
+.component.compact .dialog .header h1 {
+	margin-bottom: 10px;
+	-webkit-font-smoothing: auto;
+    margin-right: 2em;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.component.compact .dialog .header h1.titleWrap {
+    white-space: unset;
+}
+
+.component .dialog .header h1 {
+    font-weight: 600;
+	font-size: 1.3em;
+	margin-left: 10px;
+	margin-top: 10px;
+	color: #222;
+}
+
+.component.slider .dialog .header h1 {
+	font-size: 1.4em;
+	margin-left: 15px;
+	margin-top: 12px;
+}
+
+.component .dialog .header h2 {
+	margin-left: 10px;
+	margin-right: 10px;
+	color: #666;
+	display: table;
+	padding: 0.25em 0 0.5em 0;
+	-webkit-font-smoothing: auto;
+}
+
+.component .dialog .header h2 em {
+	display: table-cell;
+	vertical-align: top;
+	padding-right: 0.75em;
+	position: relative;
+	top: 0.2em;
+	color: #999;
+}
+
+.component .dialog .header h2 span {
+	display: table-cell;
+	vertical-align: top;
+}
+
+.component.compact .dialog .header h2 {
+	display: none;
+}
+
+.component .dialog .header a {
+	position: absolute;
+	right: 14px;
+	top: 14px;
+	text-decoration: none;
+	cursor: pointer;
+	color: #007eff;
+}
+
+.component .dialog .header a span {
+	margin-left: 0.5em;
+}
+
+.component .dialog .header a:hover {
+	text-decoration: none;
+}
+
+.component .dialog .header a:hover span {
+	text-decoration: underline;
+}
+
+.component .dialog .header a.closeDefault {
+	width: 1em;
+	height: 1em;
+	text-align: center;
+	transition: transform 0.2s ease-in-out, font-size 0.2s ease-in-out;
+	border-radius: 100%;
+	padding: 1px;
+	color: #333;
+	display: flex;
+    align-items: center;
+	justify-content: center;
+}
+
+.component .dialog .header a.closeDefault:hover {
+	transform: rotate(90deg);
+}
+
+.component .dialog .body {
+	flex: 1;
+	overflow: auto;
+}
+
+.component .dialog .body .contents {
+	height: 100%;
+	overflow: auto;
+	display: grid;
+}
+
+.component .dialog .footer {
+	height: 55px;
+	position: relative;
+	background: #f6f6f6;
+	border-top: 1px solid #ddd;
+	flex: none;
+	box-sizing: border-box;
+	padding: 0px 20px 0 20px;
+}

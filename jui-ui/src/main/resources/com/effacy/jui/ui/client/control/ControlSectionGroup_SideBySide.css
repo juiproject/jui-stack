@@ -1,0 +1,19 @@
+.component .wrapper {
+    display: grid;
+    grid-template-columns: 10em auto;
+}
+
+.component .col1 h5 {
+    margin: 0;
+    font-size: 1em;
+    font-weight: 400;
+}
+
+.component.required .col1 h5 {
+    font-weight: 600;
+}
+
+.component.required .col1 h5::after {
+    content: "*";
+    padding: 2px;
+}

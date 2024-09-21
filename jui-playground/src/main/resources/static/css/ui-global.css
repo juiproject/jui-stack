@@ -1,0 +1,13 @@
+.button .outer {
+	background: #fafafa;
+	padding: 2em;
+	border-radius: 5px;
+}
+
+.button .outer button {
+	background-color: #7fc96a;
+	color: #fff;
+	border: none;
+	border-radius: 5px;
+    padding: 5px 11px;
+}

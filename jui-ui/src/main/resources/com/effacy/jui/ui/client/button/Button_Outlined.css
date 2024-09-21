@@ -1,0 +1,12 @@
+.component {
+	--cpt-btn-bg: var(--jui-btn-text);
+	--cpt-btn-text: var(--jui-btn-bg);
+}
+
+.component .outer {
+	background: var(--jui-btn-text);
+}
+
+.component .outer:hover * {
+	color: var(--jui-btn-text);
+}

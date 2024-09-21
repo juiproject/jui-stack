@@ -1,0 +1,31 @@
+.layout {
+	display: flex;
+	align-items: center;
+}
+
+.layout.top {
+	align-items: start;
+}
+
+.layout.bottom {
+	align-items: end;
+}
+
+.layout > .zone {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-grow: 1;
+}
+
+.layout > .zone.left {
+	justify-content: left;
+}
+
+.layout > .zone.right {
+	justify-content: right;
+}
+
+.layout > .zone > .item {
+}
+

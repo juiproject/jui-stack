@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport"
+		content="width=device-width, initial-scale=1, minimum-scale=1.0, shrink-to-fit=no, viewport-fit=cover">
+	<meta name="description" content="">
+	<title>JUI Documentation</title>
+	<link rel="stylesheet" media="(prefers-color-scheme: dark)"
+		href="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple-dark.css">
+	<link rel="stylesheet" media="(prefers-color-scheme: light)"
+		href="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple.css">
+	<style>
+		:root {
+			--code-font-size: calc(var(--font-size-m) * 0.8);
+			--code-block-padding: 1.75em 1.25em 1.25em 1.25em;
+            --modular-scale--1: 0.95rem;
+		}
+        .cover-main > p > img {
+            border-radius: 100%;
+            border: 9px solid #fff;
+            box-shadow: 0 0 20px #8ab7cf;
+            background: #fff;
+        }
+        .cover-main > h1 > span {
+            font-size: 1.2em;
+            font-weight: 400;
+        }
+	</style>
+</head>
+
+<body>
+	<div id="app"></div>
+
+	<script src="//cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+	<script>
+		// Docsify Configuration
+		window.$docsify = {
+			/*basePath: "/docs/",*/
+            coverpage: true,
+			homepage: 'home.md',
+			auto2top: true,
+			/*loadNavbar: true,*/
+			loadSidebar: true,
+			subMaxLevel: 2,
+			copyCode: {
+				buttonText: "Copy"
+			},
+			plantuml: {
+				skin: 'default',
+			},
+		};
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/js/docsify-themeable.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/zoom-image.min.js"></script>
+	<script src="https://unpkg.com/docsify-puml@1.1.1/dist/docsify-puml.min.js"></script>
+
+	<script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@2"></script>
+	<script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/external-script.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/docsify-tabs@1"></script>
+	<script defer src="https://cdn.jsdelivr.net/npm/docsify-pagination@2.6.1/dist/docsify-pagination.min.js"
+		integrity="sha256-rV7n3BaeEbTmT7UEVELv+sJ0XtOjtT1jrL23pJ3wf+0=" crossorigin="anonymous"></script>
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/components/prism-aspnet.min.js"></script>
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/components/prism-bash.min.js"></script>
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/components/prism-csharp.min.js"></script>
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/components/prism-java.min.js"></script>
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/components/prism-markdown.min.js"></script>
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/components/prism-python.min.js"></script>
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/components/prism-ruby.min.js"></script>
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/components/prism-yaml.min.js"></script>
+</body>
+
+</html>

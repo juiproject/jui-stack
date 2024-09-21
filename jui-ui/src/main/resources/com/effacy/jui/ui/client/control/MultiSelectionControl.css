@@ -1,0 +1,171 @@
+.component {
+    --jui-selectctl-border: var(--jui-ctl-border);
+    --jui-selectctl-text: var(--jui-ctl-text);
+    --jui-selectctl-text-light: var(--jui-ctl-text-placeholder);
+    --jui-selectctl-bg: var(--jui-ctl-bg);
+    --jui-selectctl-chip-border-radius: 12px;
+}
+
+.component {
+	position: relative;
+	cursor: pointer;
+}
+
+.component .inner {
+    min-height: var(--jui-ctl-height);
+	outline: none;
+	border: 1px solid var(--jui-selectctl-border);
+	border-radius: var(--jui-ctl-border-radius);
+	box-sizing: content-box;
+	padding: 0 0.75em;
+	background: var(--jui-selectctl-bg);
+	display: flex;
+	flex-direction: row;
+	gap: 0.75em;
+	align-items: center;
+	color: var(--jui-selectctl-text);
+}
+
+.component .inner.chip {
+    max-width: 100%;
+    padding: 0 0.75em 0 0.25em;
+}
+
+.component .inner.chip > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: inline-block;
+}
+
+.component.read_only .inner > em.read_only {
+	display: inline;
+}
+
+.component .inner > em.read_only {
+	display: none;
+}
+
+.component.waiting .inner {
+	animation: eff-waiting-bg 1s infinite;
+	border: transparent;
+}
+
+.component.waiting .inner * {
+	visibility: hidden;
+}
+
+.component .inner #content {
+	flex-grow: 1;
+    align-items: center;
+	display: block;
+	min-width: 3em;
+	min-height: 1em;
+    padding: 0.35em 0.15em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.component.empty .inner #content {
+	color: var(--jui-ctl-text-placeholder);
+}
+
+.component .inner #content span {
+	font-family: var(--jui-ctl-font);
+}
+
+.component .inner #remove {
+	color: var(--jui-action);
+	cursor: pointer;
+}
+
+.component.empty .inner #remove {
+	visibility: hidden;
+}
+
+.component:hover .inner #remove {
+	color: var(-jui-action);
+}
+
+.component #selector {
+	z-index: 10;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    padding: 0.35em 0;
+    display: none;
+    width: 100%;
+}
+
+.component #selector.selector_top {
+	bottom: 100%;
+	top: auto;
+}
+
+.component #selector.selector_left {
+	left: 0;
+}
+
+.component.open #selector {
+    display: block;
+    animation: eff-open .1s ease-in-out;
+}
+
+.component .inner.chip #content {
+    display: flex;
+    gap: 0.25em;
+    flex-wrap: wrap;
+	min-height: 1.8em;
+}
+
+.component span.chip {
+    padding: 0.25em 0.75em;
+    background-color: #eaeaea;
+    border-radius: var(--jui-selectctl-chip-border-radius);
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    border: 1px solid #ddd;
+    cursor: default;
+    max-width: 100%;
+}
+
+.component span.chip > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: inline-block;
+}
+
+.component span.chip > em.chip {
+    margin-left: 0.75em;
+    cursor: pointer;
+}
+
+.component.empty .inner.chip {
+    padding-left: 0.75em;
+}
+
+.component .inner em.open {
+    transition: transform 0.1s;
+    color: var(--jui-selectctl-text-light);
+}
+
+.component .inner em.open:hover {
+    color: var(--jui-selectctl-text);
+}
+
+.component.open .inner em.open {
+    transform: rotate(180deg);
+}
+
+.component .inner em#remove {
+    transition: transform 0.3s;
+    color: var(--jui-selectctl-text-light);
+}
+
+.component .inner em#remove:hover {
+    color: var(--jui-selectctl-text);
+    transform: rotate(90deg);
+}

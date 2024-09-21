@@ -1,0 +1,59 @@
+.component {
+    --cpt-tabbedpanel-hu-indent: 1.5em;
+    --cpt-tabbedpanel-hu-lift: 0.75em;
+    --cpt-tabbedpanel-hu-line: var(--jui-line);
+    --cpt-tabbedpanel-hu-text: var(--jui-color-neutral50);
+    --cpt-tabbedpanel-hu-text-hover: var(--jui-text);
+    --cpt-tabbedpanel-hu-text-active: var(--jui-text);
+    --cpt-tabbedpanel-hu-underline-hover: var(--jui-color-neutral30);
+    --cpt-tabbedpanel-hu-underline-active: var(--jui-color-primary50);
+}
+
+.component .tabs {
+  height: 4em;
+  position: relative;
+  overflow: hidden;
+}
+
+.component .tabs ul {
+  list-style: none;
+  padding-left: var(--cpt-tabbedpanel-hu-indent);
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  border-bottom: 1px solid var(--cpt-tabbedpanel-hu-line);
+}
+
+.component .tabs ul li {
+  padding: 0.5em 0.25em var(--cpt-tabbedpanel-hu-lift) 0.25em;
+  margin: 0 0.75em;
+  box-sizing: border-box;
+  display: inline-block;
+  margin-right: 2em;
+  cursor: pointer;
+  font-weight: 600;
+  position: relative;
+  top: 1px;
+  user-select: none;
+  border-bottom: 3px solid transparent;
+  color: var(--cpt-tabbedpanel-hu-text);
+}
+
+.component .tabs ul li em {
+  margin-right: 0.75em;
+}
+
+.component .tabs ul li span {
+  font-weight: 600;
+}
+
+.component .tabs ul li:hover {
+  border-bottom-color: var(--cpt-tabbedpanel-hu-underline-hover);
+  color: var(--cpt-tabbedpanel-hu-text-hover);
+}
+
+.component .tabs ul li.active {
+  border-bottom-color: var(--cpt-tabbedpanel-hu-underline-active);
+  color: var(--cpt-tabbedpanel-hu-text-active);
+}

@@ -1,0 +1,30 @@
+.component .outer {
+	position: relative;
+	padding-left: 52px;
+	min-height: 33px;
+}
+
+.component .outer em {
+	position: absolute;
+	left: 0;
+	font-size: 2.5em;
+	color: var(--jui-color-neutral60);
+}
+
+.component .outer em.confirm {
+}
+
+.component .outer em.alert {
+}
+
+.component .outer em.error {
+    color: var(--jui-state-error);
+}
+
+.component .outer p {
+	font-size: 1.1em;
+	color: var(--jui-color-neutral80);
+	margin-top: 5px;
+	margin-bottom: 5px;
+}
+

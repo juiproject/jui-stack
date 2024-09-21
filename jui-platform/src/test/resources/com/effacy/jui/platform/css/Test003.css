@@ -1,0 +1,8 @@
+@def radius 2px;
+@eval color com.effacy.jui.ui.client.Theme.color();
+
+.test1 {
+    border-radius: radius;
+    background-color: color;
+    height: 10em;
+}

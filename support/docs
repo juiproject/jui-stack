@@ -1,0 +1,7 @@
+#!/bin/bash
+
+echo
+echo "Open http://localhost:3000/index.html#/ in your browser."
+echo "CTL+C to quit"
+echo
+(cd ../docs && python3 -m http.server 3000)

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+CMD="python3 support/license.py -ignore Google -ignore Guava -ignore JavaCC -ignore JJTree"
+
+# Situate at the project root.
+cd "$(dirname "$0")/.."
+
+$CMD jui-core/src
+$CMD jui-platform/src/main/java/com/effacy
+$CMD jui-platform/src/test/java/com/effacy
+$CMD jui-platform-codeserver/src/main/java/com/effacy
+$CMD jui-platform-codeserver/src/test/java/com/effacy
+$CMD jui-playground/src
+$CMD jui-remoting/src
+$CMD jui-test/src
+$CMD jui-text/src
+$CMD jui-ui/src
+$CMD jui-validation/src

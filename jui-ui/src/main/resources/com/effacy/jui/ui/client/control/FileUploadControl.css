@@ -1,0 +1,218 @@
+.component {
+    --jui-filectl-color-text: #5e7fe8;
+    --jui-filectl-color: #a9bdfd;
+    --jui-filectl-color-bg: #eef3ff;
+    --jui-filectl-item-color: #666; 
+    --jui-filectl-item-color-subtle: #999; 
+    --jui-filectl-item-color-border: #eee; 
+    --jui-filectl-item-color-bg: #fafafa;
+    --jui-filectl-item-color-error: var(--jui-color-error70);
+    --jui-filetctl-border-radius: 6px;
+    --jui-filetctl-icon-scale: 1.5em;
+}
+
+.component .dropRegion {
+    padding: 1.5em;
+    min-width: 100px;
+    min-height: 40px;
+    border: 1px dashed var(--jui-filectl-color);
+    background-color: var(--jui-filectl-color-bg);
+    border-radius: var(--jui-filetctl-border-radius);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75em;
+    overflow: hidden;
+    position: relative;
+}
+
+.component.drag .dropRegion {
+    box-shadow: 0 0 8px var(--jui-filectl-color);
+}
+
+.component.limit .dropRegion:not(.limit) {
+    display: none;
+}
+
+.component.limit .dropRegion.limit {
+    display: flex;
+}
+
+.component .dropRegion.limit {
+    display: none;
+}
+
+.component .dropRegion.small {
+    flex-direction: row;
+    padding: 0.75em 1.5em;
+}
+
+.component .dropRegion > input {
+    position: absolute;
+    top: -30px;
+}
+
+.component .dropRegion .icon {
+    display: flex;
+    width: 2em;
+    height: 2em;
+    border: 1px solid var(--jui-filectl-color);
+    border-radius: 100%;
+    justify-content: center;
+    align-items: center;
+    font-size: var(--jui-filetctl-icon-scale);
+}
+
+.component .dropRegion .icon em {
+    color: var(--jui-filectl-color);
+}
+
+.component .dropRegion .title {
+    font-size: 0.95em;
+    flex-grow: 1;
+    text-align: center;
+}
+
+.component .dropRegion .title a {
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--jui-filectl-color-text);
+    cursor: pointer;
+}
+
+.component .dropRegion .title a:hover {
+    text-decoration: underline;
+}
+
+.component .message {
+    font-size: 0.9em;
+    font-weight: 600;
+    margin: 0.5em 0 0 0;
+}
+
+.component .list {
+    display: flex;
+    flex-direction: column;
+}
+
+.component .list > div {
+    border: 1px solid var(--jui-filectl-item-color-border);
+    background-color: var(--jui-filectl-item-color-bg);
+    border-radius: 6px;
+    padding: 0.5em;
+    margin-top: 0.5em;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+
+.component .list > div > .icon {
+    background-color: #fff;
+    border: 1px solid var(--jui-filectl-item-color-border);
+    border-radius: 100%;
+    width: 2em;
+    height: 2em;
+    min-width: 2em;
+    min-height: 2em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: var(--jui-filetctl-icon-scale);
+    color: var(--jui-filectl-color);
+}
+
+.component .list > div.error > .icon em {
+    color: var(--jui-filectl-item-color-error);
+}
+
+.component .list > div > em#delete {
+    cursor: pointer;
+    margin-right: 0.75em;
+    color: var(--jui-filectl-item-color-subtle);
+}
+
+.component .list > div > em#delete:hover {
+    color: var(--jui-filectl-item-color);
+}
+
+.component .list > div > em#remove {
+    cursor: pointer;
+    margin-right: 0.75em;
+    transition: transform 0.1s ease-in;
+}
+
+.component .list > div > em#remove:hover {
+    transform: rotate(90deg);
+}
+
+.component .list > div > .content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1em;
+}
+
+.component .list > div > .content > .title {
+    font-weight: 600;
+    font-size: 0.95em;
+    color: var(--jui-filectl-item-color);
+    overflow-wrap: anywhere;
+}
+
+.component .list > div > .content > .info {
+    color: var(--jui-filectl-item-color-subtle);
+    font-size: 0.85em;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+}
+
+.component .list > div.error > .content > .info {
+    color: var(--jui-filectl-item-color-error);
+}
+
+.component .list > div > .content > .info > em {
+    color: var(--jui-color-success70);
+}
+
+.component .list > div > .content > .info > .notice {
+    font-weight: 600;
+    color: var(--jui-filectl-item-color);
+}
+
+.component .list > div > .content > .info > .bar {
+    flex-grow: 1;
+    height: 10px;
+    border: 1px solid var(--jui-filectl-item-color-border);
+    border-radius: 5px;
+    background-color: #fff;
+    overflow: hidden;
+}
+
+.component .list > div > .content > .info > .bar > div {
+    height: 100%;
+    min-width: 1px;
+    background-color: var(--jui-filectl-item-color-subtle);
+}
+
+.component .list > div > .notice {
+    font-weight: 600;
+    color: var(--jui-filectl-item-color);
+    display: none;
+}
+
+.component .list.small > div:not(:last-child) > .notice {
+    display: block;
+}
+
+.component .list.small > div:not(:last-child) {
+    padding: 0.25em 0.5em;
+}
+
+.component .list.small > div:not(:last-child) > .icon {
+    font-size: 1em;
+}
+
+.component .list.small > div:not(:last-child) > .content > .info {
+    display: none;
+}

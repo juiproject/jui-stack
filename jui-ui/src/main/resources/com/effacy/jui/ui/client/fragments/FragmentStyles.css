@@ -1,0 +1,624 @@
+/*************************************************
+* Icon styles.
+*/
+
+.juiIcon {
+    color: var(--jui-color-neutral30);
+}
+
+.juiIcon.clickable {
+    cursor: pointer;
+}
+
+/*************************************************
+* Stack styles.
+*/
+
+.juiStack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1em;
+}
+
+.juiStack.stretch > * {
+    width: 100%;
+}
+
+.juiStack.horizontal {
+    flex-direction: row;
+}
+
+.juiStack.horizontal.stretch > * {
+    width: auto;
+    height: 100%;
+}
+
+/*************************************************
+* Paper styles.
+*/
+
+.juiPaper h1 {
+    font-weight: 600;
+    color: var(--jui-text-header)
+}
+
+.juiPaper h2 {
+    font-weight: 600;
+    color: var(--jui-text-header)
+}
+
+.juiPaper h3 {
+    font-weight: 600;
+    color: var(--jui-text-header)
+}
+
+.juiPaper h4 {
+    font-weight: 600;
+    color: var(--jui-text-header)
+}
+
+.juiPaper h5 {
+    font-weight: 600;
+    color: var(--jui-text-header)
+}
+
+.juiPaper h6 {
+    font-weight: 600;
+    color: var(--jui-text-header)
+}
+
+/*************************************************
+* Card.
+*/
+
+.juiCard * {
+    margin: 0;
+    padding: 0;
+}
+
+.juiCard {
+    display: flex;
+    flex-direction: column;
+}
+
+.juiCard.clickable {
+    cursor: pointer;
+}
+
+.juiCard.juiCard-outlined {
+    background-color: var(--jui-frag-card-outlined-bg);
+    border: 1px solid var(--jui-frag-card-outlined-border);
+    border-radius: var(--jui-frag-card-outlined-border-radius);
+}
+
+.juiCard.juiCard_horizontal {
+    flex-direction: row;
+    align-items: center;
+}
+
+/*************************************************
+* CardHeader.
+*/
+
+.juiCardHeader {
+    display: flex;
+    flex-direction: row;
+    gap: 1em;
+    align-items: center;
+}
+
+.juiCardHeader > em {
+    display: inline-block;
+    font-size: 2em;
+    width: 1em;
+    height: 1em;
+}
+
+.juiCardHeader > .juiCardHeader_inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+}
+
+.juiCardHeader > .juiCardHeader_inner > a.juiCardHeader_title {
+    color: var(--jui-text-link);
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.juiCardHeader > .juiCardHeader_inner > a.juiCardHeader_title:hover {
+    color: var(--jui-text-link);
+    text-decoration: hover;
+}
+
+.juiCardHeader > .juiCardHeader_innerinner > div.juiCardHeader_title {
+    color: var(--jui-text);
+    font-weight: 500;
+}
+
+.juiCardHeader > .juiCardHeader_inner > div.juiCardHeader_subtitle {
+    color: var(--jui-text-subtle);
+    font-size: 0.9em;
+
+}
+
+/*************************************************
+* Menu activator.
+*/
+
+.juiMenuActivator {
+    position: relative;
+    padding: 4px 9px;
+    border-radius: var(--jui-border-radius);
+    transition: background-color 0.1s ease-in;
+}
+
+.juiMenuActivator > em {
+    color: var(--jui-color-neutral50);
+}
+
+.juiMenuActivator > div {
+    display: none;
+    position: absolute;
+    z-index: 100000;
+    right: 0;
+    opacity: 1;
+    padding-top: 0.5em;
+}
+
+.juiMenuActivator:hover {
+    background-color: var(--jui-color-neutral10);
+}
+
+.juiMenuActivator:hover > em {
+    color: var(--jui-color-neutral80);
+}
+
+.juiMenuActivator:hover > div.hoverable {
+    display: block;
+    animation: juiMenuActivator-fade 0.4s;
+}
+
+.juiMenuActivator.open > div {
+    display: block;
+    animation: juiMenuActivator-fade 0.4s;
+}
+
+@keyframes juiMenuActivator-fade {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/*************************************************
+* Menu.
+*/
+
+.juiMenu {
+    list-style: none;
+    margin: 0;
+    padding: 0.5em 0;
+    box-shadow: 0 0 10px var(--jui-color-neutral30);
+    cursor: pointer;
+}
+
+.juiMenu * {
+    margin: 0;
+    padding: 0;
+}
+
+.juiMenu.juiMenu-outlined {
+    background-color: var(--jui-frag-card-outlined-bg);
+    border: 1px solid var(--jui-frag-card-outlined-border);
+    border-radius: var(--jui-frag-card-outlined-border-radius);
+}
+
+/*************************************************
+* Menu item.
+*/
+
+.juiMenuItem {
+    white-space: nowrap;
+    margin: 0.25em 0;
+    padding: 0.35em 0.65em;
+    color: var(--jui-color-neutral60);
+    display: flex;
+    gap: 0.75em;
+    align-items: center;
+    margin: 0 0.45em;
+    cursor: default;
+    font-weight: 500;
+}
+
+.juiMenuItem.clickable {
+    cursor: pointer;
+}
+
+.juiMenuItem.juiMenuItem-error {
+    color: var(--jui-color-error50);
+}
+
+.juiMenuItem:hover {
+    background-color: var(--jui-color-neutral20);
+    border-radius: var(--jui-border-radius);
+}
+
+.juiMenuItem.juiMenuItem-error:hover {
+    background-color: var(--jui-color-error05);
+}
+
+.juiMenuItem.disabled {
+    color: var(--jui-text-disabled) !important;
+}
+
+.juiMenuItem.disabled:hover {
+    background-color: transparent !important;
+}
+
+/*************************************************
+* Divider.
+*/
+
+.juiDivider {
+
+}
+
+/*************************************************
+* Btn styles.
+*/
+
+.juiButton {
+    --juiButton-radius: var(--jui-border-radius);
+    --juiButton-white: var(--jui-color-aux-white);
+    --juiButton-base: var(--jui-btn-bg);
+    --juiButton-hover: var(--jui-btn-bg-hover);
+    justify-content: center;
+    align-items: center;
+    padding: 0.35em 0.75em;
+    letter-spacing: 0.02em;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: var(--juiButton-radius);
+    display: inline-flex;
+    gap: 0.5em
+}
+
+.juiButton.juiButton-danger {
+    --juiButton-base: var(--jui-btn-danger-bg);
+    --juiButton-hover: var(--jui-btn-danger-bg-hover);
+}
+
+.juiButton.juiButton-warning {
+    --juiButton-base: var(--jui-btn-warning-bg);
+    --juiButton-hover: var(--jui-btn-warning-bg-hover);
+}
+
+.juiButton.juiButton-success {
+    --juiButton-base: var(--jui-btn-success-bg);
+    --juiButton-hover: var(--jui-btn-success-bg-hover);
+}
+
+.juiButton-standard {
+    border-radius: var(--juiButton-radius);
+    border: none;
+    background-color: var(--juiButton-base);
+    color: var(--juiButton-white);
+}
+
+.juiButton-standard_expanded {
+    border-radius: var(--juiButton-radius);
+    border: none;
+    background-color: var(--juiButton-base);
+    color: var(--juiButton-white);
+    padding: 0.5em 1em;
+}
+
+.juiButton-standard:hover {
+    background-color: var(--juiButton-hover);
+}
+
+.juiButton-outlined {
+    border: 1px solid var(--juiButton-base);
+    background-color: var(--juiButton-white);
+    color: var(--juiButton-base);
+}
+
+.juiButton-outlined:hover {
+    border-color: var(--juiButton-hover);
+    color: var(--juiButton-hover);
+}
+
+.juiButton-text {
+    border: none;
+    background-color: transparent;
+    color: var(--juiButton-base);
+}
+
+.juiButton-text.compact {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/*************************************************
+* Avatar styles.
+*/
+.juiAvatar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 100%;
+    overflow: hidden;
+    width: 1em;
+    min-width: 1em;
+    height: 1em;
+    min-height: 1em;
+    font-size: 3.5em;
+}
+
+.juiAvatar.border_dashed {
+    border: 2px dashed #eee;
+}
+
+.juiAvatar.border_solid {
+    border: 2px solid #eee;
+}
+
+.juiAvatar.clickable {
+    cursor: pointer;
+}
+
+.juiAvatar img {
+    border: 2px solid #fff;
+    border-radius: 100%;
+    width: 100%;
+    height: 100;
+}
+
+.juiAvatar em {
+    font-size: 0.8em;
+    color: #ddd;
+}
+
+.juiAvatar span {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    border-radius: 100%;
+    border: 0.1em solid transparent;
+    overflow: hidden;
+}
+
+/*************************************************
+* Notice styles.
+*/
+
+.juiNotice {
+    --juiNotice-border: var(--jui-color-primary40);
+    --juiNotice-border-width: 1px;
+    --juiNotice-border-radius: var(--jui-border-radius);
+    --juiNotice-text: var(--jui-color-primary80);
+    --juiNotice-text-padding: 1em 1.25em;
+    --juiNotice-bg: var(--jui-color-primary05);
+}
+
+.juiNotice.variant-danger {
+    --juiNotice-border: var(--jui-color-error40);
+    --juiNotice-text: var(--jui-color-error80);
+    --juiNotice-bg: var(--jui-color-error05);
+}
+
+.juiNotice.variant-warning {
+    --juiNotice-border: var(--jui-color-warning40);
+    --juiNotice-text: var(--jui-color-warning80);
+    --juiNotice-bg: var(--jui-color-warning05);
+}
+
+.juiNotice.variant-success {
+    --juiNotice-border: var(--jui-color-success40);
+    --juiNotice-text: var(--jui-color-success80);
+    --juiNotice-bg: var(--jui-color-success05);
+}
+
+.juiNotice {
+    border: var(--juiNotice-border-width) solid var(--juiNotice-border);
+    border-radius: var(--juiNotice-border-radius);
+    background-color: var(--juiNotice-bg);
+    padding: var(--juiNotice-text-padding);
+    color: var(--juiNotice-text);
+}
+
+.juiNotice.style-standard {
+    --juiNotice-border-radius: 6px;
+    --juiNotice-border-width: 5px;
+    border-top: none;
+    border-right: none;
+    border-bottom: none;
+}
+
+.juiNotice.style-inline {
+    --juiNotice-text-padding: 0.5em 1.25em;
+    display: inline-block;
+    border: none;
+    border-radius: 2em;
+}
+
+.juiNotice.style-inline > .main {
+    gap: 0.75em;
+}
+
+.juiNotice > .main {
+    display: flex;
+    align-items: center;
+    gap: 1.25em;
+}
+
+.juiNotice > .main > em {
+    font-size: 1.6em;
+    color: var(--juiNotice-border);
+}
+
+.juiNotice.style-inline > .main > em {
+    font-size: 1em;
+}
+
+.juiNotice p {
+    margin-bottom: 0;
+}
+
+.juiNotice > .main p.message {
+    margin: 0;
+    font-weight: 500;
+    font-size: 0.95em;
+}
+
+.juiNotice.style-inline > .main p.message {
+    white-space: nowrap;
+}
+
+/*************************************************
+* Percentage guage.
+*/
+
+.juiPGuage {
+    --frag-guage-bg: #eaeaea;
+    --frag-guage-dial: var(--jui-color-primary50);
+    display: inline-block;
+}
+
+.juiPGuage .guage_bg {
+    stroke: var(--frag-guage-bg);
+}
+
+.juiPGuage .guage_dial {
+    stroke: var(--frag-guage-dial);
+}
+
+.juiPGuage > div {
+    position: relative;
+}
+
+.juiPGuage > div > div {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.juiPGuage > div > div > span {
+    font-weight: 600;
+    color: #666;
+    font-size: 0.95em;
+    position: relative;
+    left: 1px;
+}
+
+.juiPGuage > div > div > span > i {
+    font-size: 0.65em;
+    font-style: normal;
+}
+
+/*************************************************
+* Typography family.
+*/
+
+.juiTypography {
+    font-size: 14px;
+}
+
+.juiTypography h1 {
+    margin: 0;
+    font-weight: 300;
+    font-size: 6em;
+    line-height: 1.167;
+    letter-spacing: -0.01562em;
+    margin-bottom: 0.35em;
+}
+
+.juiTypography h2 {
+    margin: 0;
+    font-weight: 300;
+    font-size: 3.75em;
+    line-height: 1.2;
+    letter-spacing: -0.00833em;
+    margin-bottom: 0.35em;
+}
+
+.juiTypography h3 {
+    margin: 0;
+    font-weight: 400;
+    font-size: 3em;
+    line-height: 1.167;
+    letter-spacing: 0em;
+    margin-bottom: 0.35em;
+}
+
+.juiTypography h4 {
+    margin: 0;
+    font-weight: 400;
+    font-size: 2.125em;
+    line-height: 1.235;
+    letter-spacing: 0.00735em;
+    margin-bottom: 0.35em;
+}
+
+.juiTypography h5 {
+    margin: 0;
+    font-weight: 400;
+    font-size: 1.5em;
+    line-height: 1.334;
+    letter-spacing: 0em;
+    margin-bottom: 0.35em;
+}
+
+.juiTypography h6 {
+    margin: 0;
+    font-weight: 500;
+    font-size: 1.25em;
+    line-height: 1.6;
+    letter-spacing: 0.0075em;
+    margin-bottom: 0.35em;
+}
+
+.juiTypography .juiSubtitle1 {
+    margin: 0;
+    font-weight: 400;
+    font-size: 1em;
+    line-height: 1.75;
+    letter-spacing: 0.00938em;
+    margin-bottom: 0.35em;
+}
+
+.juiTypography .juiSubtitle2 {
+    margin: 0;
+    font-weight: 500;
+    font-size: 0.875em;
+    line-height: 1.57;
+    letter-spacing: 0.00714em;
+    margin-bottom: 0.35em;
+}
+
+.juiTypography p, .juiTypography p.juiBody1 {
+    margin: 0;
+    font-weight: 400;
+    font-size: 1em;
+    line-height: 1.5;
+    letter-spacing: 0.00938em;
+    margin-bottom: 0.35em;
+}
+
+.juiTypography p.juiBody2 {
+    margin: 0;
+    font-weight: 400;
+    font-size: 1em;
+    line-height: 1.5;
+    letter-spacing: 0.00938em;
+    margin-bottom: 0.35em;
+}

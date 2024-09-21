@@ -1,0 +1,107 @@
+@def panelBorderColor #e1e1e1;
+@def panelBGColor #fff;
+@def activeBorderColor #757575;
+@def activeBGColor #f1f1f1;
+@def hoverBGColor #f6f6f6;
+@def textColor #1A2F45;
+@def marginTop 0.5em;
+@def marginOffset 8px;
+@def marginOffsetGap 4px;
+@def marginOffsetNegative -2px;
+@def fontSize 1em;
+
+.component {
+    --cpt-tabset-gap: 3px;
+    --cpt-tabset-width: 13em;
+}
+
+.component {
+  height: 100%;
+  width: var(--cpt-tabset-width);
+  border-right: 1px solid panelBorderColor;
+  background: panelBGColor;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 1em 0.5em;
+  flex-direction: column;
+}
+
+.component .group {
+  display: block;
+  padding-top: marginTop;
+}
+
+.component .group h6 {
+  display: block;
+  padding: 1em 0 0.5em 0;
+  margin: 0 1em 0 1.25em;
+  color: #bbb;
+  font-weight: 500;
+  font-size: 0.8em;
+  text-transform: uppercase;
+}
+
+.component .group h6 em {
+  margin-right: 0.5em;
+}
+
+.component>div {
+	
+}
+
+.component .group ul {
+  
+}
+
+.component .group ul li {
+  padding: 0.55em;
+  color: textColor;
+  overflow: hidden;
+  margin: 0 0 var(--cpt-tabset-gap) 0;
+  border-radius: var(--cpt-tabset-radius);
+}
+
+.component .group ul li:hover {
+  background: hoverBGColor;
+}
+
+.component .group ul li div {
+  margin-left: marginOffsetNegative;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.component .group ul li div em {
+  width: 1em;
+  margin-left: 1em;
+  text-align: center;
+  color: rgba(29,28,29,0.45);
+}
+
+.component .group ul li div em::before {
+  font-size: fontSize;
+}
+
+.component .group ul li:hover div em {
+  
+}
+
+.component .group ul li div span {
+  font-size: fontSize;
+  padding-right: 1em;
+  margin-left: 1em;
+  color: #444;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+}
+
+.component .group ul li.active {
+  background: activeBGColor;
+}
+
+.component .group ul li div i {
+  position: absolute;
+  right: 0;
+  top: 0.4em;
+}

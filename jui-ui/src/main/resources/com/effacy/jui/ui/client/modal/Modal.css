@@ -1,0 +1,179 @@
+.component {
+  display: none;
+}
+
+.component.show {
+  display: block;
+}
+
+.component .outer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000000;
+}
+
+.component .outer .mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  z-index: 100000;
+  background: #000;
+  opacity: 0.4;
+}
+
+.component .outer .inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  z-index: 100000;
+}
+
+.component .outer .inner .contents {
+  
+}
+
+.component .outer .inner .width {
+  margin: auto;
+  height: 100%;
+  position: relative;
+}
+
+.component.slider .outer .inner .width {
+  margin-left: auto;
+  margin-right: 0;
+  transition: left 0.3s;
+}
+
+.component.slider .outer .inner .width .height {
+  opacity: 0;
+}
+
+.component.slider.show .outer .inner .width .height {
+    opacity: 1;
+    animation: cpt_modal_slide 0.3s ease-in-out;
+}
+
+.component .outer .inner .width.slider {
+  left: 0 !important;
+}
+
+.component .outer .inner .height {
+  position: absolute;
+  top: 40px;
+  bottom: 40px;
+  left: 0;
+  right: 0;
+}
+
+.component.slider .outer .inner .height {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.component .outer .inner .wrap {
+  height: 100%;
+  overflow: hidden;
+}
+
+.component .outer .inner .width.center .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/*****************************
+ * z-index settings.
+ ***/
+.component.z1 .outer, .component.z1 .outer .inner {
+  z-index: 1000010;
+}
+
+.component.z1 .outer .inner .height {
+  left: 8px;
+  right: -8px;
+  top: 32px;
+  bottom: 48px;
+}
+
+.component.z2 .outer, .component.z2 .outer .inner {
+  z-index: 1000020;
+}
+
+.component.z2 .outer .inner .height {
+  left: 16px;
+  right: -16px;
+  top: 24px;
+  bottom: 56px;
+}
+
+.component.z3 .outer, .component.z3 .outer .inner {
+  z-index: 1000030;
+}
+
+.component.z3 .outer .inner .height {
+  left: 24px;
+  right: -24px;
+  top: 18px;
+  bottom: 62px;
+}
+
+.component.z4 .outer, .component.z4 .outer .inner {
+  z-index: 1000040;
+}
+
+.component.z4 .outer .inner .height {
+  left: 32px;
+  right: -32px;
+  top: 12px;
+  bottom: 68px;
+}
+
+.component.z5 .outer, .component.z5 .outer .inner {
+  z-index: 1000050;
+}
+
+.component.z5 .outer .inner .height {
+  left: 40px;
+  right: -40px;
+  top: 8px;
+  bottom: 72px;
+}
+
+.component.z6 .outer, .component.z6 .outer .inner {
+  z-index: 1000060;
+}
+
+.component.z6 .outer .inner .height {
+  left: 48px;
+  right: -48px;
+  top: 4px;
+  bottom: 76px;
+}
+
+.blur {
+	filter: blur(1px);
+}
+
+@keyframes cpt_modal_slide {
+  0% {
+    display: none;
+    opacity: 0;
+  }
+  1% {
+    display: block;
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}

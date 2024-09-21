@@ -1,0 +1,35 @@
+.wrap {
+  
+}
+
+.wrap.first {
+  
+}
+
+.wrap.middle {
+  
+}
+
+.wrap.last {
+  
+}
+
+.wrap.only {
+  
+}
+
+.wrap.alignLeft {
+  text-align: left;
+}
+
+.wrap.alignMiddle {
+  text-align: left;
+}
+
+.wrap.alignRight {
+  text-align: right;
+}
+
+.wrap.separatorLine {
+  border-top: 1px solid var(--jui-line-light);
+}

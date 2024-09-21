@@ -1,0 +1,3 @@
+# Overview
+
+This library provides support for rich text formatting, transmission and composition (UI side) as well as (in the future) media generation (i.e. PDF, etc). There is a hard dependency on `jui-core` for the UI components (though the dependency is marked as optional given that the model objects as transportable) and weaker dependenices on `jui-remote` and [FasterXML](https://github.com/FasterXML) (via `jui-remoting`) for annotations (so the model classes are participate in JUI JSON serialisation, such as employed by JUI RPC).

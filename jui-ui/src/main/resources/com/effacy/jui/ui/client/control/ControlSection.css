@@ -1,0 +1,26 @@
+.component .outer {
+}
+
+.component .outer > h2 {
+	margin: 0 0 1em 0;
+	font-size: 1.3em;
+	font-weight: 500;
+	color: var(--jui-text-header);
+}
+
+.component .outer > h2 em {
+}
+
+.component .outer > h2 span {
+}
+
+.component .outer .inner {
+	min-height: 2em;
+}
+
+.component .outer .inner #cs-content {
+	display: flex;
+    flex-direction: column;
+    gap: 1.5em;
+}
+

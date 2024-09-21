@@ -1,0 +1,51 @@
+.component .inner {
+    margin: 2px 0; /* Releive for displaying focus */
+}
+
+.component input {
+    font-size: 1em;
+}
+
+.component textarea {
+    font-size: 1em;
+}
+
+.component select {
+    font-size: 1em;
+}
+
+.component.focus .inner {
+	border-color: var(--jui-ctl-focus);
+	box-shadow: 0 0 0 2px var(--jui-ctl-focus-offset);
+}
+
+.component.invalid .inner {
+	border-color: var(--jui-ctl-err-focus);
+	box-shadow: 0 0 0 1px var(--jui-ctl-err-focus-offset);
+}
+
+.component.focus.invalid .inner {
+	box-shadow: 0 0 3px 1px var(--jui-ctl-err-focus-offset);
+}
+
+.component.disabled .inner {
+	background: var(--jui-ctl-bg-disabled);
+    opacity: var(--jui-ctl-opacity-disabled);
+	cursor: not-allowed;
+}
+
+.component.read_only .inner {
+	opacity: var(--jui-ctl-opacity-readonly);
+	background: var(--jui-ctl-bg-readonly);
+	cursor: not-allowed;
+}
+
+.component.waiting .inner {
+	animation: jui-animation-waiting 1s infinite;
+	border-color: transparent;
+    background-color: var(--jui-ctl-bg-wait);
+}
+
+.component.waiting .inner * {
+	visibility: hidden;
+}

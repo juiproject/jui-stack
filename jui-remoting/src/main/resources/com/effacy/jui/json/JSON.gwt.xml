@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "jui-module-1.0.0.dtd">
+<module>
+  <source path="client"/>
+  <source path="annotation"/>
+  <inherits name="com.effacy.jui.platform.Platform"/>
+  <inherits name="org.gwtproject.json.JSON"/>
+  <generate-with class="com.effacy.jui.json.rebind.SerializationGenerator">
+    <when-type-assignable class="com.effacy.jui.json.client.Serializer"/>
+  </generate-with>
+  <define-configuration-property name="serializer.annotations" is-multi-valued="true" />
+  <define-configuration-property name="serializer.interfaces" is-multi-valued="true" />
+  <define-configuration-property name="converter.annotations" is-multi-valued="true" />
+  <define-configuration-property name="transient.annotations" is-multi-valued="true" />
+</module>

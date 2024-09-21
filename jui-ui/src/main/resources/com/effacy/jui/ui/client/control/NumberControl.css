@@ -1,0 +1,85 @@
+.component {
+    --jui-numberctl-height: var(--jui-ctl-height);
+    --jui-numberctl-border: var(--jui-ctl-border);
+    --jui-numberctl-border-radius: var(--jui-ctl-border-radius);
+    --jui-numberctl-text: var(--jui-ctl-text);
+    --jui-numberctl-text-light: var(--jui-ctl-text-placeholder);
+    --jui-numberctl-bg: var(--jui-ctl-bg);
+    --jui-numberctl-stepper-bg: #fbfbfb;
+}
+
+.component {
+	position: relative;
+	cursor: pointer;
+}
+
+.component .inner {
+    min-height: var(--jui-numberctl-height);
+	outline: none;
+	border: 1px solid var(--jui-numberctl-border);
+	border-radius: var(--jui-numberctl-border-radius);
+	box-sizing: content-box;
+	padding: 0 0 0 0.75em;
+	background: var(--jui-numberctl-bg);
+	display: flex;
+	flex-direction: row;
+	gap: 0.75em;
+	align-items: center;
+	color: var(--jui-numberctl-text);
+    overflow: hidden;
+}
+
+.component input {
+	background: inherit;
+	color: inherit;
+	outline: none;
+	border: none;
+	width: 100%;
+    font-size: 1em;
+    -webkit-appearance: textfield;
+}
+
+.component input::-webkit-outer-spin-button,
+.component input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.component.disabled input {
+	color: var(--jui-ctl-text-disabled);
+	cursor: not-allowed;
+}
+
+.component.read_only input {
+	color: var(--jui-ctl-text-readonly);
+	cursor: not-allowed;
+}
+
+.component .inner > span {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.component .inner > span > em {
+    display: inline-block;
+    width: var(--jui-numberctl-height);
+    height: var(--jui-numberctl-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
+.component .inner > span > em {
+    border-left: 1px solid #eee;
+    background: var(--jui-numberctl-stepper-bg);
+}
+
+.component .inner > span > i {
+    display: none;
+}
+
+.component .inner > span > em:hover {
+    background-color: #eee;
+}

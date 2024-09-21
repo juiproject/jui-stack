@@ -1,0 +1,17 @@
+.component {
+	border-radius: 5px;
+	background: #f1f1f1;
+	padding: 1em;
+}
+
+.component .outer {
+	display: flex;
+}
+
+.component .left, .component .right {
+	flex-grow: 1;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	padding: 2em;
+	margin: 0.5em;
+}

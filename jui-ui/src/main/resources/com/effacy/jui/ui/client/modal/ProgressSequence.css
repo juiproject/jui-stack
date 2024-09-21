@@ -1,0 +1,56 @@
+.component {
+    --cpt-msp-text: var(--jui-color-primary70);
+}
+
+.component {
+    display: flex;
+    color: var(--cpt-msp-text);
+}
+
+.component .bookend {
+    flex-grow: 0;
+}
+
+.component.compressed .bookend {
+    flex-grow: 1;
+}
+
+.component .expand {
+    flex-grow: 1;
+}
+
+.component .item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25em;
+    flex-grow: 1;
+}
+
+.component .item.center {
+    flex-grow: 2;
+}
+
+.component.compressed .item {
+    flex-grow: 0;
+}
+
+.component .item label {
+    text-transform: uppercase;
+    font-size: 0.8em;
+    font-weight: 500;
+    padding: 0 1em;
+}
+
+.component .item .bottom {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    gap: 0.2em;
+}
+
+.component .item .line {
+    height: 50%;
+    border-bottom: 2px solid var(--cpt-msp-text);
+    flex-grow: 1;
+}

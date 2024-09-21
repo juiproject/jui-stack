@@ -1,0 +1,60 @@
+.component {
+	--titlepanel-color-separator: #ccc;
+}
+
+.component {
+	display: flex;
+	overflow: hidden;
+}
+
+.component.scrollable {
+	overflow: auto;
+}
+
+.component.vert {
+	flex-direction: column-reverse;
+}
+
+.component.vert_rev {
+	flex-direction: column;
+}
+
+.component.hort {
+	flex-direction: row-reverse;
+}
+
+.component.hort_rev {
+	flex-direction: row;
+}
+
+.component > .outer {
+	display: contents; /* Effectively ignores the outer */
+}
+
+.component > .outer > .contents {
+    flex-grow: 1;
+}
+
+.component.scrollable > .outer > .contents {
+	overflow-y: auto;
+}
+
+.component.scrollable > .outer > .other {
+}
+
+.component.separator.vert > .outer > .contents {
+	border-top: 1px solid var(--titlepanel-color-separator);
+}
+
+.component.separator.vert_rev > .outer > .contents {
+	border-bottom: 1px solid var(--titlepanel-color-separator);
+}
+
+.component.separator.hort > .outer > .contents {
+	border-left: 1px solid var(--titlepanel-color-separator);
+}
+
+.component.separator.hort_rev > .outer > .contents {
+	border-right: 1px solid var(--titlepanel-color-separator);
+}
+

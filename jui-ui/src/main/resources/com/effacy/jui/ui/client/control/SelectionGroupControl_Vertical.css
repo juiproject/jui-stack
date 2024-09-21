@@ -1,0 +1,8 @@
+.component {
+    --jui-selectiongroup-itemgap: 1em;
+    --jui-selectiongroup-labelgap: 1em;
+}
+
+.component .inner {
+    flex-direction: column;
+}

@@ -1,0 +1,368 @@
+/*******************************************************************************
+ * Copyright 2024 Jeremy Buckley
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * <p>
+ * <a href= "http://www.apache.org/licenses/LICENSE-2.0">Apache License v2</a>
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ ******************************************************************************/
+package com.effacy.jui.playground.ui.tutorial.reference;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
+
+import org.pepstock.charba.client.AbstractChart;
+import org.pepstock.charba.client.BarChart;
+import org.pepstock.charba.client.Charba;
+import org.pepstock.charba.client.RadarChart;
+import org.pepstock.charba.client.colors.HtmlColor;
+import org.pepstock.charba.client.data.BarDataset;
+import org.pepstock.charba.client.data.LiningDataset;
+
+import com.effacy.jui.core.client.IResetable;
+import com.effacy.jui.core.client.component.Component;
+import com.effacy.jui.core.client.component.layout.LayoutData;
+import com.effacy.jui.core.client.dom.ActivationHandler;
+import com.effacy.jui.core.client.dom.DomSupport;
+import com.effacy.jui.core.client.dom.INodeProvider;
+import com.effacy.jui.core.client.dom.UIEvent;
+import com.effacy.jui.core.client.dom.UIEventType;
+import com.effacy.jui.core.client.dom.builder.DomBuilder;
+import com.effacy.jui.core.client.dom.css.CSS;
+import com.effacy.jui.core.client.dom.css.Length;
+import com.effacy.jui.core.client.util.UID;
+import com.effacy.jui.ui.client.icon.FontAwesome;
+
+import elemental2.dom.Element;
+
+/**
+ * See {@link https://pepstock-org.github.io/Charba-Wiki/docs}.
+ *
+ * @author Jeremy Buckley
+ */
+public class ChartComponent extends Component<ChartComponent.Config> implements IResetable {
+
+    /**
+     * Configuration for the component.
+     */
+    public static class Config extends Component.Config {
+
+        /**
+         * Different chart types.
+         */
+        public enum Type {
+            RADAR, BAR;
+        }
+
+        /**
+         * See {@link #type(Type)}.
+         */
+        private Type type = Type.RADAR;
+
+        /**
+         * See {@link #labels(String...)}.
+         */
+        private String[] labels;
+
+        /**
+         * See {@link #title(String)}.
+         */
+        private String title;
+
+        /**
+         * See {@link #option(String, String, Supplier)}
+         */
+        private List<Option> options = new ArrayList<> ();
+
+        /**
+         * Specifies the type of chart to display.
+         * 
+         * @param type
+         *             the type.
+         * @return this configuration instance.
+         */
+        public Config type(Type type) {
+            if (type != null)
+                this.type = type;
+            return this;
+        }
+
+        /**
+         * Specifies the data item labels (i.e. the columns or datum names).
+         * 
+         * @param labels
+         *               the labels for the data items.
+         * @return this configuration instance.
+         */
+        public Config labels(String... labels) {
+            this.labels = labels;
+            return this;
+        }
+
+        /**
+         * The title of the component (that appears at the top left of the component).
+         * 
+         * @param title
+         *              the title.
+         * @return this configuration instance.
+         */
+        public Config title(String title) {
+            this.title = title;
+            return this;
+        }
+
+        /**
+         * Adds a option to appear in the selection list (that appears at the right left
+         * of the component). This changes the data source used to populate the chart.
+         * 
+         * @param label
+         *              the display label on the option.
+         * @param data
+         *              the source of data.
+         * @return this configuration instance.
+         */
+        public Config option(String label, Supplier<double[]> data) {
+            Option option = new Option (label, data);
+            options.add (option);
+            return this;
+        }
+
+        /**
+         * Simple data carrier for representing an option.
+         */
+        private class Option {
+
+            /**
+             * Unique reference to the option.
+             */
+            final String reference = UID.createUID ();
+
+            /**
+             * Display label for the option.
+             */
+            final String label;
+
+            /**
+             * Source of data for the option.
+             */
+            final Supplier<double[]> data;
+
+            /**
+             * Consruct with the data being encapsulated.
+             */
+            public Option(String label, Supplier<double[]> data) {
+                this.label = label;
+                this.data = data;
+            }
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * @see com.effacy.jui.core.client.component.Component.Config#build(com.effacy.jui.core.client.component.layout.LayoutData[])
+         */
+        @Override
+        @SuppressWarnings("unchecked")
+        public ChartComponent build(LayoutData... data) {
+            return new ChartComponent (this);
+        }
+
+    }
+
+    /**
+     * To initialise the chart library.
+     */
+    static {
+        Charba.enable ();
+    }
+
+    /**
+     * Chart instance.
+     */
+    private AbstractChart chart;
+
+    /**
+     * Element that holds the selected menu option.
+     */
+    private Element menuLabelEl;
+
+    /**
+     * Element encompassing the menu (and is the activator).
+     */
+    private Element menuEl;
+
+    /**
+     * Manages the activation of the context menu.
+     */
+    protected ActivationHandler menuHandler;
+
+    /**
+     * Construct a chart instance.
+     * 
+     * @param config
+     *               configuration for the component.
+     */
+    public ChartComponent(Config config) {
+        super (config);
+
+        if (Config.Type.RADAR == config.type) {
+            chart = new RadarChart ();
+        } else if (Config.Type.BAR == config.type) {
+            chart = new BarChart ();
+            chart.getOptions ().setMaintainAspectRatio (false);
+        }
+        chart.getOptions ().getLegend ().setDisplay (false);
+        chart.getOptions ().setResponsive (true);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @see com.effacy.jui.core.client.IResetable#reset()
+     */
+    @Override
+    public void reset() {
+        // Reset the selection and load the associated data (we can only do this when
+        // rendered).
+        if (isRendered ())
+            load (config ().options.get (0).reference);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @see com.effacy.jui.core.client.component.Component#buildNode(elemental2.dom.Element,
+     *      com.effacy.jui.core.client.component.Component.Config)
+     */
+    @Override
+    protected INodeProvider buildNode(Element el, ChartComponent.Config data) {
+        return DomBuilder.el (el, root -> {
+            root.addClassName ("chart");
+            root.div (header -> {
+                header.addClassName ("heading");
+                header.h3 ().text (config ().title);
+                header.div (menu -> {
+                    menu.on (e -> onMenuClick (e), 2, UIEventType.ONCLICK);
+                    menu.by ("menu");
+                    menu.addClassName ("menu");
+                    menu.span ().by ("menuLabel");
+                    menu.em ().addClassName ("closed", FontAwesome.caretDown ());
+                    menu.em ().addClassName ("open", FontAwesome.caretUp ());
+                    menu.div (selector -> {
+                        selector.on (e -> onMenuOptionClick (e), 1, UIEventType.ONCLICK);
+                        selector.addClassName ("selector");
+                        selector.ul (options -> {
+                            for (Config.Option option : config ().options)
+                                options.li ().id (option.reference).text (option.label);
+                        });
+                    });
+                });
+            });
+            root.div (holder -> {
+                holder.addClassName ("holder");
+                holder.by ("holder");
+                holder.apply (n -> n.appendChild (chart.getChartElement ().as ()));
+            });
+        }).build (tree -> {
+            menuEl = tree.first ("menu");
+            menuLabelEl = tree.first ("menuLabel");
+
+            // For a bar chart this gives a little relief at the top which is not welcome
+            // for the radar.
+            if (Config.Type.BAR == config ().type)
+                CSS.PADDING_TOP.apply ((Element) tree.first ("holder"), Length.em (1));
+        });
+    }
+
+    /**
+     * Handle a click on the menu activator.
+     */
+    protected void onMenuClick(UIEvent event) {
+        event.stopEvent ();
+        if (menuHandler == null)
+            menuHandler = new ActivationHandler (menuEl, menuEl, "open");
+        menuHandler.toggle ();
+    }
+
+    /**
+     * Handler a click on a menu selector option.
+     */
+    protected void onMenuOptionClick(UIEvent event) {
+        Element targetEl = (Element) event.getTarget ("li", 3);
+        if (targetEl == null)
+            return;
+        String reference = targetEl.id;
+        if (load (reference)) {
+            menuHandler.toggle ();
+            event.stopEvent ();
+        }
+    }
+
+    /**
+     * Loads data matching the given reference.
+     * 
+     * @param reference
+     *                  the reference (from the configuration options).
+     * @return {@code true} if successfully mapped.
+     */
+    protected boolean load(String reference) {
+        for (Config.Option option : config ().options) {
+            if (reference.equals (option.reference)) {
+                DomSupport.innerText (menuLabelEl, option.label);
+                update (option.data.get ());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Internal method to update the data on the chart.
+     * 
+     * @param values
+     *               the values to update.
+     */
+    public void update(double... values) {
+        if (values == null)
+            return;
+        if (Config.Type.RADAR == config ().type) {
+            LiningDataset dataset = ((RadarChart) chart).newDataset ();
+            dataset.setBackgroundColor (HtmlColor.CORNFLOWER_BLUE.alpha (0.2));
+            dataset.setBorderColor (HtmlColor.CORNFLOWER_BLUE);
+            dataset.setBorderWidth (1);
+            dataset.setData (values);
+            chart.getData ().setLabels (config ().labels);
+            chart.getData ().setDatasets (dataset);
+        } else if (Config.Type.BAR == config ().type) {
+            BarDataset dataset = ((BarChart) chart).newDataset ();
+            dataset.setBackgroundColor (HtmlColor.CORNFLOWER_BLUE.alpha (0.2));
+            dataset.setBorderColor (HtmlColor.CORNFLOWER_BLUE);
+            dataset.setBorderWidth (1);
+            dataset.setData (values);
+            chart.getData ().setLabels (config ().labels);
+            chart.getData ().setDatasets (dataset);
+        }
+
+        chart.reconfigure ();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @see com.effacy.jui.core.client.component.Component#onAfterRender()
+     */
+    @Override
+    protected void onAfterRender() {
+        super.onAfterRender ();
+        reset ();
+    }
+
+}

@@ -1,0 +1,57 @@
+.component .tabs  {
+    height: var(--cpt-tabbedpanel-height);
+    max-height: var(--cpt-tabbedpanel-height);
+    background: var(--cpt-tabbedpanel-bg);
+    position: relative;
+    transition: max-height 0.2s ease-in;
+    display: table;
+    padding-top: 1em;
+  }
+  
+  .component .tabs .collapse {
+    max-height: 0;
+  }
+  
+  .component .tabs  ul {
+    overflow: hidden;
+    list-style: none;
+    padding-left: 1.5em;
+    /* position: absolute;
+    left: 0;
+    bottom: 0;
+    right: 0; */
+    border-bottom: 1px solid var(--cpt-tabbedpanel-outline);
+  }
+  
+  .component .tabs  ul li {
+    background: var(--cpt-tabbedpanel-bg-tab-inactive);
+    border: 1px solid var(--cpt-tabbedpanel-outline);
+    border-radius: var(--cpt-tabbedpanel-radius) var(--cpt-tabbedpanel-radius) 0 0;
+    padding: 0.5em 1em;
+    box-sizing: border-box;
+    display: inline-block;
+    margin-right: var(--cpt-tabbedpanel-gap);
+    cursor: pointer;
+    font-weight: 600;
+    position: relative;
+    top: 1px;
+    user-select: none;
+  }
+  
+  .component .tabs  ul li em {
+    margin-right: 0.75em;
+    color: var(--cpt-tabbedpanel-icon);
+  }
+  
+  .component .tabs  ul li span {
+    font-weight: 600;
+  }
+  
+  .component .tabs  ul li.active {
+    background: var(--cpt-tabbedpanel-bg-tab-active);
+    z-index: 101;
+    position: relative;
+    box-shadow: 0 0 4px var(--cpt-tabbedpanel-outline-shadow);
+    border-bottom: 1px solid var(--cpt-tabbedpanel-outline-active);
+  }
+  

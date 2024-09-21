@@ -1,0 +1,385 @@
+.component {
+    --cpt-form-row-gap: 1.5em;
+
+    --cpt-form-group-depth0-gap: 3em;
+    --cpt-form-group-depth1-gap: 1.5em;
+    --cpt-form-group-depth2-gap: 1.5em;
+    --cpt-form-group-depth3-gap: 1.25em;
+    --cpt-form-group-depth4-gap: 1em;
+    --cpt-form-group-indent: 3em;
+
+    --cpt-form-header: var(--jui-text-header);
+    --cpt-form-header-instruction: var(--jui-color-neutral70);
+    --cpt-form-header-icon-gap: 0.75em;
+
+    --cpt-form-header-depth0-size: 1.4em;
+    --cpt-form-header-depth1-size: 1.3em;
+    --cpt-form-header-depth2-size: 1.1em;
+    --cpt-form-header-depth3-size: 1em;
+    --cpt-form-header-depth4-size: 1em;
+
+    --cpt-form-footer-guidance: var(--jui-text-subtle);
+    --cpt-form-footer-guidance-size: 0.9em;
+    
+    --cpt-form-text: var(--jui-text);
+    --cpt-form-text-error: var(--jui-text-error);
+    --cpt-form-text-disabled: var(--jui-text-disabled);
+
+    --cpt-form-help-bg: var(--jui-text);
+    --cpt-form-help: var(--jui-color-aux-white);
+    --cpt-form-help-radius: var(--jui-border-radius);
+
+    --cpt-form-error-bg: var(--jui-color-error05);
+    --cpt-form-error-icon: var(--jui-color-error30);
+    --cpt-form-error-icon-size: 2em;
+    --cpt-form-error-text: var(--jui-color-neutral70);
+    --cpt-form-error-text-size: 1.05em;
+    --cpt-form-error-radius: var(--jui-border-radius-hard);
+    --cpt-form-error-margin-v: 1.5em;
+    --cpt-form-error-margin-h: 1.75em;
+
+    --cpt-form-separator: var(--jui-line-medium);
+    --cpt-form-separator-gap: 1.5em;
+}
+
+/*************************************
+* Errors.
+*/
+
+.component .errors {
+    margin: 0;
+    padding: 0;
+}
+
+.component .errors > div.errors_inner {
+    background: var(--cpt-form-error-bg);
+    padding: var(--cpt-form-error-margin-v) var(--cpt-form-error-margin-h);
+    margin-bottom: var(--cpt-form-group-depth0-gap);
+    border-radius: var(--cpt-form-error-radius);
+}
+
+.component .errors > div.errors_inner > div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5em;
+}
+
+.component .errors > div.errors_inner > div p {
+    padding: 0;
+    margin: 0;
+    font-size: var(--cpt-form-error-text-size);
+    color: var(--cpt-form-error-text);
+    font-weight: 500;
+}
+
+.component .errors > div.errors_inner > div em {
+    color: var(--cpt-form-error-icon);
+    font-size: var(--cpt-form-error-icon-size);
+}
+
+.component .errors > ul {
+    margin: 0.5em 0 0 3em;
+    font-size: var(--cpt-form-error-text-size);
+    color: var(--cpt-form-error-text);
+    font-weight: 500;
+}
+
+/*************************************
+* Group header and footer.
+*/
+
+.component .group {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5em;
+}
+
+.component .group.separator {
+    border-top: 1px solid var(--cpt-form-separator);
+    padding-top: var(--cpt-form-separator-gap);
+}
+
+.component .group.horizontal > .body > .group.separator {
+    border-top: unset;
+    padding-top: unset;
+    border-left: 1px solid var(--cpt-form-separator);
+    padding-left: var(--cpt-form-separator-gap);
+}
+
+.component .group > .header {
+    /* margin: 0 0 1.5em 0; */
+    margin: 0;
+}
+
+.component .group.collapse > .header {
+    margin: 0;
+}
+
+.component .group > .header em {
+    margin-right: var(--cpt-form-header-icon-gap);
+}
+
+.component .group > .header h3 {
+    margin: 0;
+    font-weight: 600;
+    color: var(--cpt-form-header);
+}
+
+.component .group > .header > div {
+    display: flex;
+    align-items: center;
+}
+
+.component .group > .header > div > div {
+    display: flex;
+    width: var(--cpt-form-group-indent);
+}
+
+.component .group > .header label {
+    font-weight: 500;
+    color: var(--cpt-form-header);
+    cursor: pointer;
+}
+
+.component .group.depth0 > .header h3, .component .group.depth0 > .header label {
+    font-size: var(--cpt-form-header-depth0-size);
+}
+
+.component .group.depth1 > .header h3, .component .group.depth1 > .header label {
+    font-size: var(--cpt-form-header-depth1-size);
+}
+
+.component .group.depth2 > .header h3, .component .group.depth2 > .header label {
+    font-size: var(--cpt-form-header-depth2-size);
+}
+
+.component .group.depth3 > .header h3, .component .group.depth3 > .header label {
+    font-size: var(--cpt-form-header-depth3-size);
+}
+
+.component .group.depth4 > .header h3, .component .group.depth4 > .header label {
+    font-size: var(--cpt-form-header-depth4-size);
+}
+
+.component .group > .header h3 + p {
+    margin: 0.5em 0 0 0;
+}
+
+.component .group > .header p {
+    margin: 0;
+    color: var(--cpt-form-header-instruction);
+}
+
+.component .group.depth4 > .header p {
+    margin-top: 0.25em;
+}
+
+.component .group.conditional .header p {
+    margin-left: var(--cpt-form-group-indent);
+}
+
+.component .group > .footer {
+    
+}
+
+.component .group > .footer p {
+    color: var(--cpt-form-footer-guidance);
+    font-size: var(--cpt-form-footer-guidance-size);
+}
+
+
+/*************************************
+* Group body.
+*/
+
+.component .group > .body {
+    display: flex;
+    flex-direction: column;
+    /* margin-bottom: 1em; */
+}
+
+.component .group.horizontal > .body {
+    flex-direction: row;
+}
+
+.component .group.horizontal > .body > * {
+    flex-basis: 100%;
+    flex-grow: 1;
+}
+
+.component .group.depth0 > .body {
+    gap: var(--cpt-form-group-depth0-gap);
+}
+
+.component .group.depth1 > .body {
+    gap: var(--cpt-form-group-depth1-gap);
+}
+
+.component .group.depth2 > .body {
+    gap: var(--cpt-form-group-depth2-gap);
+}
+
+.component .group.depth3 > .body {
+    gap: var(--cpt-form-group-depth3-gap);
+}
+
+.component .group.depth4 > .body {
+    gap: var(--cpt-form-group-depth4-gap);
+}
+
+.component .group.conditional > .body {
+    margin-left: var(--cpt-form-group-indent);
+    margin-bottom: var(--cpt-form-row-gap);
+}
+
+.component .group.conditional.compact > .body {
+    margin-bottom: 0;
+}
+
+.component .group.collapse > .body {
+    display: none;
+}
+
+/*************************************
+* Group row and cell.
+*/
+
+.component .row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--cpt-form-row-gap);
+}
+
+.component .row.hidden {
+    display: none;
+}
+
+.component .row .cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.component .row .cell.hidden {
+    display: none;
+}
+
+.component .row .cell > div {
+    position: relative;
+}
+
+.component .row .cell > label {
+    color: var(--cpt-form-text);
+    margin-bottom: 0.5em;
+    font-size: 0.95em;
+    font-weight: 500;
+    display: block;
+    min-height: 1.35em;
+}
+
+.component .row .cell.error > label {
+    color: var(--cpt-form-text-error);
+}
+
+.component .row .cell > label.required {
+    font-weight: 600;
+}
+
+.component .row .cell > label.required::before {
+    content: '*';
+    padding: 2px;
+}
+
+.component .row .cell.disabled > label {
+    color: var(--cpt-form-text-disabled);
+    font-weight: 400;
+}
+
+.component .row .cell.disabled > label.required::before {
+    display: none;
+}
+
+.component .row .cell > label .help {
+    position: relative;
+    display: inline;
+}
+
+.component .row .cell > label .help em {
+    font-size: 0.8em;
+    position: relative;
+    left: 0.5em;
+    top: -0.25em;
+    opacity: 0.75;
+}
+
+.component .row .cell > label .help div {
+    position: absolute;
+    bottom: 25px;
+    color: var(--cpt-form-help);
+    background: var(--cpt-form-help-bg);
+    box-shadow: 0 0 5px 5px var(--cpt-form-help);
+    padding: 0.75em;
+    border-radius: var(--cpt-form-help-radius);
+    font-size: 0.85em;
+    margin: 0;
+    width: 15em;
+    font-weight: 500;
+    display: none;
+    opacity: 0;
+}
+
+.component .cell > label .help div::before {
+    content: ' ';
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 7px solid var(--cpt-form-help-bg);
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    margin-left: -9px;
+}
+
+.component .cell > label .help:hover div {
+    display: block;
+    opacity: 1;
+    animation: juiFormHelpFadeIn 0.5s ease-out;
+}
+
+.component .row.nolabel .cell > label {
+    display: none;
+}
+
+.component .row .cell > ul.error {
+    display: none;
+    list-style: none;
+    margin: 0.5em 0 0 0;
+    padding: 0;
+    color: var(--cpt-form-text-error);
+}
+
+.component .row .cell.error > ul.error {
+    display: block;
+}
+
+.component .row .cell div.guidance {
+    margin-top: 0.5em;
+    color: var(--cpt-form-footer-guidance);
+    font-size: var(--cpt-form-footer-guidance-size);
+}
+
+@keyframes juiFormHelpFadeIn {
+    0% {
+        display: none;
+        opacity: 0;
+    }
+    1% {
+        display: block;
+        opacity: 0;
+    }
+    100% {
+        display: block;
+        opacity: 1;
+    }
+}

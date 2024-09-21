@@ -1,0 +1,75 @@
+.component .inner {
+    height: var(--jui-ctl-height);
+	border: 1px solid var(--jui-ctl-border);
+	border-radius: var(--jui-ctl-border-radius);
+	box-sizing: content-box;
+	padding: 0 0.75em;
+	background: var(--jui-ctl-bg);
+	display: flex;
+	flex-direction: row;
+	gap: 0.5em;
+	align-items: center;
+	color: var(--jui-ctl-text);
+}
+
+.component.read_only em.left {
+	display: none;
+}
+
+.component.read_only em.read_only {
+	display: inline;
+	color: var(--jui-ctl-action);
+}
+
+.component em.read_only {
+	display: none;
+}
+
+.component input {
+	background: inherit;
+	color: inherit;
+	outline: none;
+	border: none;
+	width: 100%;
+    font-size: 1em;
+}
+
+.component.disabled input {
+	color: var(--jui-ctl-text-disabled);
+	cursor: not-allowed;
+}
+
+.component.read_only input {
+	color: var(--jui-ctl-text-readonly);
+	cursor: not-allowed;
+}
+
+.component em {
+	color: var(--jui-ctl-action);
+}
+
+.component.read_only em {
+	color: var(--jui-ctl-action-readonly);
+}
+
+.component .left {
+	
+}
+
+.component em.clear {
+	color: var(--jui-ctl-text-placeholder);
+	visibility: hidden;
+	cursor: pointer;
+}
+
+.component:hover em.clear {
+	color: var(--jui-ctl-text);
+}
+
+.component.clear em.clear {
+	visibility: visible;
+}
+
+.component.clear em.right {
+	display: none;
+}

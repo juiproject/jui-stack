@@ -1,0 +1,151 @@
+.component {
+    --jui-cardnavigator-action-bg: var(--jui-btn-bg);
+}
+
+.component > .wrap {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-width: 400px;
+}
+
+.component > .wrap > .header {
+    padding: 1em 2em;
+}
+
+.component.body > .wrap > .header {
+    border-bottom: 1px solid #eee;
+}
+
+.component > .wrap > .header .crumb {
+    margin-bottom: 0.5em;
+    display: flex;
+    align-items: center;
+    position: relative;
+    gap: 0.25em;
+    left: -.5em;
+}
+
+.component > .wrap > .header .crumb > a {
+    display: none;
+}
+
+.component > .wrap > .header .crumb > em {
+    font-size: 0.7em;
+}
+
+.component > .wrap > .header .crumb > span {
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    padding: 0.25em 0.75em;
+    border-radius: 12px;
+}
+
+.component > .wrap > .header .crumb > span > em {
+    display: none;
+}
+
+.component > .wrap > .header .crumb span.clickable:hover {
+    background: var(--jui-cardnavigator-action-bg);
+    color: #fff;
+    cursor: pointer;
+}
+
+.component > .wrap > .header h2 {
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    gap: 0.25em;
+    align-items: center;
+}
+
+.component > .wrap > .header h2 a {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25em;
+    height: 1.25em;
+    border-radius: 100%;
+    color: var(--jui-cardnavigator-action-bg);
+    position: relative;
+    left: -.25em;
+}
+
+.component > .wrap > .header h2 a:hover {
+    color: #fff;
+    background-color: var(--jui-cardnavigator-action-bg);
+}
+
+.component > .wrap > .header h2 a em {
+    font-size: 0.7em;
+}
+
+.component > .wrap > .header h2 i {
+    font-size: 0.6em;
+    position: relative;
+    top: -0.5em;
+    color: #999;
+}
+
+.component > .wrap > .body {
+    display: none;
+    flex-grow: 1;
+}
+
+.component > .wrap > .navigator {
+    flex-grow: 1;
+    background: #fff;
+    margin: 0 2em;
+    border-radius: 1em 1em 0 0;
+    padding: 2em;
+    border: 1px solid #f1f1f1;
+    border-bottom: none;
+}
+
+.component > .wrap > .navigator.custom {
+    margin: 0;
+    padding: 0;
+    border-radius: unset;
+    border: unset;
+    height: 100%;
+    overflow: auto;
+    background: transparent;
+}
+
+.component > .wrap > .navigator > .wrap {
+    display: flex;
+    gap: 1em;
+    flex-wrap: wrap;
+}
+
+.component > .wrap > .navigator > .wrap > div {
+    height: 125px;
+    max-height: 125px;
+    width: 250px;
+    min-width: 250px;
+    max-width: 250px;
+    cursor: pointer;
+    padding: 1em 1.5em;
+    overflow-y: auto;
+}
+
+.component > .wrap > .navigator > .wrap > div:hover {
+    background-color: #fafafa;
+    border-radius: 1em;
+}
+
+.component > .wrap > .navigator > .wrap > div > h3 {
+    margin: 0;
+    font-weight: 500;
+}
+
+.component.body > .wrap > .body {
+    display: unset;
+}
+
+.component.body > .wrap > .navigator {
+    display: none;
+}

@@ -1,0 +1,59 @@
+.component {
+    --cpt-tabset-hu-indent: 1.5em;
+    --cpt-tabset-hu-lift: 0.75em;
+    --cpt-tabset-hu-line: var(--jui-line);
+    --cpt-tabset-hu-text: var(--jui-color-neutral50);
+    --cpt-tabset-hu-text-hover: var(--jui-text);
+    --cpt-tabset-hu-text-active: var(--jui-text);
+    --cpt-tabset-hu-underline-hover: var(--jui-color-neutral30);
+    --cpt-tabset-hu-underline-active: var(--jui-color-primary50);
+}
+
+.component {
+  height: 4em;
+  position: relative;
+  overflow: hidden;
+}
+
+.component ul {
+  list-style: none;
+  padding-left: var(--cpt-tabset-hu-indent);
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  border-bottom: 1px solid var(--cpt-tabset-hu-line);
+}
+
+.component ul li {
+  padding: 0.5em 0.25em var(--cpt-tabset-hu-lift) 0.25em;
+  margin: 0 0.75em;
+  box-sizing: border-box;
+  display: inline-block;
+  margin-right: 2em;
+  cursor: pointer;
+  font-weight: 600;
+  position: relative;
+  top: 1px;
+  user-select: none;
+  border-bottom: 3px solid transparent;
+  color: var(--cpt-tabset-hu-text);
+}
+
+.component ul li em {
+  margin-right: 0.75em;
+}
+
+.component ul li span {
+  font-weight: 600;
+}
+
+.component ul li:hover {
+  border-bottom-color: var(--cpt-tabset-hu-underline-hover);
+  color: var(--cpt-tabset-hu-text-hover);
+}
+
+.component ul li.active {
+  border-bottom-color: var(--cpt-tabset-hu-underline-active);
+  color: var(--cpt-tabset-hu-text-active);
+}

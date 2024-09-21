@@ -1,0 +1,5 @@
+@eval colorAlt com.effacy.jui.ui.client.Theme.colorAlt();
+
+.theme {
+	--eff-color-alt: colorAlt;
+}

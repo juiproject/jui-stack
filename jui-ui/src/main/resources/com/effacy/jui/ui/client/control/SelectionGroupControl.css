@@ -1,0 +1,109 @@
+.component {
+    --jui-selectiongroup-itemgap: 1em;
+    --jui-selectiongroup-labelgap: 0.75em;
+    --jui-selectiongroup-inputsize: 1em;
+}
+
+.component {
+	padding-top: 0.5em;
+}
+
+.component .selected {
+    
+}
+
+.component .inner {
+	display: flex;
+	flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--jui-selectiongroup-itemgap);
+	color: var(--jui-ctl-text);
+}
+
+.component .inner .item input {
+    cursor: pointer;
+}
+
+.component .inner .item label {
+	user-select: none;
+	cursor: pointer;
+	display: flex;
+	flex-direction: row;
+	align-items: baseline;
+	gap: var(--jui-selectiongroup-labelgap);
+}
+
+.component .inner .item label .label {
+	font-weight: 500;
+}
+
+.component .inner .item label .label em {
+	width: 1.2em;
+    margin-right: 0.5em;
+	display: inline-block;
+    text-align: center;
+}
+
+.component .inner .item label .description {
+	color: var(--jui-ctl-text-subtle);
+	margin-top: 0.15em;
+    font-weight: 400;
+    font-size: 0.95em;
+}
+
+.component.invalid .inner input {
+	border-color: var(--jui-ctl-err-focus);
+    box-shadow: 0 0 0 2px var(--jui-ctl-err-focus-offset);
+}
+
+.component.disabled .inner input {
+	color: var(--jui-ctl-text-disabled);
+	cursor: not-allowed;
+}
+
+.component.read_only .inner input {
+	background: var(--jui-ctl-bg-readonly);
+	color: var(--jui-ctl-text-readonly);
+	cursor: not-allowed;
+}
+
+.component input {
+    background: inherit;
+    color: inherit;
+    outline: none;
+    border: none;
+    width: var(--jui-selectiongroup-inputsize);
+    height: var(--jui-selectiongroup-inputsize);
+    margin: 0;
+    top: 0.2em;
+    position: relative;
+}
+
+.component input[type=checkbox]:focus {
+	border-color: var(--jui-ctl-focus);
+    box-shadow: 0 0 0 2px var(--jui-ctl-focus-offset);
+}
+
+.component input[type=radio]:focus::after {
+    display: block;
+    width: 1em;
+    height: 1em;
+    background: transparent;
+    content: '';
+    box-sizing: border-box;
+    border-radius: 100%;
+	box-shadow: 0 0 0 2px var(--jui-ctl-focus-offset);
+}
+
+.component.invalid .inner input[type=checkbox]:focus {
+	box-shadow: 0 0 3px 2px var(--jui-ctl-err-focus-offset);
+}
+
+.component.waiting .inner input {
+	animation: eff-waiting-bg 1s infinite;
+	border: transparent;
+}
+
+.component.waiting .inner * {
+	visibility: hidden;
+}

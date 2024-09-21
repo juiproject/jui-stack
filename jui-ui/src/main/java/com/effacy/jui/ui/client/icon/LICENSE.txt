@@ -1,0 +1,1 @@
+The FontAwesome assets (font files and CSS) are licensed as per https://github.com/FortAwesome/Font-Awesome.

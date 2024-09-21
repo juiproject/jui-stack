@@ -1,0 +1,239 @@
+.dashboard {
+	height: 100%;
+	padding: 1em 1em 1em 0;
+	display: flex;
+	flex-direction: column;
+	gap: 1em;
+}
+
+.dashboard .upper {
+	display: flex;
+	height: 35%;
+	gap: 1em;
+	min-height: 20em;
+}
+
+.dashboard .lower {
+	display: flex;
+	flex-grow: 1;
+	gap: 1em;
+}
+
+.dashboard .item {
+	background: #fff;
+	border-radius: 14px;
+	flex-grow: 1;
+	padding: 1em;
+}
+
+.dashboard .item12 {
+	flex-grow: 0;
+	width: 33%;
+}
+
+.chart {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.chart .heading {
+	display: flex;
+}
+
+.chart .heading h3 {
+	margin: 0;
+	flex-grow: 1;
+}
+
+.chart .heading .menu {
+	display: flex;
+	gap: 0.75em;
+	align-items: baseline;
+	cursor: pointer;
+	position: relative;
+}
+
+.chart .heading .menu em.open {
+	display: none;
+}
+
+.chart .heading .menu em.closed {
+	display: inline-block;
+}
+
+.chart .heading .menu.open em.open {
+	display: inline-block;
+}
+
+.chart .heading .menu.open em.closed {
+	display: none;
+}
+
+.chart .heading .menu .selector {
+	position: absolute;
+	background: #fff;
+	width: 11em;
+	right: 0;
+	z-index: 100;
+	top: 1.75em;
+	border: 1px solid #ddd;
+	border-radius: 5px;
+	display: none;
+}
+
+.chart .heading .menu.open .selector {
+	display: block;
+}
+
+.chart .heading .menu .selector ul {
+	list-style: none;
+	margin: 0.5em;
+	padding: 0;
+}
+
+.chart .heading .menu .selector li {
+	padding: 2px 7px;
+}
+
+.chart .heading .menu .selector li:hover {
+	background: #f1f1f1;
+}
+
+.chart .holder {
+	height: 100%;
+	flex-grow: 1;
+}
+
+.chart .holder canvas {
+	position: absolute;
+	left: 50%;
+	transform: translate(-50%, 0);
+}
+
+.chart .holder>div {
+	width: auto !important;
+}
+
+.users {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	gap: 1em;
+}
+
+.users .heading {
+	display: flex;
+}
+
+.users .heading h3 {
+	margin: 0;
+	flex-grow: 1;
+}
+
+.users .holder {
+	flex-grow: 1;
+	/* This is needed to allow for the contents to be 100% and not blow the cell out. */
+	height: 0;
+}
+
+.users .rating em {
+	color: #999;
+	font-size: 0.9em;
+}
+
+.summarizer {
+	display: flex;
+	flex-direction: column;
+	gap: 1em;
+}
+
+.summarizer .summarizer_header h3 {
+	margin: 0;
+	padding: 0;
+}
+
+.summarizer .summarizer_header p {
+	margin: 0;
+	padding: 0;
+	color: #999;
+}
+
+.summarizer .summarizer_section {
+	border: 1px solid #eee;
+	border-radius: 5px;
+	padding: 0.75em;
+	box-shadow: 0 0 10px #ddd;
+	display: flex;
+	flex-direction: row;
+	gap: 0.75em;
+	align-items: center;
+}
+
+.summarizer .summarizer_section .summarizer_heading {
+	flex-grow: 1;
+}
+
+.summarizer .summarizer_section .summarizer_heading h4 {
+	margin: 0;
+	padding: 0;
+	font-size: 1.2em;
+    font-weight: 600;
+    color: #444;
+}
+
+.summarizer .summarizer_section .summarizer_heading p {
+	margin: 0;
+	padding: 0;
+}
+
+.summarizer_pie {
+  --p:20;
+  --b:6px;
+  --c:#B1C905;
+  --w:54px;
+  width: var(--w);
+  aspect-ratio: 1;
+  display: inline-grid;
+  place-content: center;
+  margin: 5px;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: #666;
+  position: relative;
+}
+
+.summarizer_pie:before,
+.summarizer_pie:after {
+  content:"";
+  position:absolute;
+  border-radius:50%;
+}
+
+.summarizer_pie:before {
+  inset:0;
+  background:
+    radial-gradient(farthest-side,var(--c) 98%,#0000) top/var(--b) var(--b) no-repeat,
+    conic-gradient(var(--c) calc(var(--p)*1%),#0000 0);
+  -webkit-mask:radial-gradient(farthest-side,#0000 calc(99% - var(--b)),#000 calc(100% - var(--b)));
+          mask:radial-gradient(farthest-side,#0000 calc(99% - var(--b)),#000 calc(100% - var(--b)));
+}
+
+.summarizer_pie:after {
+  inset:calc(50% - var(--b)/2);
+  background:var(--c);
+  transform:rotate(calc(var(--p)*3.6deg)) translateY(calc(50% - var(--w)/2));
+}
+
+.summarizer_pie span:after {
+	content: '%';
+	font-size: 80%;
+}
+
+.summarizer .summarizer_section .summarizer_number {
+	width: 30%;
+	text-align: right;
+    font-size: 2em;
+    font-weight: 600;
+    color: #444;
+}

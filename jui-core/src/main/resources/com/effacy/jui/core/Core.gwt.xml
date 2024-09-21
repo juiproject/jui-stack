@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "jui-module-1.0.0.dtd">
+<module>
+  <inherits name="com.effacy.jui.platform.Platform" />
+  <inherits name="com.effacy.jui.json.JSON" />
+  <inherits name="com.effacy.jui.validation.Validation" />
+  <inherits name="elemental2.core.Core" />
+  <inherits name="elemental2.dom.Dom" />
+  <inherits name="org.gwtproject.safehtml.SafeHtml" />
+
+  <source path="client" />
+  
+  <entry-point class="com.effacy.jui.core.client.Initialiser" />
+
+  <generate-with class="com.effacy.jui.core.rebind.observable.ListenerOracleGenerator">
+    <when-type-assignable class="com.effacy.jui.core.client.observable.ListenerOracle" />
+  </generate-with>
+</module>

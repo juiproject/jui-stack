@@ -1,0 +1,7 @@
+.test1 > div > .test2 {
+    border: 1px solid green;
+}
+
+.test2 {
+    width: 1em;
+}

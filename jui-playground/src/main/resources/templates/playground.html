@@ -1,0 +1,22 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>JUI Playground</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="jui:test" value="true" th:if="${testMode}" />
+    <link rel="stylesheet" type="text/css" href="../static/css/main.css" th:href="@{/css/main.css}" />
+    <link rel="stylesheet" type="text/css" href="../static/css/ui-global.css" th:href="@{/css/ui-global.css}" />
+    <script
+        src="../static/com.effacy.jui.playground.PlaygroundApp/com.effacy.jui.playground.PlaygroundApp.nocache.js"
+        th:src="@{/com.effacy.jui.playground.PlaygroundApp/com.effacy.jui.playground.PlaygroundApp.nocache.js}"></script>
+    <script src="/app/rpc.json"></script>
+</head>
+
+<body>
+    <div id="pageBody">JUI Application Loading...</div>
+    <iframe src="javascript:''" id="__gwt_historyFrame"
+        style="position: absolute; width: 0; height: 0; border: 0"></iframe>
+</body>
+
+</html>

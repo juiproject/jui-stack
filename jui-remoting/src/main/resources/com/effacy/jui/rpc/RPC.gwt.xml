@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "jui-module-1.0.0.dtd">
+<module>
+  <inherits name="com.effacy.jui.json.JSON" />
+  <generate-with class="com.effacy.jui.rpc.rebind.ServiceGenerator">
+    <when-type-assignable class="com.effacy.jui.rpc.extdirect.client.service.IService" />
+  </generate-with>
+  <source path="client" />
+  <source path="extdirect/client" />
+  <source path="handler/client" />
+  <super-source path="super" />
+</module>

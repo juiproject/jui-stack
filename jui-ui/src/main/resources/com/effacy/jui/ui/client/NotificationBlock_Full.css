@@ -1,0 +1,9 @@
+/***************************************
+ * Structure
+ ***/
+.component .notification {
+	border-left: none;
+	border-right: none;
+	border-radius: 0;
+}
+

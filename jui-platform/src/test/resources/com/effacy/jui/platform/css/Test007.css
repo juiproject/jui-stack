@@ -1,0 +1,3 @@
+.style1:not(.style2) {
+    background: #ccc;
+}

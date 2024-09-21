@@ -1,0 +1,13 @@
+.component {
+  width: 15em;
+  padding: 1em;
+  background: transparent;
+  border: none;
+}
+
+.component>div {
+  background: #fff;
+  height: 100%;
+  border-radius: 14px;
+  padding: 1em 0.5em !important;
+}

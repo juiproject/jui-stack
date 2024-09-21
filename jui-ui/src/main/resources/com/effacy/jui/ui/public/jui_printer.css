@@ -1,0 +1,22 @@
+div.jui_printer {
+    display: none;
+}
+
+@media print {
+    @page {
+        margin: 1.6cm;
+    }
+    html, body.jui_printer {
+        height: auto;
+    }
+    div.jui_printer {
+        display: inherit;
+        page-break-after: auto;
+    }
+    body.jui_printer > *:not(.jui_printer) {
+        display: none;
+    }
+    .jui_printer .jui_printer_noprint {
+        visibility: hidden;
+    }
+}

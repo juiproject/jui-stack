@@ -1,0 +1,15 @@
+.component {
+	/*overflow: hidden;*/
+}
+
+.component.scrollable {
+	display: flex;
+	flex-direction: column;
+	overflow: auto;
+}
+
+.component.scrollable > .contents {
+	flex-grow: 1;
+	overflow-y: auto;
+}
+

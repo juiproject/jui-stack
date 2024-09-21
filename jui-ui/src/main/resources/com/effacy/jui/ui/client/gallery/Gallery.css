@@ -1,0 +1,62 @@
+.component {
+	overflow: hidden;
+}
+
+/* Not 100% height which is needed in some cases */
+.component.scrollable {
+	display: flex;
+	flex-direction: column;
+	overflow: auto;
+    height: 100%;
+}
+
+.component .mask {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	display: none;
+}
+
+.component.mask .mask {
+	display: block;
+}
+
+.component .mask div {
+	font-size: 0.8em;
+	position: absolute;
+	left: 50%;
+	margin: -2em auto 0 auto;
+	top: 50%;
+}
+
+.component.quiet .mask div {
+	display: none;
+}
+
+.component.scrollable .gallery {
+	overflow-y: auto;
+    height: 100%;
+}
+
+.component.mask .gallery {
+	opacity: 0.5;
+}
+
+.component .empty {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	display: none;
+}
+
+.component.mask .empty {
+    opacity: 0.5;
+}
+
+.component.empty .empty {
+	display: block;
+}
+
+.component.empty .gallery {
+	display: none;
+}

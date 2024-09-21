@@ -1,0 +1,423 @@
+.editor_cpt {
+    margin: 2em;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+}
+
+.editor_cpt .editor_cpt_toolbar {
+    padding: 0.25em;
+    padding-left: 0.5em;
+    border-bottom: 1px solid #ddd;
+}
+
+.editor {
+	min-width: 100px;
+	min-height: 200px;
+	padding: 1.5em 2em 2em 1em;
+    font-size: 11pt;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+    overflow-y: auto;
+}
+
+.editor.drag_image {
+    position: absolute;
+    overflow: hidden;
+}
+
+.editor .block {
+	position: relative;
+    padding: 3px 0;
+    display: flex;
+    align-items: flex-start;
+}
+
+.editor .block .content_editable {
+    outline: none;
+    flex-grow: 1;
+    padding-top: 2px;
+}
+
+.editor.drag_image .block .content_editable {
+    color: #aaa;
+}
+
+.editor .block .content.empty::after {
+    content:attr(placeholder);
+    color: #ccc;
+}
+
+.editor .block .content.paragraph {
+	
+}
+
+.editor .block .side_tool {
+    min-width: 50px;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in;
+    background: #fff;
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
+.editor .block.side_tool .side_tool {
+	visibility: visible;
+    opacity: 1;
+}
+
+.editor .block .side_tool em {
+    padding: 5px;
+    border-radius: 2px;
+    cursor: pointer;
+    color: #ccc;
+}
+
+.editor .block .side_tool em:hover {
+    background-color: #f6f6f6;
+}
+
+.editor .block .side_tool .side_tool_move {
+    cursor: grab;
+}
+
+.editor .spacer {
+    height: 2px;
+    padding: 0 0 0 50px;
+}
+
+.editor .spacer div {
+    height: 2px;
+    margin: 0;
+    padding: 0;
+    transition: background-color 0.2s;
+}
+
+.editor .spacer.active div {
+    background-color: #ccc;
+}
+
+.editor .block .edt-b {
+    font-weight: 600;
+}
+
+.editor .block .edt-u {
+    text-decoration: underline;
+}
+
+.editor .block .edt-strike {
+    text-decoration: line-through;
+}
+
+.editor .block .edt-strike.edt-u {
+    text-decoration: underline line-through;
+}
+
+.editor .block .edt-i {
+    font-style: italic;
+}
+
+.editor .block .edt-sub {
+    vertical-align: sub;
+    font-size: 0.8em;
+}
+
+.editor .block .edt-sup {
+    vertical-align: super;
+    font-size: 0.8em;
+}
+
+.editor .block .edt-hl {
+    background-color: #F5EB72;
+}
+
+.editor .block .edt-code {
+    font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace;
+    line-height: normal;
+    background: rgba(135,131,120,.15);
+    color: #EB5757;
+    border-radius: 4px;
+    font-size: 85%;
+    padding: 0.2em 0.4em;
+}
+
+.editor .block *::selection {
+    background-color: #cdefff;
+}
+
+.editor .block h1 {
+    margin: 0;
+}
+
+.editor .block h2 {
+    margin: 0;
+}
+
+.editor .block h3 {
+    margin: 0;
+}
+
+.block.block_indent1 {
+    margin-left: 2em;
+}
+
+.block.block_indent2 {
+    margin-left: 4em;
+}
+
+.block.block_indent3 {
+    margin-left: 6em;
+}
+
+.block.block_indent4 {
+    margin-left: 8em;
+}
+
+.block.block_indent5 {
+    margin-left: 10em;
+}
+
+/****************************
+* Diagram
+*/
+
+.diagram {
+    padding: 1em 0;
+    cursor: pointer;
+    overflow-x: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.diagram > p {
+    font-size: 0.9em;
+    padding: 0 10%;
+    text-align: justify;
+    display: inline-block;
+}
+
+.diagram div > em {
+    font-size: 2em;
+}
+
+.diagram div > p {
+    font-size: 1em;
+    font-weight: 600;
+}
+
+.diagram div.diagram_empty {
+    display: none;
+    text-align: center;
+    padding: 1em 0 0 0;
+    color: var(--jui-color-error70);
+}
+
+.diagram.diagram_empty div.diagram_empty {
+    display: block;
+}
+
+.diagram.diagram_empty > img {
+    display: none;
+}
+
+.diagram > img {
+    max-width: 100%;
+}
+
+.diagram > p {
+    margin-top: 0;
+}
+
+.diagram_editor {
+    padding: 1em;
+}
+
+.diagram_editor > div.diagram_editor_top {
+    display: grid;
+    grid-template-columns: 50% 50%;
+    height: 325px;
+}
+
+.diagram_editor > div.diagram_editor_caption {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    padding-top: 0.75em;
+}
+
+.diagram_editor div.diagram_editor_preview {
+    height: 325px;
+    padding: 0.5em;
+    overflow: auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    text-align: center;
+    margin: 2px 0;
+    position: relative;
+}
+
+.diagram_editor div.diagram_editor_preview > div {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: none;
+    z-index: 2;
+}
+
+.diagram_editor div.diagram_editor_preview > div.diagram_editor_mask {
+    z-index: 1;
+    opacity: 0.8;
+    background-color: #ddd;
+}
+
+.diagram_editor div.diagram_editor_preview.diagram_editor_mask > div {
+    display: block;
+}
+
+.diagram_editor div.diagram_editor_preview.diagram_editor_mask > div:not(.diagram_editor_mask) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.diagram_editor div.diagram_editor_preview img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.diagram_editor div.diagram_editor_source {
+    height: 325px;
+    padding: 0 0.5em 0 0;
+}
+
+.diagram_editor textarea {
+    font-family: 'Courier New', Courier, monospace;
+    height: 312px;
+}
+
+/****************************
+* Equation
+*/
+
+.equation {
+    cursor: pointer;
+}
+
+.equation div > em {
+    font-size: 2em;
+}
+
+.equation div > p {
+    font-size: 1em;
+    font-weight: 600;
+}
+
+.equation div.equation_empty {
+    display: none;
+    text-align: center;
+    padding: 1em 0 0 0;
+    color: var(--jui-color-error70);
+}
+
+.equation.equation_empty div.equation_empty {
+    display: block;
+}
+
+.equation.equation_empty div:not(.equation_empty):not(.equation_error) {
+    display: none;
+}
+
+.equation div.equation_error {
+    display: none;
+    text-align: center;
+    padding: 1em 0 0 0;
+    color: var(--jui-color-error70);
+}
+
+.equation.equation_error div.equation_error {
+    display: block;
+}
+
+.equation.equation_error div:not(.equation_empty):not(.equation_error) {
+    display: none;
+}
+
+.equation_editor {
+    padding: 1em;
+}
+
+.equation_editor > div.equation_editor_top {
+    display: grid;
+    grid-template-columns: 50% 50%;
+    height: 225px;
+}
+
+.equation_editor div.equation_editor_source {
+    height: 225px;
+    padding: 0 0.5em 0 0;
+}
+
+.equation_editor div.equation_editor_preview {
+    height: 225px;
+    padding: 0.5em;
+    overflow: auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    text-align: center;
+    margin: 2px 0;
+    position: relative;
+}
+
+.equation_editor textarea {
+    font-family: 'Courier New', Courier, monospace;
+    height: 212px;
+}
+
+.equation_editor .equation_editor_error {
+    color: var(--jui-color-error60);
+    padding-top: 1em;
+}
+
+/****************************
+* Toolbar
+*/
+
+.editor .inline_tool {
+    padding: 0.25em;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	opacity: 0;
+	position: absolute;
+	z-index: 3;
+	left: 0;
+	visibility: hidden;
+	transition: opacity 0.2s ease-in;
+	background: #fff;
+    box-shadow: 0 0 10px #bbb;
+}
+
+/* Activates inline toolbar */
+.editor .block.inline_tool_show .inline_tool {
+	visibility: visible;
+    opacity: 1;
+}
+
+/********************************
+* Numbered list
+*/
+
+.numberedlist {
+    position: relative;
+    padding-left: 2em;
+}
+
+.numberedlist > span {
+    position: absolute;
+    top: 2px;
+    left: 0.25em;
+}

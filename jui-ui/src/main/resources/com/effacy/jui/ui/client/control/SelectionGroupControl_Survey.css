@@ -1,0 +1,28 @@
+.component {
+    --jui-selectiongroup-itemgap: .5em;
+    --jui-selectiongroup-labelgap: 1em;
+    --jui-selectiongroup-hover: #f6f6f6;
+    --jui-selectiongroup-border: #ddd;
+}
+
+.component .inner {
+    flex-direction: column;
+}
+
+.component .item {
+    border: 1px solid var(--jui-selectiongroup-border);
+    border-radius: 3px;
+}
+
+.component .item:hover {
+    background-color: var(--jui-selectiongroup-hover);
+}
+
+.component .item.selected {
+    border-color: var(--jui-ctl-active);
+    background-color: var(--jui-ctl-active-bg);
+}
+
+.component .item label {
+    padding: 0.75em 1em;
+}

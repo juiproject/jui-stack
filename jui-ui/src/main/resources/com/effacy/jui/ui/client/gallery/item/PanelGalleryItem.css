@@ -1,0 +1,84 @@
+.component {
+	border: 1px solid #eee;
+	background: #fff;
+	border-radius: 4px;
+	display: inline-block;
+}
+
+.component .header {
+	padding: 1em 1.15em;
+	display: flex;
+	gap: 1em;
+	align-items: start;
+}
+
+.component .header>em {
+	color: #ddd;
+	font-size: 1.5em;
+}
+
+.component .header>em.large {
+	font-size: 3em;
+}
+
+.component .header>div {
+	flex-grow: 1;
+}
+
+.component .header>div h6 {
+	font-size: 1.2em;
+	margin-inline-end: 0;
+	margin-block-start: 0;
+	margin-block-end: 0;
+	margin-inline-start: 0;
+	color: #444;
+	font-weight: bold;
+}
+
+.component .header>div>a {
+	font-size: 1.2em;
+	color: var(--jui-text-link);
+	font-weight: bold;
+	text-decoration: none;
+	cursor: pointer;
+	transition: 0.15s ease-in color;
+}
+
+.component .header>div>a:hover {
+	color: var(--jui-text-link-hover);
+}
+
+.component .header>div p {
+	margin-inline-end: 0;
+	margin-block-start: 0;
+	margin-block-end: 0;
+	margin-inline-start: 0;
+}
+
+.component .header span.menu>a {
+	color: #c4c4c4;
+	text-decoration: none;
+	transition: 0.3s ease-in color;
+	cursor: pointer;
+	font-size: 1.3em;
+	width: 1em;
+	margin-right: -0.4em;
+	text-align: center;
+}
+
+.component .header span.menu>a:hover {
+	color: var(--jui-text-link);
+}
+
+.component .header>span.avatar {
+	display: inline-block;
+	border: 1px solid #ccc;
+    border-radius: 100%;
+}
+
+.component .header>span.avatar img {
+	border: 2px solid #fff;
+    border-radius: 100%;
+    width: 3.3em;
+    height: 3.3em;
+}

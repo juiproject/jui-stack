@@ -1,0 +1,4 @@
+.component .dropRegion {
+    flex-direction: row;
+    padding: 0.75em 1.5em;
+}

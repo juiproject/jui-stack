@@ -1,0 +1,8 @@
+.component > div > ul {
+    padding-left: 0 !important;
+}
+
+.component > div > ul > li {
+    padding-bottom: 0.5em !important;
+    border-bottom-width: 2px !important;
+}

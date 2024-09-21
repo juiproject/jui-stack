@@ -1,0 +1,21 @@
+.component .tabs  {
+    --cpt-tabbedpanel-hightlight: var(--jui-tabset-bg-05);
+    --cpt-tabbedpanel-hightlight-width: 3px;
+}
+
+.component .tabs  {
+    padding: 1em 0 0 1em;
+}
+
+.component .tabs  .group.first h6 {
+  border-top: none;
+}
+
+.component .tabs  .group ul li {
+  border-radius: var(--cpt-tabbedpanel-radius) 0 0 var(--cpt-tabbedpanel-radius);
+  border-right: var(--cpt-tabbedpanel-hightlight-width) solid transparent;
+}
+
+.component .tabs  .group ul li.active {
+  border-right: var(--cpt-tabbedpanel-hightlight-width) solid var(--cpt-tabbedpanel-hightlight);
+}

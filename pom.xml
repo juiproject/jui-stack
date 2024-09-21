@@ -1,0 +1,560 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.effacy.jui</groupId>
+  <artifactId>parent</artifactId>
+  <version>${revision}</version>
+  <packaging>pom</packaging>
+  <name>JUI Stack - Parent</name>
+
+  <description>Java UI (JUI) for developing web-UI's using Java.</description>
+  <url>https://github.com/juiproject/jui-stack</url>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Jeremy Buckley</name>
+      <email>jerry@effacy.com</email>
+      <organization>JUI Project</organization>
+      <organizationUrl>https://github.com/jerrybuckley</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/juiproject/jui-stack.git</connection>
+    <developerConnection>scm:git:ssh://github.com:juiproject/jui-stack.git</developerConnection>
+    <url>http://github.com/juiproject/jui-stack/tree/master</url>
+  </scm>
+
+  <modules>
+    <module>jui-platform</module>
+    <module>jui-platform-codeserver</module>
+    <module>jui-remoting</module>
+    <module>jui-validation</module>
+    <module>jui-core</module>
+    <module>jui-ui</module>
+    <module>jui-text</module>
+    <module>jui-test</module>
+    <module>jui-playground</module>
+  </modules>
+
+  <!-- Various versions and settings -->
+  <properties>
+    <!-- Revision -->
+    <revision>0.0.7.M</revision>
+
+    <!-- Tests -->
+    <skip.tests>false</skip.tests>
+    <tests.skip.ut>${tests.skip}</tests.skip.ut>
+    <tests.skip.it>${tests.skip}</tests.skip.it>
+    <tests.fork>1</tests.fork>
+
+    <!-- Java version -->
+    <java.version>17</java.version>
+
+    <!-- Project configuration -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <build.output>target</build.output>
+
+    <!-- Dependency versions -->
+    <version.gwt>2.10.0</version.gwt>
+    <version.spring-boot>3.1.4</version.spring-boot>
+    <version.springframework>6.1.4</version.springframework>
+    <version.spring-security>6.2.2</version.spring-security>
+    <version.junit-jupiter>5.10.0</version.junit-jupiter>
+    <version.jakarta.servlet-api>6.0.0</version.jakarta.servlet-api>
+    <version.htmlunit>2.70.0</version.htmlunit>
+    <version.selenium-java>4.18.1</version.selenium-java>
+    <version.commons-lang3>3.13.0</version.commons-lang3>
+    <version.commons-codec>1.16.0</version.commons-codec>
+    <version.commons-beanutils>1.9.4</version.commons-beanutils>
+    <version.jackson>2.15.2</version.jackson>
+    <version.slf4j>2.0.9</version.slf4j>
+
+    <!-- JCL dependency versions -->
+    <version.elemental>1.2.1</version.elemental>
+    <version.gwt-safehtml>1.0.0-RC1</version.gwt-safehtml>
+    <version.gwt-window>1.0.0-RC1</version.gwt-window>
+    <version.gwt-history>1.0.0-RC1</version.gwt-history>
+    <version.gwt-regexp>1.0.0-RC1</version.gwt-regexp>
+    <version.gwt-xhr>1.0.0-RC1</version.gwt-xhr>
+    <version.gwt-timer>1.0.0-RC1</version.gwt-timer>
+    <version.gwt-typedarrays>1.0.0-RC2</version.gwt-typedarrays>
+    <version.gwt-json>1.0.0-RC1</version.gwt-json>
+    <version.gwt-http>1.0.0-RC1</version.gwt-http>
+
+    <!-- Plugin versions -->
+    <version.maven-s3-wagon>1.3.3</version.maven-s3-wagon>
+    <version.maven-gs-wagon>1.0</version.maven-gs-wagon>
+    <version.flatten-maven-plugin>1.3.0</version.flatten-maven-plugin>
+    <version.maven-resources-plugin>3.1.0</version.maven-resources-plugin>
+    <version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>
+    <version.maven-enforcer-plugin>3.2.1</version.maven-enforcer-plugin>
+    <version.maven-surefire-plugin>2.22.2</version.maven-surefire-plugin>
+    <version.maven-gwt-maven-plugin>${version.gwt}</version.maven-gwt-maven-plugin>
+    <version.maven-antrun-plugin>3.0.0</version.maven-antrun-plugin>
+    <version.maven-javadoc-plugin>3.10.0</version.maven-javadoc-plugin>
+    <version.maven-source-plugin>3.3.1</version.maven-source-plugin>
+    <version.maven-clean-plugin>3.1.0</version.maven-clean-plugin>
+    <version.maven-install-plugin>3.1.3</version.maven-install-plugin>
+    <version.maven-deploy-plugin>3.1.3</version.maven-deploy-plugin>
+    <version.maven-gpg-plugin>3.2.5</version.maven-gpg-plugin>
+    <version.build-helper-maven-plugin>3.6.0</version.build-helper-maven-plugin>
+    <version.central-publishing-maven-plugin>0.5.0</version.central-publishing-maven-plugin>
+    <version.maven-verifier-plugin>1.1</version.maven-verifier-plugin>
+    <version.maven-assembly-plugin>3.7.1</version.maven-assembly-plugin>
+    <version.maven-dependency-plugin>3.8.0</version.maven-dependency-plugin>
+    <version.maven-invoker-plugin>3.8.0</version.maven-invoker-plugin>
+    <version.maven-plugin-plugin>3.15.0</version.maven-plugin-plugin>
+    <version.maven-release-plugin>3.1.1</version.maven-release-plugin>
+    <version.maven-remote-resources-plugin>3.2.0</version.maven-remote-resources-plugin>
+    <!-- Higher than this appears to fail with a "Could not find artifact com.sun:tools:jar" error -->
+    <version.cobertura-maven-plugin>2.5</version.cobertura-maven-plugin>
+    <version.maven-jar-plugin>3.4.2</version.maven-jar-plugin>
+    <version.javacc-maven-plugin>3.1.0</version.javacc-maven-plugin>
+  </properties>
+
+  <dependencies>
+
+    <!-- Used to compile rebinding code so only needed for that -->
+    <dependency>
+      <groupId>com.google.gwt</groupId> 
+      <artifactId>gwt-dev</artifactId>
+      <version>${version.gwt}</version>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.mortbay.jasper</groupId>
+          <artifactId>apache-jsp</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>net.sourceforge.htmlunit</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${version.junit-jupiter}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <directory>${build.output}</directory>
+
+    <extensions>
+      <extension>
+        <groupId>com.github.seahen</groupId>
+        <artifactId>maven-s3-wagon</artifactId>
+        <version>${version.maven-s3-wagon}</version>
+      </extension>
+      <extension>
+        <groupId>com.gkatzioura.maven.cloud</groupId>
+        <artifactId>google-storage-wagon</artifactId>
+        <version>${version.maven-gs-wagon}</version>
+      </extension>
+    </extensions>
+
+    <plugins>
+      <!--
+      ****************************************************
+      Flattens the POM to a minimal version (resolving
+      parameters and the like). In particular it will
+      resolve the revision parameter and the POM versions. 
+      will have the correct version included.
+      ****************************************************
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <configuration>
+          <updatePomFile>true</updatePomFile>
+          <pomElements>
+            <developers/>
+            <description/>
+            <scm/>
+          </pomElements>
+        </configuration>
+        <executions>
+          <execution>
+            <id>flatten</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>flatten</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>flatten.clean</id>
+            <phase>clean</phase>
+            <goals>
+              <goal>clean</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
+      ****************************************************
+      Unit test and coverage configuration.
+      ****************************************************
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>${tests.skip.ut}</skipTests>
+          <excludes>
+            <exclude>**/*ITTest</exclude>
+            <exclude>**/*IT</exclude>
+            <exclude>**/*ITSuite</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>cobertura-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>clean</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
+      ****************************************************
+      Core plugin configurations.
+      ****************************************************
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>${java.version}</source>
+          <target>${java.version}</target>
+          <encoding>UTF-8</encoding>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <configuration>
+          <nonFilteredFileExtensions>
+            <nonFilteredFileExtension>ttf</nonFilteredFileExtension>
+            <nonFilteredFileExtension>woff</nonFilteredFileExtension>
+            <nonFilteredFileExtension>woff2</nonFilteredFileExtension>
+            <nonFilteredFileExtension>eot</nonFilteredFileExtension>
+            <nonFilteredFileExtension>svg</nonFilteredFileExtension>
+          </nonFilteredFileExtensions>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-versions</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireMavenVersion>
+                  <version>3.0.5</version>
+                </requireMavenVersion>
+                <requireJavaVersion>
+                  <version>${java.version}</version>
+                </requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>${version.build-helper-maven-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>cobertura-maven-plugin</artifactId>
+          <version>${version.cobertura-maven-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>flatten-maven-plugin</artifactId>
+          <version>${version.flatten-maven-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>gwt-maven-plugin</artifactId>
+          <version>${version.gwt}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>${version.maven-assembly-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>${version.maven-clean-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${version.maven-compiler-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${version.maven-dependency-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>${version.maven-deploy-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>${version.maven-enforcer-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>${version.maven-install-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-invoker-plugin</artifactId>
+          <version>${version.maven-invoker-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>${version.maven-jar-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <version>${version.maven-gpg-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>javacc-maven-plugin</artifactId>
+          <version>${version.javacc-maven-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>${version.maven-javadoc-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-plugin-plugin</artifactId>
+          <version>${version.maven-plugin-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>${version.maven-release-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-remote-resources-plugin</artifactId>
+          <version>${version.maven-remote-resources-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>${version.maven-resources-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>${version.maven-source-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${version.maven-surefire-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-verifier-plugin</artifactId>
+          <version>${maven-verifier-plugin}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <profiles>
+    <!--
+    ****************************************************
+    This profile is actived when operating inside of an
+    IDE (i.e. VSCode or Eclipse). This will target
+    builds to the target-ide directory rather than the 
+    target directory. This prevents interference between
+    Maven builds and IDE builds.
+    ****************************************************
+    -->
+    <profile>
+      <id>ide-build</id>
+      <activation>
+        <property>
+          <name>m2e.version</name>
+        </property>
+      </activation>
+      <properties>
+        <build.output>target-ide</build.output>
+      </properties>
+    </profile>
+
+    <!--
+    ****************************************************
+    This profile is for performing central repository
+    deployments.
+    ****************************************************
+    -->
+    <profile>
+      <id>central</id>
+      <build>
+        <plugins>
+          <!--
+          Deployment to central repository requires that checksum
+          files are included.
+          -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-deploy-plugin</artifactId>
+            <configuration>
+              <createChecksum>true</createChecksum>
+            </configuration>
+          </plugin>
+          <!--
+          Deployment to central repository requires that javadoc
+          artefacts are included.
+          -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <additionalJOptions>
+                <additionalJOption>-Xdoclint:none</additionalJOption>
+              </additionalJOptions>
+              <failOnError>false</failOnError>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+           </executions>
+          </plugin>
+          <!--
+          Deployment to central repository requires that source
+          artefacts are included.
+          -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <!--
+          Deployment to central repository requires that artefacts
+          are signed.
+          Requires GPG to be installed and a default key generated
+          and deployed to a keyserver (i.e. keys.openpgp.org). A
+          passhrase will be required to sign, that can be prompted
+          or stored in your settings.xml (see plugin description for
+          details).
+          -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <!--
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>${version.central-publishing-maven-plugin}</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+            </configuration>
+          </plugin>
+          -->
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+  <!-- Distribution management. -->
+  <distributionManagement>
+    <repository>
+      <id>effacy-dist</id>
+      <url>s3://maven.effacy.com/maven2</url>
+    </repository>
+  </distributionManagement>
+
+  <!-- Standard repositories. -->
+  <repositories>
+    <repository>
+      <id>central</id>
+      <name>Central Maven 2 Repo</name>
+      <url>https://repo1.maven.org/maven2</url>
+    </repository>
+    <repository>
+      <id>java.net</id>
+      <url>http://download.java.net/maven/2</url>
+    </repository>
+    <repository>
+      <id>effacy-dist</id>
+      <url>s3://maven.effacy.com/maven2</url>
+    </repository>
+    <repository>
+      <id>spring</id>
+      <url>https://repo.spring.io/plugins-release</url>
+      <name>Spring Plugins</name>
+    </repository>
+  </repositories>
+
+</project>

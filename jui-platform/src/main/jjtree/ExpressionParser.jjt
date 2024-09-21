@@ -1,0 +1,134 @@
+options {
+  LOOKAHEAD = 2;
+  STATIC = false;
+  VISITOR = false;
+  NODE_USES_PARSER = true;
+  JAVA_UNICODE_ESCAPE = true;
+  JAVA_TEMPLATE_TYPE = "modern";
+  MULTI=true;
+  NODE_PREFIX = "Ast";
+  NODE_CLASS = "BaseNode";
+} 
+
+PARSER_BEGIN(ExpressionParser)
+
+package com.effacy.jui.platform.css.rebind.parser;
+
+/**
+ * An Arithmetic Grammar.
+ */
+public class ExpressionParser {
+
+    public static ParsedExpression parse(String content) throws ExpressionParserException {
+        try {
+            return new ParsedExpression (new ExpressionParser (content).parse ());
+        } catch (java.lang.Throwable e) {
+            throw new ExpressionParserException (e.getMessage ());
+        }
+    }
+
+    public static class ParsedExpression {
+        protected String reference;
+        protected String expression;
+        ParsedExpression (AstRoot root) {
+            this.reference = root.reference();
+            this.expression = root.expression();
+        }
+        public String reference() {
+            return reference;
+        }
+        public String expression() {
+            return expression;
+        }
+    }
+
+    public static class ExpressionParserException extends Exception {
+        public ExpressionParserException(String message) {
+            super (message);
+        }
+    }
+    
+}
+
+PARSER_END(ExpressionParser)
+
+
+SKIP :
+{
+  " " | "\t" | "\n" | "\r"
+}
+
+TOKEN :
+{
+  <IDENTIFIER:             <LETTER> ( <LETTER> | <DIGIT> )* >
+| <COLOR_LITERAL:          "#" ( <ALPHA_CHAR> | <NUM_CHAR> )* >
+| <UNIT_LITERAL:           <DECIMAL_LITERAL>  (<ALPHA_CHAR>)+ >
+| <DECIMAL_LITERAL:        ("-")? ((["0"-"9"])+ | (["0"-"9"])? "." (["0"-"9"])+) >
+| <#LETTER:                ([ "_", "-" ] | <ALPHA_CHAR>) >
+| <#DIGIT:                 <NUM_CHAR> >
+| <#ALPHA_CHAR:            ["\u0024", "\u0041"-"\u005a", "\u005f", "\u0061"-"\u007a", "\u00c0"-"\u00d6", "\u00d8"-"\u00f6", "\u00f8"-"\u00ff"] >
+| <#NUM_CHAR:              ["\u0030"-"\u0039"] >
+| <#ALPHANUM_CHAR:         (<ALPHA_CHAR> | <NUM_CHAR>) >
+}
+
+/** Main production. */
+AstRoot parse() #Root : {}
+{
+  Expression() ";" { return jjtThis; }
+}
+
+/** An Expression. */
+void Expression() : {}
+{
+  DefExpression() | EvalExpression()
+}
+
+void DefExpression() : { }
+{
+  "@def" Reference() Substitution()
+}
+
+void EvalExpression() : { }
+{
+  "@eval" Reference() Function()
+}
+
+void Reference() : { Token t; }
+{
+    t=<IDENTIFIER>
+  { jjtThis.setReference(t.image); }
+}
+
+void Function() : {}
+{
+    ( Identifier() "." )* Identifier() "(" ")"
+}
+
+void Substitution() : {}
+{
+  Identifier() | Color() | Number() | Measure()
+}
+
+void Identifier() #String : { Token t; }
+{
+  t=<IDENTIFIER>
+  { jjtThis.setImage(t.image); }
+}
+
+void Color() #String : { Token t; }
+{
+  t=<COLOR_LITERAL>
+  { jjtThis.setImage(t.image); }
+}
+
+void Measure() #String : { Token t; }
+{
+  t=<UNIT_LITERAL>
+  { jjtThis.setImage(t.image); }
+}
+
+void Number() #String : { Token t; }
+{
+  t=<DECIMAL_LITERAL>
+  { jjtThis.setImage(t.image); }
+}

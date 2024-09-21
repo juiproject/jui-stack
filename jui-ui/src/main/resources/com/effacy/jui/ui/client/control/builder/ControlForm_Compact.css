@@ -1,0 +1,7 @@
+.component {
+    --cpt-form-group-depth0-gap: 2em;
+
+    --cpt-form-error-icon-size: 2em;
+    --cpt-form-error-text-size: 0.98em;
+    --cpt-form-error-margin-v: 1em;
+}

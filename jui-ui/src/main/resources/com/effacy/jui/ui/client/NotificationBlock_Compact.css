@@ -1,0 +1,10 @@
+/***************************************
+ * Structure
+ ***/
+.component .notification {
+	font-size: 0.9em;
+}
+
+.component .notification h3 {
+	display: none;
+}

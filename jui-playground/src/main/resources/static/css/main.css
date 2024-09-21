@@ -1,0 +1,24 @@
+html, body {
+    color: rgb(58, 61, 66);
+    font-size: 13px;
+    font-kerning: normal;
+    height: 100%;
+    width: 100%;
+    margin: 0px;
+    text-rendering: optimizelegibility;
+}
+
+body * {
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    font-family: Avenir Next W02,Avenir Next,"Helvetica Neue",Helvetica-,Arial,sans-serif;
+    overflow: hidden;
+}
+
+#pageBody {
+    height: 100%;
+}

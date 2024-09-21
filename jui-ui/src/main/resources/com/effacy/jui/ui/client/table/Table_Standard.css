@@ -1,0 +1,32 @@
+.component .table thead tr {
+	background: #fafafa;
+}
+
+.component .table thead th {
+	padding: 0.75em 1em 0.5em 1em;
+	border-bottom: 1px solid #ddd;
+}
+
+.component .table thead th div {
+	font-weight: 500;
+}
+
+.component .table thead th div em.icon {
+	color: #999;
+}
+
+.component .table thead th div span.header {
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	user-select: none;
+}
+
+.component .table tbody tr td {
+	padding: 0.25em 1em;
+	border-bottom: 1px solid #f1f1f1;
+}
+
+.component .table tbody tr:last-child td {
+	border-bottom: none;
+}

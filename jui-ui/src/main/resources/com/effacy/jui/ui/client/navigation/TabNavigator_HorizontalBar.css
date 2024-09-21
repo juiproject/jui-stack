@@ -1,0 +1,54 @@
+.component  {
+    --cpt-tabbedpanel-bg: var(--jui-tabset-bg-02);
+    --cpt-tabbedpanel-bg-tab-inactive: transparent;
+    --cpt-tabbedpanel-bg-tab-active: var(--jui-tabset-bg-05);
+    --cpt-tabbedpanel-bg-tab-hover: var(--jui-tabset-bg-03);
+    --cpt-tabbedpanel-text-active: var(--jui-tabset-text-alt);
+}
+
+.component .tabs  {
+  position: relative;
+  border: 1px solid var(--cpt-tabbedpanel-outline);
+  border-radius: 8px;
+  margin: 1em;
+  background: var(--cpt-tabbedpanel-bg);
+}
+
+.component .tabs  ul {
+  list-style: none;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.component .tabs  ul li {
+  padding: 0.5em 1em;
+  border-radius: 4px;
+  margin: 4px;
+  box-sizing: border-box;
+  display: inline-block;
+  cursor: pointer;
+  font-weight: 600;
+  position: relative;
+  user-select: none;
+  color: #666;
+  background: var(--cpt-tabbedpanel-bg-tab-inactive);
+}
+
+.component .tabs  ul li em {
+  margin-right: 0.75em;
+}
+
+.component .tabs  ul li span {
+  font-weight: 600;
+}
+
+.component .tabs  ul li:hover {
+  background: var(--cpt-tabbedpanel-bg-tab-hover);
+}
+
+.component .tabs  ul li.active {
+  background: var(--cpt-tabbedpanel-bg-tab-active);
+  color: var(--cpt-tabbedpanel-text-active);
+}

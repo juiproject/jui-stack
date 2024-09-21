@@ -1,0 +1,9 @@
+.component {
+	height: 100%;
+	padding: 1em 1em 1em 0;
+}
+
+.component .outer {
+	height: 100%;
+	background: green;
+}

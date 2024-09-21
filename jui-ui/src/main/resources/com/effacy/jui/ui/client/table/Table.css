@@ -1,0 +1,139 @@
+.component {
+    --jui-table-selectorwidth: 3.5em;
+}
+
+.component {
+	overflow: hidden;
+	position: relative;
+}
+
+.component .table table {
+	width: 100%;
+	border-collapse: separate;
+	border-spacing: 0;
+}
+
+.component.scrollable {
+	display: flex;
+	flex-direction: column;
+	overflow: auto;
+	height: 100%;
+}
+
+.component .mask {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	display: none;
+}
+
+.component.mask .mask {
+	display: block;
+}
+
+.component .mask div {
+	font-size: 0.8em;
+	position: absolute;
+	left: 50%;
+	margin: -2em auto 0 auto;
+	top: 50%;
+}
+
+.component.quiet .mask div {
+	display: none;
+}
+
+.component.scrollable .table {
+	overflow: auto;
+    height: 100%;
+}
+
+.component.scrollable .table table thead {
+	position: sticky;
+	top: 0px;
+	background: #fff;
+    z-index: 1;
+}
+
+.component.mask .table {
+	opacity: 0.5;
+}
+
+.component .empty {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	padding-top: 2em;
+	display: none;
+}
+
+.component.mask .empty {
+	opacity: 0.5;
+}
+
+.component.empty .empty {
+	display: block;
+}
+
+.component.empty tbody {
+	display: none;
+}
+
+.component .table thead th.sortable {
+	cursor: pointer;
+}
+
+.component .table thead th div {
+	display: flex;
+    gap: 0.5em;
+	align-items: center;
+}
+
+.component .table thead th div span.header {
+	flex-grow: 1;
+	text-align: left;
+}
+
+.component .table thead th div span.sortable {
+	display: inline-block;
+	width: 1em;
+}
+
+.component .table thead th div em {
+	display: none;
+}
+
+.component .table thead th div em.icon {
+    display: inline-block;
+}
+
+.component .table thead th.ascending div em.ascending {
+	display: inline;
+}
+
+.component .table thead th.descending div em.descending {
+	display: inline;
+}
+
+.component .table thead th.selector {
+    width: var(--jui-table-selectorwidth);
+}
+
+.component .table tbody td.selector {
+    width: var(--jui-table-selectorwidth);
+}
+
+.component #unfiltered {
+    position: absolute;
+    inset: 0;
+}
+
+.component #filtered {
+    position: absolute;
+    inset: 0;
+}
+
+.component #error {
+    position: absolute;
+    inset: 0;
+}

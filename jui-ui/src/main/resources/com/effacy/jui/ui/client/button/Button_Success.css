@@ -1,0 +1,5 @@
+.component {
+	--cpt-btn-bg: var(--jui-btn-success-bg);
+    --cpt-btn-bg-hover: var(--jui-btn-success-bg-hover);
+    --cpt-btn-border: var(--jui-btn-success-border);
+}

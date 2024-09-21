@@ -1,0 +1,243 @@
+@eval color com.effacy.jui.ui.client.Theme.color();
+@eval color20 com.effacy.jui.ui.client.Theme.color20();
+@eval color40 com.effacy.jui.ui.client.Theme.color40();
+@eval colorText com.effacy.jui.ui.client.Theme.colorText();
+@eval colorText20 com.effacy.jui.ui.client.Theme.colorText20();
+@eval colorText40 com.effacy.jui.ui.client.Theme.colorText40();
+@eval colorAlt com.effacy.jui.ui.client.Theme.colorAlt();
+@eval colorBackground com.effacy.jui.ui.client.Theme.colorBackground();
+@eval colorFocusBorder com.effacy.jui.ui.client.Theme.colorFocusBorder();
+@eval colorFocusBorderOuter com.effacy.jui.ui.client.Theme.colorFocusBorderOuter();
+@eval colorErrorBorder com.effacy.jui.ui.client.Theme.colorErrorBorder();
+@eval colorErrorBorderOuter com.effacy.jui.ui.client.Theme.colorErrorBorderOuter();
+@eval colorDisabled com.effacy.jui.ui.client.Theme.colorDisabled();
+@eval colorDisabledBackground com.effacy.jui.ui.client.Theme.colorDisabledBackground();
+@eval colorReadOnly com.effacy.jui.ui.client.Theme.colorReadOnly();
+@eval colorReadOnlyBackground com.effacy.jui.ui.client.Theme.colorReadOnlyBackground();
+@eval colorWaitingBackground com.effacy.jui.ui.client.Theme.colorWaitingBackground();
+@eval colorWaitingBackgroundLight com.effacy.jui.ui.client.Theme.colorWaitingBackgroundLight();
+@eval colorWaitingBorder com.effacy.jui.ui.client.Theme.colorWaitingBorder();
+@eval colorLink com.effacy.jui.ui.client.Theme.colorLink();
+@eval colorLoading com.effacy.jui.ui.client.Theme.colorLoading();
+@eval borderRadius com.effacy.jui.ui.client.Theme.borderRadius();
+@eval borderRadiusSoft com.effacy.jui.ui.client.Theme.borderRadiusSoft();
+@eval colorBackgroundPrimary com.effacy.jui.ui.client.Theme.colorBackgroundPrimary();
+@eval colorBackgroundSecondary com.effacy.jui.ui.client.Theme.colorBackgroundSecondary();
+@eval colorBackgroundSecondary120 com.effacy.jui.ui.client.Theme.colorBackgroundSecondary120();
+@eval colorBackgroundSecondary140 com.effacy.jui.ui.client.Theme.colorBackgroundSecondary140();
+
+/**
+* Button
+*/
+@eval colorButtonDisabled com.effacy.jui.ui.client.Theme.colorButtonDisabled();
+@eval colorButton com.effacy.jui.ui.client.Theme.colorButton();
+@eval colorButtonHover com.effacy.jui.ui.client.Theme.colorButtonHover();
+@eval colorButtonText com.effacy.jui.ui.client.Theme.colorButtonText();
+@eval colorButtonDanger com.effacy.jui.ui.client.Theme.colorButtonDanger();
+@eval colorButtonDangerHover com.effacy.jui.ui.client.Theme.colorButtonDangerHover();
+@eval colorButtonDangerText com.effacy.jui.ui.client.Theme.colorButtonDangerText();
+@eval colorButtonWarning com.effacy.jui.ui.client.Theme.colorButtonWarning();
+@eval colorButtonWarningHover com.effacy.jui.ui.client.Theme.colorButtonWarningHover();
+@eval colorButtonWarningText com.effacy.jui.ui.client.Theme.colorButtonWarningText();
+@eval colorButtonSuccess com.effacy.jui.ui.client.Theme.colorButtonSuccess();
+@eval colorButtonSuccessHover com.effacy.jui.ui.client.Theme.colorButtonSuccessHover();
+@eval colorButtonSuccessText com.effacy.jui.ui.client.Theme.colorButtonSuccessText();
+
+/**
+* Border
+*/
+@eval colorBorder com.effacy.jui.ui.client.Theme.colorBorder();
+@eval colorBorderSeparator com.effacy.jui.ui.client.Theme.colorBorderSeparator();
+
+/**
+* Controls
+*/
+@eval colorControlActive com.effacy.jui.ui.client.Theme.colorControlActive();
+@eval colorControlText com.effacy.jui.ui.client.Theme.colorControlText();
+@eval colorControlInfo com.effacy.jui.ui.client.Theme.colorControlInfo();
+@eval colorControlBackground com.effacy.jui.ui.client.Theme.colorControlBackground();
+@eval colorControlBackgroundAlt com.effacy.jui.ui.client.Theme.colorControlBackgroundAlt();
+@eval colorControlBorder com.effacy.jui.ui.client.Theme.colorControlBorder();
+@eval colorControlIndicator com.effacy.jui.ui.client.Theme.colorControlIndicator();
+@eval colorControlPlaceholder com.effacy.jui.ui.client.Theme.colorControlPlaceholder();
+@eval colorControlHover com.effacy.jui.ui.client.Theme.colorControlHover();
+@eval colorControlROText com.effacy.jui.ui.client.Theme.colorControlReadOnlyText();
+@eval colorControlROBackground com.effacy.jui.ui.client.Theme.colorControlReadOnlyBackground();
+@eval colorControlROBorder com.effacy.jui.ui.client.Theme.colorControlReadOnlyBorder();
+@eval colorControlROIndicator com.effacy.jui.ui.client.Theme.colorControlReadOnlyIndicator();
+@eval opacityControlRO com.effacy.jui.ui.client.Theme.opacityControlReadOnly();
+@eval colorControlDisabledText com.effacy.jui.ui.client.Theme.colorControlDisabledText();
+@eval colorControlDisabledBackground com.effacy.jui.ui.client.Theme.colorControlDisabledBackground();
+@eval colorControlDisabledBorder com.effacy.jui.ui.client.Theme.colorControlDisabledBorder();
+@eval colorControlDisabledIndicator com.effacy.jui.ui.client.Theme.colorControlDisabledIndicator();
+@eval opacityControlDisabled com.effacy.jui.ui.client.Theme.opacityControlDisabled();
+@eval colorControlErrorText com.effacy.jui.ui.client.Theme.colorControlErrorText();
+@eval colorControlErrorInfo com.effacy.jui.ui.client.Theme.colorControlErrorInfo();
+@eval colorControlErrorBackground com.effacy.jui.ui.client.Theme.colorControlErrorBackground();
+@eval colorControlErrorBorder com.effacy.jui.ui.client.Theme.colorControlErrorBorder();
+@eval colorControlErrorBorderShadow com.effacy.jui.ui.client.Theme.colorControlErrorBorderShadow();
+@eval colorControlErrorIndicator com.effacy.jui.ui.client.Theme.colorControlErrorIndicator();
+@eval colorControlFocusBorder com.effacy.jui.ui.client.Theme.colorControlFocusBorder();
+@eval colorControlFocusBorderShadow com.effacy.jui.ui.client.Theme.colorControlFocusBorderShadow();
+@eval fontControl com.effacy.jui.ui.client.Theme.fontControl();
+
+.theme {
+	--eff-color: color;
+	--eff-color-20: color20;
+	--eff-color-40: color40;
+	--eff-color-alt: colorAlt;
+	--eff-color-bg: colorBackground;
+	--eff-color-focus: colorFocusBorder;
+	--eff-color-focus-border: colorFocusBorderOuter;
+	--eff-color-invalid: colorErrorBorder;
+	--eff-color-invalid-border: colorErrorBorderOuter;
+	--eff-color-disabled: colorDisabled;
+	--eff-color-disabled-bg: colorDisabledBackground;
+	--eff-color-ro: colorReadOnly;
+	--eff-color-ro-bg: colorReadOnlyBackground;
+	--eff-color-waiting-bg: colorWaitingBackground;
+	--eff-color-waiting-bg-light: colorWaitingBackgroundLight;
+	--eff-color-waiting-border: colorWaitingBorder;
+    --eff-color-link: colorLink;
+	--eff-color-btn-disabled: colorButtonDisabled;
+	--eff-color-btn: colorButton;
+	--eff-color-btn-hover: colorButtonHover;
+	--eff-color-btn-text: colorButtonText;
+	--eff-color-btn-danger: colorButtonDanger;
+	--eff-color-btn-danger-hover: colorButtonDangerHover;
+	--eff-color-btn-danger-text: colorButtonDangerText;
+	--eff-color-btn-warning: colorButtonWarning;
+	--eff-color-btn-warning-hover: colorButtonWarningHover;
+	--eff-color-btn-warning-text: colorButtonWarningText;
+	--eff-color-btn-success: colorButtonSuccess;
+	--eff-color-btn-success-hover: colorButtonSuccessHover;
+	--eff-color-btn-success-text: colorButtonSuccessText;
+    --eff-color-loading: colorLoading;
+	--eff-border-radius: borderRadius;
+	--eff-border-radius-soft: borderRadiusSoft;
+    --eff-color-bg-primary: colorBackgroundPrimary;
+    --eff-color-bg-secondary: colorBackgroundSecondary;
+    --eff-color-bg-secondary120: colorBackgroundSecondary120;
+    --eff-color-bg-secondary140: colorBackgroundSecondary140;
+    --eff-color-text: colorText;
+    --eff-color-text20: colorText20;
+    --eff-color-text40: colorText40;
+	--eff-color-border: colorBorder;
+	--eff-color-border-sep: colorBorderSeparator;
+    --eff-color-ctl-active: colorControlActive;
+    --eff-color-ctl-text: colorControlText;
+    --eff-color-ctl-info: colorControlInfo;
+    --eff-color-ctl-bg: colorControlBackground;
+    --eff-color-ctl-bg-alt: colorControlBackgroundAlt;
+    --eff-color-ctl-border: colorControlBorder;
+    --eff-color-ctl-ind: colorControlIndicator;
+    --eff-color-ctl-place: colorControlPlaceholder;
+    --eff-color-ctl-hover: colorControlHover;
+    --eff-color-ctl-ro-text: colorControlROText;
+    --eff-color-ctl-ro-bg: colorControlROBackground;
+    --eff-color-ctl-ro-border: colorControlROBorder;
+    --eff-color-ctl-ro-ind: colorControlROIndicator;
+    --eff-opacity-ctl-ro: opacityControlRO;
+    --eff-color-ctl-dis-text: colorControlDisabledText;
+    --eff-color-ctl-dis-bg: colorControlDisabledBackground;
+    --eff-color-ctl-dis-border: colorControlDisabledBorder;
+    --eff-color-ctl-dis-ind: colorControlDisabledIndicator;
+    --eff-opacity-ctl-dis: opacityControlDisabled;
+    --eff-color-ctl-err-text: colorControlErrorText;
+    --eff-color-ctl-err-bg: colorControlErrorBackground;
+    --eff-color-ctl-err-border: colorControlErrorBorder;
+    --eff-color-ctl-err-border-shadow: colorControlErrorBorderShadow;
+    --eff-color-ctl-err-ind: colorControlErrorIndicator;
+    --eff-color-ctl-focus-border: colorControlFocusBorder;
+    --eff-color-ctl-focus-border-shadow: colorControlFocusBorderShadow;
+    --eff-font-ctl: fontControl;
+}
+
+@keyframes eff-waiting-bg {
+  from {
+    background-color: var(--eff-color-waiting-bg);
+  }
+  to {
+  	background-color: var(--eff-color-waiting-bg-light);
+  }
+}
+
+@keyframes eff-open {
+  0% {
+    display: none;
+    opacity: 0;
+  }
+  1% {
+    display: block;
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+::placeholder {
+  color: var(--eff-color-ctl-place);
+}
+
+input,textarea {
+  font-family: var(--eff-font-ctl);
+}
+
+.loader, .loader:before, .loader:after {
+  background: var(--eff-color-loading);
+  animation: eff-loader 1s infinite ease-in-out;
+  width: 1em;
+  height: 4em;
+  border-radius: 1em;
+}
+
+.loader {
+  animation-delay: 0.16s;
+  color: var(--eff-color-loading);
+  text-indent: -9999em;
+  margin: 2em;
+  position: relative;
+  transform: translateZ(0);
+}
+
+.loader:before, .loader:after {
+  position: absolute;
+  top: 0;
+  content: '';
+}
+
+.loader:before {
+  animation-delay: 0.32s;
+  left: -1.5em;
+}
+
+.loader:after {
+  left: 1.5em;
+}
+
+@keyframes eff-loader {
+  0%,
+  80%,
+  100% {
+    box-shadow: 0 0;
+    height: 4em;
+  }
+  40% {
+    box-shadow: 0 -2em;
+    height: 5em;
+  }
+}
+
+.fade {
+  animation: eff-fade 0.2s ease-in;
+}
+
+@keyframes eff-fade {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}

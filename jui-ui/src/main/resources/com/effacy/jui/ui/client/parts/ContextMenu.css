@@ -1,0 +1,37 @@
+.component div.menu {
+	position: relative;
+	display: none;
+}
+
+.component div.menu.open {
+	display: block;
+}
+
+.component div.menu ul {
+	list-style: none;
+	background: #fff;
+	position: absolute;
+	border: 1px solid #eee;
+	border-radius: 4px;
+	padding: 0.5em 1em;
+	box-shadow: 0 0 5px #dfdfdf;
+}
+
+.component div.menu ul li {
+	display: flex;
+	gap: 0.75em;
+	align-items: baseline;
+}
+
+.component div.menu ul li:hover {
+	
+}
+
+.component div.menu ul li em {
+	color: #999;
+	width: 1em;
+}
+
+.component div.menu ul li span {
+	color: #333;
+}

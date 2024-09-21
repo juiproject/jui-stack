@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "jui-module-1.0.0.dtd">
+<module>
+    <inherits name="com.effacy.jui.ui.UI" />
+    <inherits name="com.effacy.jui.json.JSON"/>
+    <inherits name="com.effacy.jui.rpc.RPC"/>
+    <inherits name="org.pepstock.charba.Charba" />
+    <source path="ui" />
+    <source path="dto" />
+    <entry-point class="com.effacy.jui.playground.ui.PlaygroundApp" />
+</module>

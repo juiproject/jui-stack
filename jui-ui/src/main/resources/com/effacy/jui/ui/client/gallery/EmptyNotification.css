@@ -1,0 +1,56 @@
+.panels {
+	display: flex;
+	flex-direction: column;
+	gap: 2em;
+	align-items: center;
+	padding: 4em 4em 0 4em;
+}
+
+.panels .panel {
+	border-radius: 1.5em;
+	padding: 2em;
+	background: #fff;
+	border: 1px solid var(--jui-state-waiting-bg);
+}
+
+.panels .panel h3 {
+	margin-block-start: 0;
+}
+
+.panels .panel p {
+	
+}
+
+.panels .panel .actions {
+	display: flex;
+	align-items: center;
+	gap: 2em;
+}
+
+.panels .panel .actions .fill {
+	flex-grow: 1;
+}
+
+.panels .panel .actions a {
+	background: var(--jui-btn-bg);
+	color: var(--jui-btn-text);
+	border-radius: var(--jui-border-radius);
+	padding: 0.25em 1.25em;
+	line-height: 1.9em;
+	font-size: 1em;
+	white-space: nowrap;
+	font-weight: 400;
+	-webkit-font-smoothing: auto;
+	text-decoration: none;
+	cursor: pointer;
+	outline: none;
+}
+
+.panels .panel .actions a:hover {
+	background: var(--jui-btn-bg-hover);
+}
+
+.panels .panel .actions a:focus {
+	border-color: var(--jui-state-focus);
+	box-shadow: 0 0 0 2px var(--jui-state-focus-offset);
+}

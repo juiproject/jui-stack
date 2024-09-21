@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC "-//Google Inc.//DTD Google Web Toolkit 2.9.0//EN" "https://www.gwtproject.org/doctype/2.9.0/gwt-module.dtd">
+<module>
+  <inherits name="org.gwtproject.http.HTTP"/>
+  <inherits name="com.google.gwt.i18n.I18N"/>
+  <inherits name='org.gwtproject.timer.Timer'/>
+
+  <!-- Not needed as this level so move to dependent projects -->
+  <inherits name="org.gwtproject.user.history.History" />
+
+  <source path="core/client" />
+  <source path="css/client" />
+  <source path="util/client" />
+
+  <!-- For generating CSS styles sheets -->
+  <generate-with class="com.effacy.jui.platform.css.rebind.CssDeclarationGenerator">
+    <when-type-assignable class="com.effacy.jui.platform.css.client.CssDeclaration" />
+  </generate-with>
+  <define-configuration-property name="CssDeclaration.style" is-multi-valued="false" />
+  <set-configuration-property name="CssDeclaration.style" value="obf" />
+
+  <!-- For backward compatibility with the GWT compiler -->
+  <define-configuration-property name="CssResource.style" is-multi-valued="false" />
+  <set-configuration-property name="CssResource.style" value="obf" />
+
+  <!-- Experiment (not currently used) -->
+  <generate-with class="com.effacy.jui.platform.core.rebind.JsNativeInjectorGenerator">
+    <when-type-assignable class="com.effacy.jui.platform.core.client.IJsNativeInjector" />
+  </generate-with>
+
+</module>

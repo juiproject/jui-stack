@@ -1,0 +1,7 @@
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+
+  <public
+      publicId="-//JUI//1.0.0"
+      uri="../jui-platform/src/main/java/jui-module-1.0.0.dtd" />
+
+</catalog>

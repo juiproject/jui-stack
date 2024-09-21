@@ -1,0 +1,64 @@
+.component .inner {
+	border: 1px solid var(--jui-ctl-border);
+	border-radius: var(--jui-ctl-border-radius);
+	box-sizing: content-box;
+	padding: 0.4em;
+	background: var(--jui-ctl-bg);
+	display: flex;
+	flex-direction: row;
+	gap: 0.5em;
+	align-items: center;
+	color: var(--jui-ctl-text);
+}
+
+.component.read_only em.read_only {
+	display: inline;
+}
+
+.component em.read_only {
+	display: none;
+}
+
+.component textarea {
+	background: inherit;
+	color: inherit;
+	outline: none;
+	border: none;
+	width: 100%;
+	resize: none;
+    transition: min-height 0.2s ease;
+    min-height: 0;
+    font-size: 1em;
+}
+
+.component.resizable textarea {
+	resize: auto;
+}
+
+.component.disabled textarea {
+	color: var(--jui-ctl-text-disabled);
+	cursor: not-allowed;
+    font-size: 1em;
+}
+
+.component.read_only textarea {
+	color: var(--jui-ctl-text-readonly);
+	cursor: not-allowed;
+}
+
+.component em {
+	color: var(--jui-ctl-action);
+}
+
+.component.read_only em {
+    color: var(--jui-ctl-action-readonly);
+}
+
+.component.waiting .inner {
+	animation: eff-waiting-bg 1s infinite;
+	border: transparent;
+}
+
+.component.waiting .inner * {
+	visibility: hidden;
+}

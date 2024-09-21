@@ -1,0 +1,86 @@
+.component.theme {
+	--titlepanel-color-border: #ccc;
+	--titlepanel-color-bg: #fafafa;
+	--titlepanel-color-title: #333;
+	--titlepanel-color-subtitle: #666;
+	--titlepanel-color-icon: #666;
+}
+
+.component {
+	overflow: hidden;
+}
+
+.component.scrollable {
+	display: flex;
+	flex-direction: column;
+	overflow: auto;
+}
+
+.component.scrollable > .outer {
+	flex-grow: 1;
+	overflow: auto;
+	display: flex;
+    flex-direction: column;
+}
+
+.component.scrollable > .outer > .contents {
+	flex-grow: 1;
+	overflow-y: auto;
+}
+
+.component > .outer > .title {
+	background: var(--titlepanel-color-bg);
+	border-bottom: 1px solid var(--titlepanel-color-border);
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 1.5em;
+	padding: 0.75em 1em;
+}
+
+.component.style_above > .outer > .title {
+	background: transparent;
+	border-bottom: none;
+}
+
+.component > .outer > .title em {
+	font-size: 1.5em;
+    color: var(--titlepanel-color-icon);
+}
+
+.component > .outer > .title em.large {
+	font-size: 3.25em;
+    color: var(--titlepanel-color-icon);
+}
+
+.component > .outer > .title h2 {
+	margin: 0;
+	font-weight: 500;
+    color: var(--titlepanel-color-title);
+    font-size: 1.5em;
+}
+
+.component > .outer > .title h3 {
+	margin: 0;
+	margin-top: 0.25em;
+    font-weight: 400;
+    color: var(--titlepanel-color-subtitle);
+    font-size: 1.25em;
+}
+
+.component > .outer > .title div {
+    flex-grow: 1;
+}
+
+/*****************************************
+ * Styles
+ */
+ 
+ .component.style_split {
+ 	
+ }
+ 
+ .component.style_above {
+ 	
+ }
+

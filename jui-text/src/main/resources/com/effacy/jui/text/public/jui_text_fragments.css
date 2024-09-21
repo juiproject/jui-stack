@@ -1,0 +1,87 @@
+/*********************************
+ * FLine
+ */
+
+.juiFragFLine {
+    position: relative;
+    margin: 0;
+}
+
+.juiFragFLine .fmt_bold {
+    font-weight: 600;
+}
+
+.juiFragFLine .fmt_italic {
+    font-style: italic;
+}
+
+.juiFragFLine .fmt_underline {
+    text-decoration: underline;
+}
+
+.juiFragFLine .fmt_strike {
+    text-decoration: line-through;
+}
+
+.juiFragFLine .fmt_strike.fmt_underline {
+    text-decoration: underline line-through;
+}
+
+.juiFragFLine .fmt_subscript {
+    vertical-align: sub;
+    font-size: 0.8em;
+}
+
+.juiFragFLine .fmt_superscript {
+    vertical-align: super;
+    font-size: 0.8em;
+}
+
+.juiFragFLine .fmt_hightlight {
+    background-color: #F5EB72;
+}
+
+.juiFragFLine .fmt_code {
+    font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace;
+    line-height: normal;
+    background: rgba(135,131,120,.15);
+    color: #EB5757;
+    border-radius: 4px;
+    font-size: 85%;
+    padding: 0.2em 0.4em;
+}
+
+/*********************************
+ * FText
+ */
+
+.juiFragFText {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+}
+
+.juiFragFText > .indent1 {
+    margin-left: 2em;
+}
+
+.juiFragFText > .indent2 {
+    margin-left: 3.75em;
+}
+
+.juiFragFText > .indent3 {
+    margin-left: 5.25em;
+}
+
+.juiFragFText > .list_bullet::before {
+    position: absolute;
+    left: -1.5em;
+    content: '\2022';
+}
+
+.juiFragFText > .list_tick::before {
+    position: absolute;
+    left: -1.5em;
+    content: '\2713';
+}
+

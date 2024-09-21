@@ -1,0 +1,356 @@
+<!-- Copyright 2011 Google Inc.                                             -->
+<!-- Licensed under the Apache License, Version 2.0 (the "License"); you    -->
+<!-- may not use this file except in compliance with the License. You may   -->
+<!-- may obtain a copy of the License at                                    -->
+<!--                                                                        -->
+<!-- http://www.apache.org/licenses/LICENSE-2.0                             -->
+<!--                                                                        -->
+<!-- Unless required by applicable law or agreed to in writing, software    -->
+<!-- distributed under the License is distributed on an "AS IS" BASIS,      -->
+<!-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or        -->
+<!-- implied. License for the specific language governing permissions and   -->
+<!-- limitations under the License.                                         -->
+
+<html>
+<head>
+  <title>JUI Code Server</title>
+  <script>
+
+/**
+ * Updates the dynamic parts of this page, based on template variables.
+ * @param config {Object} Contains the list of GWT apps that this code server
+ * can compile (in moduleNames). Comes from a global defined in JavaScript
+ * prepended to this file by the server.
+ */
+function updatePage(config) {
+  var moduleNames = config.moduleNames;
+
+  var target = document.getElementById("bookmarklets");
+  target.appendChild(makeDevModeOnBookmarklet());
+  target.appendChild(document.createTextNode(" "));
+  target.appendChild(makeDevModeOffBookmarklet());
+
+  target = document.getElementById("modules");
+  for (var i = 0; i < moduleNames.length; i++) {
+    var moduleName = moduleNames[i];
+
+    var anchor = document.createElement("a");
+    anchor.setAttribute("href", "/" + moduleName + "/");
+    anchor.setAttribute("target", "_blank");
+    setTextContent(anchor, moduleName);
+
+    var item = document.createElement("li");
+    item.appendChild(anchor);
+    target.appendChild(item);
+  }
+}
+
+/**
+ * Creates a bookmarklet that will show the module selection dialog
+ * if the code server is running. Otherwise, nothing will happen.
+ * @return {Element} An anchor element containing the bookmarklet.
+ */
+function makeDevModeOnBookmarklet() {
+  var bookmarklets_js = document.URL + "dev_mode_on.js";
+  var javascript = "{ window.__gwt_bookmarklet_params = {"
+          + "'server_url':'" + document.URL + "'};"
+          + " var s = document.createElement('script');"
+          + " s.src = '" + bookmarklets_js + "';"
+          + " void(document.getElementsByTagName('head')[0].appendChild(s));}";
+  return makeBookmarklet("Dev Mode On", javascript);
+}
+
+/**
+ * Creates a bookmarklet that will turn off Super Dev Mode for all modules,
+ * even if the code server isn't running.
+ * @return {Element} An anchor element containing the bookmarklet.
+ */
+function makeDevModeOffBookmarklet() {
+  var javascript =
+          "{var toRemove = [];" +
+          " for(var i = 0; i<sessionStorage.length; i++) {" +
+          "  var key = sessionStorage.key(i);" +
+          "  if (key.indexOf('__gwtDevModeHook:') == 0) {" +
+          "    toRemove.push(key);" +
+          "  }}" +
+          " for (var j = 0; j<toRemove.length; j++) {" +
+          "   sessionStorage.removeItem(toRemove[j]);" +
+          " } window.location.reload();}";
+  return makeBookmarklet("Dev Mode Off", javascript);
+}
+
+function makeBookmarklet(name, javascript) {
+  var result = document.createElement("a");
+  result.className = "bookmarklet";
+  result.setAttribute("href", "javascript:" + encodeURIComponent(javascript));
+  setTextContent(result, name);
+  return result;
+}
+
+function setTextContent(element, text) {
+  if (typeof element.textContent === 'string') {
+    element.textContent = text;
+  } else {
+    // Use innerText when textContent is not supported (e.g. IE8).
+    element.innerText = text;
+  }
+}
+
+function onPageLoad() {
+  updatePage(config);
+}
+
+if (window.addEventListener) {
+  window.addEventListener("load", onPageLoad, false);
+}
+else if (window.attachEvent) {
+  window.attachEvent("onload", onPageLoad);
+}
+
+function clean(config) {
+  document.getElementById("success").classList.remove("show");
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "clean/" + config.moduleNames[0], true);
+  xhr.onload = function (e) {
+    if (xhr.readyState === 4) {
+      var responseData = JSON.parse(xhr.responseText);
+      if (responseData.status == "ok") {
+        document.getElementById("success").classList.add("show");
+      } else
+        window.alert(responseData.status);
+    }
+  };
+  xhr.onerror = function (e) {
+    var statusText = xhr.statusText;
+    if (!statusText) {
+      statusText = "The server did not respond.";
+    }
+    window.alert("Cache clean failed: " + statusText);
+  };
+  xhr.send(null);
+}
+  </script>
+
+  <style>
+    body {
+        margin: 2cm;
+        font-size: 12pt;
+        font-family: Arial;
+        color: #33475b;
+    }
+    a {
+        color: #0fa1be;
+        text-decoration: none;
+        word-wrap: break-word;
+    }
+    a:hover {
+        color: #017f99;
+        text-decoration: underline;
+    }
+    #bookmarklets {
+        margin: 1.5em 0 2em 1em;
+    }
+    .ico {
+        background-image: url(logo.png);
+        background-repeat: no-repeat;
+        display: inline-block;
+        width: 54px;
+        height: 54px;
+        background-size: 50px;
+        border-radius: 50%;
+        border: 1px solid #c4e0ef;
+        box-shadow: 0 0 5px #c4e0ef;
+        background-position: center;
+    }
+
+    .bookmarklet {
+        color: #fafafa !important;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-size: 1em;
+        text-decoration: none;
+        background-color: #ccc;
+        margin-right: 1em;
+        cursor: grab;
+    }
+
+    .outer {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 1.5em;
+        background: #fafafa;
+        max-width: 800px;
+        margin: auto;
+        position: relative;
+    }
+
+    .outer .window {
+        position: absolute;
+        background-color: #e5f0ff;
+        z-index: 10000;
+        padding: 1em;
+        border: 1px solid #2a7ef1;
+        border-radius: 5px;
+        box-shadow: 0 0 10px 0px #2a7ef1;
+        width: 200px;
+        left: 50%;
+        margin-left: -100px;
+        text-align: center;
+        color: #2a7ef1;
+        display: none;
+    }
+
+    .outer .window.show {
+        display: block;
+        animation: 2s ease 0s normal forwards 1 fadein;
+    }
+
+    @keyframes fadein{
+        0% { opacity:1; }
+        66% { opacity:1; }
+        100% { opacity:0; }
+    }
+
+    .title {
+        display: flex;
+        align-items: center;
+    }
+
+    .title .expand {
+        flex-grow: 1;
+    }
+
+    .title h1 {
+        margin: 0;
+        padding: 0;
+        font-size: 2em;
+        font-weight: 600;
+        font-family: Verdana, Arial;
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
+        color: #33475b;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .title button {
+        background-color: #0fa1be;
+        border: none;
+        color: #fff;
+        font-size: 1em;
+        font-weight: 100;
+        padding: 0.5em 1em;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .title button:hover {
+        background-color: #017f99;
+    }
+
+    .instructions {
+        color: #666;
+        font-size: 0.9em;
+    }
+
+    .instructions h2 {
+        color: #33475b;
+        font-weight: 600;
+        font-size: 1.2em;
+        margin-top: 2em;
+    }
+
+    .instructions ol {
+        margin: 2em 0;
+    }
+
+    .instructions ol > li {
+        margin: 1em 0 0.5em 0;
+    }
+
+    .instructions strong {
+        padding: 5px 10px;
+        background: #eaeaea;
+        border-radius: 18px;
+        font-size: 0.9em;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .instructions p {
+        line-height: 1.4em;
+    }
+
+    .instructions p strong {
+        font-size: 0.7em;
+        padding: 4px 8px;
+        font-weight: 600;
+    }
+
+    .modules {
+        float: right;
+        border: 1px solid #eee;
+        border-radius: 5px;
+        background-color: #fcfcfc;
+        padding: 1em;
+        margin: 0 0 1em 2em;
+        max-width: 40%;
+    }
+
+    .modules p {
+        font-size: 0.95em;
+    }
+
+    .modules ul#modules {
+        list-style: none;
+        padding-inline-start: 0em;
+    }
+
+    .modules ul#modules > li {
+        margin: 0.5em 0;
+    }
+
+    h3 {
+        margin: 0;
+        font-size: 1em;
+    }
+
+    p.small {
+        font-size: 0.8em;
+        color: #bbb;
+        margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+    <div class="outer">
+        <div class="window" id="success">
+            Success! Cache cleared
+        </div>
+        <div class="title">
+            <h1><em class="ico"></em>JUI Code Server</h1>
+            <div class="expand"></div>
+            <button onclick="clean(config)">Clear server cache</button>
+        </div>
+        <div class="instructions">
+            <div class="modules">
+                <h3>Modules</h3>
+                <p>The following modules are being served:</p>
+                <ul id="modules"></ul>
+                <p class="small">Clicking on any of the modules above will open a summary page for that module.</p>
+            </div>
+            <h2>Getting started</h2>
+            <p>When running for the first time you need to setup your browser to be able to start and stop using the code-server and to perform recompilations. This is done using bookmarks (note that you only need to do this once, the bookmarks will work for any JUI module):</p>
+            <ol>
+                <li>Drag these two bookmarklets to your browser's bookmark bar:
+                  <div id="bookmarklets"></div>
+                </li>
+                <li>Visit a page in your application that loads one of the modules being served by the code-server.</li>
+                <li>Click <strong>Dev Mode On</strong> in the bookmark bar to start development mode.</li>
+            </ol>
+            <p>Once in development mode you can click <strong>Dev Mode On</strong> again to recompile (this will recompile your changes since the last recompilation). You can clear the code server cache completely by clicking on the <a href="javascript:;" onclick="clean(config)">clear server cache</a> button above (so the next time you recompile a full compilation will be performed). To turn off development mode simply click <strong>Dev Mode Off</strong> in the bookmark bar. This will return the page to the last built version of the application.</p>
+        </div>
+    </div>
+</body>
+</html>

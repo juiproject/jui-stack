@@ -1,0 +1,38 @@
+.component {
+	display: flex;
+	flex-direction: column;
+	gap: 1em;
+}
+
+.component .header h2 {
+	margin: 0;
+	font-weight: 600;
+}
+
+.component .header p {
+	margin: 0;
+	color: #999;
+}
+
+.component .info_line {
+	display: flex;
+	gap: 1.5em;
+}
+
+.component .info_line_item {
+	display: flex;
+	gap: 0.5em;
+	align-items: baseline;
+	color: #aaa;
+	font-weight: 500;
+}
+
+.component .info_line_item a {
+	color: var(--jui-text-link);
+	text-decoration: none;
+}
+
+.component .info_line_item a:hover {
+	cursor: pointer;
+	text-decoration: underline;
+}

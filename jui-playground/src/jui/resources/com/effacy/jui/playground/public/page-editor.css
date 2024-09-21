@@ -1,0 +1,101 @@
+.page_editor {
+    height: 100%;
+    background-color: #e8eaed;
+    overflow: auto;
+}
+
+.page_editor .page {
+    margin: 2em;
+    min-height: 1000px;
+    width: 810px;
+    background-color: #fff;
+    border-radius: 3px;
+    border: 1px solid #dcddde;
+    box-shadow: 0 0 4px #dcddde;
+    position: relative;
+}
+
+.page_editor .page > header {
+    padding: 1em;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    position: sticky;
+    z-index: 1000;
+    top: 0;
+    background-color: #fff;
+}
+
+.page_editor .page > header > span {
+    flex-grow: 1;
+}
+
+.page_editor .page > header > ul {
+    list-style: none;
+    display: flex;
+    gap: 0.5em;
+    margin: 0;
+    padding: 0;
+}
+
+.page_editor .page > header > ul > li {
+    color: #5f6368;
+}
+
+.page_editor .page > header > ul > li:hover {
+    cursor: pointer;
+}
+
+.page_editor .page > header > ul > li:not(:first-child)::before {
+    content: '>';
+    margin-right: 0.5em;
+}
+
+.page_editor .page .inner {
+    padding: 2em 2.5em;
+}
+
+.page_editor .page .inner .gap1 {
+    margin-top: 1em;
+}
+
+.page_editor .page .inner > h1 {
+    margin: 0;
+    font: 400 32px/40px sans-serif;
+}
+
+.page_editor .page .inner > h2 {
+    margin: 0;
+    font: 400 26px/34px sans-serif;
+}
+
+.page_editor .page .inner > p {
+    font-size: 11pt;
+    color: #666;
+    margin: 0.5em 0 0 0;
+}
+
+.page_editor .page .inner > p.info {
+    font-size: 10pt;
+    color: #484569;
+}
+
+.page_editor .page .inner > p.info > em {
+    width: 1.2em;
+    text-align: center;
+    margin-right: 0.5em;
+}
+
+.page_editor .page .inner > .meta {
+    font-size: 9pt;
+    margin-top: 1.5em;
+    color: #999;
+    display: flex;
+    gap: 1em;
+}
+
+.page_editor .page .inner > .meta > span:not(:first-child)::before {
+    content: '\00b7';
+    margin-right: 1em;
+    font-weight: 900;
+}

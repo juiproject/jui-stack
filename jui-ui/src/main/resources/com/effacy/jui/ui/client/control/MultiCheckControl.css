@@ -1,0 +1,123 @@
+.component {
+	
+}
+
+.component.tight {
+	padding-top: 0;
+}
+
+.component .inner {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75em;
+	color: var(--jui-ctl-text);
+}
+
+.component .inner .item {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+
+.component .inner .item.reverse {
+	flex-direction: row-reverse;
+}
+
+.component .inner .item span {
+	user-select: none;
+	font-weight: 500;
+}
+
+.component .inner .item.bold span {
+	font-weight: 600;
+}
+
+.component .inner .item span.spacer {
+	display: inline-block;
+	width: 1em;
+}
+
+.component .inner .item.expand span.spacer {
+	flex-grow: 1;
+}
+
+.component .inner .item label {
+	user-select: none;
+	cursor: pointer;
+	margin-top: 1px;
+	font-weight: 500;
+}
+
+.component .inner .item.bold label {
+	font-weight: 600;
+}
+
+.component .inner .item div.toggle {
+	display: flex;
+	align-items: center;
+	border-radius: 20px;
+	background: var(--jui-ctl-bg-offset);
+	padding: 2px;
+}
+
+.component .inner .item div.toggle label {
+	margin: 0;
+	display: block;
+	position: relative;
+	flex: 1;
+	text-align: center;
+	padding: 1px 8px;
+	border-left: none;
+	border-radius: 20px;
+}
+
+.component .inner .item div.toggle label.first {
+}
+
+.component .inner .item div.toggle label.last {
+}
+
+.component .inner .item div.toggle label.active {
+	background: var(--jui-ctl-active);
+}
+
+.component .inner .item div.toggle label input {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	opacity: 0;
+	width: 1px;
+	height: 1px;
+}
+
+.component .inner .item div.toggle label span {
+	font-weight: 600;
+	font-size: 0.85em;
+	color: #fff;
+}
+
+.component.invalid .inner input:focus {
+	box-shadow: 0 0 3px 2px var(--jui-ctl-err-focus-offset);
+}
+
+.component.focus .item div.toggle {
+	border-color: var(--jui-ctl-focus);
+    box-shadow: 0 0 0 2px var(--jui-ctl-focus-offset);
+}
+
+.component.waiting .inner input {
+	animation: eff-waiting-bg 1s infinite;
+	border: transparent;
+}
+
+.component.waiting .inner * {
+	visibility: hidden;
+}
+
+.active {
+	
+}
+
+.read_only {
+	
+}

@@ -1,0 +1,63 @@
+.component {
+    display: inline-block;
+}
+
+.component * {
+    color: var(--jui-text-link);
+}
+
+.component .outer {
+	display: inline-block;
+    padding: 0 0.5em;
+}
+
+.component a {
+    position: relative;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	text-decoration: none;
+	outline: none;
+	cursor: pointer;
+    gap: 0.5em;
+}
+
+.component a:hover span {
+	text-decoration: underline;
+}
+
+.component.icon_right a {
+	flex-direction: row-reverse;
+}
+
+.component a i {
+	display: none;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	margin-top: -0.5em;
+	margin-left: -0.5em;
+	font-size: 1.4em;
+}
+
+.component.waiting a {
+	opacity: 0.6;
+	cursor: default;
+}
+
+.component.waiting a span {
+	visibility: hidden;
+}
+
+.component.waiting a em {
+	visibility: hidden;
+}
+
+.component.waiting a i {
+	display: block;
+}
+
+.component.disabled * {
+    color: var(--jui-state-disabled) !important;
+    text-decoration: none !important;
+}

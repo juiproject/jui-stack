@@ -1,0 +1,470 @@
+.lessons .list_items input[type="text"] {
+    font-size: 14px;
+    line-height: 20px;
+    font-family: "Nunito Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-style: 400;
+    padding: 0.75rem 0;
+    line-height: 1.5rem !important;
+    border: none;
+    border-radius: 0;
+    box-sizing: border-box;
+    color: #333;
+    outline: none;
+}
+
+.lessons .pin_button {
+    width: 3rem;
+    height: 3rem;
+    background: transparent;
+    border: none;
+    text-align: center;
+    transition: all 200ms ease-in;
+    color: #eee;
+    font-size: 16px;
+    line-height: 3rem;
+    outline: none;
+}
+  
+.lessons .pin_button:hover {
+    color: #2cc5d2;
+}
+
+.lessons .pin_button:focus {
+    outline-color: transparent;
+}
+  
+.lessons pin_button:active {
+    color: #555;
+}
+
+.lessons .checkbox {
+    display: inline-block;
+    height: 3rem;
+    position: relative;
+    vertical-align: middle;
+    width: 44px;
+}
+  
+.lessons .checkbox input[type="checkbox"] {
+    font-size: 1em;
+    visibility: hidden;
+}
+  
+.lessons .checkbox input[type="checkbox"] + span:before {
+    position: absolute;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    left: 50%;
+    width: 0.85em;
+    height: 0.85em;
+    transform: translate3d(-50%, -50%, 0);
+    background: transparent;
+    box-shadow: #2cc5d2 0 0 0 1px inset;
+    content: "";
+    display: block;
+}
+  
+.lessons .checkbox input[type="checkbox"]:checked + span:before {
+    font-size: 16px;
+    line-height: 24px;
+    box-shadow: none;
+    color: #2cc5d2;
+    margin-top: -1px;
+    font-family: "percolate";
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    content: "\e65e";
+}
+
+.lessons .list_item {
+    font-size: 14px;
+    line-height: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    height: 3rem;
+    width: 100%;
+    background: white;
+    transition: all ease-out 150ms;
+}
+
+.lessons .list_item .title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.lessons .list_item input[type="text"] {
+    background: transparent;
+    width: 100%;
+}
+
+.lessons .list_item input[type="text"]:focus {
+    cursor: text;
+}
+
+.lessons .list_item .fa-star {
+    cursor: pointer;
+}
+
+.lessons .list_item.TASK_PINNED .fa-star {
+    color: #2cc5d2;
+}
+
+.lessons .list_item.TASK_ARCHIVED input[type="text"] {
+    color: #a0aec0;
+    text-decoration: line-through;
+}
+
+.lessons .list_item:hover {
+    background-image: linear-gradient(to bottom, #e5f9f7 0%, #f0fffd 100%);
+}
+
+.lessons .list_item:hover .checkbox {
+    cursor: pointer;
+}
+
+.lessons .list_item + .list_item {
+    border-top: 1px solid #f0f9fb;
+}
+
+.lessons .list_item.checked input[type="text"] {
+    color: #ccc;
+    text-decoration: line-through;
+}
+
+.lessons .list_item.checked .delete_item {
+    display: inline-block;
+}
+
+.lessons .loading_item {
+    height: 3rem;
+    width: 100%;
+    background: white;
+    display: flex;
+    align-items: center;
+    line-height: 1rem;
+    padding-left: 16px;
+}
+  
+.lessons .loading_item .glow_checkbox,
+.lessons .loading_item .glow_text span {
+    animation: glow 1.5s ease-in-out infinite;
+    background: #eee;
+    color: transparent;
+    cursor: progress;
+    display: inline-block;
+}
+  
+.lessons .loading_item .glow_checkbox {
+    margin-right: 16px;
+    width: 12px;
+    height: 12px;
+}
+  
+.lessons .loading_item + .loading_item {
+    border-top: 1px solid #f0f9fb;
+}
+
+.lessons .list_items {
+    position: relative;
+    background: white;
+    min-height: 288px;
+}
+  
+.lessons .list_items .select_placeholder {
+    border: none;
+    width: 48px;
+}
+
+.lessons .wrapper_message {
+    position: absolute;
+    top: 45%;
+    right: 0;
+    bottom: auto;
+    left: 0;
+    width: auto;
+    height: auto;
+    transform: translate3d(0, -50%, 0);
+    text-align: center;
+}
+  
+.lessons .wrapper_message [class^="icon-"],
+.lessons .wrapper_message [class*=" icon-"] {
+    font-size: 48px;
+    line-height: 56px;
+    color: #2cc5d2;
+    display: block;
+}
+  
+.lessons .wrapper_message .title_message {
+    font-size: 16px;
+    line-height: 24px;
+    font-family: "Nunito Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 800;
+    color: #4a5568;
+}
+  
+.lessons .wrapper_message .subtitle_message {
+    font-size: 14px;
+    line-height: 20px;
+    color: #4a5568;
+}
+
+.lessons .action_panel {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 1em;
+    box-shadow: 0 0 10px #eee;
+    display: flex;
+    flex-direction: column;
+}
+
+.lessons .action_panel h5 {
+    display: flex;
+    flex-direction: row;
+    gap: 1em;
+    margin: 0;
+    padding: 0;
+    font-size: 1.2em;
+}
+
+.lessons .action_panel h5 span {
+    flex-grow: 1;
+}
+
+.lessons .action_panel p {
+    margin: 0.25em 0 1em 0;
+    flex-grow: 1;
+}
+
+/****************************************
+* Lesson 1
+*/
+
+.lessons .lesson1_mystyle {
+    display: flex;
+    flex-direction: row;
+    gap: 1em; 
+    align-items: baseline;
+    margin: 0.25em 0;
+    font-weight: 600;
+}
+
+.lessons .l1c {
+    position: relative;
+    cursor: pointer;
+}
+
+.lessons .l1c .l1c_activator {
+    display: flex;
+    gap: 0.5em;
+    align-items: center;
+}
+
+.lessons .l1c .l1c_selector {
+    display: none;
+    position: absolute;
+    background-color: #fff;
+    padding: 1em;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    bottom: 2em;
+}
+
+/* This is for example 3 */
+.lessons .l1c.l1c_open .l1c_selector {
+    display: block;
+}
+
+/* This is for example 4 */
+.lessons .l1c .l1c_open .l1c_selector {
+    display: block;
+}
+
+.lessons .l1c .l1c_selector ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.lessons .l1c .l1c_selector ul li {
+    padding: 0.25em 0.5em;
+}
+
+.lessons .l1c .l1c_selector ul li:hover {
+    background-color: #eee;
+}
+
+/****************************************
+* Lesson 3
+*/
+
+.lessons .lesson3_navigation > .wrap {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.lessons .lesson3_navigation > .wrap > header {
+    padding: 1em 2em;
+}
+
+.lessons .lesson3_navigation > .wrap > header .crumb {
+    margin-bottom: 0.5em;
+    display: flex;
+    align-items: center;
+    position: relative;
+    gap: 0.25em;
+    left: -.5em;
+}
+
+.lessons .lesson3_navigation > .wrap > header .crumb em {
+    font-size: 0.7em;
+}
+
+.lessons .lesson3_navigation > .wrap > header .crumb span {
+    font-weight: 500;
+    display: inline-block;
+    padding: 0.25em 0.75em;
+    border-radius: 12px;
+}
+
+.lessons .lesson3_navigation > .wrap > header .crumb span:first-child:hover {
+    background: #f1f1f1;
+    cursor: pointer;
+}
+
+.lessons .lesson3_navigation > .wrap > header h2 {
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    gap: 0.25em;
+    align-items: center;
+}
+
+.lessons .lesson3_navigation > .wrap > header h2 a {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25em;
+    height: 1.25em;
+    border-radius: 100%;
+    color: var(--jui-btn-bg);
+    position: relative;
+    left: -.25em;
+}
+
+.lessons .lesson3_navigation > .wrap > header h2 a:hover {
+    color: #fff;
+    background-color: var(--jui-btn-bg);
+}
+
+.lessons .lesson3_navigation > .wrap > header h2 a em {
+    font-size: 0.7em;
+}
+
+.lessons .lesson3_navigation > .wrap > .body {
+    display: none;
+    flex-grow: 1;
+    margin: 0 2em;
+}
+
+.lessons .lesson3_navigation > .wrap > .card {
+    flex-grow: 1;
+    background: #fff;
+    margin: 0 2em;
+    border-radius: 1em;
+    padding: 2em;
+    border: 1px solid #f1f1f1;
+}
+
+.lessons .lesson3_navigation > .wrap > .card > .wrap {
+    display: flex;
+    gap: 1em;
+    flex-wrap: wrap;
+}
+
+.lessons .lesson3_navigation > .wrap > .card > .wrap > div {
+    height: 125px;
+    max-height: 125px;
+    width: 250px;
+    min-width: 250px;
+    max-width: 250px;
+    cursor: pointer;
+    padding: 1em;
+    overflow-y: auto;
+}
+
+.lessons .lesson3_navigation > .wrap > .card > .wrap > div:hover {
+    background-color: #f1f1f1;
+    border-radius: 1em;
+}
+
+.lessons .lesson3_navigation > .wrap > .card > .wrap > div > h3 {
+    margin: 0;
+    font-weight: 500;
+}
+
+.lessons .lesson3_navigation.body > .wrap > .body {
+    display: unset;
+}
+
+.lessons .lesson3_navigation.body > .wrap > .card {
+    display: none;
+}
+
+/****************************************
+* Lesson 4
+*/
+
+.lessons .lesson4.panel {
+    padding: 0 2em;
+}
+
+
+.lessons .lesson4.panel > div {
+    display: flex;
+    gap: 1em;
+    align-items: end;
+}
+
+.lessons .lesson4.stack {
+    padding: 0 2em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+}
+
+.lessons .lesson4.gap {
+    gap: 1.5em;
+}
+
+.lessons .lesson4.rating {
+    display: flex;
+    gap: 0.25em;
+}
+
+.lessons .lesson4.rating > div {
+    width: 2em;
+    height: 2em;
+    border: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.lessons .lesson4.rating > div:hover {
+    background-color: #f1f1f1;
+}
+
+.lessons .lesson4.rating > div.selected {
+    background-color: #ccc;
+}

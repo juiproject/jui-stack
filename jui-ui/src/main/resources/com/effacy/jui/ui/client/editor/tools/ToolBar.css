@@ -1,0 +1,117 @@
+.toolbar {
+    font-size: 10pt;
+    display: flex;
+    gap: 0.25em;
+    align-items: center;
+}
+
+/********************************
+* Button
+*/
+
+.toolbar > .tool.button {
+    width: 2em;
+    height: 2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.toolbar > .tool.button:not(.inactive):hover {
+    background-color: #eee !important;
+    border: 1px solid #e1e1e1;
+}
+
+.toolbar > .tool.button.inactive {
+    cursor: default;
+}
+
+.toolbar > .tool.button.inactive em {
+    color: #ccc;
+}
+
+.toolbar > .tool.button:not(.inactive).applied {
+    background-color:#cdefff;
+}
+
+/********************************
+* Selector
+*/
+
+.toolbar > .tool.selection {
+    height: 2em;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    border: 1px solid transparent;
+    padding: 0 0.5em;
+    position: relative;
+}
+
+.toolbar > .tool.selection:not(.inactive):hover {
+    background-color: #eee !important;
+    border: 1px solid #e1e1e1;
+}
+
+.toolbar > .tool.selection.inactive {
+    cursor: default;
+    color: #ccc;
+}
+
+.toolbar > .tool.selection > .selection_selector {
+    display: flex;
+    gap: 0.5em;
+    align-items: center;
+}
+
+.toolbar > .tool.selection > .selection_selector span {
+    text-wrap: nowrap;
+}
+
+.toolbar > .tool.selection > .selection_selector em {
+    position: relative;
+    top: 2px;
+}
+
+.toolbar > .tool.selection > .selection_popup {
+    display: none;
+    position: absolute;
+    z-index: 1;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 0.5em;
+    top: 100%;
+    box-shadow: 0 0 5px #ccc;
+    flex-direction: column;
+    gap: 0.25em;
+}
+
+.toolbar > .tool.selection.open > .selection_popup {
+    display: flex;
+}
+
+.toolbar > .tool.selection > .selection_popup > div {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5em;
+    cursor: pointer;
+    padding: 0.25em 0.5em;
+    align-items: center;
+}
+
+.toolbar > .tool.selection > .selection_popup > div:hover {
+    background-color: #eee;
+    border-radius: 3px;
+}
+
+.toolbar > .tool.selection > .selection_popup > div > em {
+    width: 1.5em;
+}
+
+.toolbar > .tool.selection > .selection_popup > div > span {
+    text-wrap: nowrap;
+}

@@ -1,0 +1,47 @@
+.component {
+    --cpt-trisplitpanel-bg: var(--jui-color-aux-white);
+    --cpt-trisplitpanel-top-bg: var(--cpt-trisplitpanel-bg);
+    --cpt-trisplitpanel-bottom-bg: var(--cpt-trisplitpanel-bg);
+	--cpt-trisplitpanel-separator: #ccc;
+}
+
+.component {
+	display: flex;
+    flex-direction: column;
+	overflow: hidden;
+    background-color: var(--cpt-trisplitpanel-bg);
+}
+
+.component.scrollable {
+	overflow: auto;
+    height: 100%;
+}
+
+.component > .outer {
+	display: contents; /* Effectively ignores the outer */
+}
+
+.component > .outer > .contents {
+    flex-grow: 1;
+}
+
+.component.scrollable > .outer > .contents {
+	overflow-y: auto;
+}
+
+.component > .outer > .top {
+    background-color: var(--cpt-trisplitpanel-top-bg);
+}
+
+.component > .outer > .bottom {
+    background-color: var(--cpt-trisplitpanel-bottom-bg);
+}
+
+.component.separator > .outer > .contents {
+	border-top: 1px solid var(--cpt-trisplitpanel-separator);
+}
+
+.component.separator > .outer > .contents {
+	border-bottom: 1px solid var(--cpt-trisplitpanel-separator);
+}
+

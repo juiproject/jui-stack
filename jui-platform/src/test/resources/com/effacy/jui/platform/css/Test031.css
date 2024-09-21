@@ -1,0 +1,10 @@
+.cpt_survey .outer {
+    display: flex;
+    flex-direction: row;
+}
+
+@media screen and (max-width: 775px) {
+    .cpt_survey .outer {
+        flex-direction: column;
+    }
+}

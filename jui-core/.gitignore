@@ -1,0 +1,6 @@
+/target/
+/target-ide/
+/.classpath
+/.flattened-pom.xml
+/.project
+/.settings/

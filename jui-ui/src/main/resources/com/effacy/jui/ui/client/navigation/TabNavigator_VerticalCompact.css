@@ -1,0 +1,78 @@
+@def panelBorderColor #e1e1e1;
+@def panelBGColor #fff;
+@def activeBorderColor #757575;
+@def activeBGColor #f1f1f1;
+@def hoverBGColor #f6f6f6;
+@def textColor #1A2F45;
+@def marginTop 0.5em;
+@def marginOffset 8px;
+@def marginOffsetNegative -8px;
+@def fontSize 1.1em;
+
+.component .tabs  {
+  height: 100%;
+  width: 4em;
+}
+
+.component .tabs >div {
+  height: 100%;
+}
+
+.component .tabs  ul {
+  position: absolute;
+  width: 4em;
+  height: 100%;
+  border-right: 1px solid panelBorderColor;
+  background: panelBGColor;
+  z-index: 100000;
+  padding-top: marginTop;
+  transition: width 0.2s;
+}
+
+.component .tabs  ul li {
+  padding: 1em 0;
+  color: textColor;
+  overflow: hidden;
+  margin: 0 0 marginOffset marginOffset;
+  border-radius: 8px 0 0 8px;
+}
+
+.component .tabs  ul li:hover {
+  background: hoverBGColor;
+}
+
+.component .tabs  ul li div {
+  margin-left: marginOffsetNegative;
+  cursor: pointer;
+}
+
+.component .tabs  ul li div em {
+  width: 4em;
+  text-align: center;
+}
+
+.component .tabs  ul li div em::before {
+  font-size: fontSize;
+}
+
+.component .tabs  ul li:hover div em {
+}
+
+.component .tabs  ul li div span {
+  font-size: fontSize;
+  padding-right: 1em;
+}
+
+.component .tabs  ul li.active {
+  border-right: 4px solid activeBorderColor;
+  background: activeBGColor;
+}
+
+.component .tabs :hover {
+  overflow: show;
+}
+
+.component .tabs :hover ul {
+  width: 15em;
+  transition-delay: 0.2s;
+}

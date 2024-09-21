@@ -1,0 +1,220 @@
+.component {
+    display: flex;
+    flex-direction: column;
+    padding: 2em;
+}
+
+.component .header {
+    padding: 0 1em;
+    display: flex;
+    gap: 2em;
+}
+
+.component .header .left {
+    flex-grow: 1;
+}
+
+.component .header .right {
+    border: 1px solid #eee;
+    border-radius: 5px;
+    background: #fafafa;
+    min-width: 30%;
+    padding: 2em;
+}
+
+.component .header h5 {
+    font-size: 2em;
+    font-weight: 500;
+    margin: 0;
+}
+
+.component .header h5 span {
+    font-size: 0.35em;
+    text-transform: uppercase;
+    position: relative;
+    top: -16px;
+    margin-left: 0.75em;
+    background: #f1f1f1;
+    padding: 3px 7px;
+    border-radius: 4px;
+    font-weight: 400;
+    color: #666;
+}
+
+.component .header div.code {
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+.component .header div.code em {
+    color: #ccc;
+    margin-left: 0.5em;
+    top: -0.25em;
+    position: relative;
+    cursor: pointer;
+}
+
+.component .header p {
+    color: #666;
+    margin: 0.75em 0;
+}
+
+.component .body {
+    flex-grow: 1;
+}
+
+.component .body .table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 1em;
+}
+
+.component .body .table th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.95em;
+    border-bottom: 1px solid #ccc;
+    border-top: 1px solid #ccc;
+    background: #fafafa;
+    color: #666;
+    padding: 0.5em 1em;
+}
+
+.component .body .table tr {
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.component .body .table th.value {
+    width: 40%;
+}
+
+.component .body .table td {
+    color: #666;
+    padding: 0.5em 1em;
+    vertical-align: text-top;
+}
+
+.component .body .table td.option {
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+.component .body .table td.option span {
+    font-size: 0.9em;
+    position: relative;
+    margin-left: 4px;
+    top: -3px;
+    border-radius: 4px;
+    padding: 1px 4px;
+    background: #d4fad4;
+    color: #008000;
+    font-weight: 600;
+}
+
+.component .body .table td.required {
+    font-weight: 600;
+    color: #333;
+}
+
+.component .body .table td div.code {
+    font-family: monospace;
+    font-size: 0.9em;
+    color: #333;
+}
+
+.component .body .table td.value {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+}
+
+.component .body .table td.value > div {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5em;
+}
+
+.component .body .table td.value > div:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.component .body .table td.value td {
+    padding: 0.25em 1em;
+}
+
+.component .body .table td.value .type {
+    font-family: monospace;
+    color: #4d4fb5;
+}
+
+.component .body .table td.value td.type {
+    padding-left: 0;
+    font-size: 0.9em;
+    width: 40%;
+    min-width: 14em;
+}
+
+.component .body .table td.value td.description {
+    padding-right: 0;
+}
+
+.component .body .table td.value .values {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+}
+
+.component .css {
+    display: flex;
+    flex-direction: row;
+    gap: 1em;
+    border: 1px solid #eee;
+    border-radius: 5px;
+    padding: 1em 1em 1em 5.5em;
+    background: #fafafa;
+    position: relative;
+    overflow: hidden;
+}
+
+.component .css::before {
+    content: 'css files';
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: #999;
+    text-transform: uppercase;
+    font-size: 0.7em;
+    font-weight: 600;
+    padding: 4px;
+    border-bottom: 1px solid #eee;
+    border-right: 1px solid #eee;
+    border-radius: 0 0 5px 0;
+    background: #fefefe;
+}
+
+.component .css span {
+    font-family: monospace;
+}
+
+.component .value .css {
+    font-size: 0.9em;
+}
+
+.component .gallery .wrapper {
+    display: grid;
+    grid-template-columns: 25% 30% auto;
+    gap: 2em;
+    border-bottom: 1px solid #eee;
+    margin-top: 1em;
+    padding-bottom: 1em;
+}
+
+.component .gallery .wrapper .code {
+    font-family: monospace;
+    font-size: 0.85em;
+    white-space: pre;
+    padding: 1em;
+    border: 1px solid #eee;
+    border-radius: 5px;
+    background: #fafafa;
+}

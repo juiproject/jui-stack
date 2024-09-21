@@ -1,0 +1,13 @@
+.component .outer {
+	background: #f1f1f1;
+	padding: 2em;
+	border-radius: 5px;
+}
+
+.component .outer button {
+	background-color: #7272d3;
+	color: #fff;
+	border: none;
+	border-radius: 5px;
+    padding: 5px 11px;
+}

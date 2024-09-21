@@ -1,0 +1,32 @@
+.component {
+  height: 100%;
+}
+
+.component .wrap {
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+}
+
+.component .header {
+  
+}
+
+.component .body {
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+/*************************************8
+* Horizontal layout.
+*/
+.component .wrap.horizontal {
+  flex-direction: column;
+}
+
+/*************************************8
+* Vertical layout.
+*/
+.component .wrap.vertical {
+  flex-direction: row;
+}

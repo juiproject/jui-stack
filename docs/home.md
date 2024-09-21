@@ -1,0 +1,3 @@
+# Documentation
+
+?> This documentation is intended to be read in conjunction with the **playgound** (a demonstration application built using JUI and when run locally is accessible at [http://localhost:8080/playground](http://localhost:8080/playground)). References will be frequently made to, and sample code will be drawn from, the **playground**. For instructions on how to run the playground refer to the `README.md` file in the `jui-playground` project (the same project that hosts this documentation set). Also assumed is the use of Maven (though this is more a matter of convenience and brevity).

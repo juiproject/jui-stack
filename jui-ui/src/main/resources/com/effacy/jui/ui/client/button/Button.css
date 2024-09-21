@@ -1,0 +1,143 @@
+.component {
+    --cpt-btn-height: var(--jui-ctl-height);
+    --cpt-btn-bg: var(--jui-btn-bg);
+    --cpt-btn-bg-hover: var(--jui-btn-bg-hover);
+    --cpt-btn-border: var(--jui-btn-border);
+	--cpt-btn-text: var(--jui-btn-text);
+    --cpt-btn-disabled-bg: var(--jui-color-aux-white);
+    --cpt-btn-disabled-border: var(--jui-state-disabled);
+    --cpt-btn-disabled-text: var(--jui-state-disabled);
+    --cpt-btn-disabled-opacity: 1;
+}
+
+.component {
+	position: relative;
+	display: inline-flex;
+	border-radius: var(--jui-btn-border-radius);
+	border: 1px solid var(--cpt-btn-border);
+    overflow: hidden;
+    margin: 2px 4px;
+    align-items: center;
+}
+
+.component .outer {
+	margin: 0;
+	padding: 3px 2px;
+	background: var(--cpt-btn-bg);
+    width: 100%;
+    height: var(--cpt-btn-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.component .outer:hover {
+	background: var(--cpt-btn-bg-hover);
+}
+
+.component.disabled {
+	border-color: var(--cpt-btn-disabled-border) !important;
+}
+
+.component.disabled * {
+    cursor: not-allowed !important;
+}
+
+.component.disabled .outer {
+	background: var(--cpt-btn-disabled-bg) !important;
+}
+
+.component.waiting .outer {
+	background: var(--jui-btn-bg-disabled) !important;
+}
+
+.component a {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+    justify-content: center;
+	position: relative;
+	padding-left: 1em;
+	padding-right: 1em;
+	text-align: center;
+	text-decoration: none;
+	outline: none;
+	cursor: pointer;
+}
+
+.component.icon_right a {
+	flex-direction: row-reverse;
+}
+
+.component a * {
+	color: var(--cpt-btn-text);
+}
+
+.component.disabled a * {
+    color: var(--cpt-btn-disabled-text);
+}
+
+.component a span {
+	line-height: 1.8em;
+	font-size: 1em;
+	white-space: nowrap;
+	font-weight: 400;
+	-webkit-font-smoothing: auto;
+}
+
+.component a em {
+	margin-right: 0.7em;
+	margin-left: -0.5em;
+	text-shadow: none;
+}
+
+.component.icon_right a em {
+	margin-left: 0.7em;
+	margin-right: -0.5em;
+}
+
+.component a i {
+	display: none;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	margin-top: -0.5em;
+	margin-left: -0.5em;
+	font-size: 1.4em;
+}
+
+.component.waiting {
+	border-color: var(--jui-btn-bg-disabled);
+}
+
+.component.waiting a {
+	opacity: 0.6;
+	cursor: default;
+}
+
+.component.waiting a span {
+	visibility: hidden;
+}
+
+.component.waiting a em {
+	visibility: hidden;
+}
+
+.component.waiting a i {
+	display: block;
+    color: var(--jui-btn-bg-disabled-offset);
+}
+
+.component.disabled a {
+	opacity: var(--cpt-btn-disabled-opacity);
+	cursor: default;
+}
+
+.component.focus .outer {
+	border-color: transparent !important;
+}
+
+.component.focus {
+	border-color: var(--jui-state-focus);
+	box-shadow: 0 0 0 2px var(--jui-state-focus-offset);
+}

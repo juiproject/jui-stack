@@ -1,0 +1,16 @@
+.component > .wrap > .header > .crumb {
+    margin-bottom: 0;
+}
+
+.component > .wrap > .header .crumb > span > em {
+    display: inline-block;
+}
+
+.component > .wrap > .header > h2 {
+    display: none;
+}
+
+.component > .wrap > .header > .crumb > span:last-child {
+    font-size: 1.2em;
+    font-weight: 500;
+}

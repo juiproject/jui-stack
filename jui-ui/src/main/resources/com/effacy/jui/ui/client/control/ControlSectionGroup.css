@@ -1,0 +1,122 @@
+.component .wrapper {
+	
+}
+
+.component h6.scope {
+  font-size: 1.2em;
+  color: var(--jui-text);
+  padding-right: 5px;
+}
+
+.component.disabled h6.scope {
+  color: colorDisabled;
+}
+
+.component .col1 {
+  
+}
+
+.component .col1 h5 {
+    margin: 0 0 1em 0;
+    font-size: 1.2em;
+    font-weight: 600;
+}
+
+.component .col2 {
+}
+
+.component .col2 .inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5em;
+}
+
+.component .row {
+  min-height: 10px;
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+}
+
+.component .row .cell {
+}
+
+.component .row .cell .cell_guidance {
+	color: #aaa;
+    font-size: 0.8em;
+    margin-top: 0.5em;
+    font-weight: 300;
+}
+
+.component .row.hide_row {
+	display: none;
+}
+
+.component .row.hide_label {
+  align-items: center;
+}
+
+.component label.scope {
+  color: var(--jui-text);
+  margin-bottom: 0.5em;
+  font-size: 0.95em;
+  display: block;
+  min-height: 1.35em;
+  font-weight: 500;
+}
+
+.component label.scope.required {
+  font-weight: 600;
+}
+
+
+.component label.scope.required::after {
+	content: "*";
+    padding: 2px;
+}
+
+
+.component label.scope.error {
+    color: var(--jui-text-error);
+}
+
+.component.disabled label.scope {
+    color: var(--jui-text-disabled);
+}
+
+.component label.scope.disabled {
+	opacity: 0.4;
+}
+
+.component .hide_label label.scope {
+  display: none;
+}
+
+.component .label_guidance {
+	font-size: 0.85em;
+    margin-block-start: -0.25em;
+    margin-block-end: 0.5em;
+}
+
+.component .attachment {
+  
+}
+
+.component ul.errors {
+	margin: 0.25em 0 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--jui-text-error);
+    font-weight: 500;
+    font-size: 0.9em;
+}
+
+.component div.guidance {
+	color: var(--jui-text-subtle);
+    margin-top: 0.5em;
+    font-size: 0.95em;
+}
+
+.component .hide {
+    display: none !important;
+}

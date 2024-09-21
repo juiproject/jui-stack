@@ -1,0 +1,123 @@
+.component {
+    --cpt-tabbedpanel-warn: var(--jui-tabset-warn);
+    --cpt-tabbedpanel-outline: var(--jui-tabset-line);
+    --cpt-tabbedpanel-outline-active: var(--jui-tabset-line-light);
+    --cpt-tabbedpanel-outline-shadow: var(--jui-tabset-shadow);
+    --cpt-tabbedpanel-text: var(--jui-tabset-text);
+    --cpt-tabbedpanel-text-active: var(--jui-tabset-text);
+    --cpt-tabbedpanel-icon: var(--jui-tabset-icon);
+    --cpt-tabbedpanel-bg: transparent;
+    --cpt-tabbedpanel-bg-tab-inactive: var(--jui-tabset-bg-03);
+    --cpt-tabbedpanel-bg-tab-active: var(--jui-tabset-bg-01);
+    --cpt-tabbedpanel-bg-tab-hover: var(--jui-tabset-bg-03);
+    --cpt-tabbedpanel-height: 40px;
+    --cpt-tabbedpanel-gap: 2px;
+    --cpt-tabbedpanel-radius: var(--jui-border-radius);
+    --cpt-tabbedpanel-indicator: #fff;
+    --cpt-tabbedpanel-indicator-bg: var(--jui-color-secondary30);
+}
+
+.component {
+    height: 100%;
+}
+  
+.component > .wrap {
+    height: 100%;
+    display: flex;
+    align-items: stretch;
+}
+  
+.component > .wrap > .tabs {
+    position: relative;
+    background-color: var(--cpt-tabbedpanel-bg);
+}
+
+.component > .wrap > .body {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+/*************************************
+* Horizontal layout.
+*/
+.component > .wrap.horizontal {
+    flex-direction: column;
+}
+
+/*************************************
+* Vertical layout.
+*/
+.component > .wrap.vertical {
+    flex-direction: row;
+}
+
+/*************************************
+* Tabs layout.
+*/
+.component .tabs .group {
+    box-sizing: border-box;
+}
+
+.component .tabs .expander {
+    flex-grow: 1;
+}
+
+.component .tabs ul {
+    list-style: none;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+.component .tabs ul li {
+    cursor: pointer;
+    position: relative;
+}
+
+.component .tabs ul li div {
+    position: relative;
+    white-space: nowrap;
+}
+
+.component .tabs ul li.disabled {
+    display: none !important;
+}
+
+.component .tabs ul li div i {
+    display: none;
+    font-style: normal;
+    margin-left: 1em;
+    font-size: 0.65em;
+    color: var(--jui-color-aux-white);
+    background: var(--cpt-tabbedpanel-warn);
+    padding: 0 0.5em;
+    border-radius: 100%;
+    position: relative;
+    top: -0.1em;
+}
+
+.component .tabs ul li.count div i {
+    display: inline-block;
+}
+
+.component .tabs ul li>strong {
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    font-size: 0.8em;
+    font-weight: 500;
+    padding: 0em 4px;
+    border-radius: 4px;
+    background-color: var(--cpt-tabbedpanel-indicator-bg);
+    color: var(--cpt-tabbedpanel-indicator);
+}
+
+.component .tabs .header {}
+
+.component .tabs .first {}
+
+.component .tabs .silent {}
+
+.component .tabs.collapse {}
+
+.component .tabs .active {}

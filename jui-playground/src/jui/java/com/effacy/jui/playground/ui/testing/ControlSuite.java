@@ -15,11 +15,15 @@
  ******************************************************************************/
 package com.effacy.jui.playground.ui.testing;
 
+import java.util.List;
+
 import com.effacy.jui.core.client.component.layout.VertLayoutCreator;
 import com.effacy.jui.core.client.dom.css.Insets;
 import com.effacy.jui.core.client.dom.css.Length;
+import com.effacy.jui.core.client.store.ListPaginatedStore;
 import com.effacy.jui.platform.util.client.ListSupport;
 import com.effacy.jui.platform.util.client.Logger;
+import com.effacy.jui.platform.util.client.TimerSupport;
 import com.effacy.jui.ui.client.control.Controls;
 import com.effacy.jui.ui.client.control.MultiSelectionControl.Config.SelectionStyle;
 import com.effacy.jui.ui.client.panel.Panel;
@@ -59,12 +63,20 @@ public class ControlSuite extends Panel {
             }));
         }));
         
-
         add (Controls.selector (cfg -> {
             cfg.testId ("selector-static-1");
             cfg.width (Length.em (12));
             cfg.allowEmpty ();
         }, "Value 1", "Value 2", "Value 3", "Value 4", "Value 5"));
+
+        add (Controls.<SampleRecordStore.SampleRecord> selector (cfg -> {
+            cfg.testId ("selector-static-2");
+            cfg.width (Length.em (12));
+            cfg.allowEmpty ();
+            // cfg.allowSearch (false);
+            cfg.store (new SampleRecordStore());
+            cfg.labelMapper (r -> r.name);
+        }));
 
         add (Controls.multiselector (cfg -> {
             cfg.testId ("multiselector-static-1");
@@ -76,4 +88,45 @@ public class ControlSuite extends Panel {
         }, "Value 1", "Value 2", "Value 3", "Value 4", "Value 5", "Value 6", "Value 7", "Value 8"));
     }
 
+    /**
+     * Test store with delay.
+     */
+    public static class SampleRecordStore extends ListPaginatedStore<SampleRecordStore.SampleRecord> {
+
+        public static class SampleRecord {
+    
+            String name;
+    
+            public SampleRecord(String name) {
+                this.name = name;
+            }
+        }
+
+        @Override
+        protected void populate(List<SampleRecord> records) {
+            for (int i = 0; i < 100; i++)
+                records.add (new SampleRecord ("Record " + i));
+        }
+
+        @Override
+        protected void requestLoad(int page, int pageSize, ILoadRequestCallback<SampleRecord> cb) {
+            // Put in a fake delay.
+            super.requestLoad(page, pageSize, new ILoadRequestCallback<SampleRecord>() {
+
+                @Override
+                public void onSuccess(List<SampleRecord> items, int totalAvailable, boolean filtered) {
+                    TimerSupport.timer(() -> {
+                        cb.onSuccess(items, totalAvailable, filtered);
+                    }, 200);
+                }
+
+                @Override
+                public void onFailure(String message) {
+                    cb.onFailure(message);
+                }
+                
+            });
+        }
+
+    }
 }

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-TBD
+This is a (somewhat rewritten) re-constitution of the GWT code server but more narrowly focussed and rebranded so as to facilitate extension to support multuple compliation systems.
 
 ## Documentation
 

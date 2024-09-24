@@ -28,7 +28,6 @@ import com.effacy.jui.core.client.dom.UIEventType;
 import com.effacy.jui.core.client.dom.builder.A;
 import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
 import com.effacy.jui.core.client.dom.builder.Div;
-import com.effacy.jui.core.client.dom.builder.DomBuilder;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.builder.ExistingElementBuilder;
@@ -98,6 +97,12 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
      */
     private ISelectorMenuConfig<V> config;
 
+    /**
+     * Construct with configuration.
+     * 
+     * @param config
+     *               the configuration to use.
+     */
     public SelectorMenu(ISelectorMenuConfig<V> config) {
         this (config, StandardSelectorMenuCSS.instance ());
     }
@@ -123,10 +128,14 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
                 Logger.trace ("[selector-menu]", "{store-changed} size=" + store.size() + " status=" + store.getStatus().name());
             _refresh ();
         }));
-        this.store.addListener (IStoreLoadingListener.create (before -> DomSupport.mask (itemsEl), after -> {
+        this.store.addListener (IStoreLoadingListener.create (before -> {
+            if (config.isUseMaskOnLoad())
+                DomSupport.mask (itemsEl);
+        }, after -> {
             // if (SelectionControl.DebugMode.STORE.set ())
             //     Logger.trace ("[selector-menu]", "{store-afterload} size=" + store.size() + " status=" + store.getStatus().name ());
-            DomSupport.unmask (itemsEl);
+            if (config.isUseMaskOnLoad())
+                DomSupport.unmask (itemsEl);
             if (this.store instanceof IPaginatedStore) {
                 if (IStore.Status.ERROR == this.store.getStatus()) {
                     // This is an error state.
@@ -279,6 +288,9 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
     protected void onItemClick(UIEvent e) {
         Element targetEl = e.getTarget ("li", 4);
         if (targetEl == null)
+            return;
+        // Ignore if loading.
+        if (targetEl.parentElement.classList.contains(styles().list_spinner()))
             return;
         try {
             JQueryElement input = JQuery.$ (targetEl).find ("input");
@@ -519,11 +531,8 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
             }
         }
         if (this.selection.isEmpty()) {
-            // clearSelectionEl.hide ();
             _refresh ();
         } else {
-            // if (config.isAllowEmpty ())
-            //     clearSelectionEl.show ();
             if (store.getStatus () != Status.LOADING)
                 _refresh ();
         }
@@ -597,8 +606,12 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
             buildItem (li, value);
         }
 
+        // Various states.
+        boolean empty = store.empty ();
+        boolean emptyButLoading = empty && (store instanceof IPaginatedStore) && (store.getStatus().is (IStore.Status.UNLOADED, IStore.Status.LOADING));
+
         // Central spinner when the store has no content and is loading (first load).
-        if ((store instanceof IPaginatedStore) && store.empty () && (store.getStatus() == IStore.Status.UNLOADED)) {
+        if (emptyButLoading) {
             items.style (styles ().list_spinner ());
             Li.$ (items).$ (loading -> {
                 Em.$ (loading).style (FontAwesome.sync (FontAwesome.Option.SPIN));
@@ -617,7 +630,7 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
         items.build ();
 
         // Apply empty style if empty.
-        if (store.empty ()) {
+        if (empty && !emptyButLoading) {
             getRoot ().classList.add (styles ().empty ());
         } else {
             getRoot ().classList.remove (styles ().empty ());
@@ -661,7 +674,7 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
      */
     @Override
     protected INodeProvider buildNode(Element el) {
-        return DomBuilder.el (el, root -> {
+        return Wrap.$ (el).$ (root -> {
             Div.$ (root).$ (search -> {
                 search.by ("search");
                 search.style (styles ().search ());
@@ -696,19 +709,10 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
                     });
                 });
             }
-            // Div.$ (root).$ (clear -> {
-            //     clear.by ("clear");
-            //     clear.style (styles ().clear ());
-            //     A.$ (clear)
-            //         .by ("clear_a")
-            //         .on (e -> onClearSelectionClick (e), UIEventType.ONCLICK)
-            //         .text ("clear selection");
-            // });
         }).build (tree -> {
             searchEl = tree.first ("search");
             searchInputEl = (HTMLInputElement) tree.first ("search_input");
             itemsEl = tree.first ("items");
-            // clearSelectionEl = JQuery.$ ((Element) tree.first ("clear"));
             manageFocusEl (searchInputEl);
             manageFocusEl (tree.first ("search_clear"));
             manageFocusEl (tree.first ("clear_a"));
@@ -727,7 +731,6 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
             getRoot ().classList.add (styles ().fixed ());
         if (!config.isAllowSearch () || (!(store instanceof IFilteredStore) && !(store instanceof ISearchStore)))
             getRoot ().classList.add (styles ().search_hide ());
-        // clearSelectionEl.hide ();
         _refresh ();
     }
 

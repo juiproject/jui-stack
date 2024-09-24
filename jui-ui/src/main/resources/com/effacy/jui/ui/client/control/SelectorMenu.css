@@ -130,7 +130,7 @@
     justify-content: center;
     align-items: center;
     color: var(--jui-ctl-text-offset);
-    font-size: 2em;
+    font-size: 1.6em;
 }
 
 .component .list ul li.list_spinner {

@@ -17,9 +17,9 @@ package com.effacy.jui.core.client.control;
 
 import java.util.function.Consumer;
 
-import org.gwtproject.timer.client.Timer;
-
 import com.effacy.jui.platform.util.client.Logger;
+import com.effacy.jui.platform.util.client.TimerSupport;
+import com.effacy.jui.platform.util.client.TimerSupport.ITimer;
 
 /**
  * See {@link DelayedModifiedHandler}.
@@ -29,12 +29,12 @@ public class DelayedValueHandler<V> {
     /**
      * See {@link #threshold(int)}.
      */
-    private int threshold = 300;
+    protected int threshold = 300;
 
     /**
      * See {@link #maxCount(int)}.
      */
-    private int maxCount = 6;
+    protected int maxCount = 6;
 
     /**
      * Internal count of un-fired invocations.
@@ -49,14 +49,7 @@ public class DelayedValueHandler<V> {
     /**
      * The fire delay timer.
      */
-    private Timer timer = new Timer () {
-
-        @Override
-        public void run() {
-            fire ();
-        }
-
-    };
+    protected ITimer timer = TimerSupport.timer(() -> fire ());
 
     /**
      * Receives the value.
@@ -76,6 +69,8 @@ public class DelayedValueHandler<V> {
     /**
      * Assigns the threshold time period to wait after a modification event before
      * firing.
+     * <p>
+     * Cannot be less than 10ms.
      * 
      * @param threshold
      *                  the time delay in ms (default is 300).
@@ -88,20 +83,22 @@ public class DelayedValueHandler<V> {
 
     /**
      * The maximum number of modification events to wait for before firing.
+     * <p>
+     * Cannot be less than 1 or greater than 10.
      * 
      * @param maxCount
      *                 the number of events (default is 6).
      * @return this handler instance.
      */
     public DelayedValueHandler<V> maxCount(int maxCount) {
-        this.maxCount = Math.min (1, Math.max (10, threshold));
+        this.maxCount = Math.max (1, Math.min (10, maxCount));
         return this;
     }
 
     /**
      * Fires a receiver event.
      */
-    private void fire() {
+    protected void fire() {
         try {
             receiver.accept (value);
         } catch (Throwable e) {
@@ -117,12 +114,22 @@ public class DelayedValueHandler<V> {
      *              the value.
      */
     public void modified(V value) {
-        if (timer.isRunning ())
-            timer.cancel ();
+        timer.cancel ();
         this.value = value;
-        if (count++ >= maxCount) {
+        if (count++ >= maxCount)
             fire ();
-        } else
+        else
             timer.schedule (threshold);
     }
+
+    /**
+     * Resets the handler clearing the current count, timer and sets the value to
+     * {@code null}.
+     */
+    public void reset() {
+        count = 0;
+        timer.cancel();
+        value = null;
+    }
+
 }

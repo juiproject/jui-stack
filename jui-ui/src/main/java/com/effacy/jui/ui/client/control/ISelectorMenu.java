@@ -137,6 +137,15 @@ public interface ISelectorMenu<V> extends IComponent {
         default int getSearchBufferTimeThreshold() {
             return 300;
         }
+
+        /**
+         * Determines of the menu should be masked during a load of data from the store.
+         * 
+         * @return {@code true} if it should.
+         */
+        default boolean isUseMaskOnLoad() {
+            return false;
+        }
     }
 
     /**

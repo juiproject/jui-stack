@@ -2,9 +2,19 @@
 
 This project provides the core classes needed to successfully perform a compilation using the desired compilation system and to do so without dependence with respect to the specific system within the rest of the JUI project.
 
-At this stage the only compilation system supported is that from the [GWT project](https://github.com/gwtproject/gwt).
+# Compilation systems
 
-# GWT
+## GWT
+
+Here we describe the GWT compilation system as maintained by the [GWT project](https://github.com/gwtproject/gwt) (this is currently the only compilation system supported):
+
+1. [Description](#description) of the compilation system and how it is incorporated into JUI.
+2. [Upgrading](#upgrading) when a new version of GWT becomes available.
+3. [Modifications](#modifications) that have been made to the core GWT code that has been migrated into this project.
+4. [Pending decoupling work](#pending-decoupling-work) that is ongoing.
+5. [GWT compilation process](#gwt-compilation-process) provides an (rough) outline on how the GWT compiler converts Java to JavaScript.
+
+### Description
 
 The GWT compilation system provides several components: (1) a compiler, (2) a collection of support code for use server-side, (3) a collection of code needed to perform a successful transpilation from Java to Javascript (including emulation of the many of the JDK classes) and (4) a collection of code that can be used to build functional UI's. 
 
@@ -12,7 +22,7 @@ For our purposes we only need (1) and (3). GWT is generally known not for these 
 
 The compiler is bundled into the library `gwt-dev.jar` which is referenced from the **jui-stack** parent pom in the *provided* scope as it is only used for compilation (the IDE, codeserver and maven compiler plugin). This is not bundled into application during runtime (and is not needed).
 
-The code for (3) is bundled into the library `gwt-user.jar`, along with (4). The latter makes up most of the library and is not useful for our purposes (in fact it is quite incompatible). So rather than make use of it we have brought the relevant source code into this project and this resides under the `com.google.gwt` package (both source and resource). In particular this consists of:
+The code for (3) and (4) is bundled into the library `gwt-user.jar`. The latter makes up most of the library and is not useful for our purposes (in fact it is quite incompatible). So rather than make use of it via the library we have brought the relevant source code into this project and this resides under the `com.google.gwt` package (both source and resource). In particular this consists of:
 
 1. Code that is needed to interact with the compiler (mainly oriented around the `GWT` class).
 2. Code that is needed for rebinding.
@@ -20,11 +30,11 @@ The code for (3) is bundled into the library `gwt-user.jar`, along with (4). The
 4. JDK emulation code (mostly resident under resources).
 5. Code that does not have a suitable generalised replacement (limited to `i18n`).
 
-With the exception of the emulation code (which is needed in all cases) it is expected that this code base will be whittled away. The intention is to bring the compiler into this project as well (however this seems to continue to be well maintained so the motivation is not high to do this).
+With the exception of the emulation code (which is needed in all cases) it is expected that this code base will be whittled away.
 
 For now, then, we maintain a depedency only on `gwt-dev.jar` for compilation and some of the independent and decoupled utility libraries from the GWT project.
 
-## Upgrading
+### Upgrading
 
 The code should be upgraded each time there is a GWT release (see the [gwtproject/gwt](https://github.com/gwtproject/gwt) project). This involves:
 
@@ -49,11 +59,9 @@ The simplest approach to this is:
 
 In addition you should ensure that the [Modifications: Emulation](#emulation) changes are also applied, unless they have been addressed otherwise (i.e. fixed or updated from the version of GWT being upgraded to).
 
-## Modifications
+### Modifications
 
-### Emulation
-
-#### `Character`
+#### Emulation
 
 The following has been added to `Character`:
 
@@ -65,11 +73,11 @@ public static boolean isSpaceChar(char c) {
 
 This has not been implemented as part of the standard emulation (stated reason being the need for a suitable unicode mapping). It is needed for `CharacterValidationRule` in **jui-validation** and the version supplied meets these specific needs.
 
-### Scheduler
+#### Scheduler
 
 It appeared that invoking `Scheduler.scheduleFinally(...)` outside of the browser event loop would result in the command only being run on the next event (one than is captured, such as a mouse move). The effect of this was that some script injections were being delayed resulting in initially no CSS being applied. To resolve `Impl.running()` was added to determine if the entry was in process. `Scheduler.scheduleFinally(ScheduledCommand)` was modified to check if we are in enter and if not then to execute the command immediately.
 
-## Decoupling
+### Pending decoupling work
 
 The following activities are pending decoupling from GWT:
 
@@ -80,22 +88,18 @@ The following activities are pending decoupling from GWT:
 5. com.google.gwt code minimisation
 6. Minimisation of module configuration
 
-# Appendicies
+### GWT compilation process
 
-## GWT compilation
+This is a very rought outline of the compilation process. Some additional, and excellent, resources include the Google [presentation](https://docs.google.com/presentation/d/1n0BSQGCBkxfHLzDVFCMyWjqTYuraUr09uc7n5n6JuLU/) and the article [The GWT Toolkit: Build Powerful JavaScript Front Ends Using Java](https://www.toptal.com/front-end/javascript-front-ends-in-java-with-gwt).
 
-See also the Google [presentation](https://docs.google.com/presentation/d/1n0BSQGCBkxfHLzDVFCMyWjqTYuraUr09uc7n5n6JuLU/).
-
-Another good article is [The GWT Toolkit: Build Powerful JavaScript Front Ends Using Java](https://www.toptal.com/front-end/javascript-front-ends-in-java-with-gwt).
-
-### Precompilation
+#### Precompilation
 
 1. Constraints of compilation are extablished (via arguments and determination of the scope of source code as determined by the module hierarachy and the respective `source` tags). This included initialisaing the compilation cache (for incremental this may be an existing one).
 2. Permutations are calculated (these are associated with declared browser types and languages, the former we don't use anymore but the latter is used to package language specific resources and concerns) and rebinding performed.
 3. Entry points are determined and code is parsed into a Java AST from there.
 4. Adjustments are performed (i.e ReplaceRunAsyc, etc), AST is optimised and rebind points recorded.
 
-### Compilation
+#### Compilation
 
 The Java AST is translated to a JavaScript AST from which JavaScript is generated (including code splitting). The Java AST structure resides under `com.google.gwt.dev.jjs.ast` and is fairly standard.
 
@@ -127,7 +131,7 @@ Following this normalisations are performed:
 
 Now conversion to a JavaScript AST is performed, involves multiple passes (including fixing name clashes, defining scopes, etc). Conversion follows a specific layout which encompasses various standard element (i.e. `this.__clazz`). This AST then undergoes further optimisation and normalisation. From here the JavaScript is generated.
 
-### Linking
+#### Linking
 
 Here the products of compilation are generated, involved are three types of linker:
 

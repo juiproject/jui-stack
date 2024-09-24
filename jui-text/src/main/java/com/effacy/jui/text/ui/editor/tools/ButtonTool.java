@@ -13,24 +13,32 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
-package com.effacy.jui.playground.ui.editor;
+package com.effacy.jui.text.ui.editor.tools;
 
-import com.effacy.jui.text.ui.editor.EditorComponent;
-import com.effacy.jui.ui.client.panel.Panel;
+import com.effacy.jui.core.client.dom.UIEventType;
+import com.effacy.jui.core.client.dom.builder.ElementBuilder;
+import com.effacy.jui.core.client.dom.builder.Em;
+
+import elemental2.dom.Element;
 
 /**
- * RendererExamples
- *
- * @author Jeremy Buckley
+ * Abstract base class for {@link ITool} implementations that are buttons.
  */
-public class EditorExamples extends Panel {
+public abstract class ButtonTool extends Tool {
 
-    public EditorExamples() {
-        super (new Panel.Config ());
+    protected String icon;
 
-        // Editor.debug (Editor.DebugMode.EVENT);
+    protected String label;
 
-        add (new EditorComponent (false));
+    ButtonTool (String icon, String label) {
+        this.icon = icon;
+        this.label = label;
     }
 
+    public void render(ElementBuilder tool) {
+        tool.style (styles.button (), styles.inactive ());
+        tool.apply (n -> rootEl = (Element) n);
+        Em.$ (tool).style (icon);
+        tool.on (UIEventType.ONCLICK, UIEventType.ONMOUSEDOWN);
+    }
 }

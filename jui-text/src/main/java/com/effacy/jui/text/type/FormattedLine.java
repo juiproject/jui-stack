@@ -82,6 +82,14 @@ public class FormattedLine {
          * Anchor (expects {@code link} metadata).
          */
         A;
+
+        public boolean is(FormatType... types) {
+            for (FormatType type : types) {
+                if (type == this)
+                    return true;
+            }
+            return false;
+        }
     }
 
     /**

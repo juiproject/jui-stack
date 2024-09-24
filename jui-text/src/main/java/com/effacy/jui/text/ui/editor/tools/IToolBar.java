@@ -13,24 +13,26 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
-package com.effacy.jui.playground.ui.editor;
+package com.effacy.jui.text.ui.editor.tools;
 
-import com.effacy.jui.text.ui.editor.EditorComponent;
-import com.effacy.jui.ui.client.panel.Panel;
+import com.effacy.jui.core.client.IDisposable;
+import com.effacy.jui.core.client.dom.IUIEventHandler;
+import com.effacy.jui.text.ui.editor.tools.ITool.IToolContext;
 
-/**
- * RendererExamples
- *
- * @author Jeremy Buckley
- */
-public class EditorExamples extends Panel {
+public interface IToolBar extends IUIEventHandler, IDisposable {
+    
+    /**
+     * Activates the toolbar based on the given context (which includes a range
+     * selection).
+     * 
+     * @param context
+     *                the activation context.
+     */
+    public void activate(IToolContext context);
 
-    public EditorExamples() {
-        super (new Panel.Config ());
-
-        // Editor.debug (Editor.DebugMode.EVENT);
-
-        add (new EditorComponent (false));
-    }
+    /**
+     * Deactivatives the toolbar.
+     */
+    public void deactivate();
 
 }

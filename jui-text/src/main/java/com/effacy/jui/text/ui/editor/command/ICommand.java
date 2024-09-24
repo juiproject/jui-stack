@@ -13,24 +13,14 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
-package com.effacy.jui.playground.ui.editor;
+package com.effacy.jui.text.ui.editor.command;
 
-import com.effacy.jui.text.ui.editor.EditorComponent;
-import com.effacy.jui.ui.client.panel.Panel;
+public interface ICommand {
+    
+    public void action();
 
-/**
- * RendererExamples
- *
- * @author Jeremy Buckley
- */
-public class EditorExamples extends Panel {
-
-    public EditorExamples() {
-        super (new Panel.Config ());
-
-        // Editor.debug (Editor.DebugMode.EVENT);
-
-        add (new EditorComponent (false));
-    }
-
+    /**
+     * Revert the command.
+     */
+    public void revert();
 }

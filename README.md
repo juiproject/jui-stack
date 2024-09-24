@@ -9,13 +9,8 @@
 
 ## Overview
 
-JUI is a Java to JavaScript suite of libraries and tools for building web UI's in Java. It has its origins in [GWT](https://www.gwtproject.org/) however has been largely decoupled from this is it heads towards becoming a standalone platform. JUI does continue to employ the GWT compiler as it remains mature and relevant (with the intention of continuing to do so as long as is feasible; this is currently being mainted under the [GWT Project](https://github.com/gwtproject/gwt)).
+JUI is a Java to JavaScript suite of libraries and tools for building web UI's in Java. It has its origins in [GWT](https://www.gwtproject.org/) however has been largely decoupled from this is it heads towards becoming a standalone platform. JUI does continue to employ the GWT compiler as it remains mature and relevant (with the intention of continuing to do so as long as is feasible; this is currently being maintained under the [GWT Project](https://github.com/gwtproject/gwt)).
 
-## Documentation
-
-Comprehensive usage documentation is provided (see [Documentation](https://juiproject.github.io/jui-stack/#/)) to guide you through learning JUI from a simple getting started tutorial through to detailed and targeted lessons.
-
-The rest of this document outlines the structure of the overall JUI project itself
 
 ## Libraries
 
@@ -39,7 +34,7 @@ This code is licensed under [Apache License v2.0](https://www.apache.org/license
 
 # Getting started
 
-The best way to get started is to follow the [Getting started](https://juiproject.github.io/jui-stack/#/intro_gettingstarted) guide in the [Documentation](https://juiproject.github.io/jui-stack/). This will:
+The best way to get started is to follow the [getting started](https://juiproject.github.io/jui-stack/#/intro_gettingstarted) guide in the [product documentation](https://juiproject.github.io/jui-stack/). This will:
 
 1. Ensure you have the required software installed.
 2. Guide you through creating a simple JUI project.

@@ -1,3 +1,6 @@
+#
+# Removes the snapshot and create a tag.
+#
 name: Version on merge
 
 on:

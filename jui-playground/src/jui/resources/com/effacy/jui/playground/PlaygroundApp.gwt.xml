@@ -2,6 +2,7 @@
 <!DOCTYPE module PUBLIC "-//JUI//1.0.0" "jui-module-1.0.0.dtd">
 <module>
     <inherits name="com.effacy.jui.ui.UI" />
+    <inherits name="com.effacy.jui.text.Text" />
     <inherits name="com.effacy.jui.json.JSON"/>
     <inherits name="com.effacy.jui.rpc.RPC"/>
     <inherits name="org.pepstock.charba.Charba" />

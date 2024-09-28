@@ -24,12 +24,18 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 
+/**
+ * Convenience for testing objects. Wraps an object and allows assertions to be
+ * make against attributes of the object in a chained fashion.
+ * <p>
+ * The priniple gain afforded by this is a simplified expression of bulk
+ * assertions in a more readable form. 
+ */
 public class Test<T> {
 
     /**
      * Wraps the passed value.
      * 
-     * @param <T>
      * @param value
      *              the value to wrap.
      * @return the wrapped value.
@@ -74,7 +80,7 @@ public class Test<T> {
      * Perform a conditional check Test an associated action. Returns a
      * {@link IfElse} which allows for additional conditional check (under the
      * if-else model) Test a final action. If there is no final action then call
-     * {@link IfElse#done()} will return this instance.
+     * {@link IfElse#done()} will return this test instance.
      * 
      * @param f
      *               the when conditional.
@@ -97,12 +103,19 @@ public class Test<T> {
      *               the extractor.
      * @param action
      *               the action to perform
-     * @return this instance.
+     * @return this test instance.
      */
     public <V> Test<T> forEach(Function<T, List<V>> f, Consumer<Test<V>> action) {
         for (V item : f.apply (value))
             action.accept (new Test<V> (item));
         return this;
+    }
+
+    /**
+     * See {@link #get(Function, Consumer)}.
+     */
+    public <V> Test<T> with(Function<T, V> f, Consumer<Test<V>> action) {
+        return get (f, action);
     }
 
     /**
@@ -115,7 +128,7 @@ public class Test<T> {
      *               the extractor.
      * @param action
      *               the action to perform
-     * @return this instance.
+     * @return this test instance.
      */
     public <V> Test<T> get(Function<T, V> f, Consumer<Test<V>> action) {
         action.accept (new Test<V> (f.apply (value)));
@@ -134,7 +147,7 @@ public class Test<T> {
      *               the index to get.
      * @param action
      *               the action to perform
-     * @return this instance.
+     * @return this test instance.
      */
     public <V> Test<T> get(Function<T, List<V>> f, int idx, Consumer<Test<V>> action) {
         action.accept (new Test<V> (f.apply (value).get (idx)));
@@ -154,7 +167,7 @@ public class Test<T> {
      *                the matcher predicate.
      * @param action
      *                the action to perform
-     * @return this instance.
+     * @return this test instance.
      */
     public <V> Test<T> get(Function<T, List<V>> f, Predicate<V> matcher, Consumer<Test<V>> action) {
         List<V> matches = f.apply (value).stream ().filter (matcher).collect (Collectors.toList ());
@@ -205,7 +218,7 @@ public class Test<T> {
      *            the extractor.
      * @param m
      *            the matcher.
-     * @return this instance.
+     * @return this test instance.
      */
     public <V> Test<T> exists(Function<T, List<V>> f, Predicate<V> m) {
         for (V item : f.apply (value)) {
@@ -226,7 +239,7 @@ public class Test<T> {
      *            the extractor.
      * @param m
      *            the matcher.
-     * @return this instance.
+     * @return this test instance.
      */
     public <V> Test<T> notExists(Function<T, List<V>> f, Predicate<V> m) {
         for (V item : f.apply (value)) {
@@ -236,24 +249,35 @@ public class Test<T> {
         return this;
     }
 
+    /**
+     * Evaluates the passed function and returns the result.
+     * 
+     * @param <V>
+     *            the value type being retrieved.
+     * @param f
+     *            the evaluator.
+     * @return the evaluated value.
+     */
     public <V> V eval(Function<T, V> f) {
         return f.apply (value);
     }
 
+    /**
+     * Convenience to operate on the wrapped object.
+     * 
+     * @param c
+     *          to consumer the wrapped object and perform any actions.
+     * @return this test instance.
+     */
     public Test<T> group(Consumer<T> c) {
         c.accept (value);
-        return this;
-    }
-
-    public <V> Test<T> with(Function<T, V> f, Consumer<Test<V>> c) {
-        c.accept (new Test<V> (f.apply (value)));
         return this;
     }
 
     /**
      * Assertionss that the value being wrapped is {@code null}.
      * 
-     * @return this instance.
+     * @return this test instance.
      */
     public Test<T> isNull() {
         Assertions.assertNull (value);
@@ -263,31 +287,73 @@ public class Test<T> {
     /**
      * Assertionss that the value being wrapped is non-{@code null}.
      * 
-     * @return this instance.
+     * @return this test instance.
      */
     public Test<T> isNotNull() {
         Assertions.assertNotNull (value);
         return this;
     }
 
+    /**
+     * Asserts the mapped value is null.
+     * 
+     * @param f
+     *          to retrive the test value from the wrapped object.
+     * @return this test instance.
+     */
     public <V> Test<T> isNull(Function<T, V> f) {
         Assertions.assertNull (f.apply (value));
         return this;
     }
 
+    /**
+     * Asserts te mapped value is not null.
+     * 
+     * @param f
+     *          to retrive the test value from the wrapped object.
+     * @return this test instance.
+     */
     public <V> Test<T> isNotNull(Function<T, V> f) {
         Assertions.assertNotNull (f.apply (value));
         return this;
     }
 
+    /**
+     * Asserts the mapped string is not blank.
+     * 
+     * @param f
+     *          to retrive the test value from the wrapped object.
+     * @return this test instance.
+     */
     public <V> Test<T> isNotBlank(Function<T, String> f) {
         Assertions.assertFalse (StringUtils.isBlank (f.apply (value)));
         return this;
     }
 
+    /**
+     * Asserts the mapped string is blank.
+     * 
+     * @param f
+     *          to retrive the test value from the wrapped object.
+     * @return this test instance.
+     */
     public <V> Test<T> isBlank(Function<T, String> f) {
         Assertions.assertTrue (StringUtils.isBlank (f.apply (value)));
         return this;
+    }
+
+    /**
+     * See {@link #isBlank(Function)}.
+     */
+    public Test<T> isEmpty(Function<T, String> f) {
+        return isBlank(f);
+    }
+
+    /**
+     * See {@link #isNotBlank(Function)}.
+     */
+    public Test<T> isNotEmpty(Function<T, String> f) {
+        return isNotBlank(f);
     }
 
     public Test<T> isTrue(Function<T, Boolean> f) {
@@ -308,7 +374,7 @@ public class Test<T> {
      *               extracts the target list.
      * @param mapper
      *               maps the values in the list to strings.
-     * @return this instance.
+     * @return this test instance.
      */
     public <V,W extends Comparable<W>> Test<T> isAsc(Function<T, List<V>> f, Function<V,W> mapper) {
         Test.$ (f.apply(value)).isAsc(mapper);
@@ -323,7 +389,7 @@ public class Test<T> {
      * 
      * @param mapper
      *               maps the values in the list to strings.
-     * @return this instance.
+     * @return this test instance.
      */
     @SuppressWarnings("unchecked")
     public <V,W extends Comparable<W>> Test<T> isAsc(Function<V,W> mapper) {
@@ -348,7 +414,7 @@ public class Test<T> {
      *               extracts the target list.
      * @param mapper
      *               maps the values in the list to strings.
-     * @return this instance.
+     * @return this test instance.
      */
     public <V,W extends Comparable<W>> Test<T> isDesc(Function<T, List<V>> f, Function<V,W> mapper) {
         Test.$ (f.apply(value)).isDesc(mapper);
@@ -363,7 +429,7 @@ public class Test<T> {
      * 
      * @param mapper
      *               maps the values in the list to strings.
-     * @return this instance.
+     * @return this test instance.
      */
     @SuppressWarnings("unchecked")
     public <V,W extends Comparable<W>> Test<T> isDesc(Function<V,W> mapper) {
@@ -380,47 +446,65 @@ public class Test<T> {
         return this;
     }
 
+    /**
+     * Extracts a value and tests that it matched the expected value.
+     * 
+     * @param f
+     *                 the extractor (to obtain the test value from the wrapped
+     *                 object).
+     * @param expected
+     *                 the expected value.
+     * @return this test instance.
+     */
     public <V> Test<T> is(Function<T, V> f, V expected) {
         Assertions.assertEquals (expected, f.apply (value));
         return this;
     }
 
+    /**
+     * Extracts a value and tests that it does not match the "expected" value.
+     * 
+     * @param f
+     *                 the extractor (to obtain the test value from the wrapped
+     *                 object).
+     * @param expected
+     *                 the "expected" value (not to match).
+     * @return this test instance.
+     */
     public <V> Test<T> isNot(Function<T, V> f, V expected) {
         Assertions.assertNotEquals (expected, f.apply (value));
         return this;
     }
 
+    /**
+     * See {@link #is(Function, Object)} but for an enum.
+     */
     public <E extends Enum<E>> Test<T> is(Function<T, E> f, E expected) {
         Assertions.assertEquals (expected, f.apply (value));
         return this;
     }
 
+    /**
+     * See {@link #isNot(Function, Object)} but for an enum.
+     */
     public <E extends Enum<E>> Test<T> isNot(Function<T, E> f, E expected) {
         Assertions.assertNotEquals (expected, f.apply (value));
         return this;
     }
 
+    /**
+     * See {@link #is(Function, Object)} but for a string.
+     */
     public Test<T> is(Function<T, String> f, String expected) {
         Assertions.assertEquals (expected, f.apply (value));
         return this;
     }
 
-    public Test<T> isEmpty(Function<T, String> f) {
-        Assertions.assertTrue(StringUtils.isBlank(f.apply(value)));
-        return this;
-    }
-
+    /**
+     * See {@link #isNot(Function, Object)} but for a string.
+     */
     public Test<T> isNot(Function<T, String> f, String expected) {
         Assertions.assertNotEquals (expected, f.apply (value));
-        return this;
-    }
-
-    public Test<T> startsTest(Function<T, String> f, String expected) {
-        String str = f.apply (value);
-        if (str == null)
-            Assertions.assertTrue (expected == null, () -> "expected starts Test:<" + expected + "> but was:NULL");
-        else
-            Assertions.assertTrue (f.apply (value).startsWith (expected), () -> "expected starts Test:<" + expected + "> but was:<" + str.substring (0, Math.min (str.length (), expected.length ())) + "...>");
         return this;
     }
 
@@ -433,7 +517,7 @@ public class Test<T> {
      *            the extractor.
      * @param m
      *            the matcher.
-     * @return this instance.
+     * @return this test instance.
      */
     public <V> Test<T> isCount(int expected, Function<T, List<V>> f, Predicate<V> m) {
         int count = 0;
@@ -445,7 +529,10 @@ public class Test<T> {
         return this;
     }
 
-    public static class IfElse<T> {
+    /**
+     * Used to implement an if-else conditional.
+     */
+    protected static class IfElse<T> {
 
         private Test<T> with;
 

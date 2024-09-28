@@ -1,9 +1,0 @@
-@def color green;
-
-.hubba > div > .bubba {
-    border: 1px solid color;
-}
-
-.bubba {
-    width: 2em;
-}

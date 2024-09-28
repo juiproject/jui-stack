@@ -253,6 +253,8 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
          */
         private int searchBufferTimeThreshold = 300;
 
+        private boolean useMaskOnLoad = false;
+
         /**
          * Construct with a default style.
          */
@@ -762,6 +764,35 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
          */
         public int getSearchBufferTimeThreshold() {
             return searchBufferTimeThreshold;
+        }
+
+        /**
+         * See {@link #useMaskOnLoad(boolean)}. Convenience to pass {@code true}.
+         */
+        public Config<V> useMaskOnLoad() {
+            return useMaskOnLoad(true);
+        }
+
+        /**
+         * Sets whether or not masking on the menu should be used when data is being
+         * loaded.
+         * 
+         * @param useMaskOnLoad
+         *                      {@code true} if it should (default is not to).
+         * @return this configuration instance.
+         */
+        public Config<V> useMaskOnLoad(boolean useMaskOnLoad) {
+            this.useMaskOnLoad = useMaskOnLoad;
+            return this;
+        }
+
+        /**
+         * Determines of the menu should be masked during a load of data from the store.
+         * 
+         * @return {@code true} if it should.
+         */
+        public boolean isUseMaskOnLoad() {
+            return useMaskOnLoad;
         }
 
         /**

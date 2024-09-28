@@ -2,15 +2,15 @@
 
 ## Introduction
 
-TBD
+This is a (somewhat rewritten) re-constitution of the GWT code server but more narrowly focussed and rebranded so as to facilitate extension to support multuple compliation systems.
 
 ## Documentation
 
 The bulk of the technical documentation for the code server resides in each of the packages:
 
-1. [`com.effacy.jui.codeserver`](./src/main/java/com/effacy/jui/codeserver/README.md) documentation for the coderserver framework and resource delivery.
-2. [`com.effacy.jui.codeserver.gwt`](./src/main/java/com/effacy/jui/codeserver/gwt/README.md) documentation for integration of the GWT compiler.
-2. [`com.effacy.jui.codeserver.view`](./src/main/java/com/effacy/jui/codeserver/view/README.md) documentation for view generation (the output delivered by the code server).
+1. [`com.effacy.jui.codeserver`](./src/main/java/com/effacy/jui/codeserver/) documentation for the coderserver framework and resource delivery.
+2. [`com.effacy.jui.codeserver.gwt`](./src/main/java/com/effacy/jui/codeserver/gwt/) documentation for integration of the GWT compiler.
+2. [`com.effacy.jui.codeserver.view`](./src/main/java/com/effacy/jui/codeserver/view/) documentation for view generation (the output delivered by the code server).
 
 ## Project structure and build
 

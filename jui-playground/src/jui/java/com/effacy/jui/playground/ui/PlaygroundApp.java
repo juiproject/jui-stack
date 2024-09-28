@@ -26,7 +26,7 @@ import com.effacy.jui.core.client.navigation.INavigationHandlerParent;
 import com.effacy.jui.core.client.navigation.NavigationSupport;
 import com.effacy.jui.platform.core.client.ApplicationEntryPoint;
 import com.effacy.jui.platform.util.client.ListSupport;
-import com.effacy.jui.ui.client.editor.DiagramBlock;
+import com.effacy.jui.text.ui.editor.DiagramBlock;
 
 import elemental2.dom.DomGlobal;
 

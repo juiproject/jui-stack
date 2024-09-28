@@ -70,6 +70,13 @@ public class FormattedBlock {
          */
         DIA;
 
+        public boolean is(BlockType... types) {
+            for (BlockType type : types) {
+                if (type == this)
+                    return true;
+            }
+            return false;
+        }
     }
 
     /************************************************************************
@@ -256,6 +263,36 @@ public class FormattedBlock {
     /************************************************************************
      * Behaviour (building and modifying).
      ************************************************************************/
+
+    /**
+     * Assigns a meta-data value.
+     * 
+     * @param name
+     *              the name of the meta-data field.
+     * @param value
+     *              the value of the field.
+     * @return this instance.
+     */
+    public FormattedBlock meta(String name, String value) {
+        if (name != null) {
+            if (value == null)
+                getMeta().remove(name);
+            else
+                getMeta().put(name, value);
+        }
+        return this;
+    }
+
+    /**
+     * Gets a meta-data field.
+     * 
+     * @param name
+     *             the name of the field.
+     * @return the associated value.
+     */
+    public String meta(String name) {
+        return getMeta().get(name);
+    }
 
     /**
      * Assign a level of indentation.

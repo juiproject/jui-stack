@@ -4,14 +4,14 @@
 name: Version on merge
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'pom.xml'
+  pull_request:
+    types:
+      - closed
 
 jobs:
-  release:
+  if_merged:
+    if: github.event.pull_request.merged == true
+    
     runs-on: ubuntu-latest
     
     steps:

@@ -4,7 +4,7 @@
   <parent>
     <groupId>com.effacy.jui</groupId>
     <artifactId>parent</artifactId>
-    <version>${revision}</version>
+    <version>0.0.8.M</version>
     <relativePath>..</relativePath>
   </parent>
   <artifactId>jui-platform</artifactId>

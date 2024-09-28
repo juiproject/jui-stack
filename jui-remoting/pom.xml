@@ -4,7 +4,7 @@
   <parent>
     <groupId>com.effacy.jui</groupId>
     <artifactId>parent</artifactId>
-    <version>0.0.8.M</version>
+    <version>${revision}</version>
     <relativePath>..</relativePath>
   </parent>
   <artifactId>jui-remoting</artifactId>
@@ -30,7 +30,7 @@
     <dependency>
       <groupId>com.effacy.jui</groupId>
       <artifactId>jui-validation</artifactId>
-      <version>0.0.8.M</version>
+      <version>${revision}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>

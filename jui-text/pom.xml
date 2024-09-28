@@ -4,7 +4,7 @@
   <parent>
     <groupId>com.effacy.jui</groupId>
     <artifactId>parent</artifactId>
-    <version>0.0.8.M</version>
+    <version>${revision}</version>
     <relativePath>..</relativePath>
   </parent>
   <artifactId>jui-text</artifactId>
@@ -15,12 +15,12 @@
     <dependency>
       <groupId>com.effacy.jui</groupId>
       <artifactId>jui-remoting</artifactId>
-      <version>0.0.8.M</version>
+      <version>${revision}</version>
     </dependency>
     <dependency>
       <groupId>com.effacy.jui</groupId>
       <artifactId>jui-ui</artifactId>
-      <version>0.0.8.M</version>
+      <version>${revision}</version>
       <optional>true</optional>
     </dependency>
 

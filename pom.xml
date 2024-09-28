@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.effacy.jui</groupId>
   <artifactId>parent</artifactId>
-  <version>0.0.8.M</version>
+  <version>${revision}</version>
   <packaging>pom</packaging>
   <name>JUI Stack - Parent</name>
 

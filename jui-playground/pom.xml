@@ -4,7 +4,7 @@
   <parent>
     <groupId>com.effacy.jui</groupId>
     <artifactId>parent</artifactId>
-    <version>0.0.8.M</version>
+    <version>${revision}</version>
     <relativePath>..</relativePath> 
   </parent>
   <artifactId>jui-playground</artifactId>
@@ -20,12 +20,12 @@
     <dependency>
       <groupId>com.effacy.jui</groupId>
       <artifactId>jui-ui</artifactId>
-      <version>0.0.8.M</version>
+      <version>${revision}</version>
     </dependency>
     <dependency>
       <groupId>com.effacy.jui</groupId>
       <artifactId>jui-text</artifactId>
-      <version>0.0.8.M</version>
+      <version>${revision}</version>
     </dependency>
     <dependency>
       <groupId>org.pepstock</groupId>
@@ -63,7 +63,7 @@
     <dependency>
       <groupId>com.effacy.jui</groupId>
       <artifactId>jui-test</artifactId>
-      <version>0.0.8.M</version>
+      <version>${revision}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -1,0 +1,42 @@
+name: Version on merge
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pom.xml'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'  # or your required Java version
+
+      - name: Remove SNAPSHOT from version
+        run: |
+          mvn versions:set -DremoveSnapshot=true
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git commit -am "Remove SNAPSHOT "
+          
+      - name: Get the new version
+        id: get_version
+        run: echo "::set-output name=VERSION::$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+
+      - name: Tag the release
+        run: |
+          git tag -a "version/v${{ steps.get_version.outputs.VERSION }}" -m "Release version ${{ steps.get_version.outputs.VERSION }}"
+          git push origin "version/v${{ steps.get_version.outputs.VERSION }}"
+
+      - name: Push changes
+        run: |
+          git push origin main

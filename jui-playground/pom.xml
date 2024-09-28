@@ -23,6 +23,11 @@
       <version>${revision}</version>
     </dependency>
     <dependency>
+      <groupId>com.effacy.jui</groupId>
+      <artifactId>jui-text</artifactId>
+      <version>${revision}</version>
+    </dependency>
+    <dependency>
       <groupId>org.pepstock</groupId>
       <artifactId>charba</artifactId>
       <version>${version.charba}</version>

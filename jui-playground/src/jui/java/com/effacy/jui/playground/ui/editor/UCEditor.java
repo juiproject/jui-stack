@@ -26,11 +26,9 @@ import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.builder.Ul;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.core.client.dom.css.CSSInjector;
-import com.effacy.jui.platform.util.client.Logger;
+import com.effacy.jui.text.ui.editor.EditorComponent;
 import com.effacy.jui.ui.client.button.Button;
 import com.effacy.jui.ui.client.button.ButtonCreator;
-import com.effacy.jui.ui.client.editor.EditorComponent;
-import com.effacy.jui.ui.client.fragments.Btn;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 
 import elemental2.dom.Element;

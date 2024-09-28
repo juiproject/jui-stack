@@ -19,7 +19,7 @@
     </dependency>
     <dependency>
       <groupId>com.effacy.jui</groupId>
-      <artifactId>jui-core</artifactId>
+      <artifactId>jui-ui</artifactId>
       <version>${revision}</version>
       <optional>true</optional>
     </dependency>

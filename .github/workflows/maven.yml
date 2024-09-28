@@ -9,10 +9,12 @@
 name: Java CI with Maven
 
 on:
-  push:
-    branches: [ "develop" ]
+# We want this to run when a pull request into develop or main is requested;
+# we should not be allowing pushes directly to develop (or main).
+#  push:
+#    branches: [ "develop" ]
   pull_request:
-    branches: [ "develop" ]
+    branches: [ "develop", "main" ]
 
 jobs:
   build:

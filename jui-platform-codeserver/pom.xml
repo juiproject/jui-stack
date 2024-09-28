@@ -4,7 +4,7 @@
   <parent>
     <groupId>com.effacy.jui</groupId>
     <artifactId>parent</artifactId>
-    <version>0.0.8.M</version>
+    <version>${revision}</version>
     <relativePath>..</relativePath>
   </parent>
   <artifactId>jui-platform-codeserver</artifactId>
@@ -21,7 +21,7 @@
     <dependency>
         <groupId>com.effacy.jui</groupId>
         <artifactId>jui-platform</artifactId>
-        <version>0.0.8.M</version>
+        <version>${revision}</version>
     </dependency>
     <dependency>
         <groupId>org.apache.commons</groupId>

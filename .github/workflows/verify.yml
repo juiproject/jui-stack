@@ -1,0 +1,32 @@
+#
+# Performs a number of pre-release checks so that the branch
+# is prepared for a release.
+#
+name: Verify for pre-release
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+jobs:
+  if_merged:
+    if: github.event.pull_request.merged == true
+    
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Verify pre-release checks
+        run: mvn enforcer:enforce -Pprerelease-checks
+

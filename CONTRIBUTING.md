@@ -1,7 +1,5 @@
 # Setup for development
 
-If you intend to build on and expand these libraries or you want to work through the **tutorial** in the [jui-playground](./jui-playground/) then you first need to prepare your environment.
-
 The following describes the core software that you need as well a guide to setting up a suitable IDE.
 
 ## Required software
@@ -146,50 +144,7 @@ Performing a release follows the standard Maven process for deploying a multi-mo
 
 ### Release process
 
-The assumptions made prior to performing a deployment are:
-
-1. The correct version snapshot is present in the parent project `pom.xml` declared under the `revision` property (see [Versions](#versions) below).
-2. The code being deployed is in the `develop` branch (see [Branching](#branching) below).
-3. The code is in a state to be deployed (there is a control for this but the understanding should be that it is in the correct state).
-4. The person or system running the deployment has suitable credentials in place to deploy the artefacts to the artefact repository (see [Artefact repository](#artefact-repository) below).
-5. There should be no conflicts merging into `master` (with the exception of the version in the POM file).
-
-With the above assumptions the process for deployment are (this is assumed to be executed on the command line):
-
-1. Clone the project `git clone git@bitbucket.org:jerry-effacy/jui-stack.git jui-stack; cd jui-stack` (for consistency avoid using an existing clone).
-2. Switch to the develop branch `git checkout develop; git pull`.
-3. Run a local install (the control) `mvn clean install` (if this fails the abort the deployment and clean up).
-4. Switch back to the master and merge `git checkout master; git merge develop` (if there are conflicts beyond the revision number in the pom file, the abort).
-5. Edit the `pom.xml` and remove `-SNAPSHOT` from the version declared under the `revision` property (if there was a conflict then simply resolve with the correct version of the revision property).
-6. Add the pom file and commit with `git add pom.xml; git commit -m "Merge and updated revision"`.
-7. Run the deployment with `mvn clean deploy` (if this fails the abort the deployment).
-8. Push the changes with `git push`.
-9. Tag the commit with `git tag version/---` (where `---` is the version).
-10. Push the tag with `git push origin version/---`.
-11. Switch back to `develop` with `git checkout develop`.
-12. Merge master back into `develop` with `git merge master` (this should avoid later merge problems by bringing `develop` up to `master`).
-13. Update the `pom.xml` to assign the new snapshot revision in the `revision` property (i.e. if the released version was `0.2.1.M` and the next version will be `0.2.2.M` then set the revision to `0.2.2.M-SNAPSHOT`).
-14. Commit the change with `git add pom.xml; git commit -m "Updated snapshot"; git push`.
-15. Clean up by removing the cloned repository with `cd ..; rm -rf jui-stack`.
-
-It is good practice to then verify that the artefacts have been deployed to the artefact repository. For convenience a compact version of the above is presented below:
-
-```bash
-git clone git@bitbucket.org:jerry-effacy/jui-stack.git jui-stack; cd jui-stack
-git checkout develop; git pull
-mvn clean install
-git checkout master; git merge develop
-[edit pom.xml (fix or update revision)]
-git add pom.xml; git commit -m "Updated revision"
-mvn clean deploy
-git push
-git tag version/---
-git push origin version/---
-git checkout develop
-[edit pom.xml (update revision)]
-git add pom.xml; git commit -m "Updated snapshot"; git push
-cd ..; rm -rf jui-stack
-```
+TDB
 
 ### Versions
 
@@ -207,45 +162,49 @@ Branching follows a relatively simple model suitable for small-scale development
 
 The `develop` branch also serves as (the name implies) the branch to commit changes into. Separate branches may be maintained on a case-by-case basis and should be named in accordance with intent: `feature/---` for a feature, `bugfix/---` for a bug-fix and `hotfix/X.Y.Z.Mn` for a patch (this latter one should always be branched off the `version/X.Y.Z.M[n-1]` tag). Developers may maintain their own personal branches `developer/<developer-name>/sub-branch` (noting the `sub-branch` which must be present should default `develop`, this gives flexibility to create multiple scoped branches).
 
-### Artefact repository
+# Appendix
 
-The current artefact repository is `s3://maven.effacy.com/maven2` (private access). To deploy you will need to update your Maven `~/.m2/settings.xml` settings file as follows:
+## GitHub Actions
 
-```xml
-<settings>
-  <localRepository>${user.home}/.m2/repository</localRepository>
-  <servers>
-    <server>
-      <id>effacy-dist</id>
-      <username>${env.EFFACY_USERNAME}</username>
-      <password>${env.EFFACY_PASSWORD}</password>
-    </server>
-  </servers>
-  <profiles>
-    <profile>
-      <id>default</id>
-      <repositories>
-        <repository>
-          <id>effacy-dist</id>
-          <name>Effacy Maven 2 Repo</name>
-          <url>s3://maven.effacy.com/maven2</url>
-        </repository>
-      </repositories>
-    </profile>
-  </profiles>
-  <activeProfiles>
-    <activeProfile>default</activeProfile>
-  </activeProfiles>
-</settings>
+### Protected branches
+
+*This is provided for reference.*
+
+When a branch has ruleset-based protection requiring an PR (and no direct commit) the any commit from an action will fail. A workaround is to use a deploy key:
+
+1. Create an SSH key with no passphrase.
+2. Create a deploy key called `GH_ACTIONS` using the **public key**.
+3. Create a secret called `DEPLOY_KEY` using the **private key**.
+4. Add `ssh-key: ${{ secrets.DEPLOY_KEY }}` to the checkout (see below) in the action YML file.
+5. Add deploy as bypass to the relevant ruleset(s).
+
+By virtue of the use of the deploy key the actions will be granted the relevant rights. A sample of (4) follows:
+
+```yml
+...
+steps:
+    - name: Checkout code
+    uses: actions/checkout@v4
+    with:
+        ssh-key: ${{ secrets.DEPLOY_KEY }}
+...
 ```
 
-You will also need to store your Effacy Maven 2 Repository access keys in the environment variables `EFFACY_USERNAME` and `EFFACY_PASSWORD` respectively; this is most easily done in your `~/.bash_profile` (or `~/.zshrc`):
+Note that this only needs to be done once here and all subsequet GIT operations will act as configured.
 
-```txt
-export EFFACY_USERNAME=XXX
-export EFFACY_PASSWORD=XXX
+### Merge conditional
+
+```yml
+...
+on:
+  pull_request:
+    types:
+      - closed
+      
+jobs:
+  if_merged:
+    if: github.event.pull_request.merged == true
+    
+    runs-on: ubuntu-latest
+...
 ```
-
-(feel free to change the variable names as you see fit).
-
-

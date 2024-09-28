@@ -118,6 +118,7 @@
     <version.cobertura-maven-plugin>2.5</version.cobertura-maven-plugin>
     <version.maven-jar-plugin>3.4.2</version.maven-jar-plugin>
     <version.javacc-maven-plugin>3.1.0</version.javacc-maven-plugin>
+    <version.central-publishing-maven-plugin>0.6.0</version.central-publishing-maven-plugin>
   </properties>
 
   <dependencies>
@@ -437,7 +438,7 @@
     ****************************************************
     -->
     <profile>
-      <id>central</id>
+      <id>release</id>
       <build>
         <plugins>
           <!--
@@ -510,8 +511,16 @@
                 </goals>
               </execution>
             </executions>
+            <configuration>
+              <gpgArguments>
+                <arg>--pinentry-mode</arg>
+                <arg>loopback</arg>
+              </gpgArguments>
+             </configuration>
           </plugin>
           <!--
+          For performing the deployment to central.
+          -->
           <plugin>
             <groupId>org.sonatype.central</groupId>
             <artifactId>central-publishing-maven-plugin</artifactId>
@@ -519,21 +528,14 @@
             <extensions>true</extensions>
             <configuration>
               <publishingServerId>central</publishingServerId>
+              <tokenAuth>true</tokenAuth>
+              <autoPublish>true</autoPublish>
             </configuration>
           </plugin>
-          -->
         </plugins>
       </build>
     </profile>
   </profiles>
-
-  <!-- Distribution management. -->
-  <distributionManagement>
-    <repository>
-      <id>effacy-dist</id>
-      <url>s3://maven.effacy.com/maven2</url>
-    </repository>
-  </distributionManagement>
 
   <!-- Standard repositories. -->
   <repositories>
@@ -545,10 +547,6 @@
     <repository>
       <id>java.net</id>
       <url>http://download.java.net/maven/2</url>
-    </repository>
-    <repository>
-      <id>effacy-dist</id>
-      <url>s3://maven.effacy.com/maven2</url>
     </repository>
     <repository>
       <id>spring</id>

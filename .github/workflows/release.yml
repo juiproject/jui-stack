@@ -45,7 +45,7 @@ jobs:
           REPO="gh::default::https://maven.pkg.github.com/${GITHUB_REPOSITORY}"
           mvn deploy -Drevision=${{ env.REVISION }} -DaltReleaseDeploymentRepository="${REPO}" -DaltSnapshotDeploymentRepository="${REPO}"
         env:
-            GITHUB_TOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     #     run: mvn -Prelease -Drevision=${{ github.event.release.tag_name }} --batch-mode deploy
     #     env:

@@ -1,19 +1,17 @@
 #
-# Performs a number of pre-release checks so that the branch
-# is prepared for a release.
+# Activated on PR into main. Performs a set of pre-release checks followed
+# by a build and test.
 #
-name: Verify for pre-release
+name: PR checks (main)
 
 on:
   pull_request:
     branches:
       - main
-    types:
-      - closed
 
 jobs:
-  if_merged:
-    if: github.event.pull_request.merged == true
+
+  run_checks:
     
     runs-on: ubuntu-latest
     
@@ -26,7 +24,11 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: maven
 
-      - name: Verify pre-release checks
+      - name: Verify pre-release requisites
         run: mvn enforcer:enforce -Pprerelease-checks
+
+      - name: Build project
+        run: mvn -B package --file pom.xml
 

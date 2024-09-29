@@ -24,14 +24,28 @@ jobs:
       - name: Validate release tag format
         run: |
           TAG_NAME="${{ github.event.release.tag_name }}"
-          if [[ ! "$TAG_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Tag name '$TAG_NAME' does not match the format X.Y.Z where X, Y, and Z are non-negative integers."
+          if [[ ! "$TAG_NAME" =~ ^version/[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9]+)*$ ]]; then
+            echo "Error: Tag name '$TAG_NAME' does not match the required format 'version/X.Y.Z[.*]'"
             exit 1
           fi
           echo "Tag name '$TAG_NAME' is valid."
 
+      - name: Extract revision from tag
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          REVISION="${TAG_NAME#version/}"
+          echo "REVISION=$REVISION" >> $GITHUB_ENV
+          echo "Extracted revision: $REVISION"
 
-    #   - name: Publish package
+      - name: Publish package (GitHub packages)
+        run: |
+          mkdir -p ~/.m2
+          echo "<settings><servers><server><id>gh</id><username>$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $1}')</username><password>\${env.GITHUB_TOKEN}</password></server></servers></settings>" > ~/.m2/settings.xml
+          REPO="gh::default::https://maven.pkg.github.com/${GITHUB_REPOSITORY}"
+          echo mvn deploy -Drevision=${{ env.REVISION }} -DaltReleaseDeploymentRepository="${REPO}" -DaltSnapshotDeploymentRepository="${REPO}"
+        env:
+            GITHUB_TOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
+
     #     run: mvn -Prelease -Drevision=${{ github.event.release.tag_name }} --batch-mode deploy
     #     env:
     #       MAVEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}

@@ -1475,7 +1475,7 @@ You can reference other projects as well. Consider the case where you are also m
 ```json
 ...
 "classPaths": [
-    "${userHome}/.m2/repository/com/effacy/jui/jui-platform-codeserver/<version>/jui-platform-codeserver-<version>-jar-with-dependencies.jar",
+    "${userHome}/.m2/repository/com/effacy/jui/jui-platform-codeserver/<version>/jui-platform-codeserver-LOCAL-SNAPSHOT-jar-with-dependencies.jar",
     "${workspaceFolder}/../jui-stack/jui-platform/src/main/java",
     "${workspaceFolder}/../jui-stack/jui-platform/src/main/resources",
     "${workspaceFolder}/../jui-stack/jui-core/src/main/java",
@@ -1486,6 +1486,8 @@ You can reference other projects as well. Consider the case where you are also m
     "${workspaceFolder}/../jui-stack/jui-remoting/src/main/resources",
     "${workspaceFolder}/../jui-stack/jui-validation/src/main/java",
     "${workspaceFolder}/../jui-stack/jui-validation/src/main/resources",
+    "${workspaceFolder}/../jui-stack/jui-text/src/main/java",
+    "${workspaceFolder}/../jui-stack/jui-text/src/main/resources",
     ...
     "$Auto",
 ]

@@ -23,6 +23,7 @@ import java.util.List;
 import com.effacy.jui.json.annotation.JsonSerializable;
 import com.effacy.jui.rpc.handler.client.Converter;
 import com.effacy.jui.rpc.handler.client.IConverter;
+import com.google.gwt.core.shared.GwtIncompatible;
 
 /**
  * Represents a collection of results from a query. This includes range data and

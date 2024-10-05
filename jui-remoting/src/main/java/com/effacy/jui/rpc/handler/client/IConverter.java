@@ -15,19 +15,87 @@
  ******************************************************************************/
 package com.effacy.jui.rpc.handler.client;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.function.BiConsumer;
+
+import com.effacy.jui.platform.core.JuiIncompatible;
+import com.google.gwt.core.shared.GwtIncompatible;
+
 /**
  * Converter that is able to convert from type S to T.
  * 
  * @author Jeremy Buckley
  */
-public interface IConverter<S, T> {
+@FunctionalInterface
+public interface IConverter<S,T> {
 
     /**
-     * Converts from the passed object type to the target class type.
+     * Converts from the passed source object type to an instance of the target class type.
      * 
-     * @param object
-     *            the object to convert.
-     * @return The converted object.
+     * @param source
+     *               the source object to convert.
+     * @return the converted source.
      */
-    public T convert(S object);
+    public T convert(S source);
+
+    /**
+     * Convenience to create a converter.
+     * <p>
+     * The target type must have a non-argument constructor.
+     * 
+     * @param klass
+     *               the klass of the target type.
+     * @param mapper
+     *               to map the source against an instantiated instance of the
+     *               target type.
+     * @return the converter.
+     */
+    @JuiIncompatible
+    @GwtIncompatible
+    @SuppressWarnings("unchecked")
+    public static <S,T> IConverter<S,T> create(Class<T> klass, BiConsumer<S,T> mapper) {
+        return new IExtendedConverter<S,T> () {
+
+            @Override
+            public T convert(S source) {
+                Constructor<?> constructor;
+                try {
+                    constructor = klass.getDeclaredConstructor();
+                    constructor.setAccessible(true);
+                    T target = (T) constructor.newInstance();
+                    apply(source, target);
+                    return target;
+                } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                    throw new RuntimeException (e);
+                }
+            }
+
+            @Override
+            public void apply(S object, T result) {
+                mapper.accept(object, result);
+            }
+
+        };
+    };
+
+    /**
+     * Extends the {@link IConverter} to include application of source data to an
+     * existing target instance.
+     * <p>
+     * This can be useful for chaining.
+     */
+    public interface IExtendedConverter<S,T> extends IConverter<S,T> {
+
+        /**
+         * Applies the data from the source to an existing target.
+         * 
+         * @param source
+         *               the source object.
+         * @param target
+         *               the target instance.
+         */
+        public void apply(S source, T target);
+        
+    }
 }

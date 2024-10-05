@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.effacy.jui.platform.core.JuiIncompatible;
 import com.effacy.jui.platform.css.client.CssDeclaration;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.StringSupport;
@@ -7948,6 +7949,7 @@ public class FontAwesome {
      * a given icon. Copy these into the {@link FontAwesome} class (replacing the
      * existing ones).
      */
+    @JuiIncompatible
     @GwtIncompatible
     public static class FontAwesomeGenerator {
 

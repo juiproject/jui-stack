@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.effacy.jui.json.annotation.JsonSerializable;
+import com.effacy.jui.platform.core.JuiIncompatible;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.google.gwt.core.shared.GwtIncompatible;
 
@@ -39,11 +40,13 @@ public class FormattedText implements Iterable<FormattedBlock> {
     /**
      * See {@link #markdown(Function, String...)} but with no line processor.
      */
+    @JuiIncompatible
     @GwtIncompatible
     public static FormattedText markdown(String... content) {
         return markdown (null, content);
     }
 
+    @JuiIncompatible
     @GwtIncompatible
     public static FormattedText markdown(Function<String,String> lineProcessor, String... content) {
         FormattedText text = new FormattedText();

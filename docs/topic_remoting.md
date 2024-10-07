@@ -679,6 +679,30 @@ public static IConverter<UserEntity, UserQueryResult> fromEntity() {
 ...
 ```
 
+Often one encounters nested types:
+
+```java
+...
+import static com.effacy.jui.json.Builder.set;
+...
+public static IConverter<UserEntity, UserQueryResult> fromEntity() {
+    return IConverter.create(UserQueryResult.class, (entity,dto) -> {
+        set(dto::setId, entity.getId());
+        set(dto::setVersion, entity.getVersion());
+        set(dto::setName, entity.getName());
+        ...
+        set (dto::setPosition, entity.getPosition (), new UserPositionResult (), (v,s) -> {
+            set(v::setId, s.getId ());
+            set(v::setVersion, s.getVersion ());
+            set(v::setName, s.getEmail ());
+            ...
+        });
+        ...
+    });
+}
+...
+```
+
 One may also work with lists using `add`:
 
 ```java
@@ -691,6 +715,7 @@ public static IConverter<UserEntity, UserQueryResult> fromEntity() {
         set(dto::setId, entity.getId());
         set(dto::setVersion, entity.getVersion());
         set(dto::setName, entity.getName());
+        ...
         entity.getItems().forEach(item -> {
             add(dto.getItemResults(), new ItemResult(), v -> {
                 set(v::setId, item.getId());
@@ -698,6 +723,7 @@ public static IConverter<UserEntity, UserQueryResult> fromEntity() {
                 ...
             });
         });
+        ...
     });
 }
 ...

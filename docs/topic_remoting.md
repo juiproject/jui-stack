@@ -607,7 +607,9 @@ public class UserQueryResultConverter {
 
     public static IConverter<UserEntity, UserQueryResult> fromEntity() {
         return IConverter.create(UserQueryResult.class, (entity,dto) -> {
-            dto.setXXX(enity.getXXX());
+            dto.setId(entity.getId());
+            dto.setVersion(entity.getVersion());
+            dto.setName(entity.getName());
             ...
         });
     }
@@ -637,7 +639,7 @@ public class UserQueryResultConverter {
 
 *Note that this method of creation actually returns an instance of `IExtendedCreator` which exposes an additional `void apply(S source, T target)` method; this can be used to employ converters when target types form a class hierarchy.*
 
-To finish we note that the converter is not limited to result set and can be employed in a lookup processor quite readily:
+Note that converters are not limited to result sets and can be employed in any context where a type conversion is required, such as a lookup processor:
 
 ```java
 @RPCHandlerProcessor
@@ -660,7 +662,48 @@ public class UserLookupProcessor extends QueryProcessor<QueryContext, UserLookup
 }
 ```
 
-As such, apply this generally provides a common pattern of code encapsulation.
+We end this section with a brief description of the `com.effacy.jui.json.Builder` static support methods for transferring values. For simple values one may use `set` to get a value from a source and apply it to a target:
+
+```java
+...
+import static com.effacy.jui.json.Builder.set;
+...
+public static IConverter<UserEntity, UserQueryResult> fromEntity() {
+    return IConverter.create(UserQueryResult.class, (entity,dto) -> {
+        set(dto::setId, entity.getId());
+        set(dto::setVersion, entity.getVersion());
+        set(dto::setName, entity.getName());
+        ...
+    });
+}
+...
+```
+
+One may also work with lists using `add`:
+
+```java
+...
+import static com.effacy.jui.json.Builder.add;
+import static com.effacy.jui.json.Builder.set;
+...
+public static IConverter<UserEntity, UserQueryResult> fromEntity() {
+    return IConverter.create(UserQueryResult.class, (entity,dto) -> {
+        set(dto::setId, entity.getId());
+        set(dto::setVersion, entity.getVersion());
+        set(dto::setName, entity.getName());
+        entity.getItems().forEach(item -> {
+            add(dto.getItemResults(), new ItemResult(), v -> {
+                set(v::setId, item.getId());
+                set(v::setVersion, item.getVersion());
+                ...
+            });
+        });
+    });
+}
+...
+```
+
+The above may not be to everyones pleasure but can aid in readability. You are encouraged to puruse the various other support methods that are available.
 
 ### Commands
 

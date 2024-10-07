@@ -1,5 +1,7 @@
 .component {
     --jui-cardnavigator-action-bg: var(--jui-btn-bg);
+    --jui-cardnavigator-notice: #fff;
+    --jui-cardnavigator-notice-bg: var(--jui-color-secondary30);
 }
 
 .component > .wrap {
@@ -41,6 +43,7 @@
     gap: 1em;
     padding: 0.25em 0.75em;
     border-radius: 12px;
+    position: relative;
 }
 
 .component > .wrap > .header .crumb > span > em {
@@ -51,6 +54,19 @@
     background: var(--jui-cardnavigator-action-bg);
     color: #fff;
     cursor: pointer;
+}
+
+.component > .wrap > .header .crumb .notice {
+    background-color: var(--jui-cardnavigator-notice-bg);
+    color: var(--jui-cardnavigator-notice);
+    position: absolute;
+    left: 100%;
+    top: 4px;
+    font-size: 0.7em;
+    font-weight: 500;
+    padding: 1px 5px;
+    border-radius: 4px;
+    text-wrap: nowrap;
 }
 
 .component > .wrap > .header h2 {

@@ -46,6 +46,7 @@ import com.effacy.jui.core.client.dom.builder.I;
 import com.effacy.jui.core.client.dom.builder.NodeBuilder.NodeContext;
 import com.effacy.jui.core.client.dom.builder.P;
 import com.effacy.jui.core.client.dom.builder.Span;
+import com.effacy.jui.core.client.dom.builder.Text;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.core.client.dom.jquery.JQuery;
 import com.effacy.jui.core.client.navigation.INavigationAware;
@@ -149,6 +150,8 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
 
             private String description;
 
+            private String notice;
+
             CardConfiguration() {
                 super(null);
             }
@@ -186,7 +189,6 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
                 return this;
             }
 
-
             /**
              * Assigns an icon CSS class to render.
              * 
@@ -196,6 +198,19 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
              */
             public CardConfiguration icon(String icon) {
                 this.icon = icon;
+                return this;
+            }
+
+            /**
+             * Assigns an notice (text) to display along with the navigation (i.e. "coming
+             * soon").
+             * 
+             * @param notice
+             *               the notice text.
+             * @return this configuration.
+             */
+            public CardConfiguration notice(String notice) {
+                this.notice = notice;
                 return this;
             }
 
@@ -658,9 +673,11 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             ListSupport.forEach (path, (ctx, c) -> {
                 Em.$ (crumb).style (FontAwesome.chevronRight ());
                 if (ctx.last()) {
-                    Span.$ (crumb)
-                        .use (n -> breadcrumbLabelEl = (Element) n)
-                        .text (cardLabel);
+                    Span.$ (crumb).use (n -> breadcrumbLabelEl = (Element) n).$ (span -> {
+                        Text.$ (span, cardLabel);
+                        if (!StringSupport.empty(card.notice))
+                            Span.$ (span).style (styles ().notice ()).text (card.notice);
+                    });
                 } else {
                     Span.$ (crumb).style (styles ().clickable ()).onclick (e -> {
                         navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false), c.reference);
@@ -875,6 +892,8 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         public String custom();
 
         public String clickable();
+
+        public String notice();
     }
 
     /**

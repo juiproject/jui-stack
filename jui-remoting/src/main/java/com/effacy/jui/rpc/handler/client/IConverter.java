@@ -54,7 +54,7 @@ public interface IConverter<S,T> {
     @JuiIncompatible
     @GwtIncompatible
     @SuppressWarnings("unchecked")
-    public static <S,T> IConverter<S,T> create(Class<T> klass, BiConsumer<S,T> mapper) {
+    public static <S,T> IExtendedConverter<S,T> create(Class<T> klass, BiConsumer<S,T> mapper) {
         return new IExtendedConverter<S,T> () {
 
             @Override

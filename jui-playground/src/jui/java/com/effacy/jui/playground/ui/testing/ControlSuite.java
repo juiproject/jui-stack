@@ -86,6 +86,23 @@ public class ControlSuite extends Panel {
                 Logger.info ("Selected: " + ListSupport.contract (val));
             });
         }, "Value 1", "Value 2", "Value 3", "Value 4", "Value 5", "Value 6", "Value 7", "Value 8"));
+
+        add (Controls.textsearch (cfg -> {
+            cfg.testId ("textsearch-static-1");
+            cfg.width (Length.em (20));
+            cfg.placeholder("Food category");
+            cfg.selectorTop();
+        }, "Apples", "Pears", "Oranges", "Kiwi Fruit", "Grapes", "Feajoas", "Paw Paws", "Mangoes"));
+
+        add (Controls.textsearch (cfg -> {
+            cfg.testId ("textsearch-static-2");
+            cfg.width (Length.em (20));
+            cfg.placeholder("Search for things");
+            cfg.selectorTop();
+            cfg.selectionHandler(true, v -> {
+                Logger.info ("Selected: " + v);
+            });
+        }, "Apples", "Pears", "Oranges", "Kiwi Fruit", "Grapes", "Feajoas", "Paw Paws", "Mangoes"));
     }
 
     /**

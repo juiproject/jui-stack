@@ -57,6 +57,12 @@ public class DelayedValueHandler<V> {
     private Consumer<V> receiver;
 
     /**
+     * When primed the handler will pass through directly then first value update
+     * prior to going into delay mode.
+     */
+    private boolean prime;
+
+    /**
      * Construct with what will receive the values.
      * 
      * @param receiver
@@ -114,12 +120,46 @@ public class DelayedValueHandler<V> {
      *              the value.
      */
     public void modified(V value) {
+        // If primed then we act immediately.
+        if (prime) {
+            this.value = value;
+            this.prime = false;
+            fire();
+            return;
+        }
+
+        // Verify if we are actually making a changed.
+        if (value == null) {
+            if (this.value == null)
+                return;
+        } else {
+            if ((this.value != null) && value.equals(this.value)) 
+                return;
+        }
+        // Cancel what is in progress and assign the revised value.
         timer.cancel ();
         this.value = value;
+        // Check if we have exceeded our update threshold. If not, then re-schedule.
         if (count++ >= maxCount)
             fire ();
         else
             timer.schedule (threshold);
+    }
+
+    /**
+     * Resets the handler clearing the current count, timer and sets the value to
+     * {@code null}.
+     * <p>
+     * Note that priming allows one to immediately respond to the first value update
+     * which can improve user experience by not inducing an obvious delay on start.
+     * 
+     * @param prime
+     *              {@code true} to prime the handler to fire immediately on the
+     *              first value update prior to going into delayed mode.
+     */
+    public void reset(boolean prime) {
+        reset();
+        this.prime = prime;
     }
 
     /**

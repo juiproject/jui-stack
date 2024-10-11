@@ -62,6 +62,35 @@ public class Controls {
     }
 
     /**
+     * Creates and returns a {@link TextSearchControl}.
+     * 
+     * @param cfg
+     *            to configure the control.
+     * @return the control.
+     */
+    public static <S> TextSearchControl<S> textsearch(Consumer<TextSearchControl.Config<S>> cfg, @SuppressWarnings("unchecked") S...values) {
+        return textsearch(cfg, (Consumer<TextSearchControl<S>>) null, values);
+    }
+
+    /**
+     * Creates and returns a {@link TextSearchControl}.
+     * 
+     * @param cfg
+     *            to configure the control.
+     * @param ctl
+     *            to further configure the control.
+     * @return the control.
+     */
+    public static <S> TextSearchControl<S> textsearch(Consumer<TextSearchControl.Config<S>> cfg, Consumer<TextSearchControl<S>> ctl, @SuppressWarnings("unchecked") S...values) {
+        return TextSearchControlCreator.build (config -> {
+            if (cfg != null)
+                cfg.accept(config);
+            if ((values != null) && (values.length > 0))
+                config.store (new ListStore<S>().add (values));
+        }, ctl);
+    }
+
+    /**
      * Creates and returns a {@link TextAreaControl}.
      * 
      * @param cfg

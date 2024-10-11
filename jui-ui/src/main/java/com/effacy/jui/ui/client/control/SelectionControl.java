@@ -253,6 +253,9 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
          */
         private int searchBufferTimeThreshold = 300;
 
+        /**
+         * See {@link #useMaskOnLoad(boolean)}.
+         */
         private boolean useMaskOnLoad = false;
 
         /**
@@ -940,6 +943,8 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
                 CSS.HEIGHT.apply (el, config ().selectorHeight);
             if (config ().selectorMaxHeight != null)
                 CSS.MAX_HEIGHT.apply (el, config ().selectorMaxHeight);
+            if (config ().selectorWidth != null)
+                CSS.WIDTH.apply (selectorLocatorEl, config ().selectorWidth);
         });
         selector.addListener (IFocusBlurListener.create (null, cpt -> {
             // A bit of a delay here ensures any following events a properly handled.
@@ -1055,20 +1060,6 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
     /************************************************************************
      * Presentation.
      ************************************************************************/
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see com.effacy.jui.core.client.control.Control#onAfterRender()
-     */
-    @Override
-    protected void onAfterRender() {
-        super.onAfterRender ();
-
-        // Apply the width the the selector enclosue.
-        if (config ().selectorWidth != null)
-            CSS.WIDTH.apply (selectorLocatorEl, config ().selectorWidth);
-    }
 
     /**
      * {@inheritDoc}

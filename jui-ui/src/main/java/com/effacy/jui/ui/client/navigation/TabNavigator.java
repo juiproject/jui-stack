@@ -71,7 +71,7 @@ import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.Element;
 
-public class TabNavigator  extends Component<TabNavigator.Config> implements INavigationHandlerWithProvider, INavigationAware, IClosable, IOpenAware {
+public class TabNavigator extends Component<TabNavigator.Config> implements INavigationHandlerWithProvider, INavigationAware, IClosable, IOpenAware {
 
     public interface ITabActivator {
 
@@ -896,7 +896,7 @@ public class TabNavigator  extends Component<TabNavigator.Config> implements INa
      *             the navigation path.
      */
     public void navigate(String... path) {
-        this.navigate (new NavigationContext (), path);
+        navigate (new NavigationContext (), path);
     }
 
     /**
@@ -906,7 +906,7 @@ public class TabNavigator  extends Component<TabNavigator.Config> implements INa
      *             the navigation path.
      */
     public void navigate(List<String> path) {
-        this.navigate (new NavigationContext (), path);
+        navigate (new NavigationContext (), path);
     }
 
     /**

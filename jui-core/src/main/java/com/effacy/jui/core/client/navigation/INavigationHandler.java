@@ -34,7 +34,7 @@ import java.util.Map;
  *
  * @author Jeremy Buckley
  */
-public interface INavigationHandler {
+public interface INavigationHandler extends INavigator {
 
     /**
      * A context to perform navigation within. This can be used to change certain
@@ -353,6 +353,18 @@ public interface INavigationHandler {
         for (String item : path)
             items.add (item);
         navigate (context, items);
+    }
+
+    /**
+     * See {@link #navigate(List)}.
+     * 
+     * @param content
+     *                the navigation context.
+     * @param path
+     *                the path sequence (to be split) to navigate to.
+     */
+    default public void navigate(NavigationContext context, String path) {
+        navigate(context, NavigationSupport.split(path));
     }
 
     /**

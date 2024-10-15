@@ -60,6 +60,7 @@ import com.effacy.jui.core.client.navigation.NavigationSupport;
 import com.effacy.jui.core.client.util.TriConsumer;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.ListSupport;
+import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.Promise;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.ui.client.icon.FontAwesome;
@@ -713,28 +714,22 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
     }
 
     /**
-     * Navigate to a path below this navigator.
-     * 
-     * @param path
-     *                the path to navigate to.
+     * {@inheritDoc}
+     *
+     * @see com.effacy.jui.core.client.navigation.INavigationHandlerProvider#navigate(NavigationContext, List)
      */
-    public void navigate(String path) {
-        navigate (null, path);
-    }
+    @Override
+    public void navigate(NavigationContext context, List<String> path) {
+        // Empty case we just delegate through (which will activate top).
+        if ((path == null) || path.isEmpty()) {
+            navigationRouter.navigate (context, path);
+            return;
+        }
 
-    /**
-     * Navigate to a path below this navigator.
-     * 
-     * @param context
-     *                (optional) navigation context.
-     * @param path
-     *                the path to navigate to.
-     */
-    public void navigate(NavigationContext context, String path) {
         // See note on activeCard. Since we are tracking the active card manually we
         // need to prepend its reference to this path so we properly construct the
         // desired path relative to the top (which is the empty path).
-        List<String> pathCpts = NavigationSupport.split (path);
+        List<String> pathCpts = new ArrayList<>(path);
         if (navigationRouter.activeChild () != null) {
             CardConfiguration card = (CardConfiguration) navigationRouter.activeChild ();
             if (card != TOP) {

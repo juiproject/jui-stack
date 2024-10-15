@@ -265,24 +265,26 @@ public class NavigationHandlerRouter implements INavigationHandler {
      */
     @Override
     public void navigate(NavigationContext context, List<String> path) {
+        if (context == null)
+            context = new NavigationContext();
         onNavigationForward (context, path, (c, p, h) -> {
             // First we resolve any handler to delegate to. If there is none then we
             // commence back-propagation.
-            activateChild (context, h).onFulfillment (v -> {
+            activateChild (c, h).onFulfillment (v -> {
                 if ((v != ActivateOutcome.NOT_PRESENT) && (activeChild != null)) {
                     INavigationHandler handler = handlers.get (activeChild);
                     if (handler != null) {
-                        handler.navigate ((context != null) ? context : context, p);
+                        handler.navigate (c, p);
                     } else {
                         // This indicates the the node is terminal. We check awarenes.
                         // if (activeChild instanceof INavigationAware)
                         //     ((INavigationAware) activeChild).onNavigateTo (context);
                         if ((activeChild instanceof INavigationResidualAware) && (p != null) && !p.isEmpty ())
-                            ((INavigationResidualAware) activeChild).navigationResidual (context, p);
-                        handlerListener.onNavigation (context, path);
+                            ((INavigationResidualAware) activeChild).navigationResidual (c, p);
+                        handlerListener.onNavigation (c, path);
                     }
-                } else if (context.isChanged () || context.isBackPropagateIfNotChanged ())
-                    handlerListener.onNavigation (context, path);
+                } else if (c.isChanged () || c.isBackPropagateIfNotChanged ())
+                    handlerListener.onNavigation (c, path);
             });
         });
     }

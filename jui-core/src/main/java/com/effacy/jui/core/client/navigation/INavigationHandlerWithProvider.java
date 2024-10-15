@@ -40,16 +40,6 @@ public interface INavigationHandlerWithProvider extends INavigationHandler, INav
 
     /**
      * Delegates to
-     * {@link #navigationHandler()#navigate(INavigationHandler.NavigationContext,
-     * String...)}.
-     */
-    default public void navigate(NavigationContext context, String... path) {
-        if (handler() != null)
-            handler().navigate (context, path);
-    }
-
-    /**
-     * Delegates to
      * {@link #navigationHandler()#renavigate(INavigationHandler.NavigationContext)}.
      */
     default public void renavigate(NavigationContext context) {

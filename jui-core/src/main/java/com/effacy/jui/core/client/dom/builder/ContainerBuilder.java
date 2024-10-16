@@ -931,6 +931,34 @@ public abstract class ContainerBuilder<T extends ContainerBuilder<T>> extends No
         children.add (node);
     }
 
+    /**
+     * Obtains the last child that was inserted.
+     * 
+     * @return the child.
+     */
+    @SuppressWarnings("rawtypes")
+    public NodeBuilder lastChild() {
+        if (children.isEmpty())
+            return null;
+        return children.get(children.size() - 1);
+    }
+
+    /**
+     * Obtains the last child that was inserted, so long as it was an element
+     * builder.
+     * 
+     * @return the child.
+     */
+    @SuppressWarnings("rawtypes")
+    public ElementBuilder lastChildAsElementBuilder() {
+        NodeBuilder nb = lastChild();
+        if (nb == null)
+            return null;
+        if (nb instanceof ElementBuilder)
+            return (ElementBuilder) nb;
+        return null;
+    }
+
     @Override
     @SuppressWarnings("rawtypes")
     protected Node _nodeImpl(Node parent, BuildContext ctx) {

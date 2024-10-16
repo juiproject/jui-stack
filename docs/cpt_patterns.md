@@ -20,7 +20,7 @@ This is a reference to some commonly used code that could be useful when develop
 
 ## Components
 
-### Construction
+### Constructio
 
 Starter templates are simple code blocks that fully outline a component and that one can build on.
 
@@ -625,7 +625,7 @@ preview.remove ();
 
 ### Fragments
 
-#### Minimal
+#### Minimal (no children)
 
 A minimal fragment using a renderer supplied by construction:
 
@@ -646,6 +646,28 @@ public class MyFrag extends Fragment<MyFrag> {
     }
 }
 ```
+
+or by calling `builder(...)` (which allows access to instance methods and members):
+
+```java
+public class MyFrag extends Fragment<MyFrag> {
+
+    public static MyFrag $(IDomInsertableContainer<?> parent, /* Configuration */) {
+        MyFrag frg = new MyFrag (/* Configuration */);
+        if (parent != null)
+            parent.insert (frg);
+        return frg;
+    }
+
+    public MyFrag(/* Configuration */) {
+        builder (parent -> {
+            /* DOM content */
+        });
+    }
+}
+```
+
+#### Minimal (with children)
 
 For children we need to go via the create method (though this works fine for the non-child case):
 
@@ -671,9 +693,9 @@ public class MyFrag extends FragmentWithChildren<MyFrag> {
 }
 ```
 
-#### Build method
+#### Build method (no children)
 
-No children:
+To employ the build method:
 
 ```java
 public class MyFrag extends Fragment<MyFrag> {
@@ -694,6 +716,8 @@ public class MyFrag extends Fragment<MyFrag> {
 
 }
 ```
+
+#### Build method (with children)
 
 With children (the build method is for illustration so as to emphasise that you need to call the super method to include the children, for this you need to pass the target element):
 

@@ -1437,10 +1437,11 @@ group (grp -> {
 
     // Since we can insert an IDomInsertable we can avoid creating a component
     // and just inject the DOM directly through the DomBuilder.
-    grp.insert (DomBuilder.div (div -> {
-        div.css ("display", "flex").css (CSS.GAP, Length.em (1)).css (CSS.COLOR, Color.variable ("--jui-text"));
-        Em.$ (div).style (FontAwesome.cat()).css (CSS.FONT_SIZE, Length.em (1.3));
-        P.$ (div).css (CSS.MARGIN, Insets.em(0)).text ("This is some content that has been introduced directly.");
+    grp.insert (parent -> Div.$(parent).$(div -> {
+        div.css("display: flex; gap: 1em; color: var(--jui-text);");
+        Em.$(div).style (FontAwesome.cat()).css("font-size: 1.3em;");
+        P.$(div).css("margin: 0;")
+            .text ("This is some content that has been introduced directly.");
     }));
     
     grp.control ("Second field", Controls.text (cfg -> {}), cell -> {

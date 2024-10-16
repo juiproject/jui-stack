@@ -1,5 +1,6 @@
 .component {
 	overflow: hidden;
+    position: relative;
 }
 
 /* Not 100% height which is needed in some cases */

@@ -154,7 +154,33 @@ public class Fragment<T extends Fragment<T>> implements IDomInsertable {
      * @param builder the builder.
      */
     protected Fragment(Consumer<ContainerBuilder<?>> builder) {
+        builder(builder);
+    }
+
+    /**
+     * Registers a builder.
+     * 
+     * @param builder
+     *                the builder to register.
+     */
+    protected void builder(Consumer<ContainerBuilder<?>> builder) {
         this.builder = builder;
+    }
+
+    /**
+     * Obtains a deferred consolidation of adornments so that they can be applied
+     * specifcally (i.e. to an alternative target).
+     * <p>
+     * This is how adornment must be applied when using the constructor based method
+     * or supplied builder method (since we cannot know exactly how the contents are
+     * added to the parent, which could be multiple).
+     * 
+     * @return the deferred adornments.
+     */
+    protected IFragmentAdornment adornments() {
+        return FragmentAdornments.deferred(() -> {
+            return FragmentAdornments.collection(adornments);
+        });
     }
 
     /**
@@ -217,7 +243,7 @@ public class Fragment<T extends Fragment<T>> implements IDomInsertable {
      *               the target to apply the adornments to.
      */
     protected void adorn(ElementBuilder target) {
-        if (adornments != null)
+        if ((adornments != null) && (target != null))
             adornments.forEach (adornment -> adornment.adorn (target));
     }
     

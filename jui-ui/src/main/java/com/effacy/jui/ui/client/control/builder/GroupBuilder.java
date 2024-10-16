@@ -662,9 +662,9 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
     public class RowBuilder implements IDomInsertable, IRowBuilder<SRC,DST> {
 
         /**
-         * See {@link #adjustPrior(Length)}.
+         * See {@link #adorn(Consumer)}.
          */
-        protected Length priorOffset;
+        protected Consumer<ElementBuilder> adorner;
 
         /**
          * The declared cells.
@@ -685,8 +685,8 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
             // Generate the DOM for a row of cells.
             if (!cells.isEmpty ()) {
                 Div.$ (parent).style (config.styles ().row ()).$ (row -> {
-                    if (priorOffset != null)
-                        row.css (CSS.MARGIN_TOP, priorOffset);
+                    if (adorner != null)
+                        adorner.accept(row);
                     // Create a cell for each of the items in the row.
                     cells.forEach (cell -> {
                         Div.$ (row).style (config.styles ().cell ()).$ (c -> {
@@ -780,8 +780,8 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
         }
         
         @Override
-        public IRowBuilder<SRC,DST> adjustPrior(Length amount) {
-            this.priorOffset = amount;
+        public IRowBuilder<SRC,DST> adorn(Consumer<ElementBuilder> adorner) {
+            this.adorner = adorner;
             return this;
         }
 

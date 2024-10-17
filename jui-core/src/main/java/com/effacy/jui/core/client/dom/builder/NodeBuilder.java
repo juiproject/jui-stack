@@ -550,6 +550,20 @@ public abstract class NodeBuilder<T extends NodeBuilder<T>> implements IDomInser
     }
 
     /**
+     * Convenience to act on oneself returning self (for chaining actions).
+     * 
+     * @param actions
+     *                the actions to apply (as a consumer) to this instance.
+     * @return this node instance.
+     */
+    @SuppressWarnings("unchecked")
+    public T self(Consumer<T> actions) {
+        if (actions != null)
+            actions.accept((T) this);
+        return (T) this;
+    }
+
+    /**
      * Register a reference to the DOM element that can be recovered from the
      * {@link NodeContext}.
      * 

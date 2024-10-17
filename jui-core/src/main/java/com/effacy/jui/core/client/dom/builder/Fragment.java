@@ -151,17 +151,22 @@ public class Fragment<T extends Fragment<T>> implements IDomInsertable {
     /**
      * Construct with a builder.
      * 
-     * @param builder the builder.
+     * @param builder
+     *                the builder (see {@link #builder(Consumer)}).
      */
     protected Fragment(Consumer<ContainerBuilder<?>> builder) {
         builder(builder);
     }
 
     /**
-     * Registers a builder.
+     * Assigns a builder.
+     * <p>
+     * The builder will be invoked with the parent into which it will build its
+     * contents. More than one element can be inserted into the parent and
+     * adornments need to be handled manually.
      * 
      * @param builder
-     *                the builder to register.
+     *                the builder.
      */
     protected void builder(Consumer<ContainerBuilder<?>> builder) {
         this.builder = builder;

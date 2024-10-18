@@ -112,6 +112,11 @@ public class CheckControl extends Control<Boolean, CheckControl.Config> {
         private boolean labelBold;
 
         /**
+         * See {@link #description(String)}.
+         */
+        private String description;
+
+        /**
          * See {@link #left(boolean)}.
          */
         private boolean left;
@@ -189,6 +194,18 @@ public class CheckControl extends Control<Boolean, CheckControl.Config> {
          */
         public Config labelBold(boolean labelBold) {
             this.labelBold = labelBold;
+            return this;
+        }
+
+        /**
+         * An additional description that appears under the label.
+         * 
+         * @param description
+         *                    the description.
+         * @return this configuration instance.
+         */
+        public Config description(String description) {
+            this.description = description;
             return this;
         }
 
@@ -351,11 +368,15 @@ public class CheckControl extends Control<Boolean, CheckControl.Config> {
                                 }, UIEventType.ONKEYPRESS)
                                 .testId(buildTestId ("input")).testRef("input");
                     });
-                    if (!StringSupport.empty(data.label))
+                    if (!StringSupport.empty(data.label)) {
                         Span.$ (item).style (styles ().spacer ());
-                    Label.$ (item)
-                        .attr ("for", "check_ctl_" + getUUID ())
-                        .text (data.label);
+                        Label.$ (item)
+                            .attr ("for", "check_ctl_" + getUUID ()).$ (label -> {
+                                Span.$ (label).text (data.label);
+                                if (!StringSupport.empty(data.description))
+                                    Span.$ (label).style(styles().description()).text (data.description);
+                            });
+                    }
                 });
             });
         }).build (tree -> {
@@ -377,12 +398,6 @@ public class CheckControl extends Control<Boolean, CheckControl.Config> {
     public static interface ILocalCSS extends IControlCSS {
 
         /**
-         * Remove padding at top (which is to give reasonable space at the top of the
-         * control).
-         */
-        public String tight();
-
-        /**
          * Inner wrap around the control (for the border).
          */
         public String inner();
@@ -400,6 +415,8 @@ public class CheckControl extends Control<Boolean, CheckControl.Config> {
         public String toggle();
 
         public String active();
+
+        public String description();
     }
 
     /**

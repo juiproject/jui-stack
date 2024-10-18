@@ -1,7 +1,9 @@
 .component {
+    --jui-selectiongroup-text: var(--jui-ctl-text);
     --jui-selectiongroup-itemgap: 1em;
     --jui-selectiongroup-labelgap: 0.75em;
     --jui-selectiongroup-inputsize: 1em;
+    --jui-selectiongroup-description: var(--jui-ctl-text);
 }
 
 .component {
@@ -17,7 +19,7 @@
 	flex-direction: row;
     flex-wrap: wrap;
     gap: var(--jui-selectiongroup-itemgap);
-	color: var(--jui-ctl-text);
+	color: var(--jui-selectiongroup-text);
 }
 
 .component .inner .item input {
@@ -45,7 +47,7 @@
 }
 
 .component .inner .item label .description {
-	color: var(--jui-ctl-text-subtle);
+	color: var(--jui-selectiongroup-description);
 	margin-top: 0.15em;
     font-weight: 400;
     font-size: 0.95em;

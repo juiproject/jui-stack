@@ -261,80 +261,26 @@ Note that the structured styles approach is quite good for applying adjustments 
 
 ## Themes
 
-Themes embody a number of techniques to make it easy to re-theme a component (specifically a JUI standard component). These consist of:
+Here we describe a number of techniques to make it easy to re-theme a component (specifically a JUI standard component). These consist of:
 
-1. [Stylesheet overrides](#stylesheet-overrides) where a project replaces a stylesheet in a module.
-2. [CSS variables](#css-variables) which essentially parameterise styles. 
-3. [Style packs](#style-packs) which allow for components to take on a plurality of styles (including custom styles).
+1. [Global variables and styles](#global-variables-and-styles) are styles and CSS variables that are used across all JUI components.
+2. [Component variables](#component-variables) allows one to override variables using additional styles.
+3. [Stylesheet overrides](#stylesheet-overrides) where a project replaces a stylesheet in a module.
+4. [Style packs](#style-packs) which allow for components to take on a plurality of styles (including custom styles).
 
 We describe each separately.
 
-### Stylesheet overrides
+### Global variables and styles
 
-The idea employed here is that a module can provide replacement code (specifically resources) for that provided my an inherited module. This is one of the easiest approaches to re-styling JUI standard components and involves:
+*Modifying global variables and styles is suitable for making broad a common theme changes, primarily related to colour palettes. Separate from this, these can be applied to your own components to effect standardisation.*
 
-1. Create a `super` sub-directory under the module base and declare `<super-source path="super" />` in the module file. This tells the transpiler to substitute code under this for that in any inherited module.
-2. Under `super` create a package structure to the stylesheets you want to override and create suitable versions of those stylesheets.
+JUI makes use of a collection of globally declared [CSS variables](https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties) to implement a standard (and parameterised) colour and structural model. Auxillary to these are a handful of CSS styles that implement some common behaviours (such a transitions and loading).
 
-Having done this and recompiled the JUI code you should see the alternatives being applied. Since this approach is one that is wholesale (i.e. a complete replacement) then all styles need to be included in the revision. This is not always ideal. For this reason the JUI standard components often include a special override version of the main stylesheet and this is included at the end of the declaration list (so takes precedence). Consider the following taken from `Button`:
-
-```java
-@CssResource({
-    IComponentCSS.COMPONENT_CSS,
-    "com/effacy/jui/ui/client/button/Button.css",
-    "com/effacy/jui/ui/client/button/Button_Override.css"
-})
-```
-
-The main stylesheet `Button.css` contains the default styles while `Button_Override.css` is provided but is empty. To adjust the hover colour create `com/effacy/jui/ui/client/button/Button_Override.css` under `super`:
-
-```css
-.component .outer:hover {
-	background: green !important;
-}
-```
-
-You should see only the change in the disabled colour.
-
-### CSS variables
-
-#### Component variables
-
-CSS variables, at the component level, provide a convenient mechanism to parameterise component styles across those key dimensions that style variation are expected. By convention, variables are declared under the `.component` style and are refered to by the sub-ordindate styles.
-
-Leaning on `Button.css` again as an exemplar:
-
-```css
-.component {
-    ...
-    --cpt-btn-bg-hover: var(--jui-btn-bg-hover);
-    ...
-}
-
-...
-
-.component .outer:hover {
-    background: var(--cpt-btn-bg-hover);
-}
-
-...
-```
-
-Here `--cpt-btn-bg-hover` refers to the global colour variable `--jui-btn-bg-hover` (see [Global variables](#global-variables) below) and is used to style the hover state of the button. If you employ a [stylesheet override](#stylesheet-overrides) your override CSS would look something like:
-
-```css
-.component {
-    --cpt-btn-bg-hover: green;
-}
-```
-
-This approach is much easier to emply to make parameterised style changes (see also [Style packs](#style-packs)).
+These are declared in `Theme.css` and initalised via the `Theme` class (in `com.effacy.jui.ui.client` of the **jui-ui** module and initialised in the modules initialiser entry point). It too follows the override pattern described in [stylesheet override](#stylesheet-overrides) and you can provide your own variable overrides in `com/effacy/jui/ui/client/Theme_Override.css`.
 
 #### Global variables
 
-The global variable mainly declare colour palettes and are contained in `Theme.css` with inclusion by the `Theme` class (in `com.effacy.jui.ui.client` of the **jui-ui** project) and initialised in the modules initialiser (entry point). It too follows the override pattern described in [stylesheet override](#stylesheet-overrides) and you can provide your own variable overrides in `com/effacy/jui/ui/client/Theme_Override.css`.
-
-Broadly speaking the variables declared fall into the following categories:
+The global variable mainly declare colour palettes. Broadly speaking the variables declared fall into the following categories:
 
 |Category|Description|
 |--------|-----------|
@@ -358,7 +304,7 @@ Others may be present (see `Theme.css` for details) but there are the main ones.
 
 #### Global styles
 
-JUI provides a number of globally declared styles and keyframes that can be employed:
+A minimal number of globally declared styles and keyframes are employed:
 
 |Style|Description|
 |-----|-----------|
@@ -369,7 +315,71 @@ JUI provides a number of globally declared styles and keyframes that can be empl
 
 Note that CSS styles can be obtained through `Theme.styles()`.
 
+### Component variables
+
+*Component-level CSS variables can be modified quite easily and afford a mechanism to fine-tune existing JUI components particularly for structural (i.e. size) and colours. The same approach can be used for inheritable styles (such as `font-size`).*
+
+Most of the JUI components make use of [CSS variables](https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties) declared on the component root element via the components `.component` CSS class. For example, the `CheckControl` makes use of the following (see `CheckControl.css`):
+
+```css
+.component {
+    --jui-checkctl-text: var(--jui-ctl-text);
+    --jui-checkctl-description: var(--jui-ctl-text);
+    --jui-checkctl-labelgap: 0.75em;
+}
+```
+
+The component specific variables can be overridden in an auxillary CSS class (i.e. one that is global or injected):
+
+```css
+.my-checkctl {
+    --jui-checkctl-text: green !important;
+}
+```
+
+Which can then be applied explicitly via the `styles(...)` configuration:
+
+```java
+Controls.check(cfg -> {
+    cfg.styles("my-checkctl");
+    ...
+});
+```
+
+This is only good for changes that can be parameterised by these variables, but in many cases this is sufficient.
+
+### Stylesheet overrides
+
+*This is a more aggressive approach to modifying existing styles that go beyond application of inheritable styles at the component root and parameterisation through component variables.*
+
+The idea employed here is that a module can provide replacement code (specifically resources) for that provided my an inherited module. This is one of the easiest approaches to re-styling JUI standard components and involves:
+
+1. Create a `super` sub-directory under the module base and declare `<super-source path="super" />` in the module file. This tells the transpiler to substitute code under this for that in any inherited module.
+2. Under `super` create a package structure to the stylesheets you want to override and create suitable versions of those stylesheets.
+
+Having done this and recompiled the JUI code you should see the alternatives being applied. Since this approach is one that is wholesale (i.e. a complete replacement) then all styles need to be included in the revision. This is not always ideal. For this reason the JUI standard components often include a special override version of the main stylesheet and this is included at the end of the declaration list (so takes precedence). Consider the following taken from `Button`:
+
+```java
+@CssResource({
+    IComponentCSS.COMPONENT_CSS,
+    "com/effacy/jui/ui/client/button/Button.css",
+    "com/effacy/jui/ui/client/button/Button_Override.css"
+})
+```
+
+The main stylesheet `Button.css` contains the default styles while `Button_Override.css` is provided but is empty. To adjust the hover colour create `com/effacy/jui/ui/client/button/Button_Override.css` under `super`:
+
+```css
+.component .outer:hover {
+    background: green !important;
+}
+```
+
+You should see only the change in the disabled colour.
+
 ### Style packs
+
+*The most effective approach to re-styling is to create a custom style for a given component. These extend the existing styles and is good when you want to continue to use the existing ones.*
 
 Style packs is a design pattern for the localisation of styles to specific components where more than one variation of a component can appear in a single application. These are generally employed for re-usable components and widely used for JUI standard componenst (an example of which is `Button` which uses styles to style solid, outline and colour variable buttons). 
 

@@ -428,6 +428,16 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
         public <V,CTL extends IControl<V>> IRowBuilder<SRC,DST> control(String by, String label, CTL ctl, Consumer<IControlCell<V,CTL,SRC,DST>> handler);
 
         /**
+         * Inserts DOM content via a builder. This will build directly into the cell
+         * container.
+         * 
+         * @param builder
+         *                the builder to build content.
+         * @return this builder.
+         */
+        public IRowBuilder<SRC,DST> insert(Consumer<ElementBuilder> builder);
+
+        /**
          * Adds a component to the row.
          * 
          * @param cpt

@@ -751,7 +751,9 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                                     inner.css (CSS.BOTTOM, Length.px (cell.offsetv));
                                 if (cell.offseth != 0)
                                     inner.css (CSS.LEFT, Length.px (cell.offseth));
-                                if (cell.component != null) {
+                                if (cell.builder != null) {
+                                    cell.builder.accept (inner);
+                                } else if (cell.component != null) {
                                     inner.insert (cell.component);
                                 } else if (cell.control != null) {
                                     if (reference != null)
@@ -797,7 +799,18 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
         }
 
         @Override
+        public IRowBuilder<SRC,DST> insert(Consumer<ElementBuilder> builder) {
+            if (builder == null)
+                return this;
+            RowCell<Void,IControl<Void>> cell = new RowCell<>(builder);
+            cells.add (cell);
+            return this;
+        }
+
+        @Override
         public RowBuilder component(IComponent cpt, Consumer<ICell> handler) {
+            if (cpt == null)
+                return this;
             RowCell<Void,IControl<Void>> cell = new RowCell<>(cpt);
             if (handler != null)
                 handler.accept (cell);
@@ -846,6 +859,8 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
 
             protected String guidance;
 
+            protected Consumer<ElementBuilder> builder;
+
             protected IComponent component;
 
             protected CTL control;
@@ -853,6 +868,10 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
             RowCell() {
                 // Expander.
                 grow = 1;
+            }
+
+            RowCell(Consumer<ElementBuilder> builder) {
+                this.builder = builder;
             }
 
             RowCell(IComponent component) {

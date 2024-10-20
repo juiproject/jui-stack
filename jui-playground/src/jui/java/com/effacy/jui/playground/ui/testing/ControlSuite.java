@@ -17,6 +17,7 @@ package com.effacy.jui.playground.ui.testing;
 
 import java.util.List;
 
+import com.effacy.jui.core.client.component.ComponentCreator;
 import com.effacy.jui.core.client.component.layout.VertLayoutCreator;
 import com.effacy.jui.core.client.dom.css.Insets;
 import com.effacy.jui.core.client.dom.css.Length;
@@ -24,8 +25,12 @@ import com.effacy.jui.core.client.store.ListPaginatedStore;
 import com.effacy.jui.platform.util.client.ListSupport;
 import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.TimerSupport;
+import com.effacy.jui.ui.client.control.CalendarControl;
+import com.effacy.jui.ui.client.control.CalendarDate;
+import com.effacy.jui.ui.client.control.CalendarSupport;
 import com.effacy.jui.ui.client.control.Controls;
 import com.effacy.jui.ui.client.control.MultiSelectionControl.Config.SelectionStyle;
+import com.effacy.jui.ui.client.fragments.Stack;
 import com.effacy.jui.ui.client.panel.Panel;
 import com.effacy.jui.ui.client.panel.PanelCreator;
 
@@ -36,31 +41,59 @@ public class ControlSuite extends Panel {
 
         // Panel bar = add (PanelCreator.buttonBar());
 
-        add (Controls.text(cfg -> {
-            cfg.testId ("text-static-1");
-            cfg.width (Length.em (12));
-            cfg.placeholder("Some text");
+        add (ComponentCreator.build (root -> {
+           Stack.$(root).horizontal().$ (
+                Controls.text(cfg -> {
+                    cfg.testId ("text-static-1");
+                    cfg.width (Length.em (12));
+                    cfg.placeholder("Some text");
+                }),
+                Controls.text(cfg -> {
+                    cfg.testId ("text-static-2");
+                    cfg.width (Length.em (12));
+                    cfg.placeholder("Some text");
+                }, ctl -> ctl.disable()),
+                Controls.text(cfg -> {
+                    cfg.testId ("text-static-3");
+                    cfg.width (Length.em (12));
+                    cfg.placeholder("Some text");
+                }, ctl -> ctl.waiting(true))
+           );
         }));
 
-        add (PanelCreator.buttonBar(cfg -> {}, panel -> {
-            panel.add (Controls.number(cfg -> {
-                cfg.testId ("number-static-1");
-                cfg.width (Length.em (10));
-                cfg.decimalPlaces(3);
-                cfg.step(1.2);
-            }));
-            panel.add (Controls.number(cfg -> {
-                cfg.testId ("number-static-2");
-                cfg.width (Length.em (10));
-                cfg.step(2.0);
-                cfg.max(6.0);
-                cfg.min(1.0);
-            }));
-            panel.add (Controls.number(cfg -> {
-                cfg.testId ("number-static-2");
-                cfg.width (Length.em (6));
-                cfg.stepHide();
-            }));
+        add (ComponentCreator.build (root -> {
+            Stack.$(root).horizontal().$ (
+                Controls.number(cfg -> {
+                    cfg.testId ("number-static-1");
+                    cfg.width (Length.em (10));
+                    cfg.decimalPlaces(3);
+                    cfg.step(1.2);
+                }),
+                Controls.number(cfg -> {
+                    cfg.testId ("number-static-2");
+                    cfg.width (Length.em (10));
+                    cfg.step(2.0);
+                    cfg.max(6.0);
+                    cfg.min(1.0);
+                }),
+                Controls.number(cfg -> {
+                    cfg.testId ("number-static-3");
+                    cfg.width (Length.em (6));
+                    cfg.stepHide();
+                }),
+                Controls.number(cfg -> {
+                    cfg.testId ("number-static-4");
+                    cfg.width (Length.em (10));
+                    cfg.decimalPlaces(3);
+                    cfg.step(1.2);
+                }, ctl -> ctl.disable()),
+                Controls.number(cfg -> {
+                    cfg.testId ("number-static-5");
+                    cfg.width (Length.em (10));
+                    cfg.decimalPlaces(3);
+                    cfg.step(1.2);
+                }, ctl -> ctl.waiting(true))
+            );
         }));
         
         add (Controls.selector (cfg -> {
@@ -103,6 +136,19 @@ public class ControlSuite extends Panel {
                 Logger.info ("Selected: " + v);
             });
         }, "Apples", "Pears", "Oranges", "Kiwi Fruit", "Grapes", "Feajoas", "Paw Paws", "Mangoes"));
+
+        add (Controls.calendar (cfg -> {
+            //cfg.formatLocale("ar-EG");
+            cfg.formatLocale("en-gb");
+            cfg.formatStyle(CalendarControl.Config.FormatStyle.SHORT_DAY);
+            cfg.selectorTop();
+        }, ctl -> {
+            //ctl.setValue(CalendarDate.from(2021, 1, 21));
+            Logger.info("" + CalendarSupport.daysInMonth(2021, 2));
+            Logger.info("" + CalendarSupport.daysInMonth(2022, 2));
+            Logger.info("" + CalendarSupport.daysInMonth(2023, 2));
+            Logger.info("" + CalendarSupport.daysInMonth(2024, 2));
+        }));
     }
 
     /**

@@ -6,10 +6,10 @@ import com.effacy.jui.core.client.component.layout.LayoutData;
 import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
 import com.effacy.jui.platform.util.client.With;
 
-public class NumberControlCreator {
+public class CalendarControlCreator {
 
     /**
-     * Convenience to build a control.
+     * Convenience to build a calendar control.
      * 
      * @param el
      *            the element to build into.
@@ -17,32 +17,32 @@ public class NumberControlCreator {
      *            to configure the control.
      * @return the button instance.
      */
-    public static NumberControl $(ContainerBuilder<?> el, Consumer<NumberControl.Config> cfg) {
+    public static CalendarControl $(ContainerBuilder<?> el, Consumer<CalendarControl.Config> cfg) {
         return With.$ (build (cfg), cpt -> el.render (cpt));
     }
 
     /**
-     * Convenience to obtain a configuration.
+     * Convenience to obtain a calendar configuration.
      * 
      * @return the button configuration instance.
      */
-    public static NumberControl.Config create() {
-        return new NumberControl.Config ();
+    public static CalendarControl.Config create() {
+        return new CalendarControl.Config ();
     }
 
     /**
-     * Convenience to build a text control.
+     * Convenience to build a calendar control.
      * 
      * @param data
      *             (optional) layout data to associate with the instance.
      * @return the control instance.
      */
-    public static NumberControl build(LayoutData...data) {
+    public static CalendarControl build(LayoutData...data) {
         return build (null, data);
     }
 
     /**
-     * Convenience to build a text control.
+     * Convenience to build a calendar control.
      * 
      * @param cfg
      *             to configure the control.
@@ -50,12 +50,12 @@ public class NumberControlCreator {
      *             (optional) layout data to associate with the instance.
      * @return the control instance.
      */
-    public static NumberControl build(Consumer<NumberControl.Config> cfg, LayoutData...data) {
+    public static CalendarControl build(Consumer<CalendarControl.Config> cfg, LayoutData...data) {
         return build (cfg, null, data);
     }
 
     /**
-     * Convenience to build a text control.
+     * Convenience to build a calendar control.
      * 
      * @param cfg
      *                to configure the control.
@@ -65,11 +65,11 @@ public class NumberControlCreator {
      *                (optional) layout data to associate with the instance.
      * @return the control instance.
      */
-    public static NumberControl build(Consumer<NumberControl.Config> cfg, Consumer<NumberControl> applier, LayoutData...data) {
-        NumberControl.Config config = new NumberControl.Config ();
+    public static CalendarControl build(Consumer<CalendarControl.Config> cfg, Consumer<CalendarControl> applier, LayoutData...data) {
+        CalendarControl.Config config = new CalendarControl.Config ();
         if (cfg != null)
             cfg.accept (config);
-        NumberControl ctl = config.build (data);
+        CalendarControl ctl = config.build (data);
         if (applier != null)
             applier.accept (ctl);
         return ctl;

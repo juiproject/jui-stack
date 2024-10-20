@@ -138,6 +138,32 @@ public class Controls {
         return NumberControlCreator.build (cfg, ctl);
     }
 
+
+
+    /**
+     * Creates and returns a {@link NumberControl}.
+     * 
+     * @param cfg
+     *            to configure the control.
+     * @return the control.
+     */
+    public static CalendarControl calendar(Consumer<CalendarControl.Config> cfg) {
+        return CalendarControlCreator.build (cfg);
+    }
+
+    /**
+     * Creates and returns a {@link NumberControl}.
+     * 
+     * @param cfg
+     *            to configure the control.
+     * @param ctl
+     *            to further configure the control.
+     * @return the control.
+     */
+    public static CalendarControl calendar(Consumer<CalendarControl.Config> cfg, Consumer<CalendarControl> ctl) {
+        return CalendarControlCreator.build (cfg, ctl);
+    }
+
     /**
      * Creates and returns a {@link SelectionControl}.
      * 

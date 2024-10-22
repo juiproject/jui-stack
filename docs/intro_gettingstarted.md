@@ -58,7 +58,7 @@ myapplication-jui
 
 ### POM file
 
-The POM file follows:
+The POM file follows (replace the version JUI with the latest):
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -80,7 +80,7 @@ The POM file follows:
     <build.output>target</build.output>
 
     <!-- JUI libraries -->
-    <version.effacy-jui>0.0.6.M-SNAPSHOT</version.effacy-jui>
+    <version.effacy-jui>...</version.effacy-jui>
 
     <!-- Spring related -->
     <version.spring>6.1.1</version.spring>

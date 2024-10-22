@@ -944,7 +944,7 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
             if (config ().selectorMaxHeight != null)
                 CSS.MAX_HEIGHT.apply (el, config ().selectorMaxHeight);
             if (config ().selectorWidth != null)
-                CSS.WIDTH.apply (selectorLocatorEl, config ().selectorWidth);
+                CSS.WIDTH.apply (el, config ().selectorWidth);
         });
         selector.addListener (IFocusBlurListener.create (null, cpt -> {
             // A bit of a delay here ensures any following events a properly handled.

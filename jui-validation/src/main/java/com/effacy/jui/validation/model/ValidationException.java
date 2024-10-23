@@ -105,7 +105,7 @@ public class ValidationException extends Exception implements Iterable<Message> 
     public String flatten() {
         StringBuffer sb = new StringBuffer();
         forEach(msg -> {
-            if (!sb.isEmpty())
+            if (sb.length() != 0)
                 sb.append("; ");
             sb.append(msg.getMessage());
         });

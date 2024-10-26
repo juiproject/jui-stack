@@ -1001,6 +1001,8 @@ Here an instance of your executor (`MyExecutor` which is assumed to sit in the c
 
 #### Exception handling
 
+*See [Modification](#modification) for handling exceptions using the modification framework, these ultimately are translated to `ProcessException` which are subsequently handled as described below.*
+
 There are two exceptions that are processed by the mechanism: `NoProcessorException` which occurs when the incoming command or query cannot be matched with a processor and `ProcessorException` which embodies all other exception cases.
 
 Processors should try their best to only throw `ProcessorException`'s, however that is not always guaranteed (particularly for uncaught exceptions). The executor, when encoutering an unexpected exception, will convert the exception to `ProcessorException` (creating an single violation of type `ErrorType.SYSTEM`, see the following).
@@ -1154,7 +1156,7 @@ It was noted in point (3) that generated exceptions are translated, by that we m
 1. If the exception is of type `ProcessorException` then its errors are extracted and stored (as above).
 2. If the exception is of type `ValidationException` this its messages (see `IValidator.Message`) are extracted and stores are errors of type `ErrorType.VALIDATION`.
 3. If an exception handler is registered against the setter (see below) then the exception is passed through to the for it to generate suitable `IValidator.Message`'s which are then translated to errors of type `ErrorType.VALIDATION`.
-4. Any uncaught exception is stored as a `ErrorType.VALIDATION` with a message indicating an uncaught exception (really, you need to map these).
+4. Any uncaught exception is stored as a `ErrorType.VALIDATION` with a message indicating an uncaught exception (really, you need to map these). *However, the associated message is processed by `String translateUnexpectedError(Exception e)` which can be overidden; either to provide a more friendly message but also provides a hook to log the message.*
 
 Note that where paths are not directly specified they will be drawn from the value set on the setter by `path(String)`.
 

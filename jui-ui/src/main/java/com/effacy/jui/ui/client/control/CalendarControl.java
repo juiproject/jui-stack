@@ -1,5 +1,7 @@
 package com.effacy.jui.ui.client.control;
 
+import java.util.function.Supplier;
+
 import org.gwtproject.safehtml.shared.SafeHtmlBuilder;
 
 import com.effacy.jui.core.client.component.IComponentCSS;
@@ -20,7 +22,6 @@ import com.effacy.jui.core.client.dom.builder.Thead;
 import com.effacy.jui.core.client.dom.builder.Tr;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.platform.css.client.CssResource;
-import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.google.gwt.core.client.GWT;
@@ -127,7 +128,7 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
         /**
          * See {@link #formatLocale(String)}.
          */
-        private String formatLocale = (DEFAULT_LOCALE != null) ? DEFAULT_LOCALE : "en-us";
+        private Supplier<String> formatLocale = () -> (DEFAULT_LOCALE != null) ? DEFAULT_LOCALE : "en-us";
 
         /**
          * See {@link #formatStyle(FormatStyle)},
@@ -176,6 +177,20 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
          * @return this configuration instance.
          */
         public Config formatLocale(String formatLocale) {
+            if (formatLocale != null)
+                this.formatLocale = () -> formatLocale;
+            return this;
+        }
+
+        /**
+         * Assigns the locale to use for formatting dates.
+         * 
+         * @param formatLocale
+         *                     supplier for the locale to use (i.e. <code>en-us</code>
+         *                     or <code>en-gb</code>).
+         * @return this configuration instance.
+         */
+        public Config formatLocale(Supplier<String> formatLocale) {
             if (formatLocale != null)
                 this.formatLocale = formatLocale;
             return this;
@@ -378,7 +393,7 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
         if (this.date == null) {
             inputEl.value = "";
         } else {
-            inputEl.value = CalendarSupport.formatDate(config().formatLocale, this.date.year(), this.date.month(), this.date.day(), config().formatStyle.weekday,  config().formatStyle.year,  config().formatStyle.month,  config().formatStyle.day);
+            inputEl.value = CalendarSupport.formatDate(config().formatLocale.get(), this.date.year(), this.date.month(), this.date.day(), config().formatStyle.weekday,  config().formatStyle.year,  config().formatStyle.month,  config().formatStyle.day);
         }
     }
 
@@ -403,7 +418,7 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
     }
 
     protected void updateSelector() {
-        String month = CalendarSupport.nameOfMonth(config().formatLocale, selectorDate.month());
+        String month = CalendarSupport.nameOfMonth(config().formatLocale.get(), selectorDate.month());
         int[] datesInTable = CalendarSupport.dateTable (selectorDate.year(), selectorDate.month());
 
         // Final versions for reference in the builder.

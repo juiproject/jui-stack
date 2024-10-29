@@ -111,6 +111,11 @@ public interface INavigationHandler extends INavigator {
         protected int depth = 0;
 
         /**
+         * See {@link #relative(boolean)}.
+         */
+        protected boolean relative = false;
+
+        /**
          * Meta data attached to the context.
          */
         protected Map<String,Object> metadata;
@@ -157,6 +162,30 @@ public interface INavigationHandler extends INavigator {
         public NavigationContext(Source source, boolean refresh) {
             this.source = (source == null) ? Source.INTERNAL : source;
             this.refresh = refresh;
+        }
+
+        /**
+         * Convenience for passing {@code true} to {@link #relative(boolean)}.
+         */
+        public NavigationContext relative() {
+            return relative(true);
+        }
+
+        /**
+         * Determines if navigation is relative to the current location in the
+         * navigator.
+         * <p>
+         * This is distinct from the navigation structure, it is only relevant to the
+         * navigation handler being navigated (in the most case navigators are of single
+         * depth so this has no impact).
+         * 
+         * @param relative
+         *                 {@code true} if it is relative.
+         * @return this navigation instance.
+         */
+        public NavigationContext relative(boolean relative) {
+            this.relative = relative;
+            return this;
         }
 
         /**
@@ -263,6 +292,15 @@ public interface INavigationHandler extends INavigator {
          */
         public boolean isRefresh() {
             return refresh;
+        }
+
+        /**
+         * See {@link #relative(boolean)}.
+         * 
+         * @return {@code true} if has been set to be relative.
+         */
+        public boolean isRelative() {
+            return relative;
         }
 
         /**

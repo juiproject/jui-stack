@@ -37,6 +37,27 @@ public class CalendarSupport {
     }
 
     /**
+     * Standard long format.
+     */
+    public static String formatDateLong(String locale, int year, int month, int day) {
+        return formatDate(locale, year, month, day, FORMAT_WEEKDAY.LONG, FORMAT_YEAR.NUMERIC, FORMAT_MONTH.LONG, FORMAT_DAY.NUMERIC);
+    }
+
+    /**
+     * Standard medium format.
+     */
+    public static String formatDateMedium(String locale, int year, int month, int day) {
+        return formatDate(locale, year, month, day, FORMAT_WEEKDAY.SHORT, FORMAT_YEAR.NUMERIC, FORMAT_MONTH.SHORT, FORMAT_DAY.NUMERIC);
+    }
+
+    /**
+     * Standard short format.
+     */
+    public static String formatDateShort(String locale, int year, int month, int day) {
+        return formatDate(locale, year, month, day, FORMAT_WEEKDAY.NONE, FORMAT_YEAR.NUMERIC, FORMAT_MONTH.SHORT, FORMAT_DAY.NUMERIC);
+    }
+
+    /**
      * See
      * {@link #formatDate(String, int, int, int, FORMAT_WEEKDAY, FORMAT_YEAR, FORMAT_MONTH, FORMAT_DAY)}
      * but where the year, month and day come from a {@link CalendarDate}.
@@ -47,7 +68,7 @@ public class CalendarSupport {
 
     /**
      * Given a locale and date (as a year, month and day) format the date subject to
-     * the formatting directives.
+     * the formatting directives
      * 
      * @param locale
      *                 the local to use (i.e. "en-gb").

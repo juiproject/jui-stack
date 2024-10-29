@@ -276,11 +276,14 @@ public class NavigationHandlerRouter implements INavigationHandler {
                     if (handler != null) {
                         handler.navigate (c, p);
                     } else {
-                        // This indicates the the node is terminal. We check awarenes.
+                        // This indicates the the node is terminal. We check awareness and invoke. Note
+                        // that we do this even if there is no residual (since the residual could be
+                        // embodied in the navigation context).
                         // if (activeChild instanceof INavigationAware)
                         //     ((INavigationAware) activeChild).onNavigateTo (context);
-                        if ((activeChild instanceof INavigationResidualAware) && (p != null) && !p.isEmpty ())
-                            ((INavigationResidualAware) activeChild).navigationResidual (c, p);
+                        //if ((activeChild instanceof INavigationResidualAware) && (p != null) && !p.isEmpty ())
+                        if ((activeChild instanceof INavigationResidualAware))
+                            ((INavigationResidualAware) activeChild).navigationResidual (c, (p == null) ? new ArrayList<>() : p);
                         handlerListener.onNavigation (c, path);
                     }
                 } else if (c.isChanged () || c.isBackPropagateIfNotChanged ())

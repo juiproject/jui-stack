@@ -51,6 +51,7 @@ import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.core.client.dom.jquery.JQuery;
 import com.effacy.jui.core.client.navigation.INavigationAware;
 import com.effacy.jui.core.client.navigation.INavigationHandler;
+import com.effacy.jui.core.client.navigation.INavigationHandler.NavigationContext;
 import com.effacy.jui.core.client.navigation.INavigationHandlerProvider;
 import com.effacy.jui.core.client.navigation.INavigationHandlerWithProvider;
 import com.effacy.jui.core.client.navigation.INavigationResidualAware;
@@ -60,7 +61,6 @@ import com.effacy.jui.core.client.navigation.NavigationSupport;
 import com.effacy.jui.core.client.util.TriConsumer;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.ListSupport;
-import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.Promise;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.ui.client.icon.FontAwesome;
@@ -147,7 +147,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
     
             private Supplier<String> label;
 
-            private String icon;
+            private Supplier<String> icon;
 
             private String description;
 
@@ -198,6 +198,17 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
              * @return this configuration.
              */
             public CardConfiguration icon(String icon) {
+                return icon(() -> icon);
+            }
+
+            /**
+             * Assigns an icon CSS class to render.
+             * 
+             * @param icon
+             *              the icon CSS class.
+             * @return this configuration.
+             */
+            public CardConfiguration icon(Supplier<String> icon) {
                 this.icon = icon;
                 return this;
             }
@@ -341,6 +352,11 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         private boolean titleOnlyInBreadcrumb;
 
         /**
+         * See {@link #fullBreadcrumb(boolean)}.
+         */
+        private boolean fullBreadcrumb = true;
+
+        /**
          * See {@link #effect(Effect)}.
          */
         private Effect effect;
@@ -395,6 +411,20 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
          */
         public Config titleOnlyInBreadcrumb(boolean titleOnlyInBreadcrumb) {
             this.titleOnlyInBreadcrumb = titleOnlyInBreadcrumb;
+            return this;
+        }
+
+        /**
+         * The breadcrumb should show the full path (this will automatically be the case
+         * if {@link #titleOnlyInBreadcrumb(boolean)} is set).
+         * 
+         * @param fullBreadcrumb
+         *                       {@code true} to expand the breadcrumb in full (this is
+         *                       the default).
+         * @return this configuration instance.
+         */
+        public Config fullBreadcrumb(boolean fullBreadcrumb) {
+            this.fullBreadcrumb = fullBreadcrumb;
             return this;
         }
 
@@ -674,11 +704,13 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             ListSupport.forEach (path, (ctx, c) -> {
                 Em.$ (crumb).style (FontAwesome.chevronRight ());
                 if (ctx.last()) {
-                    Span.$ (crumb).use (n -> breadcrumbLabelEl = (Element) n).$ (span -> {
-                        Text.$ (span, cardLabel);
-                        if (!StringSupport.empty(card.notice))
-                            Span.$ (span).style (styles ().notice ()).text (card.notice);
-                    });
+                    if (config().fullBreadcrumb || config().titleOnlyInBreadcrumb) {
+                        Span.$ (crumb).use (n -> breadcrumbLabelEl = (Element) n).$ (span -> {
+                            Text.$ (span, cardLabel);
+                            if (!StringSupport.empty(card.notice))
+                                Span.$ (span).style (styles ().notice ()).text (card.notice);
+                        });
+                    }
                 } else {
                     Span.$ (crumb).style (styles ().clickable ()).onclick (e -> {
                         navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false), c.reference);
@@ -698,8 +730,13 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             Span.$ (h2)
                 .use (n -> headerLabelEl = (Element) n)
                 .text (cardLabel);
-            if (context.hasMetadata(ATTR_CARDLABEL_ICON))
+            if (context.hasMetadata(ATTR_CARDLABEL_ICON)) {
                 I.$(h2).style ((String) context.getMetadata(ATTR_CARDLABEL_ICON));
+            } else {
+                String icon = (card.icon == null) ? null : card.icon.get();
+                if (icon != null)
+                    I.$(h2).style (icon);
+            }
         });
     }
 
@@ -720,6 +757,9 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
      */
     @Override
     public void navigate(NavigationContext context, List<String> path) {
+        if (context == null)
+            context = new NavigationContext();
+            
         // Empty case we just delegate through (which will activate top).
         if ((path == null) || path.isEmpty()) {
             navigationRouter.navigate (context, path);
@@ -730,16 +770,14 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         // need to prepend its reference to this path so we properly construct the
         // desired path relative to the top (which is the empty path).
         List<String> pathCpts = new ArrayList<>(path);
-        if (navigationRouter.activeChild () != null) {
+        if (context.isRelative() && (navigationRouter.activeChild () != null)) {
             CardConfiguration card = (CardConfiguration) navigationRouter.activeChild ();
             if (card != TOP) {
                 for (int i = card.reference.length - 1; i >=0; i--)
                     pathCpts.add(0, card.reference[i]);
             }
         }
-        if (context == null)
-            context = new NavigationContext();
-        navigationRouter.navigate (context, pathCpts);
+        navigationRouter.navigate (context.relative(false), pathCpts);
     }
 
     /************************************************************************

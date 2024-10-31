@@ -1635,11 +1635,25 @@ ControlForm<MyData,MyData> form = ControlFormCreator.build (frm -> {
 add (form);
 
 // This will probably be invoked via some action (i.e. button).
-MyData data = form.retrieve (new MyData ());
-Logger.info (data.getFirstName() + " " + data.getLastName());
+MyData data = form.retrieve(new MyData());
+Logger.info(data.getFirstName() + " " + data.getLastName());
 ```
 
 As noted in the comment the retrieval will tend to be instigated upon some action (such as the click on a save button). With this in mind, such an action implies acting only on those controls that have actually changed (i.e. those that are dirty). The default behaviour is that setters are only invoked on those controls that are dirty, so that the object passed will only be populated which changed data. This is quite good when the passed object is some form of command (see [Remoting](topic_remoting.md#command-class)). However, that behaviour can be problematic and you may want the setter being invoked in all cases. You can change this behaviour by setting the `setterApplyWhenNotDirty` property on the `ControlForm.Config` configuration passed through during form construction.
+
+#### Control clearing
+
+Sometimes a form needs its controls cleared. This differs from *reset* which resets controls to their last set value; rather this *sets* the controls to an empty state (this is useful when a single form caters for both editing and creating where one *clears* a form that was used for editing in preparation for creating).
+
+To clear a form simply invoke the `clear()` method. This will assign `null` to each control and clear any previously assigned source value.
+
+Sometimes setting `null` is not the desired approach to clear a control. If that is the case a custom clearer can be assigned as we can do with `retrieve(...)` and `edit(...)`:
+
+```java
+cell.clear(ctl -> {
+    // Code to clear the control ctl.
+});
+```
 
 #### Generalised editing (and `IEditable`)
 

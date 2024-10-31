@@ -906,6 +906,20 @@ public class ControlForm<SRC,DST> extends Component<ControlForm.Config> implemen
         _loading (false);
         invalidate (Arrays.asList (new ErrorMessage (message)));
     }
+
+    /**
+     * Clears the form controls and form from what is being edited.
+     * <p>
+     * This will set the source to {@code null} and clear each of the controls to
+     * empty. This is used in cases where the form is dual purpose (edit and
+     * create).
+     */
+    public void clear() {
+        this.source = null;
+        if (!isRendered ())
+            return;
+        form.clear();
+    }
     
     /**
      * Gets values from the passed source to populate out the controls in the form.

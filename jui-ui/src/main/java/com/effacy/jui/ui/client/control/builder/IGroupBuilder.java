@@ -619,6 +619,15 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
             public IControlCell<V,CTL,SRC,DST> guidance(String guidance);
 
             /**
+             * User to clear a control (set to empty).
+             * 
+             * @param clearer
+             *               invoked to clear the control.
+             * @return this handler.
+             */
+            public IControlCell<V,CTL,SRC,DST> clear(IClearer<V> clearer);
+
+            /**
              * Used to get a value from an external source and apply to the control for
              * editing.
              * 
@@ -708,6 +717,21 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
          */
         public void modified(IModificationContext ctx, CTL control);
 
+    }
+
+    /**
+     * Use to clear control.
+     */
+    @FunctionalInterface
+    public interface IClearer<V> {
+
+        /**
+         * Clears the given control.
+         * 
+         * @param ctl
+         *               the control.
+         */
+        public void clear(IControl<V> ctl);
     }
 
     /**

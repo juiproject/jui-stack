@@ -835,6 +835,8 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
 
             protected String help;
 
+            protected IClearer<V> clearer;
+
             protected IGetter<V, SRC> getter;
 
             protected ISetter<V, DST> setter;
@@ -914,6 +916,12 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
             }
 
             @Override
+            public IControlCell<V,CTL,SRC,DST> clear(IClearer<V> clearer) {
+                this.clearer = clearer;
+                return this;
+            }
+
+            @Override
             public RowCell<V,CTL> edit(IGetter<V, SRC> getter) {
                 this.getter = getter;
                 return this;
@@ -974,6 +982,18 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
             public RowCell<V,CTL> guidance(String guidance) {
                 this.guidance = guidance;
                 return this;
+            }
+
+            /**
+             * Cleats the control in the cell.
+             */
+            void _clear() {
+                if (control != null) {
+                    if (clearer != null)
+                        clearer.clear(control);
+                    else
+                        control.setValue (Value.of (null));
+                }
             }
 
             /**

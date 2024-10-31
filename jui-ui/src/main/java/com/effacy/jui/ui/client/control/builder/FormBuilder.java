@@ -159,6 +159,19 @@ public class FormBuilder<SRC,DST> implements IModificationContext, IGroupBuilder
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
+    public void clear() {
+        forEachCell (cell -> {
+            try {
+                ((RowCell) cell)._clear ();
+            } catch (Throwable e) {
+                Logger.reportUncaughtException (e, FormBuilder.this);
+            }
+            return true;
+        });
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Override
     public void edit(SRC source) {
         if (onSource != null)
             onSource.accept (source);

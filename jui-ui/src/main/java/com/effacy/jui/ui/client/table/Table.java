@@ -53,7 +53,6 @@ import com.effacy.jui.core.client.store.IStoreSelection;
 import com.effacy.jui.core.client.util.Tribool;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.Itr;
-import com.effacy.jui.platform.util.client.ListSupport;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.platform.util.client.TimerSupport;
 import com.effacy.jui.rpc.handler.client.query.IRecord;
@@ -102,6 +101,12 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
             public String iconDescending();
 
             /**
+             * Header icon to use to indicate that a column is sortable (but not sorting).
+             * This is optional.
+             */
+            public String iconSortable();
+
+            /**
              * Convenience to create a style instance.
              * 
              * @param styles
@@ -110,9 +115,11 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
              *                       icon for the header ascending indicator.
              * @param iconDescending
              *                       icon for the header ascending indicator.
+             * @param iconSortable
+             *                       icon for the header "sortable" indicator.
              * @return the style instance.
              */
-            public static Style create(ILocalCSS styles, String iconAscending, String iconDescending) {
+            public static Style create(ILocalCSS styles, String iconAscending, String iconDescending, String iconSortable) {
                 return new Style () {
 
                     @Override
@@ -130,13 +137,18 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
                         return iconDescending;
                     }
 
+                    @Override
+                    public String iconSortable() {
+                        return iconSortable;
+                    }
+
                 };
             }
             
             /**
              * Standard style.
              */
-            public static final Style STANDARD = Style.create (StandardLocalCSS.instance (), FontAwesome.arrowDown (), FontAwesome.arrowUp ());
+            public static final Style STANDARD = Style.create (StandardLocalCSS.instance(), FontAwesome.arrowDown(), FontAwesome.arrowUp(), FontAwesome.arrowsUpDown());
 
         }
 
@@ -978,6 +990,8 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
                                                 sorter.style (styles ().sortable ());
                                                 Em.$ (sorter).style (data.getStyle ().iconAscending (), styles ().ascending ());
                                                 Em.$ (sorter).style (data.getStyle ().iconDescending (), styles ().descending ());
+                                                if (data.getStyle().iconSortable() != null)
+                                                    Em.$ (sorter).style (data.getStyle ().iconSortable(), styles().sortable());
                                             });
                                         }
                                     });

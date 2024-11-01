@@ -205,7 +205,7 @@ public class Avatar {
                 outer.style ("juiAvatar", "border_" + border.name().toLowerCase());
                 if (!StringSupport.empty (href)) {
                     Img.$ (outer, href);
-                } if (initials != null) {
+                } else if (initials != null) {
                     Span.$ (outer).$ (ico -> {
                         I.$ (ico).text(initials);
                         Em.$ (ico).style (icon);

@@ -19,6 +19,7 @@ import com.effacy.jui.core.client.Invoker;
 import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Em;
+import com.effacy.jui.core.client.dom.builder.I;
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
 import com.effacy.jui.core.client.dom.builder.Img;
 import com.effacy.jui.core.client.dom.builder.Span;
@@ -73,25 +74,32 @@ public class Avatar {
         /**
          * See constructor.
          */
-        private String href;
+        protected String href;
 
         /**
          * See {@link #icon(String)}.
          */
-        private String icon = FontAwesome.user ();
+        protected String icon;
+
+        /**
+         * See {@link #initials(String)}.
+         */
+        protected String initials;
 
         /**
          * See {@link #size(Length)}.
          */
-        private Length size;
+        protected Length size;
 
         /**
          * See {@link #onclick(Invoker)}.
          */
-        private Invoker onclick;
+        protected Invoker onclick;
 
-        
-        private BorderStyle border = BorderStyle.SOLID;
+        /**
+         * See {@link #border(BorderStyle)}.
+         */
+        protected BorderStyle border = BorderStyle.SOLID;
 
         /**
          * Construct with the CSS of an icon.
@@ -115,6 +123,37 @@ public class Avatar {
         public AvatarFragment icon(String icon) {
             if (icon != null)
                 this.icon = icon;
+            return this;
+        }
+
+        /**
+         * To display initials when there is no image.
+         * <p>
+         * The passed value will be converted to upper case and if more than two
+         * characters in length will be transformed to be the first letter of the first
+         * and last words.
+         * 
+         * @param initials
+         *                 the initials to display.
+         * @return this fragment instance.
+         */
+        public AvatarFragment initials(String initials) {
+            if (initials == null) {
+                this.initials = null;
+                return this;
+            }
+            this.initials = StringSupport.trim(initials);
+            if (StringSupport.empty(this.initials)) {
+                this.initials = null;
+                return this;
+            }
+            if (this.initials.length() > 2) {
+                int i = this.initials.lastIndexOf(" ");
+                if (i < 0)
+                    this.initials = this.initials.substring(0,2);
+                else
+                    this.initials = this.initials.substring(0,1) + this.initials.substring(i + 1, i + 2);
+            }
             return this;
         }
 
@@ -160,10 +199,17 @@ public class Avatar {
 
         @Override
         protected ElementBuilder createRoot(ContainerBuilder<?> parent) {
+            if (icon == null)
+                icon  = FontAwesome.user ();
             return Span.$ (parent).$ (outer -> {
                 outer.style ("juiAvatar", "border_" + border.name().toLowerCase());
                 if (!StringSupport.empty (href)) {
                     Img.$ (outer, href);
+                } if (initials != null) {
+                    Span.$ (outer).$ (ico -> {
+                        I.$ (ico).text(initials);
+                        Em.$ (ico).style (icon);
+                    });
                 } else {
                     Span.$ (outer).$ (ico -> {
                         Em.$ (ico).style (icon);

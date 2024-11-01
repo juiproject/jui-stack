@@ -393,6 +393,25 @@
     border-radius: 100%;
     border: 0.1em solid transparent;
     overflow: hidden;
+    position: relative;
+}
+
+.juiAvatar i {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.45em;
+    font-style: normal;
+    font-weight: 700;
+    color: #999;
+    background: #fff;
+    opacity: 0.5;
+    text-transform: uppercase;
 }
 
 /*************************************************

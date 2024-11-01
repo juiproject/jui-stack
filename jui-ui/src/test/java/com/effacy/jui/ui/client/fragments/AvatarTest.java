@@ -10,7 +10,7 @@ public class AvatarTest {
     @Test
     public void configuration() {
         LocalAvatarFragment f = new LocalAvatarFragment("aaa");
-        Assertions.assertEquals("aaa", f.href())
+        Assertions.assertEquals("aaa", f.href());
     }
 
     @Test

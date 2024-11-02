@@ -192,6 +192,14 @@ public class StateComponent<V extends IStateVariable<V>> extends SimpleComponent
                     ((INavigationAwareChild) child).onNavigateDeactivated ();
             });
         }
+        onNavigateTo();
+    }
+
+    /**
+     * Used if implements {@link INavigationAware}.
+     */
+    public void onNavigateTo() {
+        // Nothing.
     }
 
     /**

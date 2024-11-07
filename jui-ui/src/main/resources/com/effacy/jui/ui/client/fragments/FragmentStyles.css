@@ -481,6 +481,17 @@
     gap: 1.25em;
 }
 
+.juiNotice > .main > div {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+}
+
+.juiNotice > .main a {
+    cursor: pointer;
+    text-decoration: underline;
+}
+
 .juiNotice > .main > em {
     font-size: 1.6em;
     color: var(--juiNotice-border);
@@ -494,13 +505,13 @@
     margin-bottom: 0;
 }
 
-.juiNotice > .main p.message {
+.juiNotice > .main p {
     margin: 0;
     font-weight: 500;
     font-size: 0.95em;
 }
 
-.juiNotice.style-inline > .main p.message {
+.juiNotice.style-inline > .main p {
     white-space: nowrap;
 }
 

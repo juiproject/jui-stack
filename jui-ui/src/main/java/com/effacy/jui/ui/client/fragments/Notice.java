@@ -15,6 +15,7 @@
  ******************************************************************************/
 package com.effacy.jui.ui.client.fragments;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 import com.effacy.jui.core.client.dom.builder.Div;
@@ -24,6 +25,7 @@ import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
 import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.platform.util.client.StringSupport;
+import com.effacy.jui.rpc.client.ErrorMessage;
 import com.effacy.jui.ui.client.fragments.NoticeBuilder.Block;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 
@@ -33,12 +35,55 @@ import com.effacy.jui.ui.client.icon.FontAwesome;
  */
 public class Notice {
 
+    /**
+     * Convenience to create an instance (following the creator pattern).
+     * @return a notice instance.
+     */
     public static NoticeFragment $() {
         return new NoticeFragment ();
     }
 
+    /**
+     * Convenience to create an instance and instert it into the given parent
+     * (following the creator pattern).
+     * 
+     * @param parent
+     *               the parent to insert into.
+     * @return the inserted notice instance.
+     */
     public static NoticeFragment $(IDomInsertableContainer<?> parent) {
         NoticeFragment frg = $ ();
+        if (parent != null)
+            parent.insert (frg);
+        return frg;
+    }
+
+    /**
+     * A convenience to create a standardised error message for display a collection
+     * of error messages.
+     * 
+     * @param message
+     *                 Appears above the list of errors.
+     * @param messages
+     *                 the messages to display.
+     * @return the fragment.
+     */
+    public static NoticeFragment error(String message, List<ErrorMessage> messages) {
+        return Notice.$()
+            .variant(Notice.Variant.DANGER)
+            .build(notice -> {
+                notice.block().add(message);
+                messages.forEach(error -> {
+                    notice.block().list().add (error.getMessage());
+                });
+            });
+    }
+
+    /**
+     * See {@link #error(String, List)} but inserts into the given parent.
+     */
+    public static NoticeFragment error(IDomInsertableContainer<?> parent, String message, List<ErrorMessage> messages) {
+        NoticeFragment frg = error (message, messages);
         if (parent != null)
             parent.insert (frg);
         return frg;

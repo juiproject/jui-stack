@@ -295,7 +295,7 @@ public class Notice {
          * Assigns a message to display.
          * 
          * @param builder
-         *                to builder out a message.
+         *                to builder out a block.
          * @return this fragment.
          */
         @SuppressWarnings("unchecked")
@@ -304,6 +304,23 @@ public class Notice {
                 this.message = new NoticeBuilder();
             if (builder != null)
                 builder.accept(message.block());
+            return (T) this;
+        }
+
+        /**
+         * Convenience to build out the message (inline).
+         * 
+         * @param builder
+         *                to build out the message.
+         * @return this fragment.
+         */
+        @SuppressWarnings("unchecked")
+        public T build(Consumer<NoticeBuilder> builder) {
+            if (builder != null) {
+                if (this.message == null)
+                    this.message = new NoticeBuilder();
+                builder.accept(message);
+            }
             return (T) this;
         }
 

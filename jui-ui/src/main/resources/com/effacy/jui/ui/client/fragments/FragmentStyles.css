@@ -481,17 +481,6 @@
     gap: 1.25em;
 }
 
-.juiNotice > .main > div {
-    display: flex;
-    flex-direction: column;
-    gap: 1em;
-}
-
-.juiNotice > .main a {
-    cursor: pointer;
-    text-decoration: underline;
-}
-
 .juiNotice > .main > em {
     font-size: 1.6em;
     color: var(--juiNotice-border);
@@ -505,13 +494,28 @@
     margin-bottom: 0;
 }
 
-.juiNotice > .main p {
-    margin: 0;
+.juiNotice > .main > div {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
     font-weight: 500;
     font-size: 0.95em;
 }
 
-.juiNotice.style-inline > .main p {
+.juiNotice > .main > div p {
+    margin: 0;
+}
+
+.juiNotice > .main > div ul {
+    margin: 0;
+}
+
+.juiNotice > .main > div a {
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.juiNotice.style-inline > .main > div p {
     white-space: nowrap;
 }
 

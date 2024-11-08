@@ -10,9 +10,11 @@ import com.effacy.jui.core.client.Invoker;
 import com.effacy.jui.core.client.dom.builder.A;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.I;
+import com.effacy.jui.core.client.dom.builder.Li;
 import com.effacy.jui.core.client.dom.builder.P;
 import com.effacy.jui.core.client.dom.builder.Strong;
 import com.effacy.jui.core.client.dom.builder.Text;
+import com.effacy.jui.core.client.dom.builder.Ul;
 import com.effacy.jui.platform.util.client.StringSupport;
 
 /**
@@ -52,9 +54,33 @@ public class NoticeBuilder {
         private List<Run> runs = new ArrayList<>();
         
         /**
+         * If is a list item.
+         */
+        private boolean list;
+
+        /**
          * See {@link #css(String)}.
          */
         private String css;
+
+        /**
+         * Convenience to call {@link #list(boolean)} passing {@code true}.
+         */
+        public Block list() {
+            return list(true);
+        }
+
+        /**
+         * Marks the block as a list item.
+         * 
+         * @param list
+         *            {@code true} if this block is a list item.
+         * @return this block instance.
+         */
+        public Block list(boolean list) {
+            this.list = list;
+            return this;
+        }
 
         /**
          * Apply additional CSS to the block (the P tag).
@@ -124,7 +150,7 @@ public class NoticeBuilder {
          *               the parent to build into.
          */
         void build(ElementBuilder parent) {
-            parent = P.$ (parent);
+            parent = list ? Li.$(parent) : P.$ (parent);
             if (!StringSupport.empty(css))
                 parent.css (css);
             for (Run run : runs)
@@ -235,7 +261,17 @@ public class NoticeBuilder {
      *               the builder to build into.
      */
     public void build(ElementBuilder parent) {
-        for (Block block : blocks)
-            block.build(parent);
+        ElementBuilder subcontainer = null;
+        for (Block block : blocks) {
+            if (block.list) {
+                if (subcontainer == null)
+                    subcontainer = Ul.$(parent);
+            } else
+                subcontainer = null;
+            if (subcontainer != null)
+                block.build(subcontainer);
+            else
+                block.build(parent);
+        }
     }
 }

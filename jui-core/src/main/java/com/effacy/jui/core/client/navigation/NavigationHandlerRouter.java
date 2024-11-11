@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import com.effacy.jui.core.client.IActivateAware;
 import com.effacy.jui.core.client.component.IComponent;
 import com.effacy.jui.core.client.component.layout.ILayout.ActivateOutcome;
 import com.effacy.jui.core.client.util.TriConsumer;
@@ -282,7 +283,7 @@ public class NavigationHandlerRouter implements INavigationHandler {
                         // if (activeChild instanceof INavigationAware)
                         //     ((INavigationAware) activeChild).onNavigateTo (context);
                         //if ((activeChild instanceof INavigationResidualAware) && (p != null) && !p.isEmpty ())
-                        if ((activeChild instanceof INavigationResidualAware))
+                        if (activeChild instanceof INavigationResidualAware)
                             ((INavigationResidualAware) activeChild).navigationResidual (c, (p == null) ? new ArrayList<>() : p);
                         handlerListener.onNavigation (c, path);
                     }
@@ -361,7 +362,12 @@ public class NavigationHandlerRouter implements INavigationHandler {
     public Promise<ActivateOutcome> activateChild(NavigationContext context, Object child) {
         if (child == null)
             return Promise.create (ActivateOutcome.NOT_PRESENT);
-        if (this.activeChild == child)
+        // Note that even if the active child is already active, we only consider that
+        // relevant if the incoming context has not changed. From the users perspective
+        // there certainly has been a change and the application needs to respond to
+        // that perception as directed to by the activation and navigation events (i.e
+        // onNavigatTo and onAnyActivation).
+        if (!context.changed && (this.activeChild == child))
             return Promise.create (ActivateOutcome.ALREADY_ACTIVATED);
         context.changed ();
         if (this.activeChild instanceof INavigationAware)

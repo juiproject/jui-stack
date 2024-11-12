@@ -32,6 +32,24 @@ public final class ComparisonSupport {
         // Nothing.
     }
 
+    /**
+     * Provides a {@code null}-safe string comparison that can be used in sorting
+     * that is consistent with <code>b.compareTo(a)</code> (so preserves the natural
+     * ordering of strings where "a" is greater than "b").
+     * <p>
+     * In this case {@code null} is treated as an empty string.
+     * 
+     * @param a
+     *          the first value.
+     * @param b
+     *          the second value.
+     * @return the comparison result.
+     */
+    public static int compare(String a, String b) {
+        a = StringSupport.trim(a);
+        b = StringSupport.trim(b);
+        return b.compareTo(a);
+    }
 
     /**
      * Determines if two elements of the same type are equal or not.

@@ -197,6 +197,38 @@ public final class FormatSupport {
     }
 
     /**
+     * Converts to a fraction.
+     * 
+     * @param numerator
+     *                    the numerator (top).
+     * @param denominator
+     *                    the denominator (bottom).
+     * @param nan
+     *                    the value to return when the denominator is zero.
+     */
+    public static double fraction(int numerator, int denominator, double nan) {
+        if (denominator == 0)
+            return nan;
+        return ((double) numerator) / ((double) denominator);
+    }
+
+    /**
+     * Converts to a percentage.
+     * 
+     * @param numerator
+     *                    the numerator (top).
+     * @param denominator
+     *                    the denominator (bottom).
+     * @param nan
+     *                    the value to return when the denominator is zero.
+     */
+    public static double percentage(int numerator, int denominator, double nan) {
+        if (denominator == 0)
+            return nan;
+        return ((double) (100 * numerator)) / ((double) denominator);
+    }
+
+    /**
      * Display the number to the given number of decimal places.
      * 
      * @param number

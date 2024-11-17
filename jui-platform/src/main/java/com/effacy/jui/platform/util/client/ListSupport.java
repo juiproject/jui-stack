@@ -17,6 +17,7 @@ package com.effacy.jui.platform.util.client;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -73,6 +74,27 @@ public final class ListSupport {
                     fin.add (item);
             });
         return fin;
+    }
+
+    /**
+     * Finds the first instance of a specific element of the given list.
+     * 
+     * @param <A>
+     *             the base type.
+     * @param list
+     *             the list to find in.
+     * @param test
+     *             the test to perform.
+     * @return the first instance if found.
+     */
+    public static <A> Optional<A> find(List<A> list, Predicate<A> test) {
+        if (list == null)
+            return Optional.empty();
+        for (A item : list) {
+            if (test.test(item))
+                return Optional.of (item);
+        }
+        return Optional.empty();
     }
 
     /**

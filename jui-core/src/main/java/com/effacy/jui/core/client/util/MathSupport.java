@@ -198,7 +198,7 @@ public class MathSupport {
         // Calculate the proportions and totals.
         if (max > 0) {
             for (int i = 0; i < bins; i++) {
-                results.data[i].p = results.data[i].n / max;
+                results.data[i].p = (double) results.data[i].n / (double) max;
                 results.n += results.data[i].n;
             }
         }

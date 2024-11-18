@@ -32,42 +32,10 @@ public class CompileMojo extends AbstractMojo implements ICompilerOptions {
     /**
      * The compiler that should be used.
      * <p>
-     * Currently only GWT is supported.
+     * Currently only {@code gwt} is supported.
      */
     @Parameter(property = "jui.compiler", defaultValue = "gwt")
     private String compiler;
-
-    /**
-     * Enable faster, but less-optimized, compilations.
-     */
-    @Parameter(property = "jui.draftCompile", defaultValue = "false")
-    private boolean draftCompile;
-
-    /**
-     * The directory into which deployable but not servable output files will be written.
-     */
-    @Parameter(defaultValue = "${project.build.directory}/jui/deploy", required = true)
-    private File deploy;
-
-    /**
-     * The directory into which extra files, not intended for deployment, will be written.
-     */
-    @Parameter
-    private File extra;
-
-    /**
-     * The number of local workers to use when compiling permutations. When terminated
-     * with "C", the number part is multiplied with the number of CPU cores. Floating
-     * point values are only accepted together with "C".
-     */
-    @Parameter(property = "jui.localWorkers", defaultValue="16")
-    private String localWorkers;
-
-    /**
-     * Sets the level of logging detail.
-     */
-    @Parameter(property = "jui.logLevel", defaultValue="INFO")
-    private String logLevel;
 
     /**
      * Name of the module to compile.
@@ -82,40 +50,10 @@ public class CompileMojo extends AbstractMojo implements ICompilerOptions {
     private String moduleShortName;
 
     /**
-     * Sets the optimization level used by the compiler.  0=none 9=maximum.
-     */
-    @Parameter(property = "jui.optimize")
-    private Integer optimize;
-
-    /**
-     * Specifies Java source level. Default is 17.
-     */
-    @Parameter(property = "maven.compiler.source", defaultValue = "17")
-    private String sourceLevel;
-
-    /**
-     * Script output style: OBFUSCATED, PRETTY, or DETAILED.
-     */
-    @Parameter(property = "jui.style")
-    private String style;
-
-    /**
      * Only succeed if no input files have errors.
      */
     @Parameter(property = "jui.failOnError")
     private Boolean failOnError;
-
-    /**
-     * Specifies the location of the target war directory.
-     */
-    @Parameter(defaultValue = "${project.build.directory}/${project.build.finalName}", required = true)
-    private File webappDirectory;
-
-    /**
-     * The compiler work directory (must be writeable).
-     */
-    @Parameter(defaultValue = "${project.build.directory}/jui/work", required = true)
-    private File workDir;
 
     /**
      * Additional arguments to be passed to the compiler.
@@ -130,7 +68,7 @@ public class CompileMojo extends AbstractMojo implements ICompilerOptions {
     private List<String> jvmArgs;
 
     /**
-     * List of system properties to pass to the GWT compiler.
+     * List of system properties to pass to the compiler.
      */
     @Parameter
     private Map<String, String> systemProperties;
@@ -160,12 +98,12 @@ public class CompileMojo extends AbstractMojo implements ICompilerOptions {
     @Parameter(property = "jui.skipCompilation", defaultValue="false")
     private boolean skipCompilation;
 
-    @Parameter(property = "jui.generateJsInteropExports", defaultValue="true")
-    private boolean generateJsInteropExports;
 
     /**
      * Path to the Java executable to use.
-     * By default, will use the configured toolchain, or fallback to the same JVM as the one used to run Maven.
+     * <p>
+     * By default, will use the configured toolchain, or fallback to the same JVM as
+     * the one used to run Maven.
      */
     @Parameter
     private String jvm;
@@ -235,7 +173,7 @@ public class CompileMojo extends AbstractMojo implements ICompilerOptions {
         }
 
         // Run the compilation job.
-        new CommandLineRunner(getLog(), project, session, toolchainManager, jdkToolchain, jvm)
+        new JavaRunner(getLog(), project, session, toolchainManager, jdkToolchain, jvm)
             .execute(cp, args);
 
         // XXX: workaround for GWT 2.7.0 not setting nocache.js lastModified correctly.
@@ -327,8 +265,75 @@ public class CompileMojo extends AbstractMojo implements ICompilerOptions {
     }
 
     /************************************************************************
-     * Implementation of {@link ICompilerOptions}.
+     * Implementation of {@link ICompilerOptions} with the associated Maven
+     * parameters.
      ************************************************************************/
+
+    /**
+     * See {@link #getLogLevel()}.
+     */
+    @Parameter(property = "jui.logLevel", defaultValue="INFO")
+    private String logLevel;
+
+    /**
+     * See {@link #getStyle()}.
+     */
+    @Parameter(property = "jui.style")
+    private String style;
+
+    /**
+     * See {@link #getOptimize()}.
+     */
+    @Parameter(property = "jui.optimize")
+    private Integer optimize;
+
+    /**
+     * See {@link #getWarDir()}.
+     */
+    @Parameter(defaultValue = "${project.build.directory}/${project.build.finalName}", required = true)
+    private File webappDirectory;
+
+    /**
+     * See {@link #getWorkDir()}.
+     */
+    @Parameter(defaultValue = "${project.build.directory}/jui/work", required = true)
+    private File workDir;
+
+    /**
+     * See {@link #getDeployDir()}.
+     */
+    @Parameter(defaultValue = "${project.build.directory}/jui/deploy", required = true)
+    private File deploy;
+
+    /**
+     * See {@link #getExtraDir()}.
+     */
+    @Parameter
+    private File extra;
+
+    /**
+     * See {@link #isDraftCompile()}.
+     */
+    @Parameter(property = "jui.draftCompile", defaultValue = "false")
+    private boolean draftCompile;
+
+    /**
+     * See {@link #getLocalWorkers()}.
+     */
+    @Parameter(property = "jui.localWorkers", defaultValue="16")
+    private String localWorkers;
+
+    /**
+     * See {@link #getSourceLevel()}.
+     */
+    @Parameter(property = "maven.compiler.source", defaultValue = "17")
+    private String sourceLevel;
+
+    /**
+     * See {@lik #isGenerateJsInteropExports()}.
+     */
+    @Parameter(property = "jui.generateJsInteropExports", defaultValue="true")
+    private boolean generateJsInteropExports;
 
     @Override
     public String getLogLevel() {

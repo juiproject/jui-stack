@@ -94,7 +94,7 @@
     <version.gwt-http>1.0.0-RC1</version.gwt-http>
 
     <!-- Plugin versions -->
-    <version.maven-gwt-maven-plugin>${version.gwt}</version.maven-gwt-maven-plugin>
+    <!-- <version.maven-gwt-maven-plugin>${version.gwt}</version.maven-gwt-maven-plugin> -->
     <version.maven-s3-wagon>1.3.3</version.maven-s3-wagon>
     <version.maven-gs-wagon>1.0</version.maven-gs-wagon>
     <version.flatten-maven-plugin>1.3.0</version.flatten-maven-plugin>

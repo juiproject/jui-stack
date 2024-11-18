@@ -88,7 +88,6 @@ The POM file follows (replace the version JUI with the latest):
 
     <!-- Plugin versions -->
     <version.build-helper-maven-plugin>3.4.0</version.build-helper-maven-plugin>
-    <version.gwt-maven-plugin>2.10.0</version.gwt-maven-plugin>
     <version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>
   </properties>
 
@@ -172,9 +171,9 @@ The POM file follows (replace the version JUI with the latest):
 
       <!-- JUI / GWT compilation -->
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>gwt-maven-plugin</artifactId>
-        <version>${version.gwt-maven-plugin}</version>
+        <groupId>com.effacy.jui</groupId>
+        <artifactId>jui-maven-plugin</artifactId>
+        <version>${version.effacy-jui}</version>
         <executions>
           <execution>
             <phase>compile</phase>
@@ -183,13 +182,9 @@ The POM file follows (replace the version JUI with the latest):
             </goals>
             <configuration>
               <module>myapplication.jui.playground.PlaygroundApp</module>
-              <extraJvmArgs>-Xmx4096M -Xss1024k</extraJvmArgs>
+              <extraJvmArgs>-Xmx4096M,-Xss1024k</extraJvmArgs>
               <style>OBF</style>
-              <force>true</force>
-              <disableCastChecking>true</disableCastChecking>
               <webappDirectory>${basedir}/src/main/resources/static</webappDirectory>
-              <generateJsInteropExports>true</generateJsInteropExports>
-              <persistentunitcache>false</persistentunitcache>
             </configuration>
           </execution>
         </executions>

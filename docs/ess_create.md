@@ -498,7 +498,6 @@ Since we use Maven here is a minimal `pom.xml` to get us going:
         <!-- Insert relevant versions here -->
         <version.effacy-jui>...</version.effacy-jui>
         <version.spring-boot>...</version.spring-boot>
-        <version.gwt-maven-plugin>2.10.0</version.version.gwt-maven-plugin>
     </properties>
 
     <dependencies>
@@ -565,9 +564,9 @@ Since we use Maven here is a minimal `pom.xml` to get us going:
             </plugin>
             <!-- GWT compilation -->
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>gwt-maven-plugin</artifactId>
-                <version>${version.gwt-maven-plugin}</version>
+                <groupId>com.effacy.jui</groupId>
+                <artifactId>jui-maven-plugin</artifactId>
+                <version>${version.effacy-jui}</version>
                 <executions>
                     <execution>
                         <phase>compile</phase>
@@ -576,9 +575,8 @@ Since we use Maven here is a minimal `pom.xml` to get us going:
                         </goals>
                         <configuration>
                             <module>myapplication.jui.playground.PlaygroundApp</module>
-                            <extraJvmArgs>-Xmx4096M -Xss1024k</extraJvmArgs>
+                            <jvmArgs>-Xmx4096M,-Xss1024k</jvmArgs>
                             <style>OBF</style>
-                            <force>true</force>
                             <webappDirectory>${basedir}/src/main/resources/static</webappDirectory>
                         </configuration>
                     </execution>

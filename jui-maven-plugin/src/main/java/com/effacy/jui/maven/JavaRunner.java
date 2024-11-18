@@ -17,9 +17,9 @@ import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.cli.Commandline;
 
 /**
- * Runs a command from the command line.
+ * Executes Java subject to a supplied classpath and arguments.
  */
-public class CommandLineRunner {
+public class JavaRunner {
 
     private Log log;
     private MavenProject project;
@@ -28,7 +28,10 @@ public class CommandLineRunner {
     private Map<String, String> toolchainRequirements;
     private String jvm;
 
-    CommandLineRunner(Log log, MavenProject project, MavenSession session, ToolchainManager toolchainManager, Map<String, String> toolchainRequirements, String jvm) {
+    /**
+     * Construct with execution context.
+     */
+    JavaRunner(Log log, MavenProject project, MavenSession session, ToolchainManager toolchainManager, Map<String, String> toolchainRequirements, String jvm) {
         this.log = log;
         this.project = project;
         this.session = session;
@@ -37,6 +40,16 @@ public class CommandLineRunner {
         this.jvm = jvm;
     }
 
+    /**
+     * Executes Java against the passed arguments given the supplied classpath.
+     * 
+     * @param classpath
+     *                  the classpath to use (assigned to environment).
+     * @param arguments
+     *                  the arguments to pass to the Java executable.
+     * @throws MojoExecutionException
+     *                                on error.
+     */
     public void execute(Iterable<String> classpath, List<String> arguments) throws MojoExecutionException {
         String cp = StringUtils.join(classpath.iterator(), File.pathSeparator);
         String[] args = arguments.toArray(new String[arguments.size()]);
@@ -68,6 +81,16 @@ public class CommandLineRunner {
         }
     }
 
+    /**
+     * Determines the executable.
+     * <p>
+     * The comes from the {@code jvm} parameter (passed through the constructor) if
+     * present. Otherwise the tool chain is queried for {@code java}. If that does
+     * not resolve the issue then the system property {@code java.home} is
+     * interrogated.
+     * 
+     * @return the Java executable.
+     */
     private String _executable() {
         if (StringUtils.isNotBlank(jvm))
             return jvm;
@@ -83,9 +106,14 @@ public class CommandLineRunner {
         return Paths.get(System.getProperty("java.home"), "bin", "java").toString();
     }
 
+    /**
+     * Used by {@link #_executable()} to resolve a toolchain.
+     * 
+     * @return the toolchain.
+     */
     private Toolchain _toolchain() {
         Toolchain tc = null;
-        if (toolchainRequirements != null && !toolchainRequirements.isEmpty()) {
+        if ((toolchainRequirements != null) && !toolchainRequirements.isEmpty()) {
             List<Toolchain> tcs = toolchainManager.getToolchains(session, "jdk", toolchainRequirements);
             if (tcs != null && !tcs.isEmpty())
                 tc = tcs.get(0);

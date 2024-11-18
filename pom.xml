@@ -35,6 +35,7 @@
   <modules>
     <module>jui-platform</module>
     <module>jui-platform-codeserver</module>
+    <module>jui-maven-plugin</module>
     <module>jui-remoting</module>
     <module>jui-validation</module>
     <module>jui-core</module>
@@ -63,8 +64,10 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build.output>target</build.output>
 
+    <!-- Compiler versions -->
+    <version.gwt>2.12.1</version.gwt>
+
     <!-- Dependency versions -->
-    <version.gwt>2.10.0</version.gwt>
     <version.spring-boot>3.1.4</version.spring-boot>
     <version.springframework>6.1.4</version.springframework>
     <version.spring-security>6.2.2</version.spring-security>
@@ -91,6 +94,7 @@
     <version.gwt-http>1.0.0-RC1</version.gwt-http>
 
     <!-- Plugin versions -->
+    <version.maven-gwt-maven-plugin>${version.gwt}</version.maven-gwt-maven-plugin>
     <version.maven-s3-wagon>1.3.3</version.maven-s3-wagon>
     <version.maven-gs-wagon>1.0</version.maven-gs-wagon>
     <version.flatten-maven-plugin>1.3.0</version.flatten-maven-plugin>
@@ -98,7 +102,6 @@
     <version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>
     <version.maven-enforcer-plugin>3.4.1</version.maven-enforcer-plugin>
     <version.maven-surefire-plugin>2.22.2</version.maven-surefire-plugin>
-    <version.maven-gwt-maven-plugin>${version.gwt}</version.maven-gwt-maven-plugin>
     <version.maven-antrun-plugin>3.0.0</version.maven-antrun-plugin>
     <version.maven-javadoc-plugin>3.10.0</version.maven-javadoc-plugin>
     <version.maven-source-plugin>3.3.1</version.maven-source-plugin>
@@ -126,7 +129,7 @@
 
     <!-- Used to compile rebinding code so only needed for that -->
     <dependency>
-      <groupId>com.google.gwt</groupId> 
+      <groupId>org.gwtproject</groupId> 
       <artifactId>gwt-dev</artifactId>
       <version>${version.gwt}</version>
       <scope>provided</scope>

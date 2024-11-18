@@ -130,7 +130,7 @@
       </plugin>
 
       <!-- JUI compilation to make available for dev -->
-      <plugin>
+      <!-- <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>gwt-maven-plugin</artifactId>
         <executions>
@@ -147,6 +147,24 @@
               <disableCastChecking>true</disableCastChecking>
               <webappDirectory>${basedir}/src/main/resources/static</webappDirectory>
               <generateJsInteropExports>true</generateJsInteropExports>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin> -->
+      <plugin>
+        <groupId>com.effacy.jui</groupId>
+        <artifactId>jui-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <configuration>
+              <module>com.effacy.jui.playground.PlaygroundApp</module>
+              <jvmArgs>-Xmx4096M,-Xss1024k</jvmArgs>
+              <style>OBF</style>
+              <webappDirectory>${basedir}/src/main/resources/static</webappDirectory>
             </configuration>
           </execution>
         </executions>

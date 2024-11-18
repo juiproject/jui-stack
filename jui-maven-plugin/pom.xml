@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.effacy.jui</groupId>
+    <artifactId>parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>..</relativePath>
+  </parent>
+  <artifactId>jui-maven-plugin</artifactId>
+  <packaging>maven-plugin</packaging>
+  <name>JUI Stack - Maven Plugin</name>
+
+  <properties>
+    <mavenVersion>3.3.1</mavenVersion>
+    <targetJdk>8</targetJdk>
+
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.build.outputEncoding>UTF-8</project.build.outputEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <version>3.0.2</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-plugin-api</artifactId>
+      <version>${mavenVersion}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.plugin-tools</groupId>
+      <artifactId>maven-plugin-annotations</artifactId>
+      <version>3.12.0</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.plexus</groupId>
+      <artifactId>plexus-build-api</artifactId>
+      <version>0.0.7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-archiver</artifactId>
+      <version>4.8.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-utils</artifactId>
+      <version>4.0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-xml</artifactId>
+      <version>3.0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-compiler-api</artifactId>
+      <version>2.15.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-core</artifactId>
+      <version>${mavenVersion}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-archiver</artifactId>
+      <version>3.6.2</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.maven</groupId>
+          <artifactId>maven-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.maven</groupId>
+          <artifactId>maven-model</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.maven</groupId>
+          <artifactId>maven-artifact</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.surefire</groupId>
+      <artifactId>maven-surefire-common</artifactId>
+      <version>3.3.0</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.maven</groupId>
+          <artifactId>maven-plugin-descriptor</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.maven</groupId>
+          <artifactId>maven-project</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.maven</groupId>
+          <artifactId>maven-toolchain</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.maven</groupId>
+          <artifactId>maven-plugin-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.maven.plugin-tools</groupId>
+          <artifactId>maven-plugin-annotations</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.maven</groupId>
+          <artifactId>maven-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.maven</groupId>
+          <artifactId>maven-model</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.maven</groupId>
+          <artifactId>maven-artifact</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- Some artifacts used by invoker tests, declared here so they're resolved early -->
+    <!-- Actually because invoker plugin cannot install snapshots through extraArtifacts -->
+    <dependency>
+      <groupId>org.gwtproject</groupId>
+      <artifactId>gwt-dev</artifactId>
+      <version>${version.gwt}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <sourceDirectory>src/main/java</sourceDirectory>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+      </resource>
+    </resources>
+    <testSourceDirectory>src/test/java</testSourceDirectory>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+        <filtering>false</filtering>
+      </testResource>
+    </testResources>
+
+    <plugins>
+
+      <!-- This is to guide the IDE in showing packages under resources -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>src/main/resources</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      
+    </plugins>
+
+  </build>
+
+</project>

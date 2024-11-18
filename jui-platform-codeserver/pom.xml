@@ -39,7 +39,7 @@
         <version>${version.jopt-simple}</version>
     </dependency>
     <dependency>
-      <groupId>com.google.gwt</groupId>
+      <groupId>org.gwtproject</groupId>
       <artifactId>gwt-dev</artifactId>
       <version>${version.gwt}</version>
       <exclusions>

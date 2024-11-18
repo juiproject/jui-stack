@@ -1,0 +1,38 @@
+<project>
+  <version position="right" />
+  <publishDate position="right" />
+
+  <body>
+    <breadcrumbs>
+      <item name="${project.name}" href="${project.url}" />
+    </breadcrumbs>
+    <links>
+      <item name="JUI Project" href="https://juiproject.github.io/jui-stack/#/" />
+    </links>
+
+    <menu>
+      <item name="Introduction" href="index.html" />
+      <item name="Usage" href="usage.html" />
+      <item name="Goals" href="plugin-info.html" />
+      <item name="Running and Debugging" href="codeserver.html" />
+      <item name="Lifecycles" href="lifecycles.html" />
+      <item name="Artifact Handlers" href="artifact-handlers.html" />
+    </menu>
+  </body>
+
+  <custom>
+    <fluidoSkin>
+      <gitHub>
+        <projectId>juiproject/jui-stack/jui-maven-plugin</projectId>
+        <ribbonOrientation>right</ribbonOrientation>
+        <ribbonColor>black</ribbonColor>
+      </gitHub>
+    </fluidoSkin>
+  </custom>
+
+  <skin>
+    <groupId>org.apache.maven.skins</groupId>
+    <artifactId>maven-fluido-skin</artifactId>
+    <version>1.6</version>
+  </skin>
+</project>

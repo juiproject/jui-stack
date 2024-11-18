@@ -1,6 +1,7 @@
 package com.effacy.jui.core.client.util;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
@@ -162,7 +163,7 @@ public class MathSupport {
      *              the total number of bins (empty bins will have a zero).
      * @return the resultant binning.
      */
-    public static BinStatistics bin(List<Number> data, double start, double width, int bins) {
+    public static BinStatistics bin(Collection<? extends Number> data, double start, double width, int bins) {
         if ((bins <= 0) || (width <= 0.0)) {
             BinStatistics results = new BinStatistics();
             results.data = new Bin [0];
@@ -212,7 +213,7 @@ public class MathSupport {
      *             the data to calculate.
      * @return the stats.
      */
-    public static SummaryStatistics summaryStatistics(List<Number> data) {
+    public static SummaryStatistics summaryStatistics(Collection<? extends Number> data) {
         SummaryStatistics stats = new SummaryStatistics();
         List<Double> sorted = sort(data);
         stats.n = sorted.size();
@@ -220,8 +221,8 @@ public class MathSupport {
             return stats;
 
         // Calculate quartiles.
-        stats.q1 = percentile(data, 25);
-        stats.q3 = percentile(data, 75);
+        stats.q1 = _percentile(sorted, 25);
+        stats.q3 = _percentile(sorted, 75);
 
         // Calculate average.
         double sum = 0.0;
@@ -253,7 +254,7 @@ public class MathSupport {
      *                   the percentile to calculate (i.e. 25 or 75).
      * @return the percentile.
      */
-    public static double percentile(List<Number> data, int percentile) {
+    public static double percentile(Collection<? extends Number> data, int percentile) {
         List<Double> sorted = sort(data);
         if (sorted.isEmpty())
             return 0.0;
@@ -292,7 +293,7 @@ public class MathSupport {
      *             the data to sort.
      * @return the converted and sorted data.
      */
-    public static List<Double> sort(List<Number> data) {
+    public static List<Double> sort(Collection<? extends Number> data) {
         if ((data == null) || data.isEmpty())
             return new ArrayList<>();
         List<Double> sorted = new ArrayList<>();

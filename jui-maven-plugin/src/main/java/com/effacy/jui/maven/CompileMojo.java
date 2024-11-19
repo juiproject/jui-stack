@@ -20,11 +20,19 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.shared.transfer.artifact.DefaultArtifactCoordinate;
 import org.apache.maven.toolchain.ToolchainManager;
 import org.codehaus.plexus.compiler.util.scan.InclusionScanException;
 import org.codehaus.plexus.compiler.util.scan.StaleSourceScanner;
 import org.codehaus.plexus.compiler.util.scan.mapping.SourceMapping;
 import org.codehaus.plexus.util.StringUtils;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.collection.CollectRequest;
+import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.DependencyRequest;
 
 @Mojo(name = "compile", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE, threadSafe = true)
 public class CompileMojo extends AbstractMojo implements ICompilerOptions {
@@ -98,6 +106,14 @@ public class CompileMojo extends AbstractMojo implements ICompilerOptions {
     @Parameter(property = "jui.skipCompilation", defaultValue="false")
     private boolean skipCompilation;
 
+    /**
+     * The GWT version to use (for use when using the GWT compiler).
+     * <p>
+     * Generally this should be fixed (as JUI depends on it) but we allow some
+     * flexibility here.
+     */
+    @Parameter(property = "jui.gwtVersion", defaultValue="2.12.1")
+    private String gwtVersion;
 
     /**
      * Path to the Java executable to use.
@@ -125,6 +141,19 @@ public class CompileMojo extends AbstractMojo implements ICompilerOptions {
     @Component
     protected ToolchainManager toolchainManager;
 
+    /**
+     * Used to resolve the GWT dependencies.
+     */
+    @Component
+    private RepositorySystem repoSystem;
+
+    /**
+     * Used to resolve the GWT dependencies.
+     */
+    @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
+    private RepositorySystemSession repoSession;
+
+    @Override
     public void execute() throws MojoExecutionException {
         if (skipCompilation) {
             getLog().info("JUI compilation is being skipped");
@@ -160,15 +189,43 @@ public class CompileMojo extends AbstractMojo implements ICompilerOptions {
         if (failOnError != null)
             args.add(failOnError ? "-failOnError" : "-nofailOnError");
         
+        // Add any compiler args that have been passed.
         if (compilerArgs != null)
             args.addAll(compilerArgs);
+
+        // Add our module to the args.
         args.add(module);
 
+        // Build out the classpath. Begin with te source roots, then add dependencies
+        // the finally include gwt-dev (and its dependencies).
         Set<String> cp = new LinkedHashSet<>();
         cp.addAll(sourceRoots);
         try {
             cp.addAll(project.getCompileClasspathElements());
         } catch (DependencyResolutionRequiredException e) {
+            throw new MojoExecutionException(e.getMessage(), e);
+        }
+        try {
+            String gwtGroup = "org.gwtproject";
+            String gwtArtefact = "gwt-dev";
+            DefaultArtifact artifactToResolve = new DefaultArtifact(gwtGroup + ":" + gwtArtefact + ":" + gwtVersion);
+            CollectRequest collectRequest = new CollectRequest();
+            collectRequest.setRoot(new Dependency(artifactToResolve, ""));
+            // Assume maven central is accessible.
+            // collectRequest.setRepositories(remoteRepos);
+            DependencyRequest dependencyRequest = new DependencyRequest();
+            dependencyRequest.setCollectRequest(collectRequest);
+            List<ArtifactResult> resolvedArtifacts = repoSystem.resolveDependencies(repoSession, dependencyRequest).getArtifactResults();
+            for (ArtifactResult result : resolvedArtifacts) {
+                String path = result.getArtifact().getFile().getAbsolutePath();
+                if (!path.contains("jetty")) { 
+                    if (getLog().isDebugEnabled())
+                        getLog().debug("GWT compiler dependency ADDED: " + path);
+                    cp.add (path);
+                } else if (getLog().isDebugEnabled())
+                    getLog().debug("GWT compiler dependency EXCLUDED: " + path);
+            }
+        } catch (Throwable e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
 

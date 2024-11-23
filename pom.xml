@@ -94,7 +94,6 @@
     <version.gwt-http>1.0.0-RC1</version.gwt-http>
 
     <!-- Plugin versions -->
-    <!-- <version.maven-gwt-maven-plugin>${version.gwt}</version.maven-gwt-maven-plugin> -->
     <version.maven-s3-wagon>1.3.3</version.maven-s3-wagon>
     <version.maven-gs-wagon>1.0</version.maven-gs-wagon>
     <version.flatten-maven-plugin>1.3.0</version.flatten-maven-plugin>
@@ -308,11 +307,6 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>flatten-maven-plugin</artifactId>
           <version>${version.flatten-maven-plugin}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>gwt-maven-plugin</artifactId>
-          <version>${version.gwt}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -580,11 +574,11 @@
       <id>java.net</id>
       <url>http://download.java.net/maven/2</url>
     </repository>
-    <repository>
+    <!-- <repository>
       <id>spring</id>
       <url>https://repo.spring.io/plugins-release</url>
       <name>Spring Plugins</name>
-    </repository>
+    </repository> -->
   </repositories>
 
 </project>

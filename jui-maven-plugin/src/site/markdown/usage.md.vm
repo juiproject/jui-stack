@@ -4,7 +4,7 @@
 ##
 $h2 Basic usage
 
-1. Add the plugin to your POM, enabling extensions to get the new packagings, and configuring your module name:
+Add the plugin to your POM, enabling extensions to get the new packagings, and configuring your module name:
 
     ```xml
     <plugin>
@@ -13,54 +13,7 @@ $h2 Basic usage
       <version>${project.version}</version>
       <extensions>true</extensions>
       <configuration>
-        <moduleName>com.example.app.App</moduleName>
+        <module>myapplication.jui.MyApp</module>
       </configuration>
     </plugin>
     ```
-
-2. Set your `<packaging>` to either `jui-lib` or `jui-app`
-
-3. Add dependencies on GWT
-
-    ```xml
-    <dependencyManagement>
-      <dependencies>
-        <dependency>
-          <groupId>org.gwtproject</groupId>
-          <artifactId>gwt</artifactId>
-          <version>${gwtVersion}</version>
-          <type>pom</type>
-          <scope>import</scope>
-        </dependency>
-      </dependencies>
-    </dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.gwtproject</groupId>
-        <artifactId>gwt-user</artifactId>
-      </dependency>
-      <dependency>
-        <groupId>org.gwtproject</groupId>
-        <artifactId>gwt-dev</artifactId>
-      </dependency>
-    </dependencies>
-    ```
-
-4. Manage your module in a `src/main/module.gwt.xml` file.
-   It will be processed and copied to the appropriate place and with the appropriate name according to the configured module name
-   by the [`gwt:generate-module` goal](generate-module-mojo.html).
-   This can be disabled by setting the `skipModule` configuration property to `true`.
-
-$h3 Project layout
-
-The default configuration of [goals](plugin-info.html) provided by the ${project.name} expect the following project layout:
-
-| File or directory         | Usage |
-| ------------------------- | ----- |
-| `src/main/module.gwt.xml` | GWT module definition, used by #mojo("generate-module"). The `rename-to=""` and some `<inherits/>` will be generated. |
-| `src/main/java/`          | Standard Java sources |
-| `src/main/resources/`     | Standard resources |
-| `src/main/super/`         | GWT super-sources, used by #mojo("add-super-sources") |
-| `src/test/java/`          | Standard test Java sources |
-| `src/test/resources/`     | Standard test resources |
-| `src/test/super/`         | GWT test super-sources, used by #mojo("add-test-super-sources") |

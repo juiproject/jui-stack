@@ -201,7 +201,7 @@ Walking through this we make note of the following:
 2. The project makes use of [Thymeleaf](https://www.thymeleaf.org/) for templating (though not extensively) where templates are found under the `templates` directory. This is not a requirement for JUI applications and is employed here for convenience.
 3. There are two source trees: `jui` and `main`. The first contains the JUI code (which is ultimately compiled to JavaScript) while the second contains the server-side. This is more a matter of convention to maintain clear separation between codebases. The `main` tree is defined as the default source and `jui` is exposed through the use of the [Build Helper Maven Plugin](https://www.mojohaus.org/build-helper-maven-plugin/) (`build-helper-maven-plugin`).
 4. All static resources are declared under the `static` directory (such as CSS and JavaScript).
-5. We employ the [GWT Maven Plugin](https://gwt-maven-plugin.github.io/gwt-maven-plugin/) to perform the JUI build (*later this will be replaced by a JUI supported Maven Plugin*). This is configured to build the `myapplication.jui.playground.PlaygroundApp` module (more on modules later) generating the various web artefacts into the `src/main/resources/static` directory (see [Initial build](#initial-build) for details).
+5. We employ the `jui-maven-plugin` to perform the JUI build (*later this will be replaced by a JUI supported Maven Plugin*). This is configured to build the `myapplication.jui.playground.PlaygroundApp` module (more on modules later) generating the various web artefacts into the `src/main/resources/static` directory (see [Initial build](#initial-build) for details).
 
 We now turn to a detailed description of the source code.
 
@@ -401,7 +401,7 @@ The following is the JSON configuration for VS Code (a *launch configuration* in
 
 Assumimg you have performed an [initial build](#performing-the-initial-build) you should launch this run configuration and the application should start up. This will run a Tomcat server on port 8080, when you access this on `http://localhost:8080/playground` you should see the text "Playground App Loaded!".
 
-We are nearly in a position to start some development, but first we need to introduce the [JUI Code Server](#launching-the-code-server).
+We are nearly in a position to start some development, but first we need to introduce the JUI Code Server.
 
 ### Launching the code server
 
@@ -411,40 +411,59 @@ Fortunately there is an approach which allows us to perfom a compilation on dema
 
 The code server is a separate application that runs on a different port (`9876` by default) and serves up the compiler generated web artefacts (such as the `.cache.js` files) allowing these to be recompiled on demand. This is achieved through the use of bookmarks that interact with the JUI bootstrap code (i.e. as found in `myapplication.jui.playground.PlaygroundApp.nocache.js`) directing it to retrieve JUI assets from the code server rather than the application server.
 
-For a comprehensive description of the code server see [JUI Code Server](app_codeserver.md). For now we walk through the setup for this project.
+For a comprehensive description of the code server see [JUI Code Server](app_codeserver.md). For now we walk through the basic setup needed for this project.
 
-#### Create the run configuration
+#### Add profile to the POM
 
-To run the code server we first need to create a run configuration (much like we did for the application). The pertinent points are:
+The easiest way to run the codeserver is by using the `jui-maven-plugin`'s `codeserver` goal. This can be configured as a profile in the `pom.xml`:
 
-1. The run configuration must be run in the context of the project so as to have access it its classpath.
-2. You must include on its class path the dependency `jui-platform-codeserver-<version>-jar-with-dependencies.jar` (replace `<version>` with the version of JUI you are using). **Do not** add this dependency to the project itself, only to the run configuration.
-3. The run configuration should run the main class `com.effacy.jui.codeserver.CodeServer` as a Java application (this class comes from the dependency in (2)).
-4. You need to pass the module name `myapplication.jui.playground.PlaygroundApp` as an argument (if you pass other arguments it should be the last).
-
-?>Unless you have installed JUI from source then you will need to install the code server dependency from the command line (since it is generally not found as a project dependency) by running `mvn dependency:get -DgroupId=com.effacy.jui -DartifactId=jui-platform-codeserver` `-Dclassifier=jar-with-dependencies -Dversion=<version>` (again replacing `<version>` as appropriate).
-
-The following is the JSON configuration for VS Code (you should double check the version to ensure that it matches the JUI version you are actually using):
-
-```json
-{
-    "type": "java",
-    "name": "MyApplication Playground (CodeServer)",
-    "request": "launch",
-    "mainClass": "com.effacy.jui.codeserver.CodeServer",
-    "args": "-logLevel INFO myapplication.jui.playground.PlaygroundApp",
-    "vmArgs": "-Xmx3g",
-    "projectName": "myapplication-jui",
-    "classPaths": [
-        "${userHome}/.m2/repository/com/effacy/jui/jui-platform-codeserver/0.0.5.M-SNAPSHOT/jui-platform-codeserver-0.0.5.M-SNAPSHOT-jar-with-dependencies.jar",
-        "$Auto",
-    ]
-}
+```xml
+<profiles>
+  <profile>
+    <id>codeserver</id>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>com.effacy.jui</groupId>
+          <artifactId>jui-maven-plugin</artifactId>
+          <version>${version.effacy-jui}</version>
+          <configuration>
+            <module>myapplication.jui.playground.PlaygroundApp</module>
+            <jvmArgs>-Xmx3g</jvmArgs>
+            <sources>
+              <source>src/jui/java</source>
+              <source>src/jui/resources</source>
+            </sources>
+          </configuration>
+          <executions>
+            <execution>
+              <id>codeserver</id>
+              <phase>initialize</phase>
+              <goals>
+                <goal>codeserver</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
+</profiles>
 ```
 
-?> Make sure that you do not have the `jui-stack` project (and family of modules) loaded into your IDE workspace. If so there is a good change that the classpath for the launch configuration will not be set properly and the code server will fail to start.
+Take note of the explicit specification of the source directories (why this is needed is explained in detail in [JUI Code Server](app_codeserver.md)). You can start the code server by running:
 
-Start the code server by launching this run configuration. If you look at the log stream arising from the run configiration you should eventually see something similar to the following:
+```bash
+mvn -Pcodeserver initialize
+```
+
+(we take advantage of the fact that `initialize` is the first Maven lifecycle phase so only this plugin will execute making for a faster startup).
+
+*Alternatively you can run the codeserver as a [launch configuration](#launch-configurations) in the same way you ran the application. This may be a little easier depending on your IDE setup. However, for this guide, run as above.*
+
+#### Running the code server
+
+Start the code server as described above. If you look at the log stream arising it generates you should eventually see something similar to the following:
 
 ```txt
 Code server starting up
@@ -1420,14 +1439,14 @@ Of course you can change the colour as best suites your preference.
 
 #### Launch configurations
 
-Your application and the code server can be run using standard [VS Code launch configurations](https://code.visualstudio.com/docs/editor/debugging) which can be setup as follows (in the relevant `launch.json`, make sure you substitute `<version>` for the JUI version you are using):
+Your application (and the code server) can be run using standard [VS Code launch configurations](https://code.visualstudio.com/docs/editor/debugging) which can be setup as follows (in the relevant `launch.json`, make sure you substitute `<version>` for the JUI version you are using):
 
 ```json
 {
     "configurations": [
         {
             "type": "java",
-            "name": "Workforce Playground (8081)",
+            "name": "MyApplication Playground (8081)",
             "request": "launch",
             "mainClass": "myapplication.jui.playground.PlaygroundApp",
             "projectName": "myapplication-jui",
@@ -1435,7 +1454,7 @@ Your application and the code server can be run using standard [VS Code launch c
         },
         {
             "type": "java",
-            "name": "Workforce Playground (CodeServer)",
+            "name": "MyApplication Playground (CodeServer)",
             "request": "launch",
             "mainClass": "com.effacy.jui.codeserver.CodeServer",
             "args": "-logLevel INFO myapplication.jui.playground.PlaygroundApp",
@@ -1450,43 +1469,11 @@ Your application and the code server can be run using standard [VS Code launch c
 }
 ```
 
-Note that the classpaths referenced includes `$Auto` which resolves the classpath from the project (in this case `myapplication-jui`). If the project references other projects open in the workspace (as will be the case with a multi-module project) then these need to be referenced **directly**. For example, if your multi-module project includes `myapplication-remoting` and `myapplication-web`, both of which contain JUI code that needs to be made accessible to the code server for compilation, then you need to extend the classpaths as follows (the specific source and resource directories may vary, but the principle remains the same):
+The first block pertains to the application itself, which being based on Spring Boot allows it to be configured as a normal Java application. This is fairly straight forward.
 
-```json
-...
-"classPaths": [
-    "${userHome}/.m2/repository/com/effacy/jui/jui-platform-codeserver/<version>/jui-platform-codeserver-<version>-jar-with-dependencies.jar",
-    "${workspaceFolder}/myapplication-remoting/src/main/java",
-    "${workspaceFolder}/myapplication-remoting/src/main/resources",
-    "${workspaceFolder}/myapplication-web/src/jui/java",
-    "${workspaceFolder}/myapplication-web/src/jui/resources",
-    "$Auto",
-]
-...
-```
+The second block pertains to the codeserver whose configuration is a little more involved. The codeserver is bundled into a single executable jar file `jui-platform-codeserver-<version>-jar-with-dependencies.jar` (replace `<version>` with the version of JUI you are using) which needs to be resolved into your local Maven repository. You should **not** include it as a dependency to your project, rather run the codeserver once via Maven, as described [previously](#launching-the-code-server) this dependency is automatically resolved (alternatively install manually with `mvn dependency:get -DgroupId=com.effacy.jui -DartifactId=jui-platform-codeserver` `-Dclassifier=jar-with-dependencies -Dversion=<version>` (again replacing `<version>` as appropriate)).
 
-You can reference other projects as well. Consider the case where you are also making changes to JUI and have `jui-stack` open in your workspace. You can add the following to the classpaths:
 
-```json
-...
-"classPaths": [
-    "${userHome}/.m2/repository/com/effacy/jui/jui-platform-codeserver/<version>/jui-platform-codeserver-LOCAL-SNAPSHOT-jar-with-dependencies.jar",
-    "${workspaceFolder}/../jui-stack/jui-platform/src/main/java",
-    "${workspaceFolder}/../jui-stack/jui-platform/src/main/resources",
-    "${workspaceFolder}/../jui-stack/jui-core/src/main/java",
-    "${workspaceFolder}/../jui-stack/jui-core/src/main/resources",
-    "${workspaceFolder}/../jui-stack/jui-ui/src/main/java",
-    "${workspaceFolder}/../jui-stack/jui-ui/src/main/resources",
-    "${workspaceFolder}/../jui-stack/jui-remoting/src/main/java",
-    "${workspaceFolder}/../jui-stack/jui-remoting/src/main/resources",
-    "${workspaceFolder}/../jui-stack/jui-validation/src/main/java",
-    "${workspaceFolder}/../jui-stack/jui-validation/src/main/resources",
-    "${workspaceFolder}/../jui-stack/jui-text/src/main/java",
-    "${workspaceFolder}/../jui-stack/jui-text/src/main/resources",
-    ...
-    "$Auto",
-]
-...
-```
+?> Make sure that you do not have the `jui-stack` project (and family of modules) loaded into your IDE workspace. If so there is a good change that the classpath for the launch configuration will not be set properly and the code server will fail to start.
 
-**Important**: if you are referencing JUI as above note that the `jui-platform` project is bundled into the `jui-platform-codeserver` JAR file, so changes made to that will not be visible. In this case you need to perform a local build and install of JUI and ensure the version of `jui-platform-codeserver` you refer to is the snapshot one that you have installed.
+Note that the classpath referenced includes `$Auto` which resolves the classpath from the project (in this case `myapplication-jui`). For more complex arrangements you may need to reference other projects. See the [JUI Code Server](app_codeserver.md) for a description of how to handle this situation.

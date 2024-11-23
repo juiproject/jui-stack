@@ -52,6 +52,11 @@ public class CodeServer {
         // Start up the server and run with args.
         SpringApplication app = new SpringApplication (CodeServer.class);
         app.setBannerMode (Mode.OFF);
-        app.run (args);
+        app.setRegisterShutdownHook(true);
+        try {
+            app.run (args);
+        } catch (Throwable e) {
+            System.exit(1);
+        }
     }
 }

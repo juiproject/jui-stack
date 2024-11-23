@@ -15,12 +15,12 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.shared.transfer.artifact.DefaultArtifactCoordinate;
 import org.apache.maven.toolchain.ToolchainManager;
 import org.codehaus.plexus.compiler.util.scan.InclusionScanException;
 import org.codehaus.plexus.compiler.util.scan.StaleSourceScanner;
@@ -34,8 +34,116 @@ import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyRequest;
 
-@Mojo(name = "compile", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE, threadSafe = true)
-public class CompileMojo extends AbstractMojo implements ICompilerOptions {
+@Mojo(name = "compile", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = ResolutionScope.COMPILE, threadSafe = true)
+@Execute(phase = LifecyclePhase.COMPILE)
+public class CompileMojo extends AbstractMojo {
+
+    /**
+     * The logging level to use.
+     * <p>
+     * For GWT the options are {@code INFO} (default), {@code DEBUG} and
+     * {@code TRACE}.
+     * <p>
+     * Injected from passed parameter {@code jui.logLevel}.
+     */
+    @Parameter(property = "jui.logLevel", defaultValue="INFO")
+    private String logLevel;
+
+    /**
+     * The output style.
+     * <p>
+     * For GWT the options are {@code OBFUSCATED}, {@code PRETTY}, or
+     * {@code DETAILED}.
+     * <p>
+     * Injected from passed parameter {@code jui.style}.
+     */
+    @Parameter(property = "jui.style")
+    private String style;
+
+    /**
+     * The optimization level used by the compiler.
+     * <p>
+     * For GWT the options range from 0 (none) to 9 (maximum).
+     * <p>
+     * Injected from passed parameter {@code jui.optimize}.
+     */
+    @Parameter(property = "jui.optimize")
+    private Integer optimize;
+
+    /**
+     * The location where the build artefacts will be written to (with the
+     * assumption being that this location adheres to a WAR file with top-level
+     * artefacts being servable). Artefacts are segmented into modules with each
+     * module artefacts being written into a directory named as per the module name
+     * (full specified with package).
+     * <p>
+     * Defaults to {@code ${project.build.directory}/${project.build.finalName}}).
+     */
+    @Parameter(defaultValue = "${project.build.directory}/${project.build.finalName}", required = true)
+    private File webappDirectory;
+
+    /**
+     * A suitable working directory (must be writable).
+     * <p>
+     * Defaults to {@code ${project.build.directory}/jui/work} and this is usually
+     * sufficient.
+     */
+    @Parameter(defaultValue = "${project.build.directory}/jui/work", required = true)
+    private File workDir;
+
+    /**
+     * Compiler specific location where additional (but non-servable) artefacts are
+     * generated (such as symbol maps).
+     * <p>
+     * Defaults to {@code ${project.build.directory}/jui/deploy} and this is usually
+     * sufficient (unless you are intending to use any of these artefacts).
+     */
+    @Parameter(defaultValue = "${project.build.directory}/jui/deploy", required = true)
+    private File deploy;
+
+    /**
+     * Compiler specific location where extra (non-servable) artefacts are
+     * generated. No default and not required.
+     */
+    @Parameter
+    private File extra;
+
+    /**
+     * Compiler specifc draft compilation (i.e. faster, but less-optimized,
+     * compilations.)
+     * <p>
+     * Defaults to {@code false}.
+     * <p>
+     * Injected from passed parameter {@code jui.draftCompile}.
+     */
+    @Parameter(property = "jui.draftCompile", defaultValue = "false")
+    private boolean draftCompile;
+
+    /**
+     * For GWT. The number of local workers to use when compiling permutations. When terminated
+     * with "C", the number part is multiplied with the number of CPU cores. Floating
+     * point values are only accepted together with "C".
+     */
+    @Parameter(property = "jui.localWorkers", defaultValue="16")
+    private String localWorkers;
+
+    /**
+     * The Java source level to compile against. Injected from passed parameter
+     * {@code maven.compiler.source}.
+     * <p>
+     * The default is 17.
+     */
+    @Parameter(property = "maven.compiler.source", defaultValue = "17")
+    private String sourceLevel;
+
+    /**
+     * To generate JsInterop compatible exports. Injected from passed parameter
+     * {@code jui.generateJsInteropExports}.
+     * <p>
+     * The default is {@code true}.
+     */
+    @Parameter(property = "jui.generateJsInteropExports", defaultValue="true")
+    private boolean generateJsInteropExports;
 
     /**
      * The compiler that should be used.
@@ -132,45 +240,58 @@ public class CompileMojo extends AbstractMojo implements ICompilerOptions {
     @Parameter
     private Map<String, String> jdkToolchain;
 
+    /**
+     * The current project.
+     */
     @Parameter(defaultValue = "${project}", required = true, readonly = true)
     private MavenProject project;
 
+    /**
+     * The current session.
+     */
     @Parameter(defaultValue = "${session}", readonly = true, required = true)
     protected MavenSession session;
 
+    /**
+     * To resolve the JDK.
+     */
     @Component
     protected ToolchainManager toolchainManager;
 
     /**
-     * Used to resolve the GWT dependencies.
+     * Used to resolve dependencies.
      */
     @Component
     private RepositorySystem repoSystem;
 
     /**
-     * Used to resolve the GWT dependencies.
+     * Used to resolve dependencies.
      */
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
     private RepositorySystemSession repoSession;
 
     @Override
     public void execute() throws MojoExecutionException {
+        // If skipping, then quit.
         if (skipCompilation) {
             getLog().info("JUI compilation is being skipped");
             return;
         }
 
+        // Obtain the source locations for the module.
         List<String> sourceRoots = SourcesAsResourcesHelper.filterSourceRoots (
             getLog(),
             project.getResources(),
             project.getCompileSourceRoots()
         );
 
-        if (!forceCompilation && !isStale(sourceRoots)) {
+        // Skip compilation if not being forced and there is no stale source.
+        if (!forceCompilation && !stale(sourceRoots)) {
             getLog().info("Compilation output seems upto date. JUI compilation skipped.");
             return;
         }
 
+        // Build the JVM args and pass through any system properties (i.e. as -D...=...).
         List<String> args = new ArrayList<>();
         if (jvmArgs != null)
             args.addAll(jvmArgs);
@@ -178,70 +299,30 @@ public class CompileMojo extends AbstractMojo implements ICompilerOptions {
             for (Map.Entry<String, String> entry : systemProperties.entrySet())
                 args.add("-D" + entry.getKey() + "=" + entry.getValue());
         }
-        if ("gwt".equals(compiler)) {
-            args.add("com.google.gwt.dev.Compiler");
+
+        // Configure the compiler.
+        List<String> cp = new ArrayList<>();
+        cp.addAll(sourceRoots);
+        try {
+            cp.addAll(project.getCompileClasspathElements());
+            // getLog().info("Compile classpath: ");
+            // project.getCompileClasspathElements().forEach(c -> getLog().info("   " + c));
+        } catch (DependencyResolutionRequiredException e) {
+            throw new MojoExecutionException(e.getMessage(), e);
+        }
+        if ("gwt".equalsIgnoreCase(compiler)) {
+            cp.addAll(configureForGWT (args));
         } else {
             getLog().info("Invalid compiler specified: \"" + compiler + "\". JUI compilation skipped.");
             return;
         }
 
-        args.addAll(buildArgs(getLog()));
-        if (failOnError != null)
-            args.add(failOnError ? "-failOnError" : "-nofailOnError");
-        
-        // Add any compiler args that have been passed.
-        if (compilerArgs != null)
-            args.addAll(compilerArgs);
-
-        // Add our module to the args.
-        args.add(module);
-
-        // Build out the classpath. Begin with te source roots, then add dependencies
-        // the finally include gwt-dev (and its dependencies).
-        Set<String> cp = new LinkedHashSet<>();
-        cp.addAll(sourceRoots);
-        try {
-            cp.addAll(project.getCompileClasspathElements());
-        } catch (DependencyResolutionRequiredException e) {
-            throw new MojoExecutionException(e.getMessage(), e);
-        }
-        try {
-            String gwtGroup = "org.gwtproject";
-            String gwtArtefact = "gwt-dev";
-            DefaultArtifact artifactToResolve = new DefaultArtifact(gwtGroup + ":" + gwtArtefact + ":" + gwtVersion);
-            CollectRequest collectRequest = new CollectRequest();
-            collectRequest.setRoot(new Dependency(artifactToResolve, ""));
-            // Assume maven central is accessible.
-            // collectRequest.setRepositories(remoteRepos);
-            DependencyRequest dependencyRequest = new DependencyRequest();
-            dependencyRequest.setCollectRequest(collectRequest);
-            List<ArtifactResult> resolvedArtifacts = repoSystem.resolveDependencies(repoSession, dependencyRequest).getArtifactResults();
-            for (ArtifactResult result : resolvedArtifacts) {
-                String path = result.getArtifact().getFile().getAbsolutePath();
-                if (!path.contains("jetty")) { 
-                    if (getLog().isDebugEnabled())
-                        getLog().debug("GWT compiler dependency ADDED: " + path);
-                    cp.add (path);
-                } else if (getLog().isDebugEnabled())
-                    getLog().debug("GWT compiler dependency EXCLUDED: " + path);
-            }
-        } catch (Throwable e) {
-            throw new MojoExecutionException(e.getMessage(), e);
-        }
-
         // Run the compilation job.
         new JavaRunner(getLog(), project, session, toolchainManager, jdkToolchain, jvm)
             .execute(cp, args);
-
-        // XXX: workaround for GWT 2.7.0 not setting nocache.js lastModified correctly.
-        // if (isStale(sourceRoots)) {
-        //     String shortName = getModuleShortName();
-        //     File nocacheJs = new File(webappDirectory, shortName + File.separator + shortName + ".nocache.js");
-        //     nocacheJs.setLastModified(System.currentTimeMillis());
-        // }
     }
 
-    private boolean isStale(List<String> sourceRoots) throws MojoExecutionException {
+    private boolean stale(List<String> sourceRoots) throws MojoExecutionException {
         if (!webappDirectory.exists())
             return true;
 
@@ -267,15 +348,15 @@ public class CompileMojo extends AbstractMojo implements ICompilerOptions {
 
         // sources (incl. generated ones)
         for (String sourceRoot : sourceRoots) {
-            if (isStale(scanner, new File(sourceRoot), nocacheJs))
+            if (stale(scanner, new File(sourceRoot), nocacheJs))
                 return true;
         }
         // compiled (processed) classes and resources (incl. processed and generated ones)
-        if (isStale(scanner, new File(project.getBuild().getOutputDirectory()), nocacheJs))
+        if (stale(scanner, new File(project.getBuild().getOutputDirectory()), nocacheJs))
             return true;
 
         // POM
-        if (isStale(scanner, project.getFile(), nocacheJs))
+        if (stale(scanner, project.getFile(), nocacheJs))
             return true;
         
         // dependencies
@@ -283,14 +364,14 @@ public class CompileMojo extends AbstractMojo implements ICompilerOptions {
         for (Artifact artifact : project.getArtifacts()) {
             if (!artifactFilter.include(artifact))
                 continue;
-            if (isStale(scanner, artifact.getFile(), nocacheJs))
+            if (stale(scanner, artifact.getFile(), nocacheJs))
                 return true;
         }
 
         return false;
     }
 
-    private boolean isStale(StaleSourceScanner scanner, File sourceFile, File targetFile) throws MojoExecutionException {
+    private boolean stale(StaleSourceScanner scanner, File sourceFile, File targetFile) throws MojoExecutionException {
         if (!sourceFile.isDirectory()) {
             boolean stale = (targetFile.lastModified() + staleMillis < sourceFile.lastModified());
             if (stale && getLog().isDebugEnabled())
@@ -321,130 +402,92 @@ public class CompileMojo extends AbstractMojo implements ICompilerOptions {
         return moduleShortName;
     }
 
-    /************************************************************************
-     * Implementation of {@link ICompilerOptions} with the associated Maven
-     * parameters.
-     ************************************************************************/
+    protected List<String> configureForGWT(List<String> args) throws MojoExecutionException {
+        args.add("com.google.gwt.dev.Compiler");
+        
+        if (!StringUtils.isBlank(logLevel)) {
+            args.add("-logLevel");
+            args.add(logLevel);
+        }
+        args.add("-war");
+        args.add(webappDirectory.getAbsolutePath());
+        args.add("-workDir");
+        args.add(workDir.getAbsolutePath());
+        args.add("-deploy");
+        args.add(deploy.getAbsolutePath());
+        if (extra != null) {
+            args.add("-extra");
+            args.add(extra.getAbsolutePath());
+        }
+        if (!StringUtils.isBlank(style)) {
+            args.add("-style");
+            args.add(style);
+        }
+        if (generateJsInteropExports)
+            args.add("-generateJsInteropExports");
+        else
+            args.add("-nogenerateJsInteropExports");
+        if (!StringUtils.isBlank(localWorkers)) {
+            args.add("-localWorkers");
+            int workers;
+            if (localWorkers.contains("C"))
+                workers = (int) (Float.valueOf(localWorkers.replace("C", "")) * Runtime.getRuntime().availableProcessors());
+            else
+                workers = Integer.valueOf(localWorkers);
+            args.add(String.valueOf(workers));
+        }
+        args.add("-XnocheckCasts");
+        args.add("-XfragmentCount");
+        args.add("-1");
+        if (draftCompile) {
+            args.add("-draftCompile");
+        } else if (optimize != null) {
+            args.add("-optimize");
+            args.add(String.valueOf(optimize.intValue()));
+        }
+        if (!StringUtils.isBlank(sourceLevel)) {
+            args.add("-sourceLevel");
+            args.add(sourceLevel);
+        }
 
-    /**
-     * See {@link #getLogLevel()}.
-     */
-    @Parameter(property = "jui.logLevel", defaultValue="INFO")
-    private String logLevel;
 
-    /**
-     * See {@link #getStyle()}.
-     */
-    @Parameter(property = "jui.style")
-    private String style;
+        if (failOnError != null)
+            args.add(failOnError ? "-failOnError" : "-nofailOnError");
+        
+        // Add any compiler args that have been passed.
+        if (compilerArgs != null)
+            args.addAll(compilerArgs);
 
-    /**
-     * See {@link #getOptimize()}.
-     */
-    @Parameter(property = "jui.optimize")
-    private Integer optimize;
+        // Add our module to the args.
+        args.add(module);
 
-    /**
-     * See {@link #getWarDir()}.
-     */
-    @Parameter(defaultValue = "${project.build.directory}/${project.build.finalName}", required = true)
-    private File webappDirectory;
-
-    /**
-     * See {@link #getWorkDir()}.
-     */
-    @Parameter(defaultValue = "${project.build.directory}/jui/work", required = true)
-    private File workDir;
-
-    /**
-     * See {@link #getDeployDir()}.
-     */
-    @Parameter(defaultValue = "${project.build.directory}/jui/deploy", required = true)
-    private File deploy;
-
-    /**
-     * See {@link #getExtraDir()}.
-     */
-    @Parameter
-    private File extra;
-
-    /**
-     * See {@link #isDraftCompile()}.
-     */
-    @Parameter(property = "jui.draftCompile", defaultValue = "false")
-    private boolean draftCompile;
-
-    /**
-     * See {@link #getLocalWorkers()}.
-     */
-    @Parameter(property = "jui.localWorkers", defaultValue="16")
-    private String localWorkers;
-
-    /**
-     * See {@link #getSourceLevel()}.
-     */
-    @Parameter(property = "maven.compiler.source", defaultValue = "17")
-    private String sourceLevel;
-
-    /**
-     * See {@lik #isGenerateJsInteropExports()}.
-     */
-    @Parameter(property = "jui.generateJsInteropExports", defaultValue="true")
-    private boolean generateJsInteropExports;
-
-    @Override
-    public String getLogLevel() {
-        return logLevel;
-    }
-
-    @Override
-    public String getStyle() {
-        return style;
-    }
-
-    @Override
-    public Integer getOptimize() {
-        return optimize;
-    }
-
-    @Override
-    public File getWarDir() {
-        return webappDirectory;
-    }
-
-    @Override
-    public File getWorkDir() {
-        return workDir;
-    }
-
-    @Override
-    public File getDeployDir() {
-        return deploy;
-    }
-
-    @Override
-    public File getExtraDir() {
-        return extra;
-    }
-
-    @Override
-    public boolean isDraftCompile() {
-        return draftCompile;
-    }
-
-    @Override
-    public String getLocalWorkers() {
-        return localWorkers;
-    }
-
-    @Override
-    public String getSourceLevel() {
-        return sourceLevel;
-    }
-
-    @Override
-    public boolean isGenerateJsInteropExports() {
-        return generateJsInteropExports;
+        // Build out the classpath. Begin with te source roots, then add dependencies
+        // the finally include gwt-dev (and its dependencies).
+        List<String> cp = new ArrayList<>();
+        try {
+            String gwtGroup = "org.gwtproject";
+            String gwtArtefact = "gwt-dev";
+            DefaultArtifact artifactToResolve = new DefaultArtifact(gwtGroup + ":" + gwtArtefact + ":" + gwtVersion);
+            CollectRequest collectRequest = new CollectRequest();
+            collectRequest.setRoot(new Dependency(artifactToResolve, ""));
+            // Assume maven central is accessible.
+            // collectRequest.setRepositories(remoteRepos);
+            DependencyRequest dependencyRequest = new DependencyRequest();
+            dependencyRequest.setCollectRequest(collectRequest);
+            List<ArtifactResult> resolvedArtifacts = repoSystem.resolveDependencies(repoSession, dependencyRequest).getArtifactResults();
+            for (ArtifactResult result : resolvedArtifacts) {
+                String path = result.getArtifact().getFile().getAbsolutePath();
+                if (!path.contains("jetty") && !path.contains("jasper") && !path.contains("htmlunit")) { 
+                    if (getLog().isDebugEnabled())
+                        getLog().debug("GWT compiler dependency ADDED: " + path);
+                    cp.add (path);
+                } else if (getLog().isDebugEnabled())
+                    getLog().debug("GWT compiler dependency EXCLUDED: " + path);
+            }
+        } catch (Throwable e) {
+            throw new MojoExecutionException(e.getMessage(), e);
+        }
+        return cp;
     }
     
 }

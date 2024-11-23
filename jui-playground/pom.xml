@@ -133,6 +133,7 @@
       <plugin>
         <groupId>com.effacy.jui</groupId>
         <artifactId>jui-maven-plugin</artifactId>
+        <version>${revision}</version>
         <executions>
           <execution>
             <phase>compile</phase>

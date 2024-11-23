@@ -401,7 +401,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-verifier-plugin</artifactId>
-          <version>${maven-verifier-plugin}</version>
+          <version>${version.maven-verifier-plugin}</version>
         </plugin>
       </plugins>
     </pluginManagement>

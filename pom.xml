@@ -121,6 +121,7 @@
     <version.cobertura-maven-plugin>2.5</version.cobertura-maven-plugin>
     <version.maven-jar-plugin>3.4.2</version.maven-jar-plugin>
     <version.javacc-maven-plugin>3.1.0</version.javacc-maven-plugin>
+    <version.spring-boot-maven-plugin>3.3.5</version.spring-boot-maven-plugin>
     <version.central-publishing-maven-plugin>0.6.0</version.central-publishing-maven-plugin>
   </properties>
 
@@ -402,6 +403,11 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-verifier-plugin</artifactId>
           <version>${version.maven-verifier-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${version.spring-boot-maven-plugin}</version>
         </plugin>
       </plugins>
     </pluginManagement>

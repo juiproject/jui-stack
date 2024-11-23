@@ -6,6 +6,8 @@ This project provides the core classes needed to successfully perform a compilat
 
 ## GWT
 
+*The current source version is `2.12.1`.*
+
 Here we describe the GWT compilation system as maintained by the [GWT project](https://github.com/gwtproject/gwt) (this is currently the only compilation system supported):
 
 1. [Description](#description) of the compilation system and how it is incorporated into JUI.
@@ -54,7 +56,7 @@ The simplest approach to this is:
 
 1. Clone the [gwtproject/gwt](https://github.com/gwtproject/gwt) into the `tmp` directory of this project module (this is ignored by Git).
 2. Checkout the lastest version and the prior version (that was last updgraded to).
-3. Run a `git diff release/XXXX release/YYYY --name-only` to work out what files have changed. The important changes will by under `user` (and used the guide above).
+3. Run a `git diff release/XXXX release/YYYY --name-only` to work out what files have changed. The important changes will by under `user` (and used the guide above). You can pipe this to filter on package prefix ` | grep '^package/'` (i.e. ` | grep '^user/super/com/google/gwt/emul/'`)
 4. Copy across the relevant changes.
 
 In addition you should ensure that the [Modifications: Emulation](#emulation) changes are also applied, unless they have been addressed otherwise (i.e. fixed or updated from the version of GWT being upgraded to).

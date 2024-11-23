@@ -90,7 +90,7 @@ public class Options {
     /**
      * See {@link #getSourceLevel()}.
      */
-    private SourceLevel sourceLevel = SourceLevel.JAVA11;
+    private SourceLevel sourceLevel = SourceLevel.JAVA17;
     private boolean failOnError = false;
     private int compileTestRecompiles = 0;
     // The default is to generate JS Interop exports.

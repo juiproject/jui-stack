@@ -96,7 +96,106 @@ Linking takes the results of compilation and generates the final artefacts for d
 
 ## Integration
 
-Here we describe how compilation is integrated into the build process.
+Integrating compilation into the build process simply require configuring the `compile` goal of the `jui-maven-pluging`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project ...>
+  ...
+  <properties>
+    <jui-version>...</jui-version>
+    ...
+  </properties>
+  ...
+  <plugins>
+    <plugin>
+        <groupId>com.effacy.jui</groupId>
+        <artifactId>jui-maven-plugin</artifactId>
+        <version>${jui-version}</version>
+        <executions>
+          <execution>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <configuration>
+              <module>myapplication.ApplicationEntryPoint</module>
+              <jvmArgs>-Xmx4096M,-Xss1024k</jvmArgs>
+              <style>OBF</style>
+              <webappDirectory>${basedir}/src/main/resources/static</webappDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      ...
+  </plugings>
+</project>
+```
+
+The appicable configuration options are:
+
+|Option|Description|
+|------|-----------|
+|`<module>`|**Required** The fully qualified module name.|
+|`<jvmArgs>`|List of arguments to pass directly to the JVM.|
+|`<style>`|The style of code generation. Options are `DETAILED`, `OBFUSCATED` (or `OBF`, the default) or `PRETTY`.|
+|`<webappDirectory>`|**Required** The location to where the deployable build artefacts should be written. These will appear under a directory named the same as the module. For a Spring Boot appliation ths will typically be where the static resources are served from (though make sure these location is excluded from version control).|
+|`<sourceLevel>`|The Java source-level the compiler should run at. Options are `11` and `17` (the default).|
+|`<logLevel>`|The level of logging the compiler should run at. Options are `ALL`, `ERROR`, `INFO` (the default), `DEBUG` and `TRACE`.|
+|`<compiler>`|The compiler that should be used. Only option currently being `GWT` (the default).|
+|`<generateJsInteropExports>`| Boolean `true` (the default) to generate JsInterop exports for external consumption or not.|
+|`<gwtVersion>`|For use with the GWT compiler to override the default GWT version (as applied to the `gwt-dev.jar` library).|
+|`<compilerArgs>`|List of additional arguments to pass to the compiler.|
+|`<forceCompilation>`|Boolean to force compilation each time (no cache checking).|
+|`<workDir>`|The working directory. Default is `${project.build.directory}/jui/work`.|
+|`<deploy>`|The directory to write non-servable artefacts (i.e. source maps). Default is ${project.build.directory}/jui/deploy`.|
+|`<optimize>`|A compiler specific optimisation parameter. For the GWT compiler this is a value from 1 to 9.|
+
+
+Note that *list-of* means either a comma-separated list or a formal list of sub-items:
+
+```xml
+<jvmArgs>
+  <jvmArg>...</jvmArg>
+  <jvmArg>...</jvmArg>
+  ...
+</jvmArgs>
+```
+
+For compilation of multuple modules you need to create separate executions:
+
+```xml
+<plugin>
+  <groupId>com.effacy.jui</groupId>
+  <artifactId>jui-maven-plugin</artifactId>
+  <version>${jui-version}</version>
+  <executions>
+    <execution>
+    <phase>compile-app1</phase>
+      <goals>
+        <goal>compile</goal>
+      </goals>
+      <configuration>
+        <module>myapplication.app1.Application1</module>
+        ...
+      </configuration>
+    </execution>
+    <execution>
+      <id>compile-app2</id>
+      <phase>compile</phase>
+      <goals>
+        <goal>compile</goal> 
+      </goals>
+      <configuration>
+        <module>myapplication.app2.Application2</module>
+        ...
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
+```
+
+The plugin runs during the compile phase and writes the servable artefacts to the `<webappDirectory>`.
 
 ## Development
 

@@ -271,7 +271,9 @@ public abstract class PaginatedStore<V> extends StoreSelection<V> implements IPa
      */
     @Override
     public void reload() {
+        items.clear ();
         statusMessage = null;
+        fireEvent (IStoreChangedListener.class).onStoreChanged (this);
         if (status == Status.UNLOADED)
             load (0, pageSize);
         else

@@ -59,14 +59,14 @@ We assume that you have a JUI web project that successfully builds (in the tradi
 
 #### Example: Playground
 
-A good starting point is the `jui-playground`:
+A good starting point is the `jui-playground` (this is very similar to the project created in the [getting started guide](intro_gettingstarted.md) but being part of the `jui-stack` it affords a more complex arrangement of project dependencies):
 
 1. Import the `jui-stack` project into your IDE.
-2. Run a full Maven build (this will install artefacts locally and will invoke a JUI compilation in `jui-playground` that will create the necessary bootstrap code to invoke the code server).
+2. Run a full Maven build (this will install artefacts locally under the version `LOCAL-SNAPSHOT` and will invoke a JUI compilation in `jui-playground` that will create the necessary bootstrap code to invoke the code server).
 3. Ensure the project builds in the IDE.
 4. You have two options here to run the *playground*:
      a. Run `jui-playground` in the IDE as a Spring Boot application (the specifics depend on your IDE).
-     b. Executing `java -jar jui-playground/target/jui-playground-<version>.jar` (from the command line situated in the root project directory) where `<version>` is the build version created during (2).
+     b. Executing `java -jar jui-playground/target/jui-playground-LOCAL-SNAPSHOT.jar` (from the command line situated in the root project directory).
 5. Navigate to `http://localhost:8080/playground` and you should see the *playground*.
 
 Note that the code server build from the source code in your project, which means that you can use either of the methods described in (4) and still make changes to the JUI code. If you are making changes to non-JUI only code then you need to run the project as per (4a) as you would normally during development.
@@ -83,6 +83,101 @@ The general outline to running the code server in your IDE is as follows:
 2. Ensure that the class path of the run configuration includes the aforementioned JAR file (however **don't** includes this as a project dependency, reference it off the filesystem).
 
 After the code server starts the administration interface should be available on `http://localhost:9876` (assuming the default port).
+
+#### Example: Maven Plugin
+
+The `jui-playground` pom includes a profile `codeserver` that will run the code server with the following command:
+
+```bash
+mvn -Pcodeserver initialize
+```
+
+This approach is probably the simplest, whereby you include a similar profile in your JUI project(s). The model is generalisable so we present it below as it appears in the `jui-playground` and detail the various configuration options:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project ...>
+  ...
+  <profiles>
+    <!-- Runs the codeserver for this project -->
+    <profile>
+      <id>codeserver</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.effacy.jui</groupId>
+            <artifactId>jui-maven-plugin</artifactId>
+            <version>${release}</version>
+            <configuration>
+              <module>com.effacy.jui.playground.PlaygroundApp</module>
+              <jvmArgs>-Xmx3g</jvmArgs>
+              <sources>
+                <source>src/jui/java</source>
+                <source>src/jui/resources</source>
+                <!-- We include target/classes to gain access to rebind classes. -->
+                <source>../jui-platform/src/main/java</source>
+                <source>../jui-platform/src/main/resources</source>
+                <source>../jui-core/src/main/resources</source>
+                <source>../jui-core/src/main/java</source>
+                <source>../jui-core/target/classes</source>
+                <source>../jui-core/target-ide/classes</source>
+                <source>../jui-ui/src/main/java</source>
+                <source>../jui-ui/src/main/resources</source>
+                <source>../jui-ui/target/classes</source>
+                <source>../jui-ui/target-ide/classes</source>
+                <source>../jui-validation/src/main/java</source>
+                <source>../jui-validation/src/main/resources</source>
+                <source>../jui-validation/target/classes</source>
+                <source>../jui-validation/target-ide/classes</source>
+                <source>../jui-text/src/main/java</source>
+                <source>../jui-text/src/main/resources</source>
+                <source>../jui-text/target/classes</source>
+                <source>../jui-text/target-ide/classes</source>
+                <source>../jui-remoting/src/main/java</source>
+                <source>../jui-remoting/src/main/resources</source>
+                <source>../jui-remoting/target/classes</source>
+                <source>../jui-remoting/target-ide/classes</source>
+                <source>../jui-text/src/main/java</source>
+                <source>../jui-text/src/main/resources</source>
+                <source>../jui-text/target/classes</source>
+                <source>../jui-text/target-ide/classes</source>
+              </sources>
+              <inclusions>
+                <inclusion>org.pepstock:charba:*</inclusion>
+              </inclusions>
+              <exclusions>
+                <!-- These are included by default so need to explicily exclude -->
+                <!-- (they are included by the sources above). -->
+                <exclusion>com.effacy.jui:*:*</exclusion>
+              </exclusions>
+            </configuration>
+            <executions>
+              <execution>
+                <id>codeserver</id>
+                <phase>initialize</phase>
+                <goals>
+                  <goal>codeserver</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>
+```
+
+Walking through the configuration:
+
+1. The `version` is `${release}` since the version of the `jui-maven-plugin` is just the version of the reactor. For your own projects replace this with the version of JUI that you are using.
+2. The `module` parameter contains a comma-separated list of fully qualified modules (the package and name of the entry point module `.gwt.xml` file).
+3. The `jvmArgs` parameter contains a comma-separated list arguments to pass through to the JVM. The most common being the maximum heap size (3G is usually sufficient).
+4. The `sources` parameter contains all the source directories you wish to include in scope of JUI compilation. The compiler only needs access to those source locations and JAR files that contain compilable code. These must appear on the same classpath as the code server JAR which means that including other dependencies (especially Spring Boot releated ones) can cause some undesirable behaviours (especially where autoconfiguration is involved) so it is best to keep the classpath light. Note that loctions can be relative.
+5. The `inclusions` and `exclusions` declare those artefacts to include and exclude. If no inclusions are specified then all artefacts resolved from the pom will be included, otherwise only those that match the inclusion patterns (along with those used by JUI) will pass. Exclusions are applied ontop of this collection. In the `jui-playground` case this is made more complex as we need to explicitly exclude the JUI libraries as these are included by default noting that they are included by way of the sources (since the playground is intended to support development of JUI itself).
+
+If you are encouter problems getting the code sever up-and-running then try adding the configuration parameter `<diagnose>true</diagnose>`. This will print to logs the classpath used to run the code server along with the options passed (without attempting to launch the code server).
+
 
 #### Example: VS Code
 
@@ -217,18 +312,6 @@ To configure the code server for more than one module simply list all modules se
 
 where we assume two modules `myapplication.web.Application` and `myapplication.jui.Playground`.
 
-## Code server configuration
-
-Configuration options are passed to the code server as arguments.
-
-|Option|Description|
-|------|-----------|
-|`-port <port>`|The port to rune the code server on (default is 9876).|
-|`-logLevel <ALL,ERROR,INFO,DEBUG,TRACE>`|The level of logging to perform (default is INFO).|
-|`-generateJsInteropExports`|To export JsInterop annoted code making it available from JavaScript.|
-|`-style <DETAILED,OBFUSCATED,PRETTY>`|The level of code generation (default is OBFUSCATED).|
-|`-sourceLevel <level>`|The source level (default is 1.1).|
-
 ## Under-the-hood
 
 *Here we reference the code server from a technical standpoint, as it appears in the `jui-platform-codeserver` project. This is only relevant for those wanting a deeper understanding of how it works or who which to contribute to its development.*
@@ -236,3 +319,45 @@ Configuration options are passed to the code server as arguments.
 Those familar with [GWT](www.gwtproject.org) will notice some similarities, and that is no coincidence. The JUI code server is based on the GWT code server, though subject to a significant rewrite (to better manage dependencies, reduce the potential for library conflicts and to support pluggability of compilation mechanism) as well as bringing it under the auspicies of the JUI code base.
 
 All relevant technical documentation is contained within the project itself and referenced from the projects main `README.md` file.
+
+# Appendix
+
+## Maven configuration
+
+Configuration options for the `codeserver` goal of the `jui-maven-plugin` are:
+
+|Option|Description|
+|------|-----------|
+|`<module>`|List of fully qualified module names of the entry-point modules.|
+|`<jvmArgs>`|A list of arguments to pass directly to the JVM.|
+|`<diagnose>`|A `true` or `false` (default) value that will have the plugin print the classpath and command arguments in lieu of running the code server. Useful to ensure that the correct filtering is being applied to the classpath entries.|
+|`<port>`|The port the code server should run on (default is `9876`).|
+|`<logLevel>`|Passed to the compiler. The log-level the compiler should run at (see [Compiler](app_compilation.md)).|
+|`<sourceLevel>`|Passed to the compiler. The Java source-level the compiler should run at (see [Compiler](app_compilation.md)).|
+|`<sources>`|A list of project-relative directories containing JUI source code. If not specified then the sources declared in the project will be used (note that if you choose this approach and you are using the `build-helper-maven-plugin` then that plugin *must* run before the code server to ensure that the additional sources are added and thus made available to the plugin).|
+|`<inclusions>`|A list of artefacts filters on the project dependencies to include on the classpath of the code server. Each filter is a wild-card filter on Maven coordinates. By default the JUI libraries (and their dependencies) are filtered in.|
+|`<exclusions>`|As with `<inclusions>` these are dependencies to exclude. Exclusions operates over the inclusions.|
+
+Note that *list-of* can be expressed either by comma separation or nesting:
+
+```xml
+<sources>
+    <source>...</source>
+    <source>...</source>
+    ...
+</sources>
+```
+
+Finally recall that the specification of sources and dependencies need only consider those that are included in the JUI compilation and that sources can reference other projects relatively (i.e. for multi-module parents).
+
+## Code server configuration
+
+Configuration options are passed to the code server as arguments.
+
+|Option|Description|
+|------|-----------|
+|`-port <port>`|The port to rune the code server on (default is 9876).|
+|`-logLevel <ALL,ERROR,INFO,DEBUG,TRACE>`|Passed to the compiler. The log-level the compiler should run at (see [Compiler](app_compilation.md)). Default is `INFO`.|
+|`-sourceLevel <level>`|Passed to the compiler. The Java source-level the compiler should run at (see [Compiler](app_compilation.md)). Defalt is `17`.|
+|`-generateJsInteropExports`|Passed to the compiler. The log-level the compiler should run at (see [Compiler](app_compilation.md)).|
+|`-style <DETAILED,OBFUSCATED,PRETTY>`|Passed to the compiler. The log-level the compiler should run at (see [Compiler](app_compilation.md)). Default is `OBFUSCATED`.|

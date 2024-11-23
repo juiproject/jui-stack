@@ -84,6 +84,7 @@ public class GWTCompilationService implements ICompilationService {
         // GWT compiler.
         UnitCache unitCache = UnitCacheSingleton.get (baseLogger, null, baseCacheDir, new CompilerOptionsImpl (options));
         MinimalRebuildCacheManager minimalRebuildCacheManager = new MinimalRebuildCacheManager(logger, baseCacheDir, ImmutableMap.of (
+            "sourceLevel", options.getSourceLevel().getStringValue(),
             "style", options.getOutput ().name (),
             "closureFormattedOutput", String.valueOf (options.isClosureFormattedOutput()),
             "generateJsInteropExports", String.valueOf (options.shouldGenerateJsInteropExports()),

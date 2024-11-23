@@ -81,6 +81,8 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    overflow-x: auto;
+    position: relative;
 }
 
 .juiCard.clickable {
@@ -286,6 +288,7 @@
     cursor: pointer;
     border-radius: var(--juiButton-radius);
     display: inline-flex;
+    text-wrap-mode: nowrap;
     gap: 0.5em
 }
 
@@ -415,6 +418,12 @@
     text-transform: uppercase;
 }
 
+.juiPersonWithAvatar h4 {
+    font-weight: 600;
+    color: var(--jui-text-header);
+    margin: 0;
+}
+
 /*************************************************
 * Notice styles.
 */
@@ -492,13 +501,28 @@
     margin-bottom: 0;
 }
 
-.juiNotice > .main p.message {
-    margin: 0;
+.juiNotice > .main > div {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
     font-weight: 500;
     font-size: 0.95em;
 }
 
-.juiNotice.style-inline > .main p.message {
+.juiNotice > .main > div p {
+    margin: 0;
+}
+
+.juiNotice > .main > div ul {
+    margin: 0;
+}
+
+.juiNotice > .main > div a {
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.juiNotice.style-inline > .main > div p {
     white-space: nowrap;
 }
 
@@ -641,4 +665,19 @@
     line-height: 1.5;
     letter-spacing: 0.00938em;
     margin-bottom: 0.35em;
+}
+
+/*************************************************
+* Loading styles.
+*/
+.juiLoading {
+    animation: jui-animation-waiting 1s ease-in infinite;
+    height: 1em;
+    width: 100%;
+    border-radius: 3px;
+    background: #f9f9f9;
+}
+
+.juiLoading.juiLoading_dark {
+    background: #f3f3f3;
 }

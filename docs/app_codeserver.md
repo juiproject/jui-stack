@@ -7,8 +7,8 @@ This documentation is separated into four sections:
 1. [How it works](#how-it-works) to provide a high-level overview of the mechanism undergirding the code server.
 2. [Getting started](#getting-started) being a practical guide to using the code server in a project setting.
 3. [More than one module](#more-than-one-module) describes how to deploy more than one JUI modules onto a single code server instance.
-4. [Code server configuration](#code-server-configuration) describes the various configuration options that can be passed to the code server.
-5. [Under-the-hood](#under-the-hood) to introduce some of the technical aspects of the code server and where to look if you want to modify the code server codebase.
+4. [Under-the-hood](#under-the-hood) to introduce some of the technical aspects of the code server and where to look if you want to modify the code server codebase.
+4. [Configuration options](#appendix) describes the various configuration options that can be passed to the code server.
 
 ## How it works
 
@@ -155,7 +155,7 @@ The simplest way to run the code server is using the `codeserver` goal of the `j
 Walking through the configuration (see [Appendix: Maven configuration](#maven-configuration) for a full list of configuration options):
 
 1. The `version` is the version of JUI you are using (for `jui-playground` this is provided by the `release` property since the version of the `jui-maven-plugin` is just the version of the reactor).
-2. *Required* The `module` parameter contains the fully qualified name of the entry-point module (the file with the `.gwt.xml` extension). If you have more than one module in your application then declare them as a comma-separated list.
+2. **Required** The `module` parameter contains the fully qualified name of the entry-point module (the file with the `.gwt.xml` extension).
 3. The `jvmArgs` parameter contains a comma-separated list arguments to pass through to the JVM. The most common being the maximum heap size (3G is usually sufficient).
 4. The `sources` parameter contains all the source directories you wish to include in scope of JUI compilation. For a single project this will just be the JUI source trees for that project (normally `src/jui/java` and `src/jui/resources`). For a multi-module project you need to include the JUI source trees for each project separately (which can be referenced relatively). In the example we need to include the source trees for most of the sibling modules as well as their respective `target/classes`. The latter is only needed as many of these project make use of rebinding and the compiled version of those classes is needed during compilation.
 5. In addition to the project sources we also need to include any referenced JAR files that contain compilable code. We can do this by filtering the classpath of the fully dependency-resolved project to include (and exclude) specific artefacts. This is where the `inclusions` and `exclusions` come in. Each of these specifies a list of Maven cooridinates (allowing for wildcards) to filter against. Note that  the JUI libraries and their know dependencies are automatically included. For the `jui-project` we actually want to exclude these as we want to access the uncompiled versions so we can respond to changes in those files (which we could not do if the code server only saw the libraries). Hence they are exlcuded (this is not normally the case).
@@ -168,7 +168,7 @@ The code server can then be run with:
 mvn -Pcodeserver initialize
 ```
 
-?> It is possible to run the code server from the command line (see the [Appendix](#run-configuration) for details) however that can be a littly tricky. A run configuration is generally run from a project and passes through the classpath relevant to that project. This will include dependencies and sometimes source code but generally you need to manually reference source code in sibling projects (this very much depends on how your IDE setups run configurations). In all cases you need to manually add in the code server JAR file itself. In the most part this is fine but if your project includes Spring Boot then autoconfiguration can interfere with the code server (which also uses Spring Boot). The Maven plugin does exhibit this problem but the use of filters reduces the burden of the problem significantly and the associated classpath tends to be quite minmalistic (only including JUI compilable code).
+?> It is possible to run the code server via a run configuration (see the [Appendix](#run-configuration) for details) however that can be a littly tricky. These are generally run from a project and passes through the classpath relevant to that project. This will include dependencies and sometimes source code but generally you need to manually reference source code in sibling projects (this very much depends on how your IDE setups run configurations). In all cases you need to manually add in the code server JAR file itself. In the most part this is fine but if your project includes Spring Boot then autoconfiguration can interfere with the code server (which also uses Spring Boot). The Maven plugin does exhibit this problem but the use of filters reduces the burden of the problem significantly and the associated classpath tends to be quite minmalistic (only including JUI compilable code).
 
 ### First time running
 
@@ -246,22 +246,20 @@ Clicking on an artefact will display it (as raw content).  In addition there are
 
 As alluded to in the screen shots above one may have more than one JUI application module in your codebase (a simple example being the module for your application and that for your component explorer, if you have choosen that project configuration).
 
-To configure the code server for more than one module simply list all modules separated by a space.  For example (in VS Code):
+To configure the code server for more than one module simply list all modules as a comma-separated list:
 
-```json
-{
-    "type": "java",
-    "name": "MyApplication CodeServer",
-    "request": "launch",
-    "mainClass": "com.effacy.jui.codeserver.CodeServer",
-    "args": "-generateJsInteropExports -port 9876 myapplication.web.Application myapplication.jui.Playground",
-    "vmArgs": "-Xmx3g",
-    "projectName": "myapplication",
+```xml
+<configuration>
+  <module>myapplication.web.Application,myapplication.jui.Playground</module>
+  <jvmArgs>-Xmx3g</jvmArgs>
+  <sources>
     ...
-}
+  </sources>
+  ...
+</configuration>
 ```
 
-where we assume two modules `myapplication.web.Application` and `myapplication.jui.Playground`.
+where we assume two modules `myapplication.web.Application` and `myapplication.jui.Playground`. Note that you need to ensure that sources for both modules are declared under `<sources>` (and the `<inclusions>` and `<exclusions>` modified accordingly).
 
 ## Under-the-hood
 

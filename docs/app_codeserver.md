@@ -16,18 +16,18 @@ This documentation is separated into four sections:
 
 During the build process JUI code is compiled to JavaScript which is subsequently packaged (along with supporting assets and any bootstrap code) into a collection of *compliation artefacts*. The intention being that these artefacts are deployed as web resources and are referred to from HTML as needed (see [Compilation](app_compilation.md) for a deeper discussion on this).
 
-In terms of how these artefacts become accessible via URI, the convention is that they are segmented by module and are referenced off the context root descriminated by module name. For example the bootstrap code is accessinble as `<module>/<module>.nocache.js` which can be included in a SCRIPT tag such as (for the **playground** application):
+In terms of how these artefacts become accessible via URL, the convention is that they are segmented by module and are referenced off the context root descriminated by module name. For example the bootstrap code is accessinble as `<module>/<module>.nocache.js` which can be included in a SCRIPT tag such as (for the **playground** application):
 
 ```html
 ...
-<script src="/com.effacy.jui.playground.TestApplication/com.effacy.jui.playground.TestApplication.nocache.js"></script>
+<script src="/com.effacy.jui.playground.PlaygroundApp/com.effacy.jui.playground.PlaygroundApp.nocache.js"></script>
 ...
 ```
 Similarly other artefacts are referenced under `<module>/`.
 
 ### Redirecting
 
-The code server essentially serves up these artefacts, using the same URI paths, but from a different port (the default being 9876). The trick here is initiating this redirection.
+The code server essentially serves up these artefacts, using the same URL paths, but from a different port (the default being 9876). The trick here is initiating this redirection.
 
 The bootstrap code mentioned in [Compilation artefacts](#compilation-artefacts) checks for the setting of a certain hook (this is present in the browser window's session store) directing the use of the code server; if present it reloads the bootstrap from the code server (which then directs all subsequent resource loading). The activation of this state is performed by a special bookmark that is added when you setup the code server for the first time (see [Getting started](#getting-started)) which is also used to initiate a recompilation.
 
@@ -53,15 +53,19 @@ This provides instructions on setup and use as well as allowing you to survey th
 
 ## Getting started
 
+*You should walk through the [getting started guide](intro_gettingstarted.md) which includes setting up and running the code server for a simple project.*
+
 ### Prerequistes
 
-We assume that you have a JUI web project that successfully builds (in the traditional sense) and is running in your IDE.
+We assume that you have a JUI web project that successfully builds (in the traditional sense) and is running in your IDE. It is also assumed that this is a Maven project and could be part of a multi-module project.
 
 #### Example: Playground
 
-A good starting point is the `jui-playground` (this is very similar to the project created in the [getting started guide](intro_gettingstarted.md) but being part of the `jui-stack` it affords a more complex arrangement of project dependencies):
+For the purposes of this guide we will use the `jui-playground` as our case study. This is quite rich in that it is a multi-module project where most (nearyly all) projects contribute to the compilable JUI code. The playground itself is a simple Spring Boot application with a JUI front-end designed to exhibit the various JUI standard components.
 
-1. Import the `jui-stack` project into your IDE.
+If you want to work through this in practice you will need to clone a copy of the `jui-stack` project then:
+
+1. Import the project into your IDE (if your IDE supports this, you could probably clone it directly). In addition your IDE is assumed to be able to configure appropriately for a multi-module Maven project (for example, [VS Code](https://code.visualstudio.com/)).
 2. Run a full Maven build (this will install artefacts locally under the version `LOCAL-SNAPSHOT` and will invoke a JUI compilation in `jui-playground` that will create the necessary bootstrap code to invoke the code server).
 3. Ensure the project builds in the IDE.
 4. You have two options here to run the *playground*:
@@ -71,28 +75,9 @@ A good starting point is the `jui-playground` (this is very similar to the proje
 
 Note that the code server build from the source code in your project, which means that you can use either of the methods described in (4) and still make changes to the JUI code. If you are making changes to non-JUI only code then you need to run the project as per (4a) as you would normally during development.
 
-?>Throughout the rest of this documentation we may refer to the **playground** when presenting examples, when we do we are referring to this.
-
 ### Starting the code server
 
-The code server code is runnable from the `com.effacy.jui:jui-platform-codeserver:jar-with-dependencies` (Maven coordinates) JAR file (this includes the code server code, a compiler and all necessary dependencies in a single JAR). Configuration options are passed as arguments, the main class is `com.effacy.jui.codeserver.CodeServer` and the classpath is expected to contain all relevant JUI (and other) resources needed to perform a full compilation (which includes and rebinding).
-
-The general outline to running the code server in your IDE is as follows:
-
-1. Run as a *run configuration* (as suitable for your IDE) using the project that you are wanting serve module(s) for (i.e the web project the code server is supporting).
-2. Ensure that the class path of the run configuration includes the aforementioned JAR file (however **don't** includes this as a project dependency, reference it off the filesystem).
-
-After the code server starts the administration interface should be available on `http://localhost:9876` (assuming the default port).
-
-#### Example: Maven Plugin
-
-The `jui-playground` pom includes a profile `codeserver` that will run the code server with the following command:
-
-```bash
-mvn -Pcodeserver initialize
-```
-
-This approach is probably the simplest, whereby you include a similar profile in your JUI project(s). The model is generalisable so we present it below as it appears in the `jui-playground` and detail the various configuration options:
+The simplest way to run the code server is using the `codeserver` goal of the `jui-maven-plugin` from the project (or projects) that server web content. First you need to add a profile to the projects `pom.xml`. The following is for `jui-playground`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -167,57 +152,23 @@ This approach is probably the simplest, whereby you include a similar profile in
   </profiles>
 </project>
 ```
+Walking through the configuration (see [Appendix: Maven configuration](#maven-configuration) for a full list of configuration options):
 
-Walking through the configuration:
-
-1. The `version` is `${release}` since the version of the `jui-maven-plugin` is just the version of the reactor. For your own projects replace this with the version of JUI that you are using.
-2. The `module` parameter contains a comma-separated list of fully qualified modules (the package and name of the entry point module `.gwt.xml` file).
+1. The `version` is the version of JUI you are using (for `jui-playground` this is provided by the `release` property since the version of the `jui-maven-plugin` is just the version of the reactor).
+2. *Required* The `module` parameter contains the fully qualified name of the entry-point module (the file with the `.gwt.xml` extension). If you have more than one module in your application then declare them as a comma-separated list.
 3. The `jvmArgs` parameter contains a comma-separated list arguments to pass through to the JVM. The most common being the maximum heap size (3G is usually sufficient).
-4. The `sources` parameter contains all the source directories you wish to include in scope of JUI compilation. The compiler only needs access to those source locations and JAR files that contain compilable code. These must appear on the same classpath as the code server JAR which means that including other dependencies (especially Spring Boot releated ones) can cause some undesirable behaviours (especially where autoconfiguration is involved) so it is best to keep the classpath light. Note that loctions can be relative.
-5. The `inclusions` and `exclusions` declare those artefacts to include and exclude. If no inclusions are specified then all artefacts resolved from the pom will be included, otherwise only those that match the inclusion patterns (along with those used by JUI) will pass. Exclusions are applied ontop of this collection. In the `jui-playground` case this is made more complex as we need to explicitly exclude the JUI libraries as these are included by default noting that they are included by way of the sources (since the playground is intended to support development of JUI itself).
+4. The `sources` parameter contains all the source directories you wish to include in scope of JUI compilation. For a single project this will just be the JUI source trees for that project (normally `src/jui/java` and `src/jui/resources`). For a multi-module project you need to include the JUI source trees for each project separately (which can be referenced relatively). In the example we need to include the source trees for most of the sibling modules as well as their respective `target/classes`. The latter is only needed as many of these project make use of rebinding and the compiled version of those classes is needed during compilation.
+5. In addition to the project sources we also need to include any referenced JAR files that contain compilable code. We can do this by filtering the classpath of the fully dependency-resolved project to include (and exclude) specific artefacts. This is where the `inclusions` and `exclusions` come in. Each of these specifies a list of Maven cooridinates (allowing for wildcards) to filter against. Note that  the JUI libraries and their know dependencies are automatically included. For the `jui-project` we actually want to exclude these as we want to access the uncompiled versions so we can respond to changes in those files (which we could not do if the code server only saw the libraries). Hence they are exlcuded (this is not normally the case).
 
 If you are encouter problems getting the code sever up-and-running then try adding the configuration parameter `<diagnose>true</diagnose>`. This will print to logs the classpath used to run the code server along with the options passed (without attempting to launch the code server).
 
+The code server can then be run with:
 
-#### Example: VS Code
-
-The simplest approach to running the code server in VS Code using using a launch configuration from the **Run and Debug** section. The following setup creates a code server launch for the **playground** (see [Prerequisites](#example-playground)) but applies to any project. It assumes you have VS Code setup for Java development.
-
-First navigate to the **Run and Debug** section then select to **Add Config (jui-stack)**. This should open the `launch.json` file for the `jui-stack` project. Add the following:
-
-```json
-{
-    "type": "java",
-    "name": "JUI Playground CodeServer",
-    "request": "launch",
-    "mainClass": "com.effacy.jui.codeserver.CodeServer",
-    "args": "-generateJsInteropExports -port 9876 com.effacy.jui.playground.TestApplication",
-    "vmArgs": "-Xmx3g",
-    "projectName": "jui-playground",
-    "classPaths": [
-        "${userHome}/.m2/repository/com/effacy/jui/jui-platform-codeserver/<version>/jui-platform-codeserver-<version>-jar-with-dependencies.jar",
-        "${workspaceFolder}/jui-platform/src/main/java",
-        "${workspaceFolder}/jui-platform/src/main/resources",
-        "${workspaceFolder}/jui-core/src/main/java",
-        "${workspaceFolder}/jui-core/src/main/resources",
-        "${workspaceFolder}/jui-ui/src/main/java",
-        "${workspaceFolder}/jui-ui/src/main/resources",
-        "${workspaceFolder}/jui-remoting/src/main/java",
-        "${workspaceFolder}/jui-remoting/src/main/resources",
-        "${workspaceFolder}/jui-validation/src/main/java",
-        "${workspaceFolder}/jui-validation/src/main/resources",
-        "${workspaceFolder}/jui-playground/src/jui/java",
-        "${workspaceFolder}/jui-playground/src/jui/resources",
-        "$Auto",
-    ]
-}
+```bash
+mvn -Pcodeserver initialize
 ```
 
-Here you should replace `<version>` with the version of the code server installed during your Maven build (we could have used the built version from the project itself however this is the most generic approach).
-
-Note that the built JAR files for each of the JUI projects also includes the sources, this is needed for JUI compilation. The IDE however does not place source files on the classpath for project dependencies, this means that you need to include them explicitly. Hence the entries for `${workspaceFolder}/jui-platform/src/main/java`, etc.
-
-We draw attention to the `args` property which includes `com.effacy.jui.playground.TestApplication`, this is the module reference to the playground application.
+?> It is possible to run the code server from the command line (see the [Appendix](#run-configuration) for details) however that can be a littly tricky. A run configuration is generally run from a project and passes through the classpath relevant to that project. This will include dependencies and sometimes source code but generally you need to manually reference source code in sibling projects (this very much depends on how your IDE setups run configurations). In all cases you need to manually add in the code server JAR file itself. In the most part this is fine but if your project includes Spring Boot then autoconfiguration can interfere with the code server (which also uses Spring Boot). The Maven plugin does exhibit this problem but the use of filters reduces the burden of the problem significantly and the associated classpath tends to be quite minmalistic (only including JUI compilable code).
 
 ### First time running
 
@@ -350,9 +301,76 @@ Note that *list-of* can be expressed either by comma separation or nesting:
 
 Finally recall that the specification of sources and dependencies need only consider those that are included in the JUI compilation and that sources can reference other projects relatively (i.e. for multi-module parents).
 
-## Code server configuration
+## Run configuration
 
-Configuration options are passed to the code server as arguments.
+The code server is bundled, along with all its dependencies, into a single executable JAR:
+
+```xml
+<dependency>
+    <groupId>com.effacy.jui<groupId>
+    <artifactId>jui-platform-codeserver<artifactId>
+    <version>${jui-version}</version>
+    <type>jar</type>
+    <classifier>jar-with-dependencies</classifier>
+<dependency>
+```
+
+The JUI Maven plugin resolves this automatically but if you want to run from a run configuration you need to resolve this manually (it should *never* be included as a dependency outside or `provided` scope otherwise it could interfere with other dependencies).
+
+The code server is launched from the main class `com.effacy.jui.codeserver.CodeServer` and expects to find all JUI sources on the classpath (*in the future we may allow for the provisioning of an alternative classpath for compilation purposes*).
+
+The general outline to running the code server in your IDE is as follows:
+
+1. Run as a *run configuration* (as suitable for your IDE) using the project that you are wanting serve module(s) for (i.e the web project the code server is supporting).
+2. Ensure that the classpath of the run configuration includes the aforementioned JAR file (which should appear at the front of the classpath).
+3. Ensure that the classpath includes all relevant JUI source locations (including from sibling module projects if applicable) where you want changes to source code to be detected and recompiled.
+4. If possible, exclude unnecessary JAR files (may not be feasible for your IDE), otherwise take care to ensure that there are no conflicting JARs. 
+
+The most common problem is that your project include Spring Boot and that interferes with the code server (also being Spring Boot based). Normally this is a result of the code server picking up autoconfiguration from JAR in your project. To avoid this problem you may need to run the code server from a separate project that is more isolated (and then references the sources directly).
+
+### Example: VS Code and the playground
+
+The simplest approach to running the code server in VS Code using using a launch configuration from the **Run and Debug** section. The following setup creates a code server launch for the **playground** (see [Prerequisites](#example-playground)) but applies to any project. It assumes you have VS Code setup for Java development.
+
+First navigate to the **Run and Debug** section then select to **Add Config (jui-stack)**. This should open the `launch.json` file for the `jui-stack` project. Add the following:
+
+```json
+{
+    "type": "java",
+    "name": "JUI Playground CodeServer",
+    "request": "launch",
+    "mainClass": "com.effacy.jui.codeserver.CodeServer",
+    "args": "-generateJsInteropExports -port 9876 com.effacy.jui.playground.PlaygroundApp",
+    "vmArgs": "-Xmx3g",
+    "projectName": "jui-playground",
+    "classPaths": [
+        "${userHome}/.m2/repository/com/effacy/jui/jui-platform-codeserver/LOCAL-SNAPSHOT/jui-platform-codeserver-LOCAL-SNAPSHOT-jar-with-dependencies.jar",
+        "${workspaceFolder}/jui-platform/src/main/java",
+        "${workspaceFolder}/jui-platform/src/main/resources",
+        "${workspaceFolder}/jui-core/src/main/java",
+        "${workspaceFolder}/jui-core/src/main/resources",
+        "${workspaceFolder}/jui-ui/src/main/java",
+        "${workspaceFolder}/jui-ui/src/main/resources",
+        "${workspaceFolder}/jui-remoting/src/main/java",
+        "${workspaceFolder}/jui-remoting/src/main/resources",
+        "${workspaceFolder}/jui-validation/src/main/java",
+        "${workspaceFolder}/jui-validation/src/main/resources",
+        "${workspaceFolder}/jui-playground/src/jui/java",
+        "${workspaceFolder}/jui-playground/src/jui/resources",
+        "$Auto",
+    ]
+}
+```
+
+Note that `LOCAL-SNAPSHOT` is fine for the `jui-playground`, othewise replace this by the version of JUI you are using.
+
+Note that the built JAR files for each of the JUI projects also includes the sources, this is needed for JUI compilation. The IDE however does not place source files on the classpath for project dependencies, this means that you need to include them explicitly. Hence the entries for `${workspaceFolder}/jui-platform/src/main/java`, etc.
+
+We draw attention to the `args` property which includes `com.effacy.jui.playground.PlaygroundApp`, this is the module reference to the playground application.
+
+### Configuration options
+
+As per the example above you can pass configuration options to the compiler via the `args` property. Available options are:
 
 |Option|Description|
 |------|-----------|
@@ -361,3 +379,4 @@ Configuration options are passed to the code server as arguments.
 |`-sourceLevel <level>`|Passed to the compiler. The Java source-level the compiler should run at (see [Compiler](app_compilation.md)). Defalt is `17`.|
 |`-generateJsInteropExports`|Passed to the compiler. The log-level the compiler should run at (see [Compiler](app_compilation.md)).|
 |`-style <DETAILED,OBFUSCATED,PRETTY>`|Passed to the compiler. The log-level the compiler should run at (see [Compiler](app_compilation.md)). Default is `OBFUSCATED`.|
+

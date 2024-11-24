@@ -96,7 +96,11 @@ Linking takes the results of compilation and generates the final artefacts for d
 
 ## Integration
 
-Integrating compilation into the build process simply require configuring the `compile` goal of the `jui-maven-pluging`:
+*At the moment the only way to integrate compilation into the build process is via Maven.*
+
+### Maven plugin
+
+Integrating compilation into the build process simply require configuring the `compile` goal of the `jui-maven-plugin`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -132,7 +136,7 @@ Integrating compilation into the build process simply require configuring the `c
 </project>
 ```
 
-The appicable configuration options are:
+The version of the plugin should match the version of JUI you are using. The appicable configuration options are:
 
 |Option|Description|
 |------|-----------|

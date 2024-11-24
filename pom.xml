@@ -94,8 +94,8 @@
     <version.gwt-http>1.0.0-RC1</version.gwt-http>
 
     <!-- Plugin versions -->
-    <version.maven-s3-wagon>1.3.3</version.maven-s3-wagon>
-    <version.maven-gs-wagon>1.0</version.maven-gs-wagon>
+    <!-- <version.maven-s3-wagon>1.3.3</version.maven-s3-wagon>
+    <version.maven-gs-wagon>1.0</version.maven-gs-wagon> -->
     <version.flatten-maven-plugin>1.3.0</version.flatten-maven-plugin>
     <version.maven-resources-plugin>3.1.0</version.maven-resources-plugin>
     <version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>
@@ -160,7 +160,7 @@
   <build>
     <directory>${build.output}</directory>
 
-    <extensions>
+    <!-- <extensions>
       <extension>
         <groupId>com.github.seahen</groupId>
         <artifactId>maven-s3-wagon</artifactId>
@@ -171,7 +171,7 @@
         <artifactId>google-storage-wagon</artifactId>
         <version>${version.maven-gs-wagon}</version>
       </extension>
-    </extensions>
+    </extensions> -->
 
     <plugins>
       <!--
@@ -576,15 +576,6 @@
       <name>Central Maven 2 Repo</name>
       <url>https://repo1.maven.org/maven2</url>
     </repository>
-    <repository>
-      <id>java.net</id>
-      <url>http://download.java.net/maven/2</url>
-    </repository>
-    <!-- <repository>
-      <id>spring</id>
-      <url>https://repo.spring.io/plugins-release</url>
-      <name>Spring Plugins</name>
-    </repository> -->
   </repositories>
 
 </project>

@@ -72,7 +72,7 @@ The POM file follows (replace the version JUI with the latest):
 
   <properties>
     <!-- Project version -->
-    <revision>LATEST-SNAPSHOT</revision>
+    <revision>LOCAL-SNAPSHOT</revision>
 
     <!-- General -->
     <java.version>17</java.version>

@@ -69,6 +69,19 @@ public class Test<T> {
     }
 
     /**
+     * Lets the passed action act on the unwrapped value.
+     * 
+     * @param action
+     *               the action to apply.
+     * @return this test instance.
+     */
+    public Test<T> unwrap(Consumer<T> action) {
+        if (action != null)
+            action.accept(value);
+        return this;
+    }
+
+    /**
      * Assertionsion failure (generates an assertion exception). See
      * {@link Assertions#fail()}.
      */
@@ -180,6 +193,10 @@ public class Test<T> {
     /**
      * Given a function that acts on the value and returns a list, match an element
      * in the list and return a wrapped version of that value.
+     * <p>
+     * If not found then returned is a test object around a {@code null} value. No
+     * assertion is made whether or not there is a match (see
+     * {@link #exists(Function, Predicate, Consumer)} for this purpose).
      * 
      * @param <V>
      *            the value type being retrieved.
@@ -209,8 +226,8 @@ public class Test<T> {
     }
 
     /**
-     * Given a function that acts on the value and returns a list, match an element
-     * in the list and return a wrapped version of that value.
+     * iven a function that acts on the value and returns a list, ensures the
+     * existence of an element in the list that matched the giver matcher.
      * 
      * @param <V>
      *            the value type being retrieved.
@@ -224,6 +241,35 @@ public class Test<T> {
         for (V item : f.apply (value)) {
             if (m.test (item))
                 return this;
+        }
+        Assertions.fail ("entry does not exist");
+        return this;
+    }
+
+
+
+    /**
+     * Given a function that acts on the value and returns a list, ensures the
+     * existence of an element in the list that matched the giver matcher (and
+     * optionally performs additional tests).
+     * 
+     * @param <V>
+     *             the value type being retrieved.
+     * @param f
+     *             the extractor.
+     * @param m
+     *             the matcher.
+     * @param test
+     *             (optional) to apply additional tests to the found item.
+     * @return this test instance.
+     */
+    public <V> Test<T> exists(Function<T, List<V>> f, Predicate<V> m, Consumer<Test<V>> test) {
+        for (V item : f.apply (value)) {
+            if (m.test (item)) {
+                if (test != null)
+                    test.accept(new Test<V> (item));
+                return this;
+            }
         }
         Assertions.fail ("entry does not exist");
         return this;

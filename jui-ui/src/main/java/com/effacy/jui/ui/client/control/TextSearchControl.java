@@ -202,9 +202,14 @@ public class TextSearchControl<S> extends Control<String, TextSearchControl.Conf
         private Consumer<S> selectionHandler;
 
         /**
-         * See {@link #selectionHandler(boolean,Consumer)}.
+         * See {@link #clearOnSelection(boolean,Consumer)}.
          */
         private boolean clearOnSelection;
+
+        /**
+         * See {@link #activateOnFocus(boolean)}.
+         */
+        private boolean activateOnFocus;
 
         /**
          * Construct with a default style.
@@ -585,6 +590,20 @@ public class TextSearchControl<S> extends Control<String, TextSearchControl.Conf
                 this.selectorShowOnResults = false;
             return this;
         }
+
+        /**
+         * Activates search on focus. This effective initiates a search based on an
+         * empty string.
+         * 
+         * @param activateOnFocus
+         *                        {@code true} to do so.
+         * @return this configuration instance.
+         */
+        public Config<S> activateOnFocus(boolean activateOnFocus) {
+            this.activateOnFocus = activateOnFocus;
+            return this;
+        }
+
         /**
          * {@inheritDoc}
          *
@@ -832,6 +851,17 @@ public class TextSearchControl<S> extends Control<String, TextSearchControl.Conf
             if (!isInFocus ())
                 hideSelector ();
         }, 20);
+    }
+
+    @Override
+    protected void onFocus() {
+        super.onFocus();
+
+        if (config().activateOnFocus) {
+            if (showSelector())
+                selector.reset();
+            selector.search(inputEl.value);
+        }
     }
 
     /**

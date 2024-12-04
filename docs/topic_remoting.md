@@ -42,6 +42,8 @@ In terms of the problem of polymorphism, this is resolved as described above by 
 
 *As a convenience, classes that partake in serialisation should implement `ISerializable` (or extend `Serializable` or any of its sub-classes such as `Result`). This includes the `@JsonSerializable` annotation and explicitly declares a getter for `_type` thereby ensuring its presence.*
 
+?> Note that arrays are not supported, only lists. Furthermore getters for list valued properties **must not** return `null`, rather they must return an empty list.
+
 ### Server-side
 
 The interface `IJsonSerializableParser` provides a standard contract for (de-)serialisation of JSON as employed by related modules. A standard implementation is provided by `JsonSerializableParser` that makes use of [Jackson](https://github.com/FasterXML/jackson) and supports both the injection of the `_type` specifier on serialisation and respecting the specifier on deserialisation.

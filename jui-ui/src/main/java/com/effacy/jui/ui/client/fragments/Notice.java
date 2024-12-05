@@ -80,6 +80,27 @@ public class Notice {
     }
 
     /**
+     * A convenience to create a standardised error message for display a collection
+     * of error messages.
+     * 
+     * @param message
+     *                 Appears above the list of errors.
+     * @param messages
+     *                 the messages to display.
+     * @return the fragment.
+     */
+    public static NoticeFragment errorAsString(String message, List<String> messages) {
+        return Notice.$()
+            .variant(Notice.Variant.DANGER)
+            .build(notice -> {
+                notice.block().add(message);
+                messages.forEach(error -> {
+                    notice.block().list().add (error);
+                });
+            });
+    }
+
+    /**
      * See {@link #error(String, List)} but inserts into the given parent.
      */
     public static NoticeFragment error(IDomInsertableContainer<?> parent, String message, List<ErrorMessage> messages) {

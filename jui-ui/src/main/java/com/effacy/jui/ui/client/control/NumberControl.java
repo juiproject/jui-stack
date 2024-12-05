@@ -12,7 +12,6 @@ import com.effacy.jui.core.client.dom.builder.Input;
 import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.platform.css.client.CssResource;
-import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.platform.util.client.TimerSupport;
 import com.effacy.jui.ui.client.icon.FontAwesome;
@@ -227,6 +226,17 @@ public class NumberControl extends Control<Double, NumberControl.Config> {
      * The input element.
      */
     protected HTMLInputElement inputEl;
+
+    /**
+     * {@inheritDoc}
+     *
+     * @see com.effacy.jui.core.client.control.Control#prepareValueForAssignment(Double)
+     */
+    @Override
+    protected Double prepareValueForAssignment(Double value) {
+        // Need to enforce any limits (min and max).
+        return normalise ((value == null) ? 0.0 : value);
+    }
 
     /**
      * {@inheritDoc}

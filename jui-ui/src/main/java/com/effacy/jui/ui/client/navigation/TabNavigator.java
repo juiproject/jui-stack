@@ -950,6 +950,29 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         }
     }
 
+    /**
+     * See {@link #hideNavigation()}.
+     */
+    private boolean navigationHidden;
+
+    /**
+     * Hide the navigation block.
+     */
+    public void hideNavigation() {
+        navigationHidden = true;
+        if (tabHolderEl != null)
+            JQuery.$(tabHolderEl).hide();
+    }
+
+    /**
+     * Shows the navigation block.
+     */
+    public void showNavigation() {
+        navigationHidden = false;
+        if (tabHolderEl != null)
+            JQuery.$(tabHolderEl).show();
+    }
+
     /************************************************************************
      * Rendering
      ************************************************************************/
@@ -1206,6 +1229,10 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
     @Override
     protected void onAfterRender() {
         super.onAfterRender ();
+
+        // Hide navigation.
+        if (navigationHidden)
+            JQuery.$ (tabHolderEl).hide();
 
         // Assign activators.
         config().tabs.getTabGroups().forEach(group -> {

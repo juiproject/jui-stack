@@ -72,7 +72,7 @@ The POM file follows (replace the version JUI with the latest):
 
   <properties>
     <!-- Project version -->
-    <revision>LATEST-SNAPSHOT</revision>
+    <revision>LOCAL-SNAPSHOT</revision>
 
     <!-- General -->
     <java.version>17</java.version>
@@ -458,8 +458,6 @@ mvn -Pcodeserver initialize
 ```
 
 (we take advantage of the fact that `initialize` is the first Maven lifecycle phase so only this plugin will execute making for a faster startup).
-
-*Alternatively you can run the codeserver as a [launch configuration](#launch-configurations) in the same way you ran the application. This may be a little easier depending on your IDE setup. However, for this guide, run as above.*
 
 #### Running the code server
 
@@ -1436,44 +1434,3 @@ It can be quite convenient to colour highlght the DOM helper classes (such as `H
 ```
 
 Of course you can change the colour as best suites your preference.
-
-#### Launch configurations
-
-Your application (and the code server) can be run using standard [VS Code launch configurations](https://code.visualstudio.com/docs/editor/debugging) which can be setup as follows (in the relevant `launch.json`, make sure you substitute `<version>` for the JUI version you are using):
-
-```json
-{
-    "configurations": [
-        {
-            "type": "java",
-            "name": "MyApplication Playground (8081)",
-            "request": "launch",
-            "mainClass": "myapplication.jui.playground.PlaygroundApp",
-            "projectName": "myapplication-jui",
-            "vmArgs": "-Dserver.port=8081"
-        },
-        {
-            "type": "java",
-            "name": "MyApplication Playground (CodeServer)",
-            "request": "launch",
-            "mainClass": "com.effacy.jui.codeserver.CodeServer",
-            "args": "-logLevel INFO myapplication.jui.playground.PlaygroundApp",
-            "vmArgs": "-Xmx3g",
-            "projectName": "myapplication-jui",
-            "classPaths": [
-                "${userHome}/.m2/repository/com/effacy/jui/jui-platform-codeserver/<version>/jui-platform-codeserver-<version>-jar-with-dependencies.jar",
-                "$Auto",
-            ]
-        },
-    ]
-}
-```
-
-The first block pertains to the application itself, which being based on Spring Boot allows it to be configured as a normal Java application. This is fairly straight forward.
-
-The second block pertains to the codeserver whose configuration is a little more involved. The codeserver is bundled into a single executable jar file `jui-platform-codeserver-<version>-jar-with-dependencies.jar` (replace `<version>` with the version of JUI you are using) which needs to be resolved into your local Maven repository. You should **not** include it as a dependency to your project, rather run the codeserver once via Maven, as described [previously](#launching-the-code-server) this dependency is automatically resolved (alternatively install manually with `mvn dependency:get -DgroupId=com.effacy.jui -DartifactId=jui-platform-codeserver` `-Dclassifier=jar-with-dependencies -Dversion=<version>` (again replacing `<version>` as appropriate)).
-
-
-?> Make sure that you do not have the `jui-stack` project (and family of modules) loaded into your IDE workspace. If so there is a good change that the classpath for the launch configuration will not be set properly and the code server will fail to start.
-
-Note that the classpath referenced includes `$Auto` which resolves the classpath from the project (in this case `myapplication-jui`). For more complex arrangements you may need to reference other projects. See the [JUI Code Server](app_codeserver.md) for a description of how to handle this situation.

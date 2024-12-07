@@ -399,9 +399,18 @@ public abstract class Control<V, C extends Control.Config<V,C>> extends Componen
      */
     protected Control(C config) {
         super (config);
-        resetValue = prepareValueForAssignment (null);
+        resetValue = prepareValueForAssignment (initialValue());
         currentValue = resetValue;
         this.readOnly = config.readOnly;
+    }
+
+    /**
+     * Obtains the initial value when the control is first created.
+     * 
+     * @return the initial value.
+     */
+    protected V initialValue() {
+        return null;
     }
 
     /**

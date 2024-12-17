@@ -405,15 +405,6 @@ public abstract class Control<V, C extends Control.Config<V,C>> extends Componen
     }
 
     /**
-     * Obtains the initial value when the control is first created.
-     * 
-     * @return the initial value.
-     */
-    protected V initialValue() {
-        return null;
-    }
-
-    /**
      * Construct around a renderer. If the renderer implements
      * {@link IUIEventHandler} it will be registered as a handler.
      * 
@@ -717,6 +708,15 @@ public abstract class Control<V, C extends Control.Config<V,C>> extends Componen
      * type. The defaults cater for the more common cases however exotic controls
      * may require more specifity.
      ************************************************************************/
+
+    /**
+     * Obtains the initial value when the control is first created.
+     * 
+     * @return the initial value.
+     */
+    protected V initialValue() {
+        return null;
+    }
 
     /**
      * Filters the value prior to returning from {@link #setValue(Object)}.

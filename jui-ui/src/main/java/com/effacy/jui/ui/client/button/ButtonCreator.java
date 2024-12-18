@@ -19,7 +19,6 @@ import java.util.function.Consumer;
 
 import com.effacy.jui.core.client.component.ComponentCreatorSupport;
 import com.effacy.jui.core.client.component.layout.LayoutData;
-import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
 
 

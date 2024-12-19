@@ -25,15 +25,17 @@ import com.effacy.jui.core.client.component.layout.LayoutData;
 import com.effacy.jui.core.client.control.Control;
 import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.UIEventType;
-import com.effacy.jui.core.client.dom.builder.DomBuilder;
+import com.effacy.jui.core.client.dom.builder.Div;
 import com.effacy.jui.core.client.dom.builder.Textarea;
+import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.platform.css.client.CssResource;
-import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.google.gwt.core.client.GWT;
 
+import elemental2.dom.Element;
+import elemental2.dom.HTMLElement;
 import elemental2.dom.HTMLTextAreaElement;
 
 /**
@@ -106,6 +108,11 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
          * See {@link #height(Length)}.
          */
         protected Length height;
+
+        /**
+         * See {@link #counter(boolean)}.
+         */
+        private boolean counter;
 
         /**
          * See {@link #max(int)}.
@@ -191,6 +198,28 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
          */
         public Config height(Length height) {
             this.height = height;
+            return this;
+        }
+
+        /**
+         * Convenience to call {@link #counter(boolean)} with {@code true}.
+         */
+        public Config counter() {
+            return counter(true);
+        }
+
+        /**
+         * Determines if a character count indicator should be displayed.
+         * <p>
+         * If it is and there is a {@link #max(int)} then the maximum will also be
+         * displayed.
+         * 
+         * @param counter
+         *                {@code true} if to display a character counter.
+         * @return this configuration instance.
+         */
+        public Config counter(boolean counter) {
+            this.counter = counter;
             return this;
         }
 
@@ -376,6 +405,11 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
     protected HTMLTextAreaElement inputEl;
 
     /**
+     * For the character counter.
+     */
+    protected HTMLElement counterEl;
+
+    /**
      * This is used to assign a new height at run time. Often used to increase the
      * size of the text area when activated.
      * <p>
@@ -423,6 +457,7 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
             else
                 height(config().expandOnFocus);
         }
+        _updateCounter();
     }
 
     /**
@@ -431,34 +466,71 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
      * @see com.effacy.jui.core.client.component.Component#buildNode(com.effacy.jui.core.client.component.Component.Config)
      */
     @Override
-    protected INodeProvider buildNode(Config data) {
-        return DomBuilder.div (inner -> {
-            inner.style (styles ().inner ());
-            Textarea.$ (inner).$ (ta -> {
-                ta.by ("input");
-                ta.on (e -> {
-                    if (!filterKeyPress (e.getKeyCode (), inputEl.value))
-                        e.stopEvent ();
-                }, UIEventType.ONKEYPRESS);
-                ta.on (e -> modified (), UIEventType.ONKEYUP, UIEventType.ONPASTE);
-                ta.attr ("name", StringSupport.empty (data.getName ()) ? "" + getUUID () : data.getName ());
-                if (data.rows > 0)
-                    ta.attr ("rows", "" + data.rows);
-                if (data.cols > 0)
-                    ta.attr ("cols", "" + data.cols);
-                if (data.max > 0)
-                    ta.attr ("maxlength", "" + data.max);
-                if (!StringSupport.empty (data.placeholder))
-                    ta.attr ("placeholder", new SafeHtmlBuilder ().appendEscaped (data.placeholder).toSafeHtml ().asString ());
-                if (data.height != null)
-                    ta.css (CSS.HEIGHT, data.height);
-                if (data.nowrap)
-                    ta.attr ("wrap", "off");
-                ta.testId (buildTestId ("input")).testRef ("input");
+    protected INodeProvider buildNode(Element el, Config data) {
+        return Wrap.$(el).$(root -> {
+            Div.$(root).$(inner -> {
+                inner.style (styles ().inner ());
+                Textarea.$ (inner).$ (ta -> {
+                    ta.by ("input");
+                    ta.on (e -> {
+                        if (!filterKeyPress (e.getKeyCode (), inputEl.value))
+                            e.stopEvent ();
+                    }, UIEventType.ONKEYPRESS);
+                    ta.on (e -> modified (), UIEventType.ONKEYUP, UIEventType.ONPASTE);
+                    ta.attr ("name", StringSupport.empty (data.getName ()) ? "" + getUUID () : data.getName ());
+                    if (data.rows > 0)
+                        ta.attr ("rows", "" + data.rows);
+                    if (data.cols > 0)
+                        ta.attr ("cols", "" + data.cols);
+                    if (data.max > 0)
+                        ta.attr ("maxlength", "" + data.max);
+                    if (!StringSupport.empty (data.placeholder))
+                        ta.attr ("placeholder", new SafeHtmlBuilder ().appendEscaped (data.placeholder).toSafeHtml ().asString ());
+                    if (data.height != null)
+                        ta.css (CSS.HEIGHT, data.height);
+                    if (data.nowrap)
+                        ta.attr ("wrap", "off");
+                    ta.testId (buildTestId ("input")).testRef ("input");
+                });
             });
+            if (config().counter) {
+                Div.$(root).style(styles().counter()).by("counter").text ((config().max <= 0) ? "0 characters" : "0 / " + config().max);
+            }
         }).build (tree -> {
             inputEl = (HTMLTextAreaElement) manageFocusEl (tree.first ("input"));
+            counterEl = (HTMLElement) manageFocusEl (tree.first ("counter"));
         });
+    }
+
+    @Override
+    protected void onModified() {
+        super.onModified();
+        _updateCounter();
+    }
+
+    /**
+     * Updates the counter indicator.
+     */
+    protected void _updateCounter() {
+        if (counterEl != null) {
+            Wrap.buildInto(counterEl, el -> {
+                int length = (inputEl.value == null) ? 0 : inputEl.value.length();
+                if (config().max <= 0) {
+                    if (length == 1)
+                        el.text("1 character");
+                    else
+                        el.text(length + " characters");
+                } else {
+                    if (length < config().max) {
+                        counterEl.classList.remove(styles().limit());
+                        el.text(length + " / " + config().max);
+                    } else {
+                        counterEl.classList.add(styles().limit());
+                        el.text("limit reached " + length + " / " + config().max);
+                    }
+                }
+            });
+        }
     }
 
     /**
@@ -515,6 +587,16 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
          * Allows for the text area to resize.
          */
         public String resizable();
+
+        /**
+         * Formats the character counter.
+         */
+        public String counter();
+
+        /**
+         * When the character counter has reached its limit.
+         */
+        public String limit();
 
     }
 

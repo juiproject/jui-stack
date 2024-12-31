@@ -1,3 +1,7 @@
+# Contribition
+
+*This document is a work-in-progress*.
+
 # Setup for development
 
 The following describes the core software that you need as well a guide to setting up a suitable IDE.
@@ -144,13 +148,7 @@ Performing a release follows the standard Maven process for deploying a multi-mo
 
 ### Release process
 
-TDB
-
-### Versions
-
-We adhere to a relatively simple version scheme where each version adheres to the form `X.Y.Z.M[n]` where `X` is the major version (where incompatibilities with prior versions may exist), `Y` is the minor versions (significant changes from the last minor version but still compatible), `Z` is the sub-minor version (small changes) and `n` is a patch release off the main version (this is indexed from `0` and the case where this is `0` it is omitted). An example version is `0.2.1.M` being the *main* release of `0.2.1` and `0.2.1.M1` would be the first *patch* release of `0.2.1.M`. 
-
-During development the version declared in the POM is a *snapshot* and is of the form `X.Y.Z.M[n]-SNAPSHOT` where `X.Y.Z.M[n]` is the target version for the next release.
+See [RELEASE.md](RELEASE.md) for a description of the release process.
 
 ### Branching
 

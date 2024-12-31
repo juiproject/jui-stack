@@ -1,5 +1,5 @@
 #
-# Activated on PR into main. Performs a set of pre-release checks followed
+# Activated on PR into main (from develop). Performs a set of pre-release checks followed
 # by a build and test.
 #
 name: PR checks (main)
@@ -12,7 +12,7 @@ on:
 jobs:
 
   run_checks:
-    
+    if: github.head_ref == 'develop'
     runs-on: ubuntu-latest
     
     steps:

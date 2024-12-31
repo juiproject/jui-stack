@@ -157,7 +157,7 @@ The important element relevant to this discussion is the mechanism of compilatio
 
 In order to perform this compilation we need a compiler. The compiler of choice is that provided by the GWT project (though J2CL is also a viable candidate) which affords some very nice features, in particular the creation of web-ready assets (including bootstrapping) and a spot compiler for development (the *code server*).
 
-For build-time compilation (i.e. running a build using Maven) we employ the `gwt-maven-plugin` to perform a build. This is directed to create the compiled assets in a prescribed location and that location is generally part of the web deployment (so that it can be served up).
+For build-time compilation (i.e. running a build using Maven) we employ the `jui-maven-plugin` to perform a build. This is directed to create the compiled assets in a prescribed location and that location is generally part of the web deployment (so that it can be served up).
 
 During development the web assets created above allow for one to redirect the sourcing of the JavaScript (as we all associated source maps) to a local server running on port `9876`; this is the *code server*. The code server is a separate Java application that is run alongside the main application code and will efficient compile changes you make to your JUI code during development. He source maps also provide the ability to debug code directly in the browser.
 

@@ -662,9 +662,9 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
     public class RowBuilder implements IDomInsertable, IRowBuilder<SRC,DST> {
 
         /**
-         * See {@link #adjustPrior(Length)}.
+         * See {@link #adorn(Consumer)}.
          */
-        protected Length priorOffset;
+        protected Consumer<ElementBuilder> adorner;
 
         /**
          * The declared cells.
@@ -685,8 +685,8 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
             // Generate the DOM for a row of cells.
             if (!cells.isEmpty ()) {
                 Div.$ (parent).style (config.styles ().row ()).$ (row -> {
-                    if (priorOffset != null)
-                        row.css (CSS.MARGIN_TOP, priorOffset);
+                    if (adorner != null)
+                        adorner.accept(row);
                     // Create a cell for each of the items in the row.
                     cells.forEach (cell -> {
                         Div.$ (row).style (config.styles ().cell ()).$ (c -> {
@@ -751,7 +751,9 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                                     inner.css (CSS.BOTTOM, Length.px (cell.offsetv));
                                 if (cell.offseth != 0)
                                     inner.css (CSS.LEFT, Length.px (cell.offseth));
-                                if (cell.component != null) {
+                                if (cell.builder != null) {
+                                    cell.builder.accept (inner);
+                                } else if (cell.component != null) {
                                     inner.insert (cell.component);
                                 } else if (cell.control != null) {
                                     if (reference != null)
@@ -780,8 +782,8 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
         }
         
         @Override
-        public IRowBuilder<SRC,DST> adjustPrior(Length amount) {
-            this.priorOffset = amount;
+        public IRowBuilder<SRC,DST> adorn(Consumer<ElementBuilder> adorner) {
+            this.adorner = adorner;
             return this;
         }
 
@@ -797,7 +799,18 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
         }
 
         @Override
+        public IRowBuilder<SRC,DST> insert(Consumer<ElementBuilder> builder) {
+            if (builder == null)
+                return this;
+            RowCell<Void,IControl<Void>> cell = new RowCell<>(builder);
+            cells.add (cell);
+            return this;
+        }
+
+        @Override
         public RowBuilder component(IComponent cpt, Consumer<ICell> handler) {
+            if (cpt == null)
+                return this;
             RowCell<Void,IControl<Void>> cell = new RowCell<>(cpt);
             if (handler != null)
                 handler.accept (cell);
@@ -821,6 +834,8 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
             protected boolean required;
 
             protected String help;
+
+            protected IClearer<V> clearer;
 
             protected IGetter<V, SRC> getter;
 
@@ -846,6 +861,8 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
 
             protected String guidance;
 
+            protected Consumer<ElementBuilder> builder;
+
             protected IComponent component;
 
             protected CTL control;
@@ -853,6 +870,10 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
             RowCell() {
                 // Expander.
                 grow = 1;
+            }
+
+            RowCell(Consumer<ElementBuilder> builder) {
+                this.builder = builder;
             }
 
             RowCell(IComponent component) {
@@ -891,6 +912,12 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
             @Override
             public RowCell<V,CTL> help(String help) {
                 this.help = help;
+                return this;
+            }
+
+            @Override
+            public IControlCell<V,CTL,SRC,DST> clear(IClearer<V> clearer) {
+                this.clearer = clearer;
                 return this;
             }
 
@@ -955,6 +982,18 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
             public RowCell<V,CTL> guidance(String guidance) {
                 this.guidance = guidance;
                 return this;
+            }
+
+            /**
+             * Cleats the control in the cell.
+             */
+            void _clear() {
+                if (control != null) {
+                    if (clearer != null)
+                        clearer.clear(control);
+                    else
+                        control.setValue (Value.of (null));
+                }
             }
 
             /**

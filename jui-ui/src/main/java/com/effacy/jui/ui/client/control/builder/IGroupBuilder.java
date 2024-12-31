@@ -51,6 +51,20 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
     public IGroupBuilder<SRC,DST> adorn(BiConsumer<ElementBuilder,ElementBuilder> adorn);
 
     /**
+     * Convenuence to apply styles directly to the group element (see
+     * {@link #adorn(BiConsumer)}).
+     * 
+     * @param styles
+     *            the styles to apply.
+     * @return this builder.
+     */
+    default IGroupBuilder<SRC,DST> style(String... styles) {
+        return adorn((g1,g2) -> {
+            g1.style(styles);
+        });
+    }
+
+    /**
      * Convenuence to apply CSS directly to the group element (see
      * {@link #adorn(BiConsumer)}).
      * 
@@ -334,27 +348,94 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
     public interface IRowBuilder<SRC,DST> {
 
         /**
-         * Adjusts the gap between this row and the prior row by this amount.
+         * Convenuence to apply CSS directly to the root element (see
+         * {@link #adorn(Consumer)}).
          * 
-         * @param amount
-         *               the amount of adjustment.
+         * @param css
+         *            the CSS to apply.
          * @return this builder.
          */
-        public IRowBuilder<SRC,DST> adjustPrior(Length amount);
+        default IRowBuilder<SRC,DST> css(String css) {
+            return adorn((el) -> {
+                el.css(css);
+            });
+        }
+
+        /**
+         * Convenuence to apply styles directly to the root element (see
+         * {@link #adorn(Consumer)}).
+         * 
+         * @param styles
+         *            the styles to apply.
+         * @return this builder.
+         */
+        default IRowBuilder<SRC,DST> style(String... styles) {
+            return adorn((el) -> {
+                el.style(styles);
+            });
+        }
+
+        /**
+         * To adorn the row root element.
+         * 
+         * @param adorner
+         *           actions to apply to the root element.
+         * @return this builder.
+         */
+        public IRowBuilder<SRC,DST> adorn(Consumer<ElementBuilder> adorner);
         
+        /**
+         * See {@link #control(String, String, IControl, Consumer)} but with no
+         * <code>by</code> or <code>handler</code>.
+         */
         default public <V,CTL extends IControl<V>> IRowBuilder<SRC,DST> control(String label, CTL ctl) {
             return control (null, label, ctl, null);
         }
 
+        /**
+         * See {@link #control(String, String, IControl, Consumer)} but with no
+         * <code>handler</code>.
+         */
         default public <V,CTL extends IControl<V>> IRowBuilder<SRC,DST> control(String by, String label, CTL ctl) {
             return control (by, label, ctl, null);
         }
 
+        /**
+         * See {@link #control(String, String, IControl, Consumer)} but with no
+         * <code>by</code>.
+         */
         default public <V,CTL extends IControl<V>> IRowBuilder<SRC,DST> control(String label, CTL ctl, Consumer<IControlCell<V,CTL,SRC,DST>> handler) {
             return control (null, label, ctl, handler);
         }
 
+        /**
+         * Adds a control.
+         * 
+         * @param <V>
+         *                the value type for the control.
+         * @param <CTL>
+         *                the control type.
+         * @param by
+         *                (optional) a reference to the control.
+         * @param label
+         *                the label to adorn the control with.
+         * @param ctl
+         *                the control.
+         * @param handler
+         *                (optional) to handle changes on the control.
+         * @return this row builder.
+         */
         public <V,CTL extends IControl<V>> IRowBuilder<SRC,DST> control(String by, String label, CTL ctl, Consumer<IControlCell<V,CTL,SRC,DST>> handler);
+
+        /**
+         * Inserts DOM content via a builder. This will build directly into the cell
+         * container.
+         * 
+         * @param builder
+         *                the builder to build content.
+         * @return this builder.
+         */
+        public IRowBuilder<SRC,DST> insert(Consumer<ElementBuilder> builder);
 
         /**
          * Adds a component to the row.
@@ -538,6 +619,15 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
             public IControlCell<V,CTL,SRC,DST> guidance(String guidance);
 
             /**
+             * User to clear a control (set to empty).
+             * 
+             * @param clearer
+             *               invoked to clear the control.
+             * @return this handler.
+             */
+            public IControlCell<V,CTL,SRC,DST> clear(IClearer<V> clearer);
+
+            /**
              * Used to get a value from an external source and apply to the control for
              * editing.
              * 
@@ -627,6 +717,21 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
          */
         public void modified(IModificationContext ctx, CTL control);
 
+    }
+
+    /**
+     * Use to clear control.
+     */
+    @FunctionalInterface
+    public interface IClearer<V> {
+
+        /**
+         * Clears the given control.
+         * 
+         * @param ctl
+         *               the control.
+         */
+        public void clear(IControl<V> ctl);
     }
 
     /**

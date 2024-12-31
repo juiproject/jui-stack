@@ -25,6 +25,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import com.effacy.jui.json.annotation.JsonSerializable;
+import com.effacy.jui.platform.core.JuiIncompatible;
 import com.effacy.jui.platform.util.client.Logger;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -336,6 +337,7 @@ public class FormattedLine {
         return line;
     }
 
+    @JuiIncompatible
     @GwtIncompatible
     public static FormattedLine markdown(String line) {
         FormattedLine l = new FormattedLine ();

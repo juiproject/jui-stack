@@ -48,7 +48,7 @@ To bring the above together lets take a look at the HTML page that loads the app
 ...
 ```
 
-We see a tag that has the ID `pageBody` and this is the tag that the `RootPanel` above binds to.  We also see the script tag which references our module (the path) and the entry point (the `.nocache.js`). Once you have the project setup and running you will note that the `src/main/resources/static` directory contains   `com.effacy.gwt.test.TestApplication` directory (this is not managed under version control) which itself contains a number of assets. These are the outputs of the GWT compilation and linking process that was kicked off during the Maven install (see the `gwt-maven-plugin` plugin in the [`pom.xml`](../../../../../../../../pom.xml)).
+We see a tag that has the ID `pageBody` and this is the tag that the `RootPanel` above binds to.  We also see the script tag which references our module (the path) and the entry point (the `.nocache.js`). Once you have the project setup and running you will note that the `src/main/resources/static` directory contains   `com.effacy.gwt.test.TestApplication` directory (this is not managed under version control) which itself contains a number of assets. These are the outputs of the GWT compilation and linking process that was kicked off during the Maven install (see the `jui-maven-plugin` plugin in the [`pom.xml`](../../../../../../../../pom.xml)).
 
 The `.nocache.js` file contains the necessary code to bootstrap the application which (as needed) pull in the associated assets.
 

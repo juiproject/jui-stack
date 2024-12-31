@@ -80,6 +80,9 @@
 .juiCard {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    overflow-x: auto;
+    position: relative;
 }
 
 .juiCard.clickable {
@@ -285,6 +288,7 @@
     cursor: pointer;
     border-radius: var(--juiButton-radius);
     display: inline-flex;
+    text-wrap-mode: nowrap;
     gap: 0.5em
 }
 
@@ -326,11 +330,12 @@
     border: 1px solid var(--juiButton-base);
     background-color: var(--juiButton-white);
     color: var(--juiButton-base);
+    font-weight: 400;
 }
 
 .juiButton-outlined:hover {
-    border-color: var(--juiButton-hover);
-    color: var(--juiButton-hover);
+    background-color: var(--juiButton-base);
+    color: var(--juiButton-white);
 }
 
 .juiButton-text {
@@ -393,6 +398,31 @@
     border-radius: 100%;
     border: 0.1em solid transparent;
     overflow: hidden;
+    position: relative;
+}
+
+.juiAvatar i {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.36em;
+    font-style: normal;
+    font-weight: 700;
+    color: #999;
+    background: #fff;
+    opacity: 0.5;
+    text-transform: uppercase;
+}
+
+.juiPersonWithAvatar h4 {
+    font-weight: 600;
+    color: var(--jui-text-header);
+    margin: 0;
 }
 
 /*************************************************
@@ -472,13 +502,28 @@
     margin-bottom: 0;
 }
 
-.juiNotice > .main p.message {
-    margin: 0;
+.juiNotice > .main > div {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
     font-weight: 500;
     font-size: 0.95em;
 }
 
-.juiNotice.style-inline > .main p.message {
+.juiNotice > .main > div p {
+    margin: 0;
+}
+
+.juiNotice > .main > div ul {
+    margin: 0;
+}
+
+.juiNotice > .main > div a {
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.juiNotice.style-inline > .main > div p {
     white-space: nowrap;
 }
 
@@ -621,4 +666,19 @@
     line-height: 1.5;
     letter-spacing: 0.00938em;
     margin-bottom: 0.35em;
+}
+
+/*************************************************
+* Loading styles.
+*/
+.juiLoading {
+    animation: jui-animation-waiting 1s ease-in infinite;
+    height: 1em;
+    width: 100%;
+    border-radius: 3px;
+    background: #f9f9f9;
+}
+
+.juiLoading.juiLoading_dark {
+    background: #f3f3f3;
 }

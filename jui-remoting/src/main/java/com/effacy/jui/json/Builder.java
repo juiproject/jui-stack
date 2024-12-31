@@ -87,13 +87,22 @@ public final class Builder {
      */
     public static <V,S> V set(Consumer<V> setter, S source, V instance, BiConsumer<V,S> builder) {
         if (source == null)
-            return null;
+            return instance;
         if (builder != null)
             builder.accept (instance, source);
         setter.accept (instance);
         return instance;  
     }
 
+    /**
+     * Simple setter convenience.
+     * 
+     * @param setter
+     *               the setter.
+     * @param value
+     *               the value to be set.
+     * @return the passed value.
+     */
     public static <V> V set(Consumer<V> setter, V value) {
         setter.accept(value);
         return value;

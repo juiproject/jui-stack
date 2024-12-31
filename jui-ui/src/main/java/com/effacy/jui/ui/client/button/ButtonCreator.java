@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 
 import com.effacy.jui.core.client.component.ComponentCreatorSupport;
 import com.effacy.jui.core.client.component.layout.LayoutData;
-import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
+import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
 
 
 public class ButtonCreator {
@@ -33,7 +33,7 @@ public class ButtonCreator {
      *            to configure the button.
      * @return the button instance.
      */
-    public static Button $(ContainerBuilder<?> el, Consumer<Button.Config> cfg) {
+    public static Button $(IDomInsertableContainer<?> el, Consumer<Button.Config> cfg) {
         return $ (el, cfg, null);
     }
 
@@ -48,7 +48,7 @@ public class ButtonCreator {
      *                to act on the constructed button.
      * @return the button instance.
      */
-    public static Button $(ContainerBuilder<?> el, Consumer<Button.Config> cfg, Consumer<Button> builder) {
+    public static Button $(IDomInsertableContainer<?> el, Consumer<Button.Config> cfg, Consumer<Button> builder) {
         return ComponentCreatorSupport.$ (el, new Button.Config (), cfg, builder);
     }
 

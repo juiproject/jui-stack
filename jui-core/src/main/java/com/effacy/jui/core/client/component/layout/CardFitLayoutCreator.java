@@ -15,9 +15,18 @@
  ******************************************************************************/
 package com.effacy.jui.core.client.component.layout;
 
+import java.util.function.Consumer;
+
 public final class CardFitLayoutCreator {
     
     public static CardFitLayout create(boolean fitWidthAndHeight) {
-        return new CardFitLayout.Config(fitWidthAndHeight).build();
+        return create(fitWidthAndHeight, null);
+    }
+
+    public static CardFitLayout create(boolean fitWidthAndHeight, Consumer<CardFitLayout.Config> configure) {
+        CardFitLayout.Config config =  new CardFitLayout.Config(fitWidthAndHeight);
+        if (configure != null)
+            configure.accept(config);
+        return config.build();
     }
 }

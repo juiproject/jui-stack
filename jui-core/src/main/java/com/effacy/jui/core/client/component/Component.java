@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 import com.effacy.jui.core.client.Debug;
 import com.effacy.jui.core.client.ICompletionCallback;
 import com.effacy.jui.core.client.IDisposable;
+import com.effacy.jui.core.client.Invoker;
 import com.effacy.jui.core.client.component.IComponent.IParent;
 import com.effacy.jui.core.client.component.layout.CardFitLayout;
 import com.effacy.jui.core.client.component.layout.IContainerRegion;
@@ -1889,6 +1890,21 @@ public class Component<C extends Component.Config> implements IEventListener, IC
     }
 
     /**
+     * See {@link #handleAfterRender(Invoker)}.
+     */
+    private Invoker afterRenderHandler;
+
+    /**
+     * To handler the after-render event.
+     * 
+     * @param afterRenderHandler
+     *                           the handler.
+     */
+    protected void handleAfterRender(Invoker afterRenderHandler) {
+        this.afterRenderHandler = afterRenderHandler;
+    }
+
+    /**
      * Called after rendering the component (the component has been renderer, focus
      * events sunk and initial size set).
      */
@@ -1898,7 +1914,13 @@ public class Component<C extends Component.Config> implements IEventListener, IC
                 renderFocus ();
             });
         }
-
+        if (afterRenderHandler != null) {
+            try {
+                afterRenderHandler.invoke();
+            } catch (Throwable e) {
+                Logger.reportUncaughtException(e, this);
+            }
+        }
     }
 
     /**

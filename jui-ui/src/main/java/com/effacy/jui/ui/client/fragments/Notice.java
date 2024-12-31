@@ -15,16 +15,18 @@
  ******************************************************************************/
 package com.effacy.jui.ui.client.fragments;
 
+import java.util.List;
+import java.util.function.Consumer;
+
 import com.effacy.jui.core.client.dom.builder.Div;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
-import com.effacy.jui.core.client.dom.builder.P;
-import com.effacy.jui.core.client.dom.builder.Text;
 import com.effacy.jui.core.client.dom.css.CSS;
-import com.effacy.jui.core.client.dom.css.Decimal;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.platform.util.client.StringSupport;
+import com.effacy.jui.rpc.client.ErrorMessage;
+import com.effacy.jui.ui.client.fragments.NoticeBuilder.Block;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 
 /**
@@ -33,12 +35,76 @@ import com.effacy.jui.ui.client.icon.FontAwesome;
  */
 public class Notice {
 
+    /**
+     * Convenience to create an instance (following the creator pattern).
+     * @return a notice instance.
+     */
     public static NoticeFragment $() {
         return new NoticeFragment ();
     }
 
+    /**
+     * Convenience to create an instance and instert it into the given parent
+     * (following the creator pattern).
+     * 
+     * @param parent
+     *               the parent to insert into.
+     * @return the inserted notice instance.
+     */
     public static NoticeFragment $(IDomInsertableContainer<?> parent) {
         NoticeFragment frg = $ ();
+        if (parent != null)
+            parent.insert (frg);
+        return frg;
+    }
+
+    /**
+     * A convenience to create a standardised error message for display a collection
+     * of error messages.
+     * 
+     * @param message
+     *                 Appears above the list of errors.
+     * @param messages
+     *                 the messages to display.
+     * @return the fragment.
+     */
+    public static NoticeFragment error(String message, List<ErrorMessage> messages) {
+        return Notice.$()
+            .variant(Notice.Variant.DANGER)
+            .build(notice -> {
+                notice.block().add(message);
+                messages.forEach(error -> {
+                    notice.block().list().add (error.getMessage());
+                });
+            });
+    }
+
+    /**
+     * A convenience to create a standardised error message for display a collection
+     * of error messages.
+     * 
+     * @param message
+     *                 Appears above the list of errors.
+     * @param messages
+     *                 the messages to display.
+     * @return the fragment.
+     */
+    public static NoticeFragment errorAsString(String message, List<String> messages) {
+        return Notice.$()
+            .variant(Notice.Variant.DANGER)
+            .build(notice -> {
+                notice.block().add(message);
+                messages.forEach(error -> {
+                    notice.block().list().add (error);
+                });
+            });
+    }
+
+    /**
+     * See {@link #error(String, List)} but inserts into the given parent.
+     */
+    public static NoticeFragment error(IDomInsertableContainer<?> parent, String message, List<ErrorMessage> messages) {
+        NoticeFragment frg = error (message, messages);
         if (parent != null)
             parent.insert (frg);
         return frg;
@@ -125,17 +191,12 @@ public class Notice {
         /**
          * See {@link #message(String)}.
          */
-        protected String message;
+        protected NoticeBuilder message;
 
         /**
          * See {@link #contentAligned(boolean)}.
          */
         protected boolean contentAligned;
-
-        /**
-         * See {@link #weight(int)}.
-         */
-        protected int weight;
 
         /**
          * Assigns a style to the notice.
@@ -246,14 +307,86 @@ public class Notice {
          * @return this fragment.
          */
         @SuppressWarnings("unchecked")
-        public T message(String message) {
+        public T message(NoticeBuilder message) {
             this.message = message;
             return (T) this;
         }
 
+        /**
+         * Assigns a message to display.
+         * 
+         * @param message
+         *                the message.
+         * @return this fragment.
+         */
         @SuppressWarnings("unchecked")
-        public T weight(int weight) {
-            this.weight = weight;
+        public T message(String message) {
+            if (this.message == null)
+                this.message = new NoticeBuilder();
+            this.message.block().add(message);
+            return (T) this;
+        }
+
+        /**
+         * Assigns a bold message to display.
+         * 
+         * @param message
+         *                the message.
+         * @return this fragment.
+         */
+        @SuppressWarnings("unchecked")
+        public T bold(String message) {
+            if (this.message == null)
+                this.message = new NoticeBuilder();
+            this.message.block().bold(message);
+            return (T) this;
+        }
+
+        /**
+         * Assigns an italic message to display.
+         * 
+         * @param message
+         *                the message.
+         * @return this fragment.
+         */
+        @SuppressWarnings("unchecked")
+        public T italic(String message) {
+            if (this.message == null)
+                this.message = new NoticeBuilder();
+            this.message.block().italic(message);
+            return (T) this;
+        }
+
+        /**
+         * Assigns a message to display.
+         * 
+         * @param builder
+         *                to builder out a block.
+         * @return this fragment.
+         */
+        @SuppressWarnings("unchecked")
+        public T message(Consumer<Block> builder) {
+            if (this.message == null)
+                this.message = new NoticeBuilder();
+            if (builder != null)
+                builder.accept(message.block());
+            return (T) this;
+        }
+
+        /**
+         * Convenience to build out the message (inline).
+         * 
+         * @param builder
+         *                to build out the message.
+         * @return this fragment.
+         */
+        @SuppressWarnings("unchecked")
+        public T build(Consumer<NoticeBuilder> builder) {
+            if (builder != null) {
+                if (this.message == null)
+                    this.message = new NoticeBuilder();
+                builder.accept(message);
+            }
             return (T) this;
         }
 
@@ -279,16 +412,8 @@ public class Notice {
                         Em.$ (main).style (ICON_SUCCESS);
                 }
                 Div.$ (main).$ (content -> {
-                    if (!StringSupport.empty (message)) {
-                        P.$ (content).style ("message").$ (msg -> {
-                            if (weight > 0) {
-                                if (weight < 10)
-                                    weight *= 100;
-                                msg.css (CSS.FONT_WEIGHT, Decimal.of (weight));
-                            }
-                            Text.$ (msg, message);
-                        });
-                    }
+                    if (message != null)
+                        message.build(content);
                     if (contentAligned)
                         super.buildInto (content);
                 });

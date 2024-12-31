@@ -15,6 +15,7 @@
     <version.spring-boot>3.0.6</version.spring-boot>
     <version.jopt-simple>5.0.4</version.jopt-simple>
     <version.commons-text>1.10.0</version.commons-text>
+    <version.snakeyaml>2.2</version.snakeyaml>
   </properties>
 
   <dependencies>
@@ -33,13 +34,20 @@
         <artifactId>spring-boot-starter-web</artifactId>
         <version>${version.spring-boot}</version>
     </dependency>
+    <!-- Needed when running as a JAR -->
+    <dependency>
+        <groupId>org.yaml</groupId>
+        <artifactId>snakeyaml</artifactId>
+        <version>${version.snakeyaml}</version>
+    </dependency>
     <dependency>
         <groupId>net.sf.jopt-simple</groupId>
         <artifactId>jopt-simple</artifactId>
         <version>${version.jopt-simple}</version>
     </dependency>
+    <!-- Needed for compilation -->
     <dependency>
-      <groupId>com.google.gwt</groupId>
+      <groupId>org.gwtproject</groupId>
       <artifactId>gwt-dev</artifactId>
       <version>${version.gwt}</version>
       <exclusions>

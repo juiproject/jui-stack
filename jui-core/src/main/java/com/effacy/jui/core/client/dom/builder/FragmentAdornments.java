@@ -15,6 +15,9 @@
  ******************************************************************************/
 package com.effacy.jui.core.client.dom.builder;
 
+import java.util.Collection;
+import java.util.function.Supplier;
+
 import com.effacy.jui.core.client.dom.builder.Fragment.IFragmentAdornment;
 import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Color;
@@ -84,5 +87,41 @@ public final class FragmentAdornments {
 
     public static IFragmentAdornment color(Color color) {
         return (el) -> el.css (CSS.COLOR, color);
+    }
+
+    /**
+     * Generates a single fragment adornment from a collection.
+     * 
+     * @param collection
+     *                   the collection to create from (this is {@code null}-safe).
+     * @return the associated fragment adornment.
+     */
+    public static IFragmentAdornment collection(Collection<IFragmentAdornment> collection) {
+        return (el) -> {
+            if (collection != null)
+                collection.forEach(frag -> frag.adorn(el));
+        };
+    }
+
+    /**
+     * Generates a deferred adornment where the adornments are obtained at the time
+     * they need to be applied.
+     * <p>
+     * This is {@code null}-safe both in terms of the passed supplier and the
+     * adornment returned by the supplier (that is, the supplier can safely return
+     * {@code null}).
+     * 
+     * @param supplier
+     *                 to supply an adornment.
+     * @return the deferred adornment.
+     */
+    public static IFragmentAdornment deferred(Supplier<IFragmentAdornment> supplier) {
+        return (el) -> {
+            if (supplier != null) {
+                IFragmentAdornment adornment = supplier.get();
+                if (adornment != null)
+                    adornment.adorn(el);
+            }
+        };
     }
 }

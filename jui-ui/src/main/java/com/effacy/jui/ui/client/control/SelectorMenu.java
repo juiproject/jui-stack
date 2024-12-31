@@ -104,7 +104,7 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
      *               the configuration to use.
      */
     public SelectorMenu(ISelectorMenuConfig<V> config) {
-        this (config, StandardSelectorMenuCSS.instance ());
+        this (config, null);
     }
 
     /**
@@ -115,7 +115,7 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
      */
     public SelectorMenu(ISelectorMenuConfig<V> config, ISelectorMenuCSS styles) {
         this.config = config;
-        this.styles = styles;
+        this.styles = (styles == null) ? StandardSelectorMenuCSS.instance () : styles;
 
         // Attach a listener to the store to refresh against.
         this.store = config.getStore ();
@@ -660,13 +660,6 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
     }
 
     /**
-     * Styles (made available to selection).
-     */
-    protected ISelectorMenuCSS styles() {
-        return styles;
-    }
-
-    /**
      * {@inheritDoc}
      *
      * @see com.effacy.jui.core.client.component.Component#buildNode(elemental2.dom.Element,
@@ -737,6 +730,13 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
     /********************************************************************
      * CSS with standard styles.
      ********************************************************************/
+
+    /**
+     * Styles (made available to selection).
+     */
+    protected ISelectorMenuCSS styles() {
+        return styles;
+    }
 
     /**
      * CSS for the selector menu.

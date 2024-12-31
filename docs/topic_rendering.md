@@ -1,6 +1,6 @@
 # Rendering
 
-*We delve into the details of generating DOM during the rendering phase of a components lifecycle. Among the topics covered are the insertion and configuration of [DOM nodes](#building-dom-structures) and the use of re-usable [fragments](#fragments), the handling of UI [events](#event-handling), how to [reference nodes](#node-referencing) once a DOM structure has been built and how child [components](#components) can be inserted.*
+*We delve into the details of generating DOM during the rendering phase of a components lifecycle. Among the topics covered are the insertion and configuration of [DOM nodes](#building-dom-structures) and the use of re-usable [fragments](#re-use-with-fragments), the handling of UI [events](#event-handling), how to [reference nodes](#node-referencing) once a DOM structure has been built and how child [components](#components) can be inserted.*
 
 Rendering is the process by which a component renders out its DOM node structure (including the registration of UI event listeners to that structure). This was covered conceptually in [Components](ess_components.md) (in the context of building components) while here we cover rendering more specifically with a focus on the mechanisms available to you to generate DOM structures.
 
@@ -353,6 +353,27 @@ Fragments implement `IDomInsertable` so are able to be used exactly in the same 
 
 We now describe how to create fragments.
 
+#### Adorning fragments
+
+Fragments will generally carry their own styles however one may want to override these (at the root level). This can be achieved with `IFragmentAdornment`'s that are applied using the `adorn(...)` method (there are conveniences for `css(...)` and `style(...)` which are conveyed to the root elememt builder of the fragment).
+
+You may use `FragmentAdornments` as a helper class for standard adornments, however `IFragmentAdornment` is a functional interface so it can be just as easy to employ lambda-expressions.
+
+There are some cases where a fragment may have trouble apply adornments, this is covered in [Creating fragments](#creating-fragments) below.
+
+The following example applies a margin to an `Icon`:
+
+```java
+Icon.$ (root).adorn (FragmentAdornments.margin (Insets.em (0.5)));
+```
+
+or equivalently:
+
+```java
+Icon.$ (root).css ("margin: 0.5em;");
+```
+
+
 #### Creating fragments
 
 Fragments extend `Fragment` (and if children are being added to the fragment then it should extend `FragmentWithChildren`).
@@ -428,7 +449,25 @@ public static class ThingFragment extends Fragment<ThingFragment> {
 ...
 ```
 
+or (in fact this is how the `super(...)` version works):
+
+```java
+...
+public static class ThingFragment extends Fragment<ThingFragment> {
+
+    public ThingFragment(/* configuration data */) {
+        builder (parent -> {
+            ...
+        });
+    }
+
+}
+...
+```
+
 A similar case applies to `FragmentWithChildren` except that you need to pass a `BiConsumer<ContainerBuilder<?>, List<IDomInsertable>>` where the second paramter is a list of the children associated with the fragment.
+
+?>A special note on using this approach is with respect to [adornments](#adorning-fragments). Adornments are only applied using the method described in [Creating fragments](#creating-fragments) (since the method above allows one to add more than one child element to the parent). In this case you need to apply adornments directly. If the target is a fragment itself then you can pass through the adornment by calling `adornments()` (which returns a deferred consolidations of adornments present on the fragment) or by apply directly `adornments()` to the root element builder.
 
 As a final note the form described above was presented as it is safe to use with `FragmentWithChildren` in avoiding name clashing with the `$` method. This is not a problem with `Fragment` so you can abridge this further:
 
@@ -451,16 +490,6 @@ public class Thing extends Fragment<Thing> {
 ```
 
 Which provides for a very compact representation.
-
-#### Adornments
-
-Often fragments are subject to minor style changes (such as adding padding or an addition CSS class). Rather than having to expose specific behaviours one may make use of a generalised *adornment*.
-
-Adornments implement `IFragmentAdornment` (and there are a number of standard adornments in the helper class `FragmentAdornments`) and can be added to a fragment using the `adorn(IFragmentAdornment...)` method. The following example applies a margin to an `Icon`:
-
-```java
-Icon.$ (root).adorn (FragmentAdornments.margin (Insets.em (0.5)));
-```
 
 #### JUI standard fragments
 

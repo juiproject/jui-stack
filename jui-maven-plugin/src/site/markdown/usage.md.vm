@@ -1,0 +1,19 @@
+#set($h2 = '##')
+#set($h3 = '###')
+#macro( mojo $name )[`jui:$name`](${name}-mojo.html)#end
+##
+$h2 Basic usage
+
+Add the plugin to your POM, enabling extensions to get the new packagings, and configuring your module name:
+
+    ```xml
+    <plugin>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>${project.artifactId}</artifactId>
+      <version>${project.version}</version>
+      <extensions>true</extensions>
+      <configuration>
+        <module>myapplication.jui.MyApp</module>
+      </configuration>
+    </plugin>
+    ```

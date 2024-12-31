@@ -18,6 +18,7 @@ package com.effacy.jui.core.client.dom.builder;
 /**
  * Something that can be inserted into a DOM node.
  */
+@FunctionalInterface
 public interface IDomInsertable {
 
     /**

@@ -47,9 +47,25 @@ public class FragmentWithChildren<T extends FragmentWithChildren<T>> extends Fra
     /**
      * Construct with a builder.
      * 
-     * @param builder the builder.
+     * @param builder
+     *                the builder (see {@link #builder(BiConsumer)}).
      */
     protected FragmentWithChildren(BiConsumer<ContainerBuilder<?>, List<IDomInsertable>> builder) {
+        builder (builder);
+    }
+
+    /**
+     * Assigns a builder.
+     * <p>
+     * The builder will be invoked with the parent into which it will build its
+     * contents along with a list of children than must be inserted in the
+     * appropriate location (or locations). Note that more than one element can be
+     * inserted into the parent a adornments need to be handled manually.
+     * 
+     * @param builder
+     *                the builder.
+     */
+    protected void builder(BiConsumer<ContainerBuilder<?>, List<IDomInsertable>> builder) {
         this.builder = builder;
     }
 

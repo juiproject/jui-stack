@@ -106,6 +106,15 @@ public interface IFormBuilder<SRC,DST> extends IDomInsertable {
     public IFormBuilder<SRC,DST> onEdit(Consumer<SRC> handler);
 
     /**
+     * Clears each of the child components.
+     * <p>
+     * The default behaviour is to set each control to {@code null}, however this
+     * can be overridden by supplying a means to clear explicityly (see
+     * {@link IRowBuilder#clear(IClearere)}).
+     */
+    public void clear();
+
+    /**
      * Applies the passed source to the form and all its child controls.
      * <p>
      * This has the same behavior expectations as {@link IEditable#edit(SRC)}.

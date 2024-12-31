@@ -90,10 +90,11 @@ public class Options {
     /**
      * See {@link #getSourceLevel()}.
      */
-    private SourceLevel sourceLevel = SourceLevel.JAVA11;
+    private SourceLevel sourceLevel = SourceLevel.JAVA17;
     private boolean failOnError = false;
     private int compileTestRecompiles = 0;
-    private boolean generateJsInteropExports = false;
+    // The default is to generate JS Interop exports.
+    private boolean generateJsInteropExports = true;
     private WhitelistRegexFilter jsInteropExportFilter = new WhitelistRegexFilter();
     private OptionMethodNameDisplayMode.Mode methodNameDisplayMode = OptionMethodNameDisplayMode.Mode.NONE;
     private boolean closureFormattedOutput = false;

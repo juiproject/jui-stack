@@ -97,4 +97,19 @@ public class ValidationException extends Exception implements Iterable<Message> 
         return false;
     }
 
+    /**
+     * Creates a single string containing the error messages. Useful for logging.
+     * 
+     * @return the flattened validation messages.
+     */
+    public String flatten() {
+        StringBuffer sb = new StringBuffer();
+        forEach(msg -> {
+            if (sb.length() != 0)
+                sb.append("; ");
+            sb.append(msg.getMessage());
+        });
+        return sb.toString();
+    }
+
 }

@@ -42,6 +42,8 @@ In terms of the problem of polymorphism, this is resolved as described above by 
 
 *As a convenience, classes that partake in serialisation should implement `ISerializable` (or extend `Serializable` or any of its sub-classes such as `Result`). This includes the `@JsonSerializable` annotation and explicitly declares a getter for `_type` thereby ensuring its presence.*
 
+?> Note that arrays are not supported, only lists. Furthermore getters for list valued properties **must not** return `null`, rather they must return an empty list.
+
 ### Server-side
 
 The interface `IJsonSerializableParser` provides a standard contract for (de-)serialisation of JSON as employed by related modules. A standard implementation is provided by `JsonSerializableParser` that makes use of [Jackson](https://github.com/FasterXML/jackson) and supports both the injection of the `_type` specifier on serialisation and respecting the specifier on deserialisation.
@@ -182,9 +184,10 @@ Now that we have outlined the essential element of both query and command proces
 
 1. [References](#references) covers the recommended approach to referring to business objects.
 2. [Queries](#queries) discusses the various types of query that can be performed (with a focus on lookups and searches).
-3. [Commands](#commands) describes how business objects can be updated.
-4. [The executor](#the-executor) illustrates the role the executor plays, how it is configured and how it is wired up.
-5. [Integrating with RPC](#integrating-with-rpc) outlines how we integrate the executor into the RPC service model, including the client-side handler use to invoke queries and commands.
+3. [Converters](#converters) describes a clean approach to type conversion (i.e. for creating and populating DTO's).
+4. [Commands](#commands) describes how business objects can be updated.
+5. [The executor](#the-executor) illustrates the role the executor plays, how it is configured and how it is wired up.
+6. [Integrating with RPC](#integrating-with-rpc) outlines how we integrate the executor into the RPC service model, including the client-side handler use to invoke queries and commands.
 
 Note that [references](#references) is prepartory and could safely be skipped, only to be returned to when you encounter `Ref` and references in the later sections.
 
@@ -357,6 +360,8 @@ public class MyDataAnalysisQueryProcessor extends QueryProcessor<QueryContext,My
 
 Here we extend `QueryProcessor` parameterised with the result and query classes. This base class provides a default class-match mechanism for matching a query with the processor (a reference class type is passed through the constructor and a match is determined on whether or not the query class could be assigned to the referenc class). An alternative `process(...)` method is provided for override that employs the expected query and response classes. Finally the `@RPCHandlerProcessor` is described in [auto registration](#auto-registration) which, in a Spring environment, automatically registers the processor with the executor.
 
+*See [Converters](#converters) for a clean way of performing type conversion from an internal to an external representation.*
+
 Having described the general case we delve into two common scenarios used when dealing with business objects:
 
 1. [Lookup queries](#lookup-queries) to lookup the details of a specific business object
@@ -437,14 +442,17 @@ public class UserLookupProcessor extends QueryProcessor<QueryContext, UserLookup
         UserRef ref = lookup.ref();
         if (ref instanceof UserRefByContext) {
             ...
-        } ...
+        }
+        ...
         UserLookupResult result = ...;
         return result;
     }
 }
 ```
 
-The strategy employed is to extract the reference from the lookup and use that to lookup the business object (*as noted the use of a `Ref` is not strict and could employ another means, such as a primitive.*). From there we construct the response result (using any additional configuration on the lookup to determine what needs to be returned) which is returned. 
+The strategy employed is to extract the reference from the lookup and use that to lookup the business object (*as noted the use of a `Ref` is not strict and could employ another means, such as a primitive.*). From there we construct the response result (using any additional configuration on the lookup to determine what needs to be returned) which is returned.
+
+*See [Converters](#converters) for a clean way of performing type conversion from an internal to an external representation.*
 
 ?>For the business object `XXX` the recommended naming convention for the transfer classes is `XXXLookupResult` (extends `Result` or `RecordResult`) for the response type and `XXXLookup` (extends `Lookup<XXXLookupResult,XXXRef>`) for the query type. Here `XXXRef` is a suitable reference heirarchy as described in [reference](#references) (this is somewhat relaxed, for example you can use boxed-primitives, such as `Long` and `String`, rather than `Ref`'s). The associated processor should be named `XXXLookupProcessor` after the lookup class.
 
@@ -538,6 +546,192 @@ public class UserQueryProcessor extends QueryProcessor<QueryContext, UserQueryRe
 ```
 
 ?>For the business object `XXX` the recommended naming convention for the transfer classes are `XXXQueryResult` (extends `Result` or `RecordResult`), `XXXQueryResultSet` (extends `ResultSet<XXXQueryResult>`) and `XXXQuery` (extends `PageQuery<XXXQueryResultSet>`). The associated processor should be named `XXXQueryProcessor` after the query class.
+
+### Converters
+
+Converters provide a mechanism to convert from an internal (server-side) representation of data (i.e. entities, projections, etc) to an external (serialisable) representation.
+
+There are myriad ways to perform such conversion, however JUI provides one that is quite particularly useful for result sets (and, of course, can be used for lookups). That is via an implementation of `IConverter<S,T>`.
+
+This functional interface declares the method `T convert(S source)` to convert from the *source* (internal) to a *target* (external) representation. Such a converter can be passed through to a `ResultSet`; building on the example above:
+
+```java
+public class UserQueryResultSet extends ResultSet<UserQueryResult> {
+
+    // No results constructor.
+    public UserQueryResultSet() {
+        super (null, 0);
+    }
+
+    // Construct with given results and total.
+    public UserQueryResultSet(Iterable<UserQueryResult> results, int totalResults) {
+        super (results, totalResults);
+    }
+
+    // Construct with a converter that converts from an iterable over S to UserQueryResult.
+    public <S> UserQueryResultSet(Iterable<S> results, IConverter<S, UserQueryResult> converter, int totalResults) {
+        super (results, converter, totalResults);
+    }
+
+}
+```
+
+We have added the additional constructor that takes an instance of `IConverter`. This allows use to perform an internal query and map those results to our transfer type:
+
+```java
+@RPCHandlerProcessor
+public class UserQueryProcessor extends QueryProcessor<QueryContext, UserQueryResultSet, UserQuery> {
+
+    public UserQueryProcessor() {
+        super (UserQuery.class);
+    }
+
+    @Override
+    protected UserQueryResultSet process(QueryContext context, UserQuery query) throws ProcessorException {
+        // Using the data on query perform the query obtaining the total
+        // available results and the range of actual results being requested.
+        // For the latter create instance of UserQueryResult that will be
+        // passed to the result set.
+        long total = ...;
+        List<UserEntity> results = ...;
+        IConverter<UserEntity,UserQueryResult> converter = ...;
+        return new UserQueryResultSet(results, converter, total);
+    }
+}
+```
+
+We can therefore more cleanly perform the conversion (it can also be used in conjuction with streams, if you prefer that approach).
+
+As far as implemenation goes there is a static support method `<S,T> IConverter<S,T> create(Class<T> klass, BiConsumer<S,T> mapper)` on `IConverter` that makes it quite straight forward to create converters:
+
+```java
+public class UserQueryResultConverter {
+
+    public static IConverter<UserEntity, UserQueryResult> fromEntity() {
+        return IConverter.create(UserQueryResult.class, (entity,dto) -> {
+            dto.setId(entity.getId());
+            dto.setVersion(entity.getVersion());
+            dto.setName(entity.getName());
+            ...
+        });
+    }
+}
+```
+
+Which can then be employed as:
+
+```java
+...
+return new UserQueryResultSet(results, UserQueryResultConverter.fromEntity(), total);
+```
+
+If your converter needs additional, context specific, configuration then this can be passed through the static creator:
+
+```java
+public class UserQueryResultConverter {
+
+    public static IConverter<UserEntity, UserQueryResult> fromEntity(ZoneId tz) {
+        return IConverter.create(UserQueryResult.class, (entity,dto) -> {
+            // Use tz directly as needed.
+            ...
+        });
+    }
+}
+```
+
+*Note that this method of creation actually returns an instance of `IExtendedCreator` which exposes an additional `void apply(S source, T target)` method; this can be used to employ converters when target types form a class hierarchy.*
+
+Note that converters are not limited to result sets and can be employed in any context where a type conversion is required, such as a lookup processor:
+
+```java
+@RPCHandlerProcessor
+public class UserLookupProcessor extends QueryProcessor<QueryContext, UserLookupResult, UserLookup> {
+
+    public UserLookupProcessor() {
+        super (UserLookup.class);
+    }
+
+    @Override
+    protected UserLookupResult process(QueryContext context, UserLookup lookup) throws ProcessorException {
+        UserRef ref = lookup.ref();
+        if (ref instanceof UserRefByContext) {
+            ...
+        }
+        ...
+        UserEntity entity = ...;
+        return UserQueryResultConverter.fromEntity().convert(entity);
+    }
+}
+```
+
+We end this section with a brief description of the `com.effacy.jui.json.Builder` static support methods for transferring values. For simple values one may use `set` to get a value from a source and apply it to a target:
+
+```java
+...
+import static com.effacy.jui.json.Builder.set;
+...
+public static IConverter<UserEntity, UserQueryResult> fromEntity() {
+    return IConverter.create(UserQueryResult.class, (entity,dto) -> {
+        set(dto::setId, entity.getId());
+        set(dto::setVersion, entity.getVersion());
+        set(dto::setName, entity.getName());
+        ...
+    });
+}
+...
+```
+
+Often one encounters nested types:
+
+```java
+...
+import static com.effacy.jui.json.Builder.set;
+...
+public static IConverter<UserEntity, UserQueryResult> fromEntity() {
+    return IConverter.create(UserQueryResult.class, (entity,dto) -> {
+        set(dto::setId, entity.getId());
+        set(dto::setVersion, entity.getVersion());
+        set(dto::setName, entity.getName());
+        ...
+        set (dto::setPosition, entity.getPosition (), new UserPositionResult (), (v,s) -> {
+            set(v::setId, s.getId ());
+            set(v::setVersion, s.getVersion ());
+            set(v::setName, s.getEmail ());
+            ...
+        });
+        ...
+    });
+}
+...
+```
+
+One may also work with lists using `add`:
+
+```java
+...
+import static com.effacy.jui.json.Builder.add;
+import static com.effacy.jui.json.Builder.set;
+...
+public static IConverter<UserEntity, UserQueryResult> fromEntity() {
+    return IConverter.create(UserQueryResult.class, (entity,dto) -> {
+        set(dto::setId, entity.getId());
+        set(dto::setVersion, entity.getVersion());
+        set(dto::setName, entity.getName());
+        ...
+        entity.getItems().forEach(item -> {
+            add(dto.getItemResults(), new ItemResult(), v -> {
+                set(v::setId, item.getId());
+                set(v::setVersion, item.getVersion());
+                ...
+            });
+        });
+        ...
+    });
+}
+...
+```
+
+The above may not be to everyones pleasure but can aid in readability. You are encouraged to puruse the various other support methods that are available.
 
 ### Commands
 
@@ -809,6 +1003,8 @@ Here an instance of your executor (`MyExecutor` which is assumed to sit in the c
 
 #### Exception handling
 
+*See [Modification](#modification) for handling exceptions using the modification framework, these ultimately are translated to `ProcessException` which are subsequently handled as described below.*
+
 There are two exceptions that are processed by the mechanism: `NoProcessorException` which occurs when the incoming command or query cannot be matched with a processor and `ProcessorException` which embodies all other exception cases.
 
 Processors should try their best to only throw `ProcessorException`'s, however that is not always guaranteed (particularly for uncaught exceptions). The executor, when encoutering an unexpected exception, will convert the exception to `ProcessorException` (creating an single violation of type `ErrorType.SYSTEM`, see the following).
@@ -962,7 +1158,7 @@ It was noted in point (3) that generated exceptions are translated, by that we m
 1. If the exception is of type `ProcessorException` then its errors are extracted and stored (as above).
 2. If the exception is of type `ValidationException` this its messages (see `IValidator.Message`) are extracted and stores are errors of type `ErrorType.VALIDATION`.
 3. If an exception handler is registered against the setter (see below) then the exception is passed through to the for it to generate suitable `IValidator.Message`'s which are then translated to errors of type `ErrorType.VALIDATION`.
-4. Any uncaught exception is stored as a `ErrorType.VALIDATION` with a message indicating an uncaught exception (really, you need to map these).
+4. Any uncaught exception is stored as a `ErrorType.VALIDATION` with a message indicating an uncaught exception (really, you need to map these). *However, the associated message is processed by `String translateUnexpectedError(Exception e)` which can be overidden; either to provide a more friendly message but also provides a hook to log the message.*
 
 Note that where paths are not directly specified they will be drawn from the value set on the setter by `path(String)`.
 

@@ -25,6 +25,8 @@ public class CharacterValidatorRule {
 
     private boolean digit;
 
+    private boolean newline;
+
     private CharSequence characters;
 
     public CharacterValidatorRule space() {
@@ -32,6 +34,10 @@ public class CharacterValidatorRule {
         return this;
     }
 
+    public CharacterValidatorRule newline() {
+        this.newline = true;
+        return this;
+    }
 
     public CharacterValidatorRule whitespace() {
         this.whitespace = true;
@@ -70,13 +76,15 @@ public class CharacterValidatorRule {
             char nowChar = cs.charAt (i);
             if (includes (nowChar))
                 continue;
-            if (letter && Character.isLetter (nowChar))
+            if (newline && ((nowChar == '\r') || (nowChar == '\n')))
                 continue;
-            if (space && Character.isSpaceChar (nowChar))
+            if (letter && Character.isLetter(nowChar))
                 continue;
-            if (whitespace && Character.isWhitespace (nowChar))
+            if (space && Character.isSpaceChar(nowChar))
                 continue;
-            if (digit && Character.isDigit (nowChar))
+            if (whitespace && Character.isWhitespace(nowChar))
+                continue;
+            if (digit && Character.isDigit(nowChar))
                 continue;
             return false;
         }

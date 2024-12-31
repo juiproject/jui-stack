@@ -15,7 +15,11 @@
  ******************************************************************************/
 package com.effacy.jui.ui.client.fragments;
 
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
 import com.effacy.jui.core.client.Invoker;
+import com.effacy.jui.core.client.dom.UIEvent;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.FragmentAdornments;
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
@@ -23,6 +27,8 @@ import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Insets;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.ui.client.fragments.Paper.APaperFragment;
+
+import elemental2.dom.Element;
 
 public class Card {
 
@@ -53,7 +59,7 @@ public class Card {
 
         protected Insets padding;
 
-        protected Invoker onclick;
+        protected BiConsumer<UIEvent,Element> onclick;
 
         protected Length gap;
 
@@ -147,6 +153,32 @@ public class Card {
          */
         @SuppressWarnings("unchecked")
         public T onclick(Invoker onclick) {
+            this.onclick = (e,n) -> onclick.invoke();
+            return (T) this;
+        }
+
+        /**
+         * Assigns a click handler for the card.
+         * 
+         * @param onclick
+         *                the click handler.
+         * @return this fragment.
+         */
+        @SuppressWarnings("unchecked")
+        public T onclick(Consumer<Element> onclick) {
+            this.onclick = (e,n) -> onclick.accept(n);
+            return (T) this;
+        }
+
+        /**
+         * Assigns a click handler for the card.
+         * 
+         * @param onclick
+         *                the click handler.
+         * @return this fragment.
+         */
+        @SuppressWarnings("unchecked")
+        public T onclick(BiConsumer<UIEvent,Element> onclick) {
             this.onclick = onclick;
             return (T) this;
         }
@@ -167,7 +199,7 @@ public class Card {
                 root.css (CSS.PADDING, padding);
             if (onclick != null) {
                 root.style ("clickable");
-                root.onclick (e -> onclick.invoke ());
+                root.onclick ((e, n) -> { onclick.accept (e, (Element) n);});
             }
             super.buildInto(root);
         }

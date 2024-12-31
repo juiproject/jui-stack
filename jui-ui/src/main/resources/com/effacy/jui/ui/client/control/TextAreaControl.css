@@ -1,3 +1,8 @@
+.component {
+    --jui-textareactl-counter: var(--jui-ctl-text);
+    --jui-textareactl-counter-limit: var(--jui-color-error70);
+}
+
 .component .inner {
 	border: 1px solid var(--jui-ctl-border);
 	border-radius: var(--jui-ctl-border-radius);
@@ -44,6 +49,17 @@
 .component.read_only textarea {
 	color: var(--jui-ctl-text-readonly);
 	cursor: not-allowed;
+}
+
+.component .counter {
+    text-align: right;
+    font-size: 0.9em;
+    margin-top: 0.25em;
+    color: var(--jui-textareactl-counter);
+}
+
+.component .counter.limit {
+    color: var(--jui-textareactl-counter-limit);
 }
 
 .component em {

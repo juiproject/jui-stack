@@ -17,9 +17,11 @@ package com.effacy.jui.platform.util.client;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Collection of utilities for working with lists.
@@ -51,6 +53,48 @@ public final class ListSupport {
         if (initial != null)
             initial.forEach (item -> fin.add ((item == null) ? null : converter.apply (item)));
         return fin;
+    }
+
+    /**
+     * Converts a list from one type to another.
+     * 
+     * @param <A>
+     *             the base type.
+     * @param list
+     *             the list to filter.
+     * @param test
+     *             the test perform.
+     * @return the filtered list.
+     */
+    public static <A> List<A> filter(List<A> list, Predicate<A> test) {
+        List<A> fin = new ArrayList<>();
+        if (list != null)
+            list.forEach (item -> {
+                if (test.test(item))
+                    fin.add (item);
+            });
+        return fin;
+    }
+
+    /**
+     * Finds the first instance of a specific element of the given list.
+     * 
+     * @param <A>
+     *             the base type.
+     * @param list
+     *             the list to find in.
+     * @param test
+     *             the test to perform.
+     * @return the first instance if found.
+     */
+    public static <A> Optional<A> find(List<A> list, Predicate<A> test) {
+        if (list == null)
+            return Optional.empty();
+        for (A item : list) {
+            if (test.test(item))
+                return Optional.of (item);
+        }
+        return Optional.empty();
     }
 
     /**

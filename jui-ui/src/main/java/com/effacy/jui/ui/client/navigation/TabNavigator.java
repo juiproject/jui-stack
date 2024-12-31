@@ -71,7 +71,7 @@ import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.Element;
 
-public class TabNavigator  extends Component<TabNavigator.Config> implements INavigationHandlerWithProvider, INavigationAware, IClosable, IOpenAware {
+public class TabNavigator extends Component<TabNavigator.Config> implements INavigationHandlerWithProvider, INavigationAware, IClosable, IOpenAware {
 
     public interface ITabActivator {
 
@@ -896,7 +896,7 @@ public class TabNavigator  extends Component<TabNavigator.Config> implements INa
      *             the navigation path.
      */
     public void navigate(String... path) {
-        this.navigate (new NavigationContext (), path);
+        navigate (new NavigationContext (), path);
     }
 
     /**
@@ -906,7 +906,7 @@ public class TabNavigator  extends Component<TabNavigator.Config> implements INa
      *             the navigation path.
      */
     public void navigate(List<String> path) {
-        this.navigate (new NavigationContext (), path);
+        navigate (new NavigationContext (), path);
     }
 
     /**
@@ -948,6 +948,29 @@ public class TabNavigator  extends Component<TabNavigator.Config> implements INa
                     ((IOpenAware) cpt).onOpen ();
             });
         }
+    }
+
+    /**
+     * See {@link #hideNavigation()}.
+     */
+    private boolean navigationHidden;
+
+    /**
+     * Hide the navigation block.
+     */
+    public void hideNavigation() {
+        navigationHidden = true;
+        if (tabHolderEl != null)
+            JQuery.$(tabHolderEl).hide();
+    }
+
+    /**
+     * Shows the navigation block.
+     */
+    public void showNavigation() {
+        navigationHidden = false;
+        if (tabHolderEl != null)
+            JQuery.$(tabHolderEl).show();
     }
 
     /************************************************************************
@@ -1206,6 +1229,10 @@ public class TabNavigator  extends Component<TabNavigator.Config> implements INa
     @Override
     protected void onAfterRender() {
         super.onAfterRender ();
+
+        // Hide navigation.
+        if (navigationHidden)
+            JQuery.$ (tabHolderEl).hide();
 
         // Assign activators.
         config().tabs.getTabGroups().forEach(group -> {

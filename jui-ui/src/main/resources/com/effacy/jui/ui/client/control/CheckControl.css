@@ -1,29 +1,45 @@
 .component {
+    --jui-checkctl-text: var(--jui-ctl-text);
+    --jui-checkctl-description: var(--jui-ctl-text);
+    --jui-checkctl-labelgap: 0.75em;
 }
 
-.component.tight {
-	padding-top: 0;
-}
+/**************************************
+* Layout (structure).
+*/
 
 .component .inner {
 	display: flex;
 	flex-direction: column;
-	gap: 0.75em;
-	color: var(--jui-ctl-text);
+	gap: var(--jui-checkctl-labelgap);
+	color: var(--jui-checkctl-text);
 }
 
 .component .inner .item {
 	display: flex;
 	flex-direction: row;
-	align-items: center;
+    align-items: flex-start;
 }
 
 .component .inner .item.reverse {
 	flex-direction: row-reverse;
 }
 
+.component .inner .item span.spacer {
+	display: inline-block;
+	width: var(--jui-checkctl-labelgap);
+}
+
+.component .inner .item.expand span.spacer {
+	flex-grow: 1;
+}
+
+/**************************************
+* Toggle (slider) variation.
+*/
+
 .component .inner .item.toggle label {
-    color: var(--jui-ctl-text);
+    color: var(--jui-checkctl-text);
 }
 
 .component .inner .item.toggle label.toggle {
@@ -70,6 +86,7 @@
 
 .component .inner .item label.toggle input {
 	cursor: pointer;
+    top: -1px;
 }
 
 .component .inner .item.toggle label.toggle input {
@@ -81,29 +98,32 @@
 	height: 1px;
 }
 
-.component .inner .item span.spacer {
-	display: inline-block;
-	width: 0.75em;
-}
-
-.component .inner .item.expand span.spacer {
-	flex-grow: 1;
-}
+/**************************************
+* Label and description.
+*/
 
 .component .inner .item label {
 	user-select: none;
 	cursor: pointer;
+    display: flex;
+    flex-direction: column;
 	font-weight: 500;
 }
 
 .component.disabled .inner .item label {
-	color: var(--jui-ctl-text-disabled);
+	color: var(--jui-ctl-text-disabled) !important;
     opacity: var(--jui-ctl-opacity-disabled);
 	cursor: not-allowed;
 }
 
-.component .inner .item.bold label {
+.component .inner .item.bold > span label {
 	font-weight: 600;
+}
+
+.component .inner .item label > span.description {
+    font-weight: 400;
+    font-size: 0.95em;
+    color: var(--jui-checkctl-description);
 }
 
 .component.invalid .inner input {
@@ -145,6 +165,10 @@
 .component.invalid .inner input:focus {
 	box-shadow: 0 0 3px 1px var(--jui-ctl-err-focus-offset);
 }
+
+/**************************************
+* Waiting state
+*/
 
 .component.waiting .inner input {
 	animation: eff-waiting-bg 1s infinite;

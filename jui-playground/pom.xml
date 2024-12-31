@@ -131,8 +131,9 @@
 
       <!-- JUI compilation to make available for dev -->
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>gwt-maven-plugin</artifactId>
+        <groupId>com.effacy.jui</groupId>
+        <artifactId>jui-maven-plugin</artifactId>
+        <version>${revision}</version>
         <executions>
           <execution>
             <phase>compile</phase>
@@ -141,12 +142,9 @@
             </goals>
             <configuration>
               <module>com.effacy.jui.playground.PlaygroundApp</module>
-              <extraJvmArgs>-Xmx4096M -Xss1024k</extraJvmArgs>
+              <jvmArgs>-Xmx4096M,-Xss1024k</jvmArgs>
               <style>OBF</style>
-              <force>true</force>
-              <disableCastChecking>true</disableCastChecking>
               <webappDirectory>${basedir}/src/main/resources/static</webappDirectory>
-              <generateJsInteropExports>true</generateJsInteropExports>
             </configuration>
           </execution>
         </executions>
@@ -215,8 +213,76 @@
       </plugin>
     </plugins>
     
-
   </build>
+
+  <profiles>
+    <!-- Runs the codeserver for this project -->
+    <profile>
+      <id>codeserver</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.effacy.jui</groupId>
+            <artifactId>jui-maven-plugin</artifactId>
+            <version>${revision}</version>
+            <configuration>
+              <module>com.effacy.jui.playground.PlaygroundApp</module>
+              <jvmArgs>-Xmx3g</jvmArgs>
+              <diagnose>false</diagnose>
+              <sources>
+                <source>src/jui/java</source>
+                <source>src/jui/resources</source>
+                <!-- We include target/classes to gain access to rebind classes. -->
+                <source>../jui-platform/src/main/java</source>
+                <source>../jui-platform/src/main/resources</source>
+                <source>../jui-core/src/main/resources</source>
+                <source>../jui-core/src/main/java</source>
+                <source>../jui-core/target/classes</source>
+                <source>../jui-core/target-ide/classes</source>
+                <source>../jui-ui/src/main/java</source>
+                <source>../jui-ui/src/main/resources</source>
+                <source>../jui-ui/target/classes</source>
+                <source>../jui-ui/target-ide/classes</source>
+                <source>../jui-validation/src/main/java</source>
+                <source>../jui-validation/src/main/resources</source>
+                <source>../jui-validation/target/classes</source>
+                <source>../jui-validation/target-ide/classes</source>
+                <source>../jui-text/src/main/java</source>
+                <source>../jui-text/src/main/resources</source>
+                <source>../jui-text/target/classes</source>
+                <source>../jui-text/target-ide/classes</source>
+                <source>../jui-remoting/src/main/java</source>
+                <source>../jui-remoting/src/main/resources</source>
+                <source>../jui-remoting/target/classes</source>
+                <source>../jui-remoting/target-ide/classes</source>
+                <source>../jui-text/src/main/java</source>
+                <source>../jui-text/src/main/resources</source>
+                <source>../jui-text/target/classes</source>
+                <source>../jui-text/target-ide/classes</source>
+              </sources>
+              <inclusions>
+                <inclusion>org.pepstock:charba:*</inclusion>
+              </inclusions>
+              <exclusions>
+                <!-- These are included by default so need to explicily exclude -->
+                <!-- (they are included by the sources above). -->
+                <exclusion>com.effacy.jui:*:*</exclusion>
+              </exclusions>
+            </configuration>
+            <executions>
+              <execution>
+                <id>codeserver</id>
+                <phase>initialize</phase>
+                <goals>
+                  <goal>codeserver</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 
 </project>

@@ -1,0 +1,187 @@
+.component {
+    --jui-searchmenuctl-border: 1px;
+}
+
+.component {
+	background: var(--jui-ctl-bg);
+	border: 1px solid var(--jui-searchmenuctl-border);
+	border-radius: var(--jui-ctl-border-radius);
+	min-width: 10em;
+	display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 8px #999;
+    overflow: hidden;
+    padding: 0.5em 0;
+}
+
+.component.fixed {
+    position: fixed; /* Sits inside the absolutely position #selector */
+}
+
+.component .search {
+	padding: 0.5em;
+}
+
+.component .search > div {
+	border: 1px solid var(--jui-searchmenuctl-border);
+	border-radius: var(--jui-ctl-border-radius);
+	display: flex;
+	gap: 0.5em;
+	padding: 0.25em;
+    background: #fff;
+    align-items: center;
+}
+
+.component.focus .search > div {
+	border-color: var(--jui-ctl-focus);
+	box-shadow: 0 0 0 2px var(--jui-ctl-focus-offset);
+}
+
+.component .search input {
+	outline: none;
+	border: none;
+	width: 100%;
+    font-size: 1em;
+}
+
+.component .search em {
+	width: 1em;
+}
+
+.component .add {
+	padding: 0.5em 1em;
+    cursor: pointer;
+    border-top: 1px solid var(--jui-searchmenuctl-border);
+}
+
+.component .add a {
+    color: var(--jui-ctl-text-link);
+    text-decoration: none;
+}
+
+.component .add a em {
+    margin-right: 0.75em;
+}
+
+.component .add a:hover span {
+    text-decoration: underline;
+}
+
+.component .search em.search_clear {
+	display: none;
+}
+
+.component .search.search_clear em {
+	display: none;
+}
+
+.component .search.search_clear em.search_clear {
+	display: block;
+}
+
+.component.search_hide .search {
+	position: absolute;
+    width: 0;
+    overflow: hidden;
+    height: 0;
+    opacity: 0;
+    top: -100%;
+}
+
+.component .list {
+	flex-grow: 1;
+	overflow-y: auto;
+	overflow-x: hidden;
+    background: #fcfcfc;
+}
+
+.component .list ul {
+    list-style: none;
+    margin-block-start: 0;
+    margin-block-end: 0;
+    padding-inline-start: 0;
+    cursor: pointer;
+    position: relative;
+}
+
+.component .list ul li {
+	padding: 0.2em 1em;
+	min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+}
+
+.component .list ul li:not(:first-child) {
+    border-top: 1px solid #eee;
+}
+
+.component .list ul li > input[type=checkbox] {
+    position: relative;
+    left: -0.5em;
+}
+
+.component .list ul li.active {
+	background: var(--jui-ctl-text-offset);
+}
+
+.component .list ul.list_spinner {
+    height: 100%;
+}
+
+.component .list ul.list_spinner > li {
+    height: 100%;
+	color: var(--jui-ctl-text-disabled);
+    background: transparent !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--jui-ctl-text-offset);
+    font-size: 1.6em;
+}
+
+.component .list ul li.list_spinner {
+    padding: 0.5em 0;
+	color: var(--jui-ctl-text-disabled);
+    background: transparent !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--jui-ctl-text-offset);
+    font-size: 1.2em;
+}
+
+.component .empty {
+	color: var(--jui-ctl-text-disabled);
+	flex-grow: 1;
+	align-items: center;
+	text-align: center;
+	display: none;
+    margin: 1em;
+}
+
+.component.empty .empty {
+	display: block;
+}
+
+.component.empty list {
+	display: none;
+}
+
+.component .clear {
+	border-top: 1px solid var(--jui-searchmenuctl-border);
+	padding: 0.25em;
+	text-align: center;
+}
+
+.component .clear a {
+	color: var(--jui-ctl-text-link);
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.component .clear a:hover {
+	text-decoration: underline;
+}

@@ -69,7 +69,7 @@ public class NumberControlCreator {
         NumberControl.Config config = new NumberControl.Config ();
         if (cfg != null)
             cfg.accept (config);
-            NumberControl ctl = config.build (data);
+        NumberControl ctl = config.build (data);
         if (applier != null)
             applier.accept (ctl);
         return ctl;

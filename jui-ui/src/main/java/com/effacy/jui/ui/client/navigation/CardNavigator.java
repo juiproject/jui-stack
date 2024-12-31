@@ -46,10 +46,12 @@ import com.effacy.jui.core.client.dom.builder.I;
 import com.effacy.jui.core.client.dom.builder.NodeBuilder.NodeContext;
 import com.effacy.jui.core.client.dom.builder.P;
 import com.effacy.jui.core.client.dom.builder.Span;
+import com.effacy.jui.core.client.dom.builder.Text;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.core.client.dom.jquery.JQuery;
 import com.effacy.jui.core.client.navigation.INavigationAware;
 import com.effacy.jui.core.client.navigation.INavigationHandler;
+import com.effacy.jui.core.client.navigation.INavigationHandler.NavigationContext;
 import com.effacy.jui.core.client.navigation.INavigationHandlerProvider;
 import com.effacy.jui.core.client.navigation.INavigationHandlerWithProvider;
 import com.effacy.jui.core.client.navigation.INavigationResidualAware;
@@ -141,23 +143,54 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
          */
         public static class CardConfiguration extends RegistrationItem implements Comparable<CardConfiguration> {
 
+            /**
+             * See constructor.
+             */
             private String[] reference;
     
+            /**
+             * See {@link #label(Supplier)}.
+             */
             private Supplier<String> label;
 
-            private String icon;
+            /**
+             * See {@link #icon(Supplier)}.
+             */
+            private Supplier<String> icon;
 
+            /**
+             * See {@link #description(String)}.
+             */
             private String description;
 
+            /**
+             * See {@link #notice(String)}.
+             */
+            private String notice;
+
+            /**
+             * Empty card.
+             */
             CardConfiguration() {
                 super(null);
             }
 
+            /**
+             * Construct with reference and component.
+             * 
+             * @param reference
+             *                  the reference (appears in the path).
+             * @param component
+             *                  the component (to be activated).
+             */
             public CardConfiguration(String reference, IComponent component) {
                 super(component);
                 this.reference = reference.split("/");
             }
 
+            /**
+             * Determines if the card is segmented (i.e. has a path leading to it).
+             */
             public boolean segmented() {
                 return (reference.length > 1);
             }
@@ -186,7 +219,6 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
                 return this;
             }
 
-
             /**
              * Assigns an icon CSS class to render.
              * 
@@ -195,7 +227,31 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
              * @return this configuration.
              */
             public CardConfiguration icon(String icon) {
+                return icon(() -> icon);
+            }
+
+            /**
+             * Assigns an icon CSS class to render.
+             * 
+             * @param icon
+             *              the icon CSS class.
+             * @return this configuration.
+             */
+            public CardConfiguration icon(Supplier<String> icon) {
                 this.icon = icon;
+                return this;
+            }
+
+            /**
+             * Assigns an notice (text) to display along with the navigation (i.e. "coming
+             * soon").
+             * 
+             * @param notice
+             *               the notice text.
+             * @return this configuration.
+             */
+            public CardConfiguration notice(String notice) {
+                this.notice = notice;
                 return this;
             }
 
@@ -255,6 +311,10 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
                 return _compareTo(o, 0);
             }
 
+            /**
+             * Used by {@link #compareTo(CardConfiguration)} and performs a recursive
+             * comparison.
+             */
             protected int _compareTo(CardConfiguration o, int depth) {
                 if (this.reference.length <= depth) {
                     if (o.reference.length <= depth)
@@ -282,31 +342,57 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             public ILocalCSS styles();
 
             /**
+             * To include the active page in the breadcrumb.
+             */
+            public boolean includeActiveInCrumb();
+
+            /**
              * Convenience to create a styles instance from the given data.
              * 
              * @param styles
              *               the styles.
              * @return the style instance.
              */
-            public static Style create(final ILocalCSS styles) {
+            public static Style create(ILocalCSS styles, boolean includeActiveInCrumb) {
                 return new Style () {
 
                     @Override
                     public ILocalCSS styles() {
                         return styles;
                     }
+
+                    @Override
+                    public boolean includeActiveInCrumb() {
+                        return includeActiveInCrumb;
+                    }
                 };
             }
 
             /**
              * Normal visual style.
+             * <p>
+             * This has a breadcrumb at the top starting with the title but stopping short
+             * of the current page. The current page appears below the breadcrumb and in a
+             * larger font with a clearly differentiated back action.
              */
-            public static final Style STANDARD = create (StandardCSS.instance ());
+            public static final Style STANDARD = create (StandardCSS.instance (), false);
 
             /**
-             * Compact visual style (single line).
+             * Extended visual style.
+             * <p>
+             * This is the same as {@link #STANDARD} except that the breadcrumb terminates
+             * with the current page (i.e. the trail is full). The current page still
+             * appears under the trail as per {@link #STANDARD}.
              */
-            public static final Style COMPACT = create (CompactCSS.instance ());
+            public static final Style EXTENDED = create (ExtendedCSS.instance (), true);
+
+            /**
+             * Compact visual style.
+             * <p>
+             * Here there is only a breadcrumb with the current page appearing at the end.
+             * This is differentiated from the trail by being in a larger font.
+             */
+            public static final Style COMPACT = create (CompactCSS.instance (), true);
         }
 
         /**
@@ -368,7 +454,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         }
 
         /**
-         * The title nominally displays at the top of the main page and then in the
+         * The title normally displays at the top of the main page and then in the
          * breadcrumb trail. This restricts the use of the title only in the latter
          * (this is genarally used when a custom navigator is supplied).
          * 
@@ -642,26 +728,23 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         CardConfiguration card = path.get(path.size() - 1);
         String cardLabel = context.getMetadata (CardNavigator.ATTR_CARDLABEL, card.label());
         Div.$ (header).style(styles().crumb ()).$ (crumb -> {
-            // A.$ (crumb).$ (
-            //     Em.$ ().style(FontAwesome.arrowLeft ())
-            // ).onclick(e -> {
-            //     if (path.size() <= 1)
-            //         navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false));
-            //     else
-            //         navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false), path.get(path.size() - 2).reference);
-            // });
             Span.$ (crumb).style (styles ().clickable ()).$ (
                 Em.$ ().style(FontAwesome.arrowLeft ())
             ).onclick (e -> {
                 navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false));
             }).text (config().title);
             ListSupport.forEach (path, (ctx, c) -> {
-                Em.$ (crumb).style (FontAwesome.chevronRight ());
                 if (ctx.last()) {
-                    Span.$ (crumb)
-                        .use (n -> breadcrumbLabelEl = (Element) n)
-                        .text (cardLabel);
+                    if (config().style.includeActiveInCrumb()) {
+                        Em.$ (crumb).style (FontAwesome.chevronRight ());
+                        Span.$ (crumb).use (n -> breadcrumbLabelEl = (Element) n).$ (span -> {
+                            Text.$ (span, cardLabel);
+                            if (!StringSupport.empty(card.notice))
+                                Span.$ (span).style (styles ().notice ()).text (card.notice);
+                        });
+                    }
                 } else {
+                    Em.$ (crumb).style (FontAwesome.chevronRight ());
                     Span.$ (crumb).style (styles ().clickable ()).onclick (e -> {
                         navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false), c.reference);
                     }).text (c.label());
@@ -680,8 +763,13 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             Span.$ (h2)
                 .use (n -> headerLabelEl = (Element) n)
                 .text (cardLabel);
-            if (context.hasMetadata(ATTR_CARDLABEL_ICON))
+            if (context.hasMetadata(ATTR_CARDLABEL_ICON)) {
                 I.$(h2).style ((String) context.getMetadata(ATTR_CARDLABEL_ICON));
+            } else {
+                String icon = (card.icon == null) ? null : card.icon.get();
+                if (icon != null)
+                    I.$(h2).style (icon);
+            }
         });
     }
 
@@ -696,38 +784,33 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
     }
 
     /**
-     * Navigate to a path below this navigator.
-     * 
-     * @param path
-     *                the path to navigate to.
+     * {@inheritDoc}
+     *
+     * @see com.effacy.jui.core.client.navigation.INavigationHandlerProvider#navigate(NavigationContext, List)
      */
-    public void navigate(String path) {
-        navigate (null, path);
-    }
+    @Override
+    public void navigate(NavigationContext context, List<String> path) {
+        if (context == null)
+            context = new NavigationContext();
+            
+        // Empty case we just delegate through (which will activate top).
+        if ((path == null) || path.isEmpty()) {
+            navigationRouter.navigate (context, path);
+            return;
+        }
 
-    /**
-     * Navigate to a path below this navigator.
-     * 
-     * @param context
-     *                (optional) navigation context.
-     * @param path
-     *                the path to navigate to.
-     */
-    public void navigate(NavigationContext context, String path) {
         // See note on activeCard. Since we are tracking the active card manually we
         // need to prepend its reference to this path so we properly construct the
         // desired path relative to the top (which is the empty path).
-        List<String> pathCpts = NavigationSupport.split (path);
-        if (navigationRouter.activeChild () != null) {
+        List<String> pathCpts = new ArrayList<>(path);
+        if (context.isRelative() && (navigationRouter.activeChild () != null)) {
             CardConfiguration card = (CardConfiguration) navigationRouter.activeChild ();
             if (card != TOP) {
                 for (int i = card.reference.length - 1; i >=0; i--)
                     pathCpts.add(0, card.reference[i]);
             }
         }
-        if (context == null)
-            context = new NavigationContext();
-        navigationRouter.navigate (context, pathCpts);
+        navigationRouter.navigate (context.relative(false), pathCpts);
     }
 
     /************************************************************************
@@ -875,6 +958,8 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         public String custom();
 
         public String clickable();
+
+        public String notice();
     }
 
     /**
@@ -892,6 +977,27 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         public static ILocalCSS instance() {
             if (STYLES == null) {
                 STYLES = (StandardCSS) GWT.create (StandardCSS.class);
+                STYLES.ensureInjected ();
+            }
+            return STYLES;
+        }
+    }
+
+    /**
+     * Component CSS (standard pattern).
+     */
+    @CssResource({
+        IComponentCSS.COMPONENT_CSS,
+        "com/effacy/jui/ui/client/navigation/CardNavigator.css",
+        "com/effacy/jui/ui/client/navigation/CardNavigator_Override.css"
+    })
+    public static abstract class ExtendedCSS implements ILocalCSS {
+
+        private static ExtendedCSS STYLES;
+
+        public static ILocalCSS instance() {
+            if (STYLES == null) {
+                STYLES = (ExtendedCSS) GWT.create (ExtendedCSS.class);
                 STYLES.ensureInjected ();
             }
             return STYLES;

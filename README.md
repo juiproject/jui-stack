@@ -18,13 +18,14 @@ JUI consists of the following libraries:
 
 1. [jui-platform](./jui-platform/) provides the core runtime for JUI code (including code needed to interface with the transpiler).
 2. [jui-platform-codeserver](./jui-platform-codeserver/) is a debugging tool used during development.
-3. [jui-core](./jui-core/) builds on `jui-platform` and provides a component framework with supporting functionality.
-4. [jui-ui](./jui-ui/) builds on `jui-core` providing a minimal suite of core components (including controls).
-5. [jui-remoting](./jui-remoting/) provides an RPC remoting framework (this is a bit historical and not a requirement for using JUI) along with server-side harness for handling queries and commands.
-6. [jui-text](./jui-text/) provides a simple rich text format (that is serialiable) and an associated editor.
-7. [jui-validation](./jui-validation/) a convenience to perform validation both client and server side in a portable manner.
-8. [jui-test](./jui-test/) a collection of tools to perform testing of UI components and applications.
-9. [jui-playground](./jui-playground/) delivers a component explorer to elucidate the various JUI concepts and core components and controls along with a number of examples (see [Playground](#playground) below).
+3. [jui-maven-plugin](./jui-maven-plugin/) provides the ability to compile within a Maven project.
+4. [jui-core](./jui-core/) builds on `jui-platform` and provides a component framework with supporting functionality.
+5. [jui-ui](./jui-ui/) builds on `jui-core` providing a minimal suite of core components (including controls).
+6. [jui-remoting](./jui-remoting/) provides an RPC remoting framework (this is a bit historical and not a requirement for using JUI) along with server-side harness for handling queries and commands.
+7. [jui-text](./jui-text/) provides a simple rich text format (that is serialiable) and an associated editor.
+8. [jui-validation](./jui-validation/) a convenience to perform validation both client and server side in a portable manner.
+9. [jui-test](./jui-test/) a collection of tools to perform testing of UI components and applications.
+10. [jui-playground](./jui-playground/) delivers a component explorer to elucidate the various JUI concepts and core components and controls along with a number of examples (see [Playground](#playground) below).
 
 These are all released against the same version (generated from this multi-module project).
 

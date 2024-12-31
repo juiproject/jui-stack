@@ -115,6 +115,19 @@
 	display: inline;
 }
 
+.component .table thead th div em.sortable {
+	display: inline;
+    color: #ddd;
+}
+
+.component .table thead th.ascending div em.sortable {
+	display: none;
+}
+
+.component .table thead th.descending div em.sortable {
+	display: none;
+}
+
 .component .table thead th.selector {
     width: var(--jui-table-selectorwidth);
 }

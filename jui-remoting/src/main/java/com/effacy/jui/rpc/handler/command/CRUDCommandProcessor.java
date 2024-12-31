@@ -833,6 +833,18 @@ public abstract class CRUDCommandProcessor<CMD extends C, ETY, CTX extends IComm
         }
 
         /**
+         * When an unexpected error occurs, translate it to a suitable message to be
+         * recorded in the error messages for the modification.
+         * 
+         * @param e
+         *          the exception.
+         * @return the error message.
+         */
+        protected String translateUnexpectedError(Exception e) {
+            return "uncaught exception " + e.getClass ().getSimpleName ();
+        }
+
+        /**
          * For use to handle post update.
          */
         @FunctionalInterface
@@ -1387,7 +1399,7 @@ public abstract class CRUDCommandProcessor<CMD extends C, ETY, CTX extends IComm
                     if (exception != null)
                         exception.accept (e, msg -> error (path, msg));
                     else
-                        error (path, "uncaught exception " + e.getClass ().getSimpleName ());
+                        error (path, translateUnexpectedError (e));
                     return false;
                 }
 

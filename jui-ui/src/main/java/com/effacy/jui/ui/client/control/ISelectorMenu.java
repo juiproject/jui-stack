@@ -74,13 +74,6 @@ public interface ISelectorMenu<V> extends IComponent {
         public boolean isStoreClear();
 
         /**
-         * Allows the selection of an empty result (i.e. to clear the selection).
-         * 
-         * @return {@code true} if to allow empty values.
-         */
-        //public boolean isAllowEmpty();
-
-        /**
          * Registers an <i>add</i> handler that has the selector display an add action.
          * <p>
          * The handler will be invoked with a callback. If the add action creates

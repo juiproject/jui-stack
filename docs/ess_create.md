@@ -206,7 +206,7 @@ This creates a `RootBinding` against the DOM element with ID `pageBody` which is
 
 ### Compiling JUI to JavaScript
 
-Since we are assuming Maven is being used as the build system compilation is performed by use of the `gwt-maven-plugin` (see [JavaScript compilation and linking](#javascript-compilation-and-linking)). This is configured to build content into `src/main/resources/static` which creates a directory named the same as the module (i.e. `<module>` or in the example case described so far, `myapplication.webapp.MyApplication`). The following are created in this directory:
+Since we are assuming Maven is being used as the build system compilation is performed by use of the `jui-maven-plugin` (see [JavaScript compilation and linking](#javascript-compilation-and-linking)). This is configured to build content into `src/main/resources/static` which creates a directory named the same as the module (i.e. `<module>` or in the example case described so far, `myapplication.webapp.MyApplication`). The following are created in this directory:
 
 1. The bootstrap JS file that ends in `<module>.nocache.js` (i.e. `myapplication.webapp.MyApplication.nocache.js`).
 2. The compiled JUI code (this can be subject to code-splitting so may appear in multiple files); these are loaded by the bootstrap JS.
@@ -498,7 +498,6 @@ Since we use Maven here is a minimal `pom.xml` to get us going:
         <!-- Insert relevant versions here -->
         <version.effacy-jui>...</version.effacy-jui>
         <version.spring-boot>...</version.spring-boot>
-        <version.gwt-maven-plugin>2.10.0</version.version.gwt-maven-plugin>
     </properties>
 
     <dependencies>
@@ -565,9 +564,9 @@ Since we use Maven here is a minimal `pom.xml` to get us going:
             </plugin>
             <!-- GWT compilation -->
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>gwt-maven-plugin</artifactId>
-                <version>${version.gwt-maven-plugin}</version>
+                <groupId>com.effacy.jui</groupId>
+                <artifactId>jui-maven-plugin</artifactId>
+                <version>${version.effacy-jui}</version>
                 <executions>
                     <execution>
                         <phase>compile</phase>
@@ -576,9 +575,8 @@ Since we use Maven here is a minimal `pom.xml` to get us going:
                         </goals>
                         <configuration>
                             <module>myapplication.jui.playground.PlaygroundApp</module>
-                            <extraJvmArgs>-Xmx4096M -Xss1024k</extraJvmArgs>
+                            <jvmArgs>-Xmx4096M,-Xss1024k</jvmArgs>
                             <style>OBF</style>
-                            <force>true</force>
                             <webappDirectory>${basedir}/src/main/resources/static</webappDirectory>
                         </configuration>
                     </execution>
@@ -605,7 +603,7 @@ Since we use Maven here is a minimal `pom.xml` to get us going:
 
 Note that `myapplication` should be replaced accordingly and relevant versions provided for dependencies. In addition we draw attention to a couple of key points:
 
-1. The GWT compliation is performed by the `gwt-maven-plugin` plugin. This is configured to write the compilation artefacts to `${basedir}/src/main/resources/static` which makes them available to the server for serving. This is why we need to perform a Maven build prior to running the application.
+1. The compliation is performed by the `jui-maven-plugin` plugin. This is configured to write the compilation artefacts to `${basedir}/src/main/resources/static` which makes them available to the server for serving. This is why we need to perform a Maven build prior to running the application.
 2. The `maven-jar-plugin` plugin is configured to exclude code and assets that are specific to the playground server application. Coupled with the `optional` nature of dependencies this keeps the associated build artefact small and relevant.
 
 #### Running the playground
@@ -710,28 +708,24 @@ If you are using Maven you can reference multiple source locations using the `bu
 
 #### JavaScript compilation and linking
 
-GWT builds can be performed using the `gwt-maven-plugin` with a configuration similar to the following:
+GWT builds can be performed using the `jui-maven-plugin` with a configuration similar to the following:
 
 ```xml
 <plugin>
-    <groupId>org.codehaus.mojo</groupId>
-    <artifactId>gwt-maven-plugin</artifactId>
-    <version>${version.gwt}</version>
+    <groupId>com.effacy.jui</groupId>
+    <artifactId>jui-maven-plugin</artifactId>
     <executions>
         <execution>
-            <phase>compile</phase>
-            <goals>
-                <goal>compile</goal>
-            </goals>
-            <configuration>
-                <module>com.effacy.jui.playground.TestApplication</module>
-                <extraJvmArgs>-Xmx4096M -Xss1024k</extraJvmArgs>
-                <style>OBF</style>
-                <force>true</force>
-                <disableCastChecking>true</disableCastChecking>
-                <webappDirectory>${basedir}/src/main/resources/static</webappDirectory>
-                <generateJsInteropExports>true</generateJsInteropExports>
-            </configuration>
+        <phase>compile</phase>
+        <goals>
+            <goal>compile</goal>
+        </goals>
+        <configuration>
+            <module>com.effacy.jui.playground.PlaygroundApp</module>
+            <jvmArgs>-Xmx4096M,-Xss1024k</jvmArgs>
+            <style>OBF</style>
+            <webappDirectory>${basedir}/src/main/resources/static</webappDirectory>
+        </configuration>
         </execution>
     </executions>
 </plugin>

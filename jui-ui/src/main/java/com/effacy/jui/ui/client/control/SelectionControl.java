@@ -253,7 +253,15 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
          */
         private int searchBufferTimeThreshold = 300;
 
+        /**
+         * See {@link #useMaskOnLoad(boolean)}.
+         */
         private boolean useMaskOnLoad = false;
+
+        /**
+         * See {@link #defaultValue(V)}.
+         */
+        private V defaultValue;
 
         /**
          * Construct with a default style.
@@ -496,6 +504,16 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
          */
         public Config<V> selectorLeft() {
             return selectorLeft (true);
+        }
+
+        /**
+         * Assigns a default value to use.
+         * 
+         * @return this configuration instance.
+         */
+        public Config<V> defaultValue(V defaultValue) {
+            this.defaultValue = defaultValue;
+            return this;
         }
 
         /**
@@ -940,6 +958,10 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
                 CSS.HEIGHT.apply (el, config ().selectorHeight);
             if (config ().selectorMaxHeight != null)
                 CSS.MAX_HEIGHT.apply (el, config ().selectorMaxHeight);
+            if (config ().selectorWidth != null) {
+                CSS.WIDTH.apply (el, config ().selectorWidth);
+                CSS.MIN_WIDTH.apply (el, config ().selectorWidth);
+            }
         });
         selector.addListener (IFocusBlurListener.create (null, cpt -> {
             // A bit of a delay here ensures any following events a properly handled.
@@ -955,6 +977,13 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
                 config.preload.accept (config.store, value ());
             }, null));
         }
+    }
+
+    @Override
+    protected V prepareValueForAssignment(V value) {
+        if (value == null)
+            return config().defaultValue;
+        return value;
     }
 
     /**
@@ -1055,20 +1084,6 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
     /************************************************************************
      * Presentation.
      ************************************************************************/
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see com.effacy.jui.core.client.control.Control#onAfterRender()
-     */
-    @Override
-    protected void onAfterRender() {
-        super.onAfterRender ();
-
-        // Apply the width the the selector enclosue.
-        if (config ().selectorWidth != null)
-            CSS.WIDTH.apply (selectorLocatorEl, config ().selectorWidth);
-    }
 
     /**
      * {@inheritDoc}

@@ -1,0 +1,201 @@
+.component {
+    --jui-calendarctl-icon: var(--jui-ctl-text-placeholder);
+    --jui-calendarctl-selector-size: 1em;
+    --jui-calendarctl-selector-bg: #fff;
+    --jui-calendarctl-selector-shadow: #ccc;
+    --jui-calendarctl-selector-border: 1px;
+    --jui-calendarctl-selector-text: var(--jui-text);
+}
+
+.component {
+    width: 16em;
+	position: relative;
+	cursor: pointer;
+}
+
+.component .inner {
+    height: var(--jui-ctl-height);
+	border: 1px solid var(--jui-ctl-border);
+	border-radius: var(--jui-ctl-border-radius);
+	box-sizing: content-box;
+	padding: 0 0.75em;
+	background: var(--jui-ctl-bg);
+	display: flex;
+	flex-direction: row;
+	gap: 0.5em;
+	align-items: center;
+	color: var(--jui-ctl-text);
+}
+
+.component em {
+    color: var(--jui-calendarctl-icon);
+}
+
+.component.read_only em {
+	color: var(--jui-ctl-action-readonly);
+}
+
+.component.read_only em.read_only {
+	display: inline;
+	color: var(--jui-ctl-action);
+}
+
+.component em.read_only {
+	display: none;
+}
+
+.component input {
+	background: inherit;
+	color: inherit;
+	outline: none;
+	border: none;
+	width: 100%;
+    font-size: 1em;
+}
+
+.component.disabled input {
+	color: var(--jui-ctl-text-disabled);
+	cursor: not-allowed;
+}
+
+.component.read_only input {
+	color: var(--jui-ctl-text-readonly);
+	cursor: not-allowed;
+}
+
+.component #selector {
+	z-index: 10;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    padding: 0.75em 0 0.25em 0;
+    display: none;
+    width: 100%;
+    font-size: var(--jui-calendarctl-selector-size);
+}
+
+.component #selector.selector_top {
+	bottom: 100%;
+	top: auto;
+}
+
+.component #selector.selector_left {
+	left: 0;
+}
+
+.component.open #selector {
+    display: block;
+    animation: eff-open .1s ease-in-out;
+}
+
+.component #selector > div {
+    background: var(--jui-calendarctl-selector-bg);
+	border: 1px solid var(--jui-calendarctl-selector-border);
+	border-radius: var(--jui-ctl-border-radius);
+	display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 8px var(--jui-calendarctl-selector-shadow);
+    overflow: hidden;
+    padding: 1em 0 0.25em 0;
+    color: var(--jui-calendarctl-selector-text);
+}
+
+.component #selector.selector_top > div {
+    flex-direction: column-reverse;
+    padding: 0.25em 0 1em 0;
+}
+
+.component #selector .months {
+    display: flex;
+    align-items: center;
+    padding: 2px 1em;
+}
+
+.component #selector .months > em {
+    cursor: pointer;
+    border: 1px solid transparent;
+    width: 1.5em;
+    height: 1.5em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+}
+
+.component #selector .months > em:hover {
+    border-color: #e1e1e1;
+}
+
+.component #selector .months > div {
+    flex-grow: 1;
+    text-align: center;
+    font-weight: 600;
+}
+
+.component #selector .dates {
+    padding: 0.75em 0.75em 0.25em 0.75em;
+}
+
+.component #selector .dates table {
+    width: 100%;
+}
+
+.component #selector .dates th {
+    font-weight: 600;
+    text-align: center;
+}
+
+.component #selector .dates td {
+    text-align: center;
+    font-weight: 500;
+    border-radius: 3px;
+    position: relative;
+    padding: 4px;
+}
+
+.component #selector .dates td em {
+    width: 4px;
+    height: 4px;
+    display: inline-table;
+    display: block;
+    background: var(--jui-calendarctl-selector-text);
+    border-radius: 10px;
+    position: absolute;
+    left: 0.8em;
+    bottom: 2px;
+}
+
+.component #selector .dates td.current {
+    color: var(--jui-color-primary50);
+}
+
+.component #selector .dates td.current em {
+    background: var(--jui-color-primary50);
+}
+
+.component #selector .dates td:hover em {
+    background: #fff;
+}
+
+.component #selector .dates td.outside {
+    color: #ccc;
+}
+
+.component #selector .dates td:not(.outside):hover {
+    color: #fff;
+    background-color: var(--jui-color-primary40);
+}
+
+.component #selector .dates td.outside:hover {
+    color: #fff;
+    background-color: #ccc#;
+}
+
+.component #selector .dates td.selected {
+    color: #fff;
+    background-color: var(--jui-color-primary60);
+}
+
+.component #selector .dates td.selected em {
+    background: #fff;
+}

@@ -20,7 +20,7 @@ This is a reference to some commonly used code that could be useful when develop
 
 ## Components
 
-### Construction
+### Constructio
 
 Starter templates are simple code blocks that fully outline a component and that one can build on.
 
@@ -625,7 +625,9 @@ preview.remove ();
 
 ### Fragments
 
-#### Minimal
+Recall that fragments only *contribute* to the build structure, which is built by the calling renderer. As such you should never directly invoke the `build(...)` method on any node builder; if you need to access the built DOM node you must use the `use(n -> {...})` method. However, there are no restrictions on declaring event handlers or making use of any of the node builder configuration methods.
+
+#### Minimal (no children)
 
 A minimal fragment using a renderer supplied by construction:
 
@@ -647,33 +649,109 @@ public class MyFrag extends Fragment<MyFrag> {
 }
 ```
 
-For children we need to go via the create method (though this works fine for the non-child case):
+or by calling `builder(...)` (which allows access to instance methods and members):
+
+```java
+public class MyFrag extends Fragment<MyFrag> {
+
+    public static MyFrag $(IDomInsertableContainer<?> parent /*, Configuration */) {
+        MyFrag frg = new MyFrag (/* Configuration */);
+        if (parent != null)
+            parent.insert (frg);
+        return frg;
+    }
+
+    public MyFrag(/* Configuration */) {
+        builder (parent -> {
+            /* DOM content */
+        });
+    }
+}
+```
+
+To apply adornments:
+
+```java
+public MyFrag(/* Configuration */) {
+    super (parent -> {
+        Div.$ (parent).self (n -> adornments().adorn(n)).$ (
+            /* DOM content */
+        )
+    });
+}
+```
+
+or when using a fragment at the top level:
+
+```java
+public MyFrag(/* Configuration */) {
+    super (parent -> {
+        Stack.$ (parent).adorn (adornments() /*, additional adornments */).$ (
+            /* DOM content */
+        )
+    });
+}
+```
+
+#### Minimal (with children)
+
+The pattern for fragments that have children is similar to the case without:
 
 ```java
 public class MyFrag extends FragmentWithChildren<MyFrag> {
 
     public static MyFrag $(IDomInsertableContainer<?> parent, /* Configuration */) {
-        MyFrag frag = new MyFrag(/* Configuration */);
+        MyFrag frg = new MyFrag (/* Configuration */);
         if (parent != null)
-            parent.insert (frag);
-        return frag;
+            parent.insert (frg);
+        return frg;
     }
 
     public MyFrag(/* Configuration */) {
-        /* Set properties */
-    }
-
-    @Override
-    protected ElementBuilder createRoot(ContainerBuilder<?> parent) {
-        return /* DOM content */;
+        super ((parent, children) -> {
+            /* DOM content */
+        });
     }
     
 }
 ```
 
-#### Build method
+The same variations that apply to [Minimal (no children)](#minimal-no-children) apply to this case (i.e. use of the `builder(...)` method and application of adornments).
 
-No children:
+#### Build method (no children)
+
+To employ the build method:
+
+```java
+public class MyFrag extends Fragment<MyFrag> {
+
+    public static MyFrag $(IDomInsertableContainer<?> parent) {
+        MyFrag frg = new MyFrag ();
+        if (parent != null)
+            parent.insert (frg);
+        return frg;
+    }
+
+    /* Configuration methods */
+
+    @Override
+    public void buildInto(ElementBuilder parent) {
+        /* Build DOM */
+    }
+
+}
+```
+
+Note that a parent node is created for the fragment and this not is passed to the `build(...)` methods. It is also this node that adornments are applied to. By default the root element is a DIV though you can change that by overriding the `createRoot(...)` method:
+
+```java
+protected ElementBuilder createRoot(ContainerBuilder<?> parent) {
+    // Change the root element accordingly.
+    return P.$ (parent);
+}
+```
+
+A more aggressive approach is to override the `build(...)` method directly which avoids creation of a root node and allows more than one child to be placed directly into the parent:
 
 ```java
 public class MyFrag extends Fragment<MyFrag> {
@@ -695,6 +773,12 @@ public class MyFrag extends Fragment<MyFrag> {
 }
 ```
 
+However you will need to implement any conditional checking, adornment management (or any other standard support feature for fragments) yourself.
+
+#### Build method (with children)
+
+*The comments related to the creation of a parent and treatment of adornments for the non-child case apply equally for the child case.*
+
 With children (the build method is for illustration so as to emphasise that you need to call the super method to include the children, for this you need to pass the target element):
 
 ```java
@@ -710,24 +794,27 @@ public class MyFrag extends FragmentWithChildren<MyFrag> {
     /* Configuration methods */
 
     @Override
-    public void build(ContainerBuilder<?> parent) {
+    public void buildInto(ElementBuilder parent) {
         Div.$ (parent).$ (childcontainer -> {
             /* Build DOM */
-            super.build (childcontainer);
+            // This adds each child into the child container.
+            super.buildInto (childcontainer);
         });
     }
 
 }
 ```
 
-Note that when build you **must not** invoke `build ()` on the DOM builder. Fragments only *contribute* to the build structure, which is built by the calling renderer. If you want access to a node during build then you should use the `apply(...)` method on a build element:
+As with the non-children case you can override the `build(...)` method itself, in this case you have to access the children directly from the children member and process them separately:
 
 ```java
 @Override
 public void build(ContainerBuilder<?> parent) {
-    Div.$ (parent).$ (div -> {
-        div.apply (n -> {
-            /* Do what you need to with the node */
+    Div.$ (parent).$ (childcontainer -> {
+        /* Build DOM */
+        children.forEach (child -> {
+            // You have the flexibility to create richer containment structures.
+            child.build (childcontainer);
         });
     });
 }

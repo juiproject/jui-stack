@@ -15,6 +15,7 @@
  ******************************************************************************/
 package com.effacy.jui.platform.util.client;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -84,6 +85,24 @@ public class Carrier<V> {
     }
 
     /**
+     * Sets the current value if the passed value is different from that held
+     * currently.
+     * 
+     * @param value
+     *                   the value to set.
+     * @param comparator
+     *                   to compare the current value with the passed value (returns
+     *                   {@code true} if they are the same).
+     * @return {@code true} if there was an update.
+     */
+    public boolean set(V value, BiFunction<V,V,Boolean> comparator) {
+        boolean same = comparator.apply(this.value, value);
+        if (!same)
+            this.value = value;
+        return !same;
+    }
+
+    /**
      * Convenience to create with an initial value.
      * 
      * @param <V>     the value type.
@@ -91,7 +110,7 @@ public class Carrier<V> {
      *                the initial value.
      * @return the carrier appropriately initialised.
      */
-    public static <V> Carrier<V> of (V initial) {
+    public static <V> Carrier<V> of(V initial) {
         return new Carrier<V> (initial);
     }
 
@@ -101,7 +120,7 @@ public class Carrier<V> {
      * @param <V>     the value type.
      * @return the carrier appropriately initialised.
      */
-    public static <V> Carrier<V> of () {
+    public static <V> Carrier<V> of() {
         return new Carrier<V> (null);
     }
 }

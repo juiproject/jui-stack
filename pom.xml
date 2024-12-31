@@ -6,9 +6,8 @@
   <version>${revision}</version>
   <packaging>pom</packaging>
   <name>JUI Stack - Parent</name>
-
-  <description>Java UI (JUI) for developing web-UI's using Java.</description>
   <url>https://github.com/juiproject/jui-stack</url>
+  <description>Java UI (JUI) for developing web-UI's using Java.</description>
 
   <licenses>
     <license>
@@ -50,6 +49,9 @@
 
     <!-- Revision -->
     <revision>LOCAL-SNAPSHOT</revision>
+
+    <!-- Release -->
+    <release.auto>false</release.auto>
 
     <!-- Tests -->
     <skip.tests>false</skip.tests>
@@ -190,6 +192,7 @@
           <pomElements>
             <developers/>
             <description/>
+            <url/>
             <scm/>
           </pomElements>
         </configuration>
@@ -561,7 +564,7 @@
             <configuration>
               <publishingServerId>central</publishingServerId>
               <tokenAuth>true</tokenAuth>
-              <autoPublish>true</autoPublish>
+              <autoPublish>${release.auto}</autoPublish>
             </configuration>
           </plugin>
         </plugins>

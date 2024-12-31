@@ -1,6 +1,5 @@
-name: Publish package to the Maven Central Repository
+name: Publish to Maven Central
 on:
-  workflow_dispatch:
   release:
     types: 
       - created

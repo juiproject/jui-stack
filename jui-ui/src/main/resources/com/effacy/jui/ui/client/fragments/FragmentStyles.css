@@ -330,11 +330,12 @@
     border: 1px solid var(--juiButton-base);
     background-color: var(--juiButton-white);
     color: var(--juiButton-base);
+    font-weight: 400;
 }
 
 .juiButton-outlined:hover {
-    border-color: var(--juiButton-hover);
-    color: var(--juiButton-hover);
+    background-color: var(--juiButton-base);
+    color: var(--juiButton-white);
 }
 
 .juiButton-text {

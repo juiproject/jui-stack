@@ -9,6 +9,23 @@
 @def marginOffsetNegative -2px;
 @def fontSize 1em;
 
+@media only screen and (max-width: 700px) {
+    .component header.vertical {
+        width: 5em;
+    }
+    .component .tabs .group h6 span {
+        display: none;
+    }
+    .component .tabs ul li>strong {
+        right: 0;
+        top: 0;
+        font-size: 0.65em;
+    }
+    .component .tabs ul li span {
+        display: none;
+    }
+}
+
 .component {
     --cpt-tabbedpanel-gap: 3px;
     --cpt-tabbedpanel-width: 13em;
@@ -26,12 +43,12 @@
   flex-direction: column;
 }
 
-.component .tabs  .group {
+.component .tabs .group {
   display: block;
   padding-top: marginTop;
 }
 
-.component .tabs  .group h6 {
+.component .tabs .group h6 {
   display: block;
   padding: 1em 0 0.5em 0;
   margin: 0 1em 0 1.25em;
@@ -49,11 +66,11 @@
 	
 }
 
-.component .tabs  .group ul {
+.component .tabs .group ul {
   
 }
 
-.component .tabs  .group ul li {
+.component .tabs .group ul li {
   padding: 0.55em;
   color: textColor;
   overflow: hidden;
@@ -61,33 +78,33 @@
   border-radius: var(--cpt-tabbedpanel-radius);
 }
 
-.component .tabs  .group ul li:hover {
+.component .tabs .group ul li:hover {
   background: hoverBGColor;
 }
 
-.component .tabs  .group ul li div {
+.component .tabs .group ul li div {
   margin-left: marginOffsetNegative;
   cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.component .tabs  .group ul li div em {
+.component .tabs .group ul li div em {
   width: 1em;
   margin-left: 1em;
   text-align: center;
   color: rgba(29,28,29,0.45);
 }
 
-.component .tabs  .group ul li div em::before {
+.component .tabs .group ul li div em::before {
   font-size: fontSize;
 }
 
-.component .tabs  .group ul li:hover div em {
+.component .tabs .group ul li:hover div em {
   
 }
 
-.component .tabs  .group ul li div span {
+.component .tabs .group ul li div span {
   font-size: fontSize;
   padding-right: 1em;
   margin-left: 1em;
@@ -96,11 +113,11 @@
   -webkit-font-smoothing: antialiased;
 }
 
-.component .tabs  .group ul li.active {
+.component .tabs .group ul li.active {
   background: activeBGColor;
 }
 
-.component .tabs  .group ul li div i {
+.component .tabs .group ul li div i {
   position: absolute;
   right: 0;
   top: 0.4em;

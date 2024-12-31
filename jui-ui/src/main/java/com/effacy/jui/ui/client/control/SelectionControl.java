@@ -259,6 +259,11 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
         private boolean useMaskOnLoad = false;
 
         /**
+         * See {@link #defaultValue(V)}.
+         */
+        private V defaultValue;
+
+        /**
          * Construct with a default style.
          */
         public Config() {
@@ -499,6 +504,16 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
          */
         public Config<V> selectorLeft() {
             return selectorLeft (true);
+        }
+
+        /**
+         * Assigns a default value to use.
+         * 
+         * @return this configuration instance.
+         */
+        public Config<V> defaultValue(V defaultValue) {
+            this.defaultValue = defaultValue;
+            return this;
         }
 
         /**
@@ -962,6 +977,13 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
                 config.preload.accept (config.store, value ());
             }, null));
         }
+    }
+
+    @Override
+    protected V prepareValueForAssignment(V value) {
+        if (value == null)
+            return config().defaultValue;
+        return value;
     }
 
     /**

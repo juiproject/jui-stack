@@ -390,6 +390,23 @@ public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
     }
 
     /**
+     * Conditionally assigns a CSS style.
+     * <p>
+     * See {@link #css(String))} for details.
+     * 
+     * @param line
+     *                  combined property and value separated by a colon.
+     * @param condition
+     *                  test condition whether to apply the CSS.
+     * @return this element instance.
+     */
+    public ElementBuilder css(String line, boolean condition) {
+        if (!condition)
+            return this;
+        return css(line);
+    }
+
+    /**
      * Assigns a CSS style.
      * 
      * @param property

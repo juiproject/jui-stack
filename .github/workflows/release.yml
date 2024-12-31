@@ -41,20 +41,17 @@ jobs:
           echo "REVISION=$REVISION" >> $GITHUB_ENV
           echo "Extracted revision: $REVISION"
 
-      - name: Publish package (GitHub packages)
-        # run: |
-        #   mkdir -p ~/.m2
-        #   echo "<settings><servers><server><id>gh</id><username>$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $1}')</username><password>\${env.GITHUB_TOKEN}</password></server></servers></settings>" > ~/.m2/settings.xml
-        #   REPO="gh::default::https://maven.pkg.github.com/${GITHUB_REPOSITORY}"
-        #   mvn deploy -Drevision=${{ env.REVISION }} -DaltReleaseDeploymentRepository="${REPO}" -DaltSnapshotDeploymentRepository="${REPO}"
-        run: |
-          REPO="github::default::https://maven.pkg.github.com/${GITHUB_REPOSITORY}"
-          mvn --batch-mode deploy -Drevision=${{ env.REVISION }} -DaltReleaseDeploymentRepository="${REPO}" -DaltSnapshotDeploymentRepository="${REPO}"
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #- name: Publish package (GitHub packages)
+        #run: |
+        #  REPO="github::default::https://maven.pkg.github.com/${GITHUB_REPOSITORY}"
+        #  mvn --batch-mode deploy -Drevision=${{ env.REVISION }} -DaltReleaseDeploymentRepository="${REPO}" -DaltSnapshotDeploymentRepository="${REPO}"
+        #env:
+        #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    #     run: mvn -Prelease -Drevision=${{ github.event.release.tag_name }} --batch-mode deploy
-    #     env:
-    #       MAVEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
-    #       MAVEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
-    #       MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_SIGNING_KEY_PASSWORD }}
+      - name: Release artefacts (Maven Central)
+        run: |
+          mvn --batch-mode -Prelease -Drevision=${{ env.REVISION }} deploy
+        env:
+            MAVEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+            MAVEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+            MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_SIGNING_KEY_PASSWORD }}

@@ -56,4 +56,4 @@ The `.nocache.js` file contains the necessary code to bootstrap the application 
 
 As described above `TestApplication.onModuleLoad()` binds a `RootPanel` to the `pageBody` element then adds to that root panel an instance of `ApplicationUI`. This is the top-level application component that contains all the other application components (there is a lot of flexibility here and you don't need to stick to a single such component; you can add components across the page as you see fit).
 
-This component extends `TabbedPanel` and declares tabs for each of the clusters of components.
+This component extends `TabNavigator` and declares tabs for each of the clusters of components.

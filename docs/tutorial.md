@@ -103,7 +103,7 @@ The class `DashboardResult`, `UserResult` and associated `UserResultStore` (whic
 
 For these purposes the application has already been setup as the playground itself. You will be creating the design into the **Lesson** tab of the **Tutorial** section (as described above).
 
-For interest you should look at `TestApplication` as the entry point and `ApplicationUI` as the main application component (created in the entry point and bound to the `pageBody` element of the main HTML page). This component extends `TabbedPanel` and builds out the various tabs in the playground. The one of interest is **Tutorial** which makes use of the `Tutorial` component (found in the `com.effacy.jui.playground.ui.tutorial` package). This, too, extends `TabbedPanel` (but with a different tab style) and includes the `ApplicationSection` for **Lesson** which you will be building out in accordance with the steps described below.
+For interest you should look at `TestApplication` as the entry point and `ApplicationUI` as the main application component (created in the entry point and bound to the `pageBody` element of the main HTML page). This component extends `TabNavigator` and builds out the various tabs in the playground. The one of interest is **Tutorial** which makes use of the `Tutorial` component (found in the `com.effacy.jui.playground.ui.tutorial` package). This, too, extends `TabNavigator` (but with a different tab style) and includes the `ApplicationSection` for **Lesson** which you will be building out in accordance with the steps described below.
 
 ## Components
 
@@ -111,18 +111,18 @@ For interest you should look at `TestApplication` as the entry point and `Applic
 
 The tabs component we be our top-level component for this tutorial. We have created a stub of this that you can start work on called `ApplicationSection` (which is instantiated in `Tutorial` under the **Lesson** tab).
 
-We begin by having it extend `TabbedPanel` then add in the three tabs (using simple `Panel`'s as placeholder's). You can start by using the `Style.VERTICAL` as the default and you will see a tab set down the left hand side and by setting the background to a darker colour than the default white.
+We begin by having it extend `TabNavigator` then add in the three tabs (using simple `Panel`'s as placeholder's). You can start by using the `Style.VERTICAL` as the default and you will see a tab set down the left hand side and by setting the background to a darker colour than the default white.
 
 ```java
-public class ApplicationSection extends TabbedPanel {
+public class ApplicationSection extends TabNavigator {
 
   public ApplicationSection() {
-    // We pass through an instance of the TabbedPanel.Config (as returned by
-    // TabbedPanelCreator.$()) that configures the background colour and
+    // We pass through an instance of the TabNavigator.Config (as returned by
+    // TabNavigatorCreator.$()) that configures the background colour and
     // the look-and-feel style that sets out the tabs vertically down the
     // left side of the screen with a border separating the tab set from the
     // page content.
-    super (TabbedPanelCreator.$ ().color ("#fafafa").style (TabSet.Config.Style.VERTICAL));
+    super (TabNavigatorCreator.$ ().color ("#fafafa").style (TabNavigator.Config.Style.VERTICAL));
 
     // The 'tab' method adds a tabe with reference (that appears in the url),
     // a label (for display in the tab set) and a component (in this case
@@ -135,18 +135,18 @@ public class ApplicationSection extends TabbedPanel {
 }
 ```
 
-The tabs style is not the one we want, we need these to appear with a white backgroud with rounded corner and no border. To achieve this we can build our own `TabSet` style (we can't use the style sheet we described above as the mechanism for providing a new style to the tabset follow a pattern and that pattern requires we declare styles this particular way, which happens to be the same as localising styles to a component).
+The tabs style is not the one we want, we need these to appear with a white backgroud with rounded corner and no border. To achieve this we can build our own `TabNavigator` style (we can't use the style sheet we described above as the mechanism for providing a new style to the tabset follow a pattern and that pattern requires we declare styles this particular way, which happens to be the same as localising styles to a component).
 
-To create a new style it is simplest to copy an existing one that is pretty close (this is an exception to our decision to use `tutorial.css` but one that is imposed by `TabbedPanel`, see [Styles](ess_styles.md) for a detailed explanation of this particular approach to CSS). For these purposes the vertical one seems a good fit. So we copy the `VerticalLocalCSS` from `TabSet` into `ApplicationSection` and rename it to `RoundTabSetLocalCSS` (just for differentiation).  We then need to create an instance of `Style` which we reference statically as `ROUNDED_TABSET`. We then pass that to the tabbed panel configuration as the tab set style to use. The last thing we need to do is modify the CSS. To do this we create a resource `TabSet_Rounded.css` (see below for the required modifications) and add it to the `@StyleResource` annotation of the styles (we can remove the `_Override.css` as we don't need it). The end result is the class below.
+To create a new style it is simplest to copy an existing one that is pretty close (this is an exception to our decision to use `tutorial.css` but one that is imposed by `TabNavigator`, see [Styles](ess_styles.md) for a detailed explanation of this particular approach to CSS). For these purposes the vertical one seems a good fit. So we copy the `VerticalLocalCSS` from `TabNavigator` into `ApplicationSection` and rename it to `RoundTabSetLocalCSS` (just for differentiation).  We then need to create an instance of `Style` which we reference statically as `ROUNDED_TABSET`. We then pass that to the tabbed panel configuration as the tab set style to use. The last thing we need to do is modify the CSS. To do this we create a resource `TabSet_Rounded.css` (see below for the required modifications) and add it to the `@StyleResource` annotation of the styles (we can remove the `_Override.css` as we don't need it). The end result is the class below.
 
 ```java
-public class ApplicationSection extends TabbedPanel {
+public class ApplicationSection extends TabNavigator {
 
   public ApplicationSection() {
     // We supply a revised style to the tabbed panels' tab set. This is
     // declared below and allows is to provide our own CSS for this particular
     // instance.
-    super (TabbedPanelCreator.$ ().color ("#fafafa").style (ROUNDED_TABSET));
+    super (TabNavigatorCreator.$ ().color ("#fafafa").style (ROUNDED_TABSET));
 
     tab ("dashboard", "Dashboard", PanelBuilder.$ ().build ()).icon (FontAwesome.envelope ());
     tab ("inbox", "Inbox", PanelBuilder.$ ().build ()).icon (FontAwesome.envelope ());
@@ -173,7 +173,7 @@ public class ApplicationSection extends TabbedPanel {
   @CssResource({
     IComponentCSS.COMPONENT_CSS,
     ILocalCSS.CSS,
-    "com/effacy/jui/ui/client/tabs/TabSet_Vertical.css",
+    "com/effacy/jui/ui/client/navigation/TabNavigator_Vertical.css",
     "com/effacy/jui/playground/ui/tutorial/reference/TabSet_Rounded.css"
   })
   public static abstract class RoundTabSetLocalCSS implements ILocalCSS {
@@ -197,7 +197,7 @@ public class ApplicationSection extends TabbedPanel {
 }
 ```
 
-The CSS file `TabSet_Rounded.css` (found in the `src/jui/resources` source sub-tree) has been created for you and looks like the following:
+The CSS file `TabNavigator_Rounded.css` (found in the `src/jui/resources` source sub-tree) has been created for you and looks like the following:
 
 ```css
 .component {
@@ -305,7 +305,7 @@ We finally need to include and instance of this component in our `ApplicationSec
 
 ```java
 public ApplicationSection() {
-  super (TabbedPanelBuilder.$ ().color ("#fafafa").style (ROUNDED_TABSET));
+  super (TabNavigatorCreator.$ ().color ("#fafafa").style (ROUNDED_TABSET));
 
   // We now pass an instance of the dashboard rather than the placehoder
   // panel.

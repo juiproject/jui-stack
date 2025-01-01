@@ -19,21 +19,20 @@ import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.core.client.dom.css.CSSInjector;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.ui.client.icon.FontAwesome;
+import com.effacy.jui.ui.client.navigation.TabNavigator;
+import com.effacy.jui.ui.client.navigation.TabNavigator.Config.Style;
+import com.effacy.jui.ui.client.navigation.TabNavigatorCreator;
 import com.effacy.jui.ui.client.panel.PanelCreator;
-import com.effacy.jui.ui.client.tabs.TabSet;
-import com.effacy.jui.ui.client.tabs.TabSet.Config.Style;
-import com.effacy.jui.ui.client.tabs.TabbedPanel;
-import com.effacy.jui.ui.client.tabs.TabbedPanelCreator;
 import com.google.gwt.core.client.GWT;
 
-public class Tutorial extends TabbedPanel {
+public class Tutorial extends TabNavigator {
 
     static {
         CSSInjector.injectFromModuleBase ("tutorial.css");
     }
 
     public Tutorial() {
-        super (TabbedPanelCreator.config ().color ("#f0f0f0").style (ROUNDED_TABSET));
+        super (TabNavigatorCreator.config ().color ("#f0f0f0").style (ROUNDED_TABSET));
 
         tab ("dashboard", "Dashboard", new Dashboard ()).icon (FontAwesome.gauge ());
         tab ("inbox", "Inbox", PanelCreator.build ()).icon (FontAwesome.envelope ());
@@ -48,16 +47,16 @@ public class Tutorial extends TabbedPanel {
 
     @CssResource({
         IComponentCSS.COMPONENT_CSS,
-        TabSet.ILocalCSS.CSS,
-        TabSet.ILocalCSS.CSS_OVERRIDE,
-        "com/effacy/jui/ui/client/tabs/TabSet_Vertical.css",
+        TabNavigator.ILocalCSS.CSS,
+        TabNavigator.ILocalCSS.CSS_OVERRIDE,
+        "com/effacy/jui/ui/client/navigation/TabNavigator_Vertical.css",
         "com/effacy/jui/playground/ui/tutorial/reference/TabSet_Rounded.css"
     })
-    public static abstract class RoundTabSetLocalCSS implements TabSet.ILocalCSS {
+    public static abstract class RoundTabSetLocalCSS implements TabNavigator.ILocalCSS {
 
         private static RoundTabSetLocalCSS STYLES;
 
-        public static TabSet.ILocalCSS instance() {
+        public static TabNavigator.ILocalCSS instance() {
             if (STYLES == null) {
                 STYLES = (RoundTabSetLocalCSS) GWT.create (RoundTabSetLocalCSS.class);
                 STYLES.ensureInjected ();

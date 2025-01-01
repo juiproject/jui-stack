@@ -16,19 +16,18 @@
 package com.effacy.jui.playground.ui.samples;
 
 import com.effacy.jui.core.client.dom.css.Insets;
-import com.effacy.jui.ui.client.tabs.TabSet;
-import com.effacy.jui.ui.client.tabs.TabbedPanel;
-import com.effacy.jui.ui.client.tabs.TabbedPanelCreator;
+import com.effacy.jui.ui.client.navigation.TabNavigator;
+import com.effacy.jui.ui.client.navigation.TabNavigatorCreator;
 
 /**
  * Holds the various examples used in the tutorial.
  *
  * @author Jeremy Buckley
  */
-public class Samples extends TabbedPanel {
+public class Samples extends TabNavigator {
 
     public Samples() {
-        super (TabbedPanelCreator.config ().style (TabSet.Config.Style.HORIZONTAL_UNDERLINE).padding (Insets.em (2)));
+        super (TabNavigatorCreator.config ().style (TabNavigator.Config.Style.HORIZONTAL_UNDERLINE).padding (Insets.em (2)));
 
         tab ("components", "Components", new Components ());
         tab ("containers", "Containers", new Containers ());

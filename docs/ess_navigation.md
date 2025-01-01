@@ -70,12 +70,12 @@ An implementation of tabs is provided by `TabNavigator` in the `com.effacy.jui.u
 public class MySection extends TabNavigator {
 
   public GalleryExamples() {
-    super (new TabNavigator.Config().style (TabNavigator.Config.TabSetStyle.HORIZONTAL).padding (Insets.em (0)));
+    super (new TabNavigator.Config().style (TabNavigator.Config.Style.HORIZONTAL).padding (Insets.em (0)));
 
     tab ("page1", "Page one", new TextComponent ("Page 1"));
     tab ("page2", "Page two", new TextComponent ("Page 2"));
     tab ("page3", "Page three", TabNavigatorCreator.create (cfg -> {
-        cfg.style (TabNavigator.Config.TabSetStyle.HORIZONTAL).padding (Insets.em (1));
+        cfg.style (TabNavigator.Config.Style.HORIZONTAL).padding (Insets.em (1));
         cfg.tab ("page1", "Sub-page one", new TextComponent ("Sub-page 1"));
         cfg.tab ("page2", "Sub-page two", new TextComponent ("Sub-page 2"));
     }));
@@ -91,7 +91,7 @@ In this example we create a tabbed panel, using the standard horizontal tab layo
 Some useful points of note are provided for tabbed panels:
 
 1. It implements `INavigationAware` and will delegate these to the currently active component whenever that component implements `INavigationAware`. This means that one can add nested tabbed panels and a call to `onNavigateFrom(...)` will make it way down through all the active tabs to the one that contains the component being displayed which can receive and process the callback. That means that even when deeply nested a dirty form can intervene with the navigation attempt and prompt the user for confirmation. See the example below.
-2. Internally this makes use of a `TabSet` component (that renders the tabs) that provides a number of pre-defined layouts (see `TabSet.Config.TabSetStyle`) which can be extended via customisation.
+2. Internally this makes use of a `TabSet` component (that renders the tabs) that provides a number of pre-defined layouts (see `TabNavigator.Config.Style`) which can be extended via customisation.
 
 ?>Note that `INavigationAware` has to be implemented **by the component that serves as the tab**, child components of such a tab will not receive navigation events naturally even if they implement `INavigationAware`.
 
@@ -143,11 +143,11 @@ Components can implement `INavigationAware` and receive notifications from the n
 public class MyNavigationExample extends TabNavigator {
 
     public MyNavigationExample() {
-        super (new TabNavigator.Config (TabNavigator.Config.TabSetStyle.HORIZONTAL).padding (Insets.em (0)));
+        super (new TabNavigator.Config (TabNavigator.Config.Style.HORIZONTAL).padding (Insets.em (0)));
 
         tab ("page1", "Page 1", new TextComponent ("Page 1"));
         tab ("page2", "Page 2",TabNavigatorCreator.create (cfg -> {
-            cfg.style (TabSet.Config.TabSetStyle.HORIZONTAL).padding (Insets.em (1));
+            cfg.style (TabNavigator.Config.Style.HORIZONTAL).padding (Insets.em (1));
             cfg.tab ("page1", "Sub-page one", new TextComponent ("Sub-page 1"));
             cfg.tab ("page2", "Sub-page two", new NavigationAwareComponent ());
         }));

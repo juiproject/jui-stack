@@ -98,7 +98,7 @@ The POM file follows (replace the version JUI with the latest):
       <version>${version.effacy-jui}</version>
     </dependency>
 
-    <!-- Optional as these are only needed for the playground -->
+    <!-- Needed for the playground -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
@@ -451,17 +451,17 @@ The easiest way to run the codeserver is by using the `jui-maven-plugin`'s `code
 </profiles>
 ```
 
-Take note of the explicit specification of the source directories (why this is needed is explained in detail in [JUI Code Server](app_codeserver.md)). You can start the code server by running:
+Take note of the explicit specification of the source directories (why this is needed is explained in detail in [JUI Code Server](app_codeserver.md)). 
+
+#### Running the code server
+
+With the changes to the POM as described above, you can run the code server with the following:
 
 ```bash
 mvn -Pcodeserver initialize
 ```
 
-(we take advantage of the fact that `initialize` is the first Maven lifecycle phase so only this plugin will execute making for a faster startup).
-
-#### Running the code server
-
-Start the code server as described above. If you look at the log stream arising it generates you should eventually see something similar to the following:
+Observing the log stream you should eventually see something similar to the following (this example was obtained under MacOS, hence the locations of the temporary folders):
 
 ```txt
 Code server starting up
@@ -812,14 +812,12 @@ Create the class `PlaygroundUI` in the same package `myapplication.jui.playgroun
 package myapplication.jui.playground.ui;
 
 import com.effacy.jui.core.client.component.SimpleComponent;
-import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.builder.Button;
 import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.builder.H1;
 import com.effacy.jui.core.client.dom.builder.P;
 import com.effacy.jui.core.client.dom.builder.Strong;
 import com.effacy.jui.core.client.dom.builder.Text;
-import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.core.client.dom.css.CSSInjector;
 
 import elemental2.dom.Element;
@@ -832,9 +830,8 @@ public class PlaygroundUI extends SimpleComponent {
 
     private Element headerEl;
 
-    @Override
-    protected INodeProvider buildNode(Element el) {
-        return Wrap.$ (el).$ (root -> {
+    public PlaygroundUI() {
+        renderer (root -> {
             root.style ("myapplication");
             H1.$ (root).$ (header -> {
                 header.text ("A Simple JUI Application");
@@ -848,21 +845,13 @@ public class PlaygroundUI extends SimpleComponent {
             Button.$ (root).text ("Simple button").onclick (e -> {
                 headerEl.textContent = "Button clicked!";
             });
-        }).build ();
+        });
     }
 
 }
 ```
 
-Note that we now make use of the `buildNode(...)` method with the additional code:
-
-```java
-return Wrap.$ (el).$ (root -> {
-            ...
-}).build ();
-```
-
-What is happening here is that `buildNode(Element)` is passed an actual DOM element representing the root node of the component. We wrap this in an `ExsitingElementBuilder` using `Wrap.$ (...)` then use the second `$` method to operate on it. This is essentially what is happening with the inline component.
+Note the use of the `renderer(...)` method. This is passed a lambda-expression that takes an `ElementBuilder` (seen as `root` in the example). This builder represents the root DOM element of the component and exposes methods that allow us to build out the components DOM. This is essentially what is happening when we create an inline component.
 
 We need to modify `PlaygroundApp.java` to use this new component:
 
@@ -883,8 +872,6 @@ public class PlaygroundApp implements ApplicationEntryPoint {
 
 Recompiling the page should result in the new code being compiled and used.
 
-
-
 Try this out and see the effect for youself, then revert back to the previous paragraph expression for the rest of the guide.
 
 #### Standard JUI components
@@ -892,6 +879,77 @@ Try this out and see the effect for youself, then revert back to the previous pa
 JUI does provide a core set of components to work with (mostly controls); though most applications will make use of custom components (which keeps JUI quite lite-weight).
 
 Lets replace the DOM button previously used with the JUI standard button:
+
+```java
+package myapplication.jui.playground.ui;
+
+import com.effacy.jui.core.client.component.SimpleComponent;
+import com.effacy.jui.core.client.dom.INodeProvider;
+import com.effacy.jui.core.client.dom.builder.Button;
+import com.effacy.jui.core.client.dom.builder.Em;
+import com.effacy.jui.core.client.dom.builder.H1;
+import com.effacy.jui.core.client.dom.builder.P;
+import com.effacy.jui.core.client.dom.builder.Strong;
+import com.effacy.jui.core.client.dom.builder.Text;
+import com.effacy.jui.core.client.dom.builder.Wrap;
+import com.effacy.jui.core.client.dom.css.CSSInjector;
+import com.effacy.jui.ui.client.button.ButtonCreator;
+
+import elemental2.dom.Element;
+
+public class PlaygroundUI extends SimpleComponent {
+
+    static {
+        CSSInjector.injectFromModuleBase ("playground.css");
+    }
+
+    private Element headerEl;
+
+    public PlaygroundUI() {
+        renderer (root -> {
+            root.style ("myapplication");
+            H1.$ (root).$ (header -> {
+                header.text ("A Simple JUI Application");
+                header.use (n -> headerEl = (Element) n);
+            });
+            P.$ (root).$ (
+                Text.$ ("This is a simple "),
+                Strong.$ ().text ("JUI "),
+                Em.$ ().text ("application")
+            );
+            ButtonCreator.$ (root, cfg -> {
+                cfg.label ("JUI button");
+                cfg.handler (() -> {
+                    headerEl.textContent = "Button clicked!";
+                });
+            });
+        });
+    }
+
+}
+
+```
+
+Recompile and you should see a different button appear (but should still update the header when clicked). Note that the `ButtonCreator` is a special *helper* class and follows a design pattern that makes it easy to create components in specific contexts; in this case it is simply a shorthand for the more general insertion of a component in the DOM as illusrated below (for a fictitous custom component named `MyComponent`):
+
+```java
+...
+P.$ (root).$ (
+    Text.$ ("This is a simple "),
+    Strong.$ ().text ("JUI "),
+    Em.$ ().text ("application")
+);
+Insert.$ (root, new MyComponent (/* configuration */));
+...
+```
+
+#### Build-node rendering
+
+*This is included for reference as most of the [lessons](lessons.md) following this getting started guide employ this approach (see [Learning JUI](#learning-jui)).*
+
+The examples we have provided so far of encapsulated components make use of the *constructor renderer* approach where the rendering code is declared in the constructor (via a call to `renderer(...)`). This works well for smaller components but richer ones (or ones with a lot of rendering code) may benefit from cleaner separation. In this case we can override the `INodeProvider buildNode(Element el)` method of the underlying `Component` class.
+
+As an example we convert the last example:
 
 ```java
 package myapplication.jui.playground.ui;
@@ -941,45 +999,19 @@ public class PlaygroundUI extends SimpleComponent {
     }
 
 }
-
 ```
 
-Recompile and you should see a different button appear (but should still update the header when clicked). Note that the `ButtonCreator` is a special *helper* class and follows a design pattern that makes it easy to create components in specific contexts; in this case it is simply a shorthand for the more general insertion of a component in the DOM as illusrated below (for a fictitous custom component named `MyComponent`):
+Note that `buildNode(Element)` takes an actual DOM element (not a builder). To use our rendering tools on this this we first need to *wrap* it:
 
 ```java
-...
-P.$ (root).$ (
-    Text.$ ("This is a simple "),
-    Strong.$ ().text ("JUI "),
-    Em.$ ().text ("application")
-);
-Insert.$ (root, new MyComponent (/* configuration */));
-...
+return Wrap.$ (el).$ (root -> {
+    ...
+}).build ();
 ```
 
-#### Constructor renderer
+The essentially turns that DOM element into an `ElementBuilder` (more precisely, an `ExsitingElementBuilder`). The second `$` acts like our `renderer(...)` method expecting a lambda-expression that acts on the builder. The final `build()` takes the builder and actually builds out the live DOM structure returning an object that the component can use to act on it (this object contains declared event handlers and node references).
 
-Consider the first example of a JUI component given in the introductory section [Understanding JUI](intro_understanding.md):
-
-```java
-public class MyButton extends SimpleComponent {
-
-    public MyButton(String title, Consumer<UIEvent> onclick) {
-        renderer (root -> {
-            root.style ("my-button");
-            Button.$ (root).$ (
-                Text.$ (title)
-            ).onclick (onclick);
-        });
-    }
-}
-```
-
-Note that we haven't overridden the `INodeProvider buildNode(Element el)` but rather made a call `render(...)` in the constructor. This simple registers a consumer (presented as a lambda-expression) that is executed against a wrapped root element (much in the same way we have done with `buildNode(...)`).
-
-*In practice you will often use this method for smaller components while employing the `buildNode(...)` approach for those that are more involved. From a pedagogical perspective the `buildNode(...)` approach is more transparent as to the details and so is the approach we generally adopt throughout the documentation.*
-
-**As an exercise** how could our `PlaygroundUI` component be modified to employ this approach? Can you think of scenarios where one of these approaches would be preferred over the other?
+More on the details of this approach can be found in the aforementioned lessons.
 
 #### Component inheritance
 
@@ -1259,7 +1291,7 @@ To see what is happening look closely at:
 ```java
 tab ("lesson1", "Lesson 1",
     TabNavigatorCreator.create (cfg -> {
-        cfg.style (TabSet.Config.Style.HORIZONTAL_UNDERLINE);
+        cfg.style (TabNavigator.Config.Style.HORIZONTAL_UNDERLINE);
         cfg.tab ("lesson1a", "Part A", new Lesson1a ());
 }));
 ```
@@ -1268,7 +1300,7 @@ We see that we are adding a tab named `Lesson 1` associated with the component r
 
 ```java
 cfg -> {
-    cfg.style (TabSet.Config.Style.HORIZONTAL_UNDERLINE);
+    cfg.style (TabNavigator.Config.Style.HORIZONTAL_UNDERLINE);
     ...
 }
 ```

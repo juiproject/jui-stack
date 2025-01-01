@@ -22,13 +22,13 @@ Of the more ubquitous navigation schemes is that of *tabbed navigation*. Here a 
 
 You will have already been exposed to this form of navigation as it is employed in the getting started guide and the structures used to host the code for the lessons. The part will build on this to illustrate the variety of tabs arrangements that are available and various navigation behaviours that can be utilised.
 
-### The tabbed panel
+### The tabbed navigator
 
-The `TabbedPanel` provides a standard implementation of tabbed navigation and supports a variety of tabbing mechanisms (all configured by way of styles). We begin by creating a simple tabbed panel and adding to it four tabs:
+The `TabNavigator` provides a standard implementation of tabbed navigation and supports a variety of tabbing mechanisms (all configured by way of styles). We begin by creating a simple tabbed panel and adding to it four tabs:
 
 ```java
-add (TabbedPanelCreator.create(cfg -> {
-    cfg.style (TabSet.Config.Style.VERTICAL);
+add (TabNavigatorCreator.create(cfg -> {
+    cfg.style (TabNavigator.Config.Style.VERTICAL);
     cfg.padding (Insets.em (0));
     cfg.effect (CardFitLayout.Config.Effect.FADE_IN);
 }, tabs -> {
@@ -60,7 +60,7 @@ which appears as follows:
 
 ![](images/lessons_3a_001.png)
 
-Looking closely at the code we first observe that we are employing the helper class method `TabbedPanelCreator.create(...)`  where the first argument is a lambda-expression to configure the panel and the second adds tabs directly to the resultant panel component.
+Looking closely at the code we first observe that we are employing the helper class method `TabNavigatorCreator.create(...)`  where the first argument is a lambda-expression to configure the panel and the second adds tabs directly to the resultant panel component.
 
 With regards to the configuration we select the `VERTICAL` style which presents the tabs down the left-hand side of the page and to the right the content of each tab. We also assign a zero padding (this is the padding used for the content area) and the `FADE_IN` navigation effect which applies a transition effect each time a new tab is selected.
 
@@ -71,8 +71,8 @@ When it comes to adding tabs we add these directly to the tabbed panel post cons
 The style in the previous example was `VERTICAL`, however there are quite a few standard styles to choose from. Modify the example above to explore each of these, for example:
 
 ```java
-add (TabbedPanelCreator.create(cfg -> {
-    cfg.style (TabSet.Config.Style.HORIZONTAL_BAR);
+add (TabNavigatorCreator.create(cfg -> {
+    cfg.style (TabNavigator.Config.Style.HORIZONTAL_BAR);
     ...
 }, tabs -> {
     ...
@@ -82,8 +82,8 @@ add (TabbedPanelCreator.create(cfg -> {
 You may notice that if you try `VERTICAL_ICON` you don't see any of the tab labels appear. In addition to the label tabs may also be configured with icons. Try replacing the example with the following:
 
 ```java
-add (TabbedPanelCreator.create(cfg -> {
-    cfg.style (TabSet.Config.Style.VERTICAL_ICON);
+add (TabNavigatorCreator.create(cfg -> {
+    cfg.style (TabNavigator.Config.Style.VERTICAL_ICON);
     cfg.padding (Insets.em (0));
     cfg.effect (CardFitLayout.Config.Effect.FADE_IN);
 }, tabs -> {
@@ -111,11 +111,11 @@ Now replace `VERTICAL_ICON` with `VERTICAL` as with the original example.
 
 ### Grouping and spacing
 
-The vertical styles available to `TabbedPanel` also support tab grouping as well as positioning tabs at the bottom of the tab set:
+The vertical styles available to `TabNavigator` also support tab grouping as well as positioning tabs at the bottom of the tab set:
 
 ```java
-add (TabbedPanelCreator.create(cfg -> {
-    cfg.style (TabSet.Config.Style.VERTICAL_ICON);
+add (TabNavigatorCreator.create(cfg -> {
+    cfg.style (TabNavigator.Config.Style.VERTICAL_ICON);
     cfg.padding (Insets.em (0));
     cfg.effect (CardFitLayout.Config.Effect.FADE_IN);
 }, tabs -> {
@@ -155,19 +155,19 @@ Note that a group is declared with the `group(String)` method and all tabs added
 
 ### Nested tabs
 
-Tabs can be nested quite easily (that is, the tab component is a `TabbedPanel` itself):
+Tabs can be nested quite easily (that is, the tab component is a `TabNavigator` itself):
 
 ```java
-add (TabbedPanelCreator.create(cfg -> {
-    cfg.style (TabSet.Config.Style.VERTICAL);
+add (TabNavigatorPanelCreator.create(cfg -> {
+    cfg.style (TabNavigator.Config.Style.VERTICAL);
     cfg.padding (Insets.em (0));
     cfg.effect (CardFitLayout.Config.Effect.FADE_IN);
 }, tabs -> {
     tabs.css (el -> CSS.HEIGHT.apply(el, Length.px (400)));
     
     // First set of tabs.
-    tabs.tab ("tab1", "Tab 1", TabbedPanelCreator.create (cfg -> {
-        cfg.style (TabSet.Config.Style.HORIZONTAL_BAR);
+    tabs.tab ("tab1", "Tab 1", TabNavigatorCreator.create (cfg -> {
+        cfg.style (TabNavigator.Config.Style.HORIZONTAL_BAR);
         cfg.padding (Insets.em (1));
     }, tabs2 -> {
         tabs2.tab ("taba", "Tab A", ComponentCreator.build (r -> {
@@ -179,8 +179,8 @@ add (TabbedPanelCreator.create(cfg -> {
     }));
 
     // Second set of tabs.
-    tabs.tab ("tab2", "Tab 2", TabbedPanelCreator.create (cfg -> {
-        cfg.style (TabSet.Config.Style.HORIZONTAL_UNDERLINE);
+    tabs.tab ("tab2", "Tab 2", TabNavigatorCreator.create (cfg -> {
+        cfg.style (TabNavigator.Config.Style.HORIZONTAL_UNDERLINE);
         cfg.padding (Insets.em (1));
     }, tabs2 -> {
         tabs2.tab ("taba", "Tab A", ComponentCreator.build (r -> {
@@ -226,8 +226,8 @@ public class AwareComponent extends SimpleComponent implements INavigationAware 
 the construct the following tab structure:
 
 ```java
-add (TabbedPanelCreator.create(cfg -> {
-    cfg.style (TabSet.Config.Style.VERTICAL);
+add (TabNavigatorCreator.create(cfg -> {
+    cfg.style (TabNavigator.Config.Style.VERTICAL);
     cfg.effect (CardFitLayout.Config.Effect.FADE_IN);
 }, tabs -> {
     tabs.css (el -> CSS.HEIGHT.apply(el, Length.px (400)));
@@ -264,7 +264,7 @@ Here we are overriding a version of `onNavigateFrom(...)` that is passed a callb
 
 Now you have some familiarity with tabbed panels, try the following exercises:
 
-1. The examples created tabbed panels using `TabbedPanelCreator` however you can create custom components that extend `TabbedPanel` where the tabs are added in the constructor. Create a version of the nested tabbed example that uses such a custom component for the nested tabs.
+1. The examples created tabbed panels using `TabNavigatorCreator` however you can create custom components that extend `TabNavigator` where the tabs are added in the constructor. Create a version of the nested tabbed example that uses such a custom component for the nested tabs.
 2. Create a custom component that implements `INavigationAware` such the each time it is navigated to it display some randomised text. What do you observe when the tab is first navigated to?
 3. Suppose you have added to a tabbed panel a component that has content that forces the panel to scroll.
 
@@ -294,7 +294,7 @@ public void onApplicationLoad() {
 }
 ```
 
-Here we are invoking the `assignParent()` method on the `PlaygroundUI` class (which extends `TabbedPanel` and implements `INavigationHandlerWithProvider` which declares this method) passing an instance of `INavigationHandlerParent`. What is happening here is that when a navigable component received a back-propagation event it checks for an assigned parent, if there is one it propagates the event up to the parent. Here the parent simply receives the tail end of the back-propagation which carries with it the fully resolved navigation path (consisting of the various component references). This is then applied to the URL. The segment `#` tells the browser to append the path but not to refresh the page. This allows us to reflect the current navigation path on the URL without reloading the application each time.
+Here we are invoking the `assignParent()` method on the `PlaygroundUI` class (which extends `TabNavigator` and implements `INavigationHandlerWithProvider` which declares this method) passing an instance of `INavigationHandlerParent`. What is happening here is that when a navigable component received a back-propagation event it checks for an assigned parent, if there is one it propagates the event up to the parent. Here the parent simply receives the tail end of the back-propagation which carries with it the fully resolved navigation path (consisting of the various component references). This is then applied to the URL. The segment `#` tells the browser to append the path but not to refresh the page. This allows us to reflect the current navigation path on the URL without reloading the application each time.
 
 When you recompile, as you navigate through the various tabs you will see the URL change. However, you will not see any changes to the URL when you navigation through the tabs that appear from [Part A](#part-a-tabbed-navigation), more on why this is later.
 
@@ -353,8 +353,8 @@ Since the tabbed panel examples are *embedded* in an instance of `LessonPanel` t
 To our `Lesson3b` class add the following embedded tabbed panel:
 
 ```java
-add (TabbedPanelCreator.create(cfg -> {
-    cfg.style (TabSet.Config.Style.VERTICAL);
+add (TabNavigatorCreator.create(cfg -> {
+    cfg.style (TabNavigator.Config.Style.VERTICAL);
     cfg.padding (Insets.em (1));
     cfg.effect (CardFitLayout.Config.Effect.FADE_IN);
 }, tabs -> {
@@ -379,11 +379,11 @@ On recompile you should see the tabbed panel and observe that as you navigate th
 ```java
 public class Lesson3b extends LessonPanel implements INavigationHandlerProvider {
 
-    private TabbedPanel tabbedPanel;
+    private TabNavigator tabbedPanel;
 
     protected Lesson3b() {
-        tabbedPanel = add (TabbedPanelCreator.create(cfg -> {
-            cfg.style (TabSet.Config.Style.VERTICAL);
+        tabbedPanel = add (TabNavigatorCreator.create(cfg -> {
+            cfg.style (TabNavigator.Config.Style.VERTICAL);
             cfg.padding (Insets.em (1));
             cfg.effect (CardFitLayout.Config.Effect.FADE_IN);
         }, tabs -> {
@@ -738,7 +738,7 @@ public class ReportNavigation extends SimpleComponent implements INavigationHand
 }
 ```
 
-With these changes you can add the report navigation to any navigation component (i.e. a `TabbedPanel`) and it will automatically register with the navigation heirarchy. To get this to work with the lesson class we need to make similar changes to the lesson class similar to what was done in [Part B](#part-b):
+With these changes you can add the report navigation to any navigation component (i.e. a `TabNavigator`) and it will automatically register with the navigation heirarchy. To get this to work with the lesson class we need to make similar changes to the lesson class similar to what was done in [Part B](#part-b):
 
 ```java
 public class Lesson3c extends LessonPanel implements INavigationHandlerWithProvider {
@@ -775,10 +775,10 @@ All solutions are presented as if they were being added to the constructor of th
 A candidate custom class is:
 
 ```java
-public class ExampleA1 extends TabbedPanel {
+public class ExampleA1 extends TabNavigator {
 
-    public ExampleA1(TabSet.Config.Style style) {
-        super (new TabbedPanel.Config().style (style));
+    public ExampleA1(TabNavigator.Config.Style style) {
+        super (new TabNavigator.Config().style (style));
 
         tab ("taba", "Tab A", ComponentCreator.build(root -> {
             P.$ (root).text ("Tab A (componentUuid=" + this.getUUID() + ")");
@@ -795,14 +795,14 @@ Note that the contents of the child components displays the UUID of the `Example
 This can then be included in the `Lesson3a` constructor as:
 
 ```java
-add (TabbedPanelCreator.create(cfg -> {
-    cfg.style (TabSet.Config.Style.VERTICAL);
+add (TabNavigatorCreator.create(cfg -> {
+    cfg.style (TabNavigator.Config.Style.VERTICAL);
     cfg.padding (Insets.em (0));
     cfg.effect (CardFitLayout.Config.Effect.FADE_IN);
 }, tabs -> {
     tabs.css (el -> CSS.HEIGHT.apply (el, Length.px (400)));
-    tabs.tab ("tab1", "Tab 1", new ExampleA1 (TabSet.Config.Style.HORIZONTAL_BAR));
-    tabs.tab ("tab2", "Tab 2", new ExampleA1 (TabSet.Config.Style.HORIZONTAL_UNDERLINE));
+    tabs.tab ("tab1", "Tab 1", new ExampleA1 (TabNavigator.Config.Style.HORIZONTAL_BAR));
+    tabs.tab ("tab2", "Tab 2", new ExampleA1 (TabNavigator.Config.Style.HORIZONTAL_UNDERLINE));
 }));
 ```
 
@@ -854,8 +854,8 @@ public class ExampleA2 extends SimpleComponent implements INavigationAware {
 and included as follows:
 
 ```java
-add (TabbedPanelCreator.create(cfg -> {
-    cfg.style (TabSet.Config.Style.VERTICAL);
+add (TabNavigatorCreator.create(cfg -> {
+    cfg.style (TabNavigator.Config.Style.VERTICAL);
     // Makes the contents more readable.
     cfg.padding (Insets.em (1));
     cfg.effect (CardFitLayout.Config.Effect.FADE_IN);

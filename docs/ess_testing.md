@@ -216,7 +216,7 @@ We provide a simple test flow to illusrate how the framework can be used. This c
 PageTester.$ (webClient, "http://localhost/playground?test=true", 4000) //
 
     // Grab the top-level tabset and activate "controls"
-    .with (TabbedPanelTester.$ ("applicationui").subclass (), tabs -> {
+    .with (TabNavigatorTester.$ ("applicationui").subclass (), tabs -> {
             tabs.validateTabs ("themes", "samples", "controls", "gallery", "editor", "dialogs");
             tabs.validateActiveTab ("themes");
             tabs.activate ("controls");
@@ -253,7 +253,7 @@ PageTester.$ (webClient, "http://localhost/playground?test=true", 4000) //
 
 We begin with priming the `PageTester` from the URL `http://localhost/playground?test=true` (a described previously). There is no authentication involved so this is straight forward.
 
-Our first test is the tabbed panel representing the top-level navigation structure. Our entry class is `ApplicationUI` so makes use of the default `testid="applicationui"`. Since `ApplicationUI` extends `TabbedPabel` we create an instance of `TabbedPanelTester` with that `test-id` and note that this is a subclass (this prevents a check being done on the `test-cpt` which will contain `applicationui` rather than `tabbedpanel` that `TabbedPanelTester` would otherwise expect). The `with` simple serves as a mechanism to allow for a lambda expression to be used to operate on the `TabbedPanelTester` instance while first resolving it (see `IResolvable` which declares the method `resolve(IPage)` that, when called, allows for the various DOM node looksup to occur setting the testers in a state that they can be worked with). As far as our initial validations are concerned we first verify the expected tab references and that we are on the default tab `themes`. When then activate the `controls` tab and subsequently validate that it is now the active tab.
+Our first test is the tabbed panel representing the top-level navigation structure. Our entry class is `ApplicationUI` so makes use of the default `testid="applicationui"`. Since `ApplicationUI` extends `TabbedPabel` we create an instance of `TabNavigatorTester` with that `test-id` and note that this is a subclass (this prevents a check being done on the `test-cpt` which will contain `applicationui` rather than `tabbedpanel` that `TabNavigatorTester` would otherwise expect). The `with` simple serves as a mechanism to allow for a lambda expression to be used to operate on the `TabNavigatorTester` instance while first resolving it (see `IResolvable` which declares the method `resolve(IPage)` that, when called, allows for the various DOM node looksup to occur setting the testers in a state that they can be worked with). As far as our initial validations are concerned we first verify the expected tab references and that we are on the default tab `themes`. When then activate the `controls` tab and subsequently validate that it is now the active tab.
 
 At this stage our UI would (if we could see it) be displaying the **Controls** tab. There is an **Add** button that we want to activate to display modal dialog. This is activation is performed with:
 
@@ -264,7 +264,7 @@ tabs.with (ButtonTester.$ ("controls.controlsection.controlsectiongroup.button")
 });
 ```
 
-In this case we use the `with(...)` method on `TabbedPanelTester` (it's actually declared on `ITester` so is available on all tester classes). This is our first introduction to scoping where all references to `test-id`'s that reside "under" this `with` will have `'applicationiu.'` prepending to them. So the reference to the button `controls.controlsection.controlsectiongroup.button` is to the actual `test-id="applicationui.controls.controlsection.controlsectiongroup.button"` (you can verify this attribute by inspection in the browser). This approach makes it easier to manage long (and possibly malleable) `test-id`'s.
+In this case we use the `with(...)` method on `TabNavigatorTester` (it's actually declared on `ITester` so is available on all tester classes). This is our first introduction to scoping where all references to `test-id`'s that reside "under" this `with` will have `'applicationiu.'` prepending to them. So the reference to the button `controls.controlsection.controlsectiongroup.button` is to the actual `test-id="applicationui.controls.controlsection.controlsectiongroup.button"` (you can verify this attribute by inspection in the browser). This approach makes it easier to manage long (and possibly malleable) `test-id`'s.
 
 Having clicked on the button (as well as validating its label) we should be able to test for a modal (note that a click will be preceeded by a small delay to allow for rendering, an explicit delay can be provided to the click method). This is achieved with:
 
@@ -359,15 +359,15 @@ This comes from `ButtonTester` and attempts to extract the DOM node associated t
 
 #### Child testers
 
-The `ComponentTester` has the ability to register child testers for the case where a component employs child components (of a known type). An example of this is the `TabbedPanelTester` which makes use of a tab set and thus includes a `TabSetTester`.
+The `ComponentTester` has the ability to register child testers for the case where a component employs child components (of a known type). An example of this is the `TabNavigatorTester` which makes use of a tab set and thus includes a `TabNavigatorTester`.
 
 Child components can be registered as follows:
 
 ```java
-register (new TabSetTester (testId + ".tabset"));
+register (new TabNavigatorTester (testId + ".tabset"));
 ```
 
-Noting here that the tab set component will have been assigned a test ID `tabset` so the `test-id` will be resolved to that of the parent `TabbedPanel` extended by `.tabset` (see [Test attributes](#test-attributes) above).
+Noting here that the tab set component will have been assigned a test ID `tabset` so the `test-id` will be resolved to that of the parent `TabNavigator` extended by `.tabset` (see [Test attributes](#test-attributes) above).
 
 During resolution each of the child testers will be resolved (and will be resolved prior to `resolve()` being called).
 

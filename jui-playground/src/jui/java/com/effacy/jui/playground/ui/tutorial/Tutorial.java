@@ -17,16 +17,15 @@ package com.effacy.jui.playground.ui.tutorial;
 
 import com.effacy.jui.core.client.dom.css.CSSInjector;
 import com.effacy.jui.core.client.dom.css.Insets;
-import com.effacy.jui.ui.client.tabs.TabSet;
-import com.effacy.jui.ui.client.tabs.TabbedPanel;
-import com.effacy.jui.ui.client.tabs.TabbedPanelCreator;
+import com.effacy.jui.ui.client.navigation.TabNavigator;
+import com.effacy.jui.ui.client.navigation.TabNavigatorCreator;
 
 /**
  * Holds the various examples used in the tutorial.
  *
  * @author Jeremy Buckley
  */
-public class Tutorial extends TabbedPanel {
+public class Tutorial extends TabNavigator {
     
     static {
         // Used to demonstrate semi-global CSS. This will capture updates on change but
@@ -36,7 +35,7 @@ public class Tutorial extends TabbedPanel {
     }
 
     public Tutorial() {
-        super (TabbedPanelCreator.config ().style (TabSet.Config.Style.HORIZONTAL_UNDERLINE).padding (Insets.em (0)));
+        super (TabNavigatorCreator.config ().style (TabNavigator.Config.Style.HORIZONTAL_UNDERLINE).padding (Insets.em (0)));
 
         tab ("reference", "Reference", new com.effacy.jui.playground.ui.tutorial.reference.Tutorial ());
     }

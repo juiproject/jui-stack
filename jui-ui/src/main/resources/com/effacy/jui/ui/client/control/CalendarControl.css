@@ -188,7 +188,7 @@
 
 .component #selector .dates td.outside:hover {
     color: #fff;
-    background-color: #ccc#;
+    background-color: #ccc;
 }
 
 .component #selector .dates td.selected {

@@ -73,24 +73,7 @@ Once you are done, the server can be stopped with `CTL+C`.
 
 *In general you should not need to build JUI from source (unless you are interested in [contributing](./CONTRIBUTING.md), or just interested).*
 
-Before delving into the build process we make a few notes on the project structure itself.
-
-First of all this is a Maven multimodule project that generates a number of libraries, along with the [playground](#playground) (see [libraries](#libraries)), under the same version. In addition to these modules there are some supporting assets (under [support](./support/)) and the source for the [product documentation](https://juiproject.github.io/jui-stack/).
-
-This documentation is found under [docs](./docs/) and is constructed using [Docsify](https://docsify.js.org/) (along with [PlantUML](https://plantuml.com/guide) for UML generation and [Mermaid](https://mermaid.js.org/) for diagrams). If you have [python](https://www.python.org/) installed you can quite easily run up the documentation locally from source. To do so, open a terminal from the project root and run:
-
-```bash
-cd ./docs/
-python3 -m http.server 3000
-```
-
-Pointing a browser to [http://localhost:3000/index.html#/](http://localhost:3000/index.html#/) will display the documentation.
-
-Additional documentation (generally related to structure, process or specific design detail) is provided by separate readme files located in the relevant directories and packages.
-
-## Build process
-
-You will need the following to be installed to successfully perform a build:
+JUI is a Maven multimodule project that generates the [libraries](#libraries) as described above (along with the [playground](#playground)), under the same version number (locally this is `LOCAL-SNAPSHOT`). In order to build the project you will need the following to be installed to successfully perform a build:
 
 1. Git
 2. JDK (17 or greater)
@@ -100,6 +83,12 @@ You will need the following to be installed to successfully perform a build:
 In all likelihood, if you have made it this far, you will have (at least some variant) the the above installed. If not there are installation guides provided in [CONTRIBUTING.MD](./CONTRIBUTING.md).
 
 With these in place you can build a local version of JUI from a checked out version by running `mvn clean install` from the project root. If you haven't installed Chrome (in all likelihood it will be installed on your system already) then you will need to skip the tests with `mvn clean install -Dtests.skip=true`.
+
+## Documentation
+
+The main application documentation is available [online](https://juiproject.github.io/jui-stack/) with source under [docs](/docs/). Although this is pedagogical in nature (learning how to use JUI) some detailed implementation guides are included.
+
+With respect to design and implementation documentation, these are relegated to README files located in the various packages and directories. Additional documentation (though mainly from a usage perspective) is included in the classes themselves.
 
 # Contributing
 

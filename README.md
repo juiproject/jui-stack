@@ -80,7 +80,7 @@ JUI is a Maven multimodule project that generates the [libraries](#libraries) as
 3. Maven (3.8 or greater)
 4. Chrome browser (optional, for running UI tests)
 
-In all likelihood, if you have made it this far, you will have (at least some variant) the the above installed. If not there are installation guides provided in [CONTRIBUTING.MD](./CONTRIBUTING.md).
+In all likelihood, if you have made it this far, you will have (at least some variant) the the above installed. If not there are installation guides provided in [DEVELOPMENT.MD](./DEVELOPMENT.md).
 
 With these in place you can build a local version of JUI from a checked out version by running `mvn clean install` from the project root. If you haven't installed Chrome (in all likelihood it will be installed on your system already) then you will need to skip the tests with `mvn clean install -Dtests.skip=true`.
 

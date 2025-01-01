@@ -23,8 +23,6 @@ To work through this guide you will need to have the following installed:
 
 Note that in respect of the IDE (item 3) this documentation makes explicit reference to [VS Code](https://code.visualstudio.com/); however, similar principles should apply to you preferred IDE. If do use VS Code then refer to the [Appendix](#vs-code-setup-and-configuration) for additional configuration and guides before start.
 
-?>At the time of writing the JUI libraries have not been deployed to a public Maven repository. You should perform a local Maven installation of the `jui-stack` version (as described in the projects `README.md`). You should then ensure that any version references to a JUI project should use the version that was installed.
-
 ### Directory structure
 
 We begin with a bare-bones project that contains just enough to provide a basis to build upon. Create an empty Java project named `myapplication-jui` in your IDE and create the following directory structure with associated files (see [source code](#source-code) for the file contents and descriptions and [POM file](#pom-file) for the Maven POM):
@@ -79,7 +77,7 @@ The POM file follows (replace the version JUI with the latest):
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build.output>target</build.output>
 
-    <!-- JUI libraries -->
+    <!-- JUI libraries (replace the ... with the latest JUI version) -->
     <version.effacy-jui>...</version.effacy-jui>
 
     <!-- Spring related -->
@@ -92,13 +90,14 @@ The POM file follows (replace the version JUI with the latest):
   </properties>
 
   <dependencies>
+    <!-- For this example we only need jui-ui -->
     <dependency>
       <groupId>com.effacy.jui</groupId>
       <artifactId>jui-ui</artifactId>
       <version>${version.effacy-jui}</version>
     </dependency>
 
-    <!-- Needed for the playground -->
+    <!-- Needed to host the playground -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
@@ -127,6 +126,7 @@ The POM file follows (replace the version JUI with the latest):
       </resource>
       <resource>
         <!-- This allows for the JUI sources to be bundled in with the JAR -->
+        <!-- Not so important for this, but is for libararies. -->
         <directory>src/jui/java</directory>
         <filtering>false</filtering>
       </resource>
@@ -169,7 +169,7 @@ The POM file follows (replace the version JUI with the latest):
         </configuration>
       </plugin>
 
-      <!-- JUI / GWT compilation -->
+      <!-- JUI compilation -->
       <plugin>
         <groupId>com.effacy.jui</groupId>
         <artifactId>jui-maven-plugin</artifactId>
@@ -239,7 +239,7 @@ As such, this file serves as the module file for our application:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "jui-module-1.0.0.dtd">
+<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "https://juiproject.github.io/jui-stack/jui-module-1.0.0.dtd">
 <module>
     <inherits name="com.effacy.jui.ui.UI" />
     <source path="ui" />
@@ -254,8 +254,6 @@ Quite a lot can be done with a module file but for our purposes we have:
 3. There is an entry point class named `myapplication.jui.playground.ui.PlaygroundApp` (see above).
 
 Of note is point (3) which instructs the compiler to generate bootstrap code that will instantiate the entry point class and call its `onApplicationLoad()` method (allowing the JUI code to generate the browser hooks needed to start interacting with the user).
-
-?>The reference to the DTD `jui-module-1.0.0.dtd` is based on the configuration of a *catalog* (until such time it is posted on a public URL). See [Appendix: XML Catalog](#xml-catalog) for instructions on setting this in VS Code.
 
 #### PagesController.java
 
@@ -1412,40 +1410,6 @@ A simple approach to creating a project is:
 3. In VS code select **File** > **Add Folder to Workspace...** and choose the directory created in (2).
 
 The project should then appear in the VS Code explorer view.
-
-#### XML catalog
-
-*Since this project is pre-public access the DTD used to validate the module descriptors (which are expressed in XML) is not available on a public URL, so for validation we rely on a local reference. Not having this does not cause any problems other than the aesthetic of VS code reporting problems with the DTD.*
-
-To properly resolve the module DTD you should have an XML catalog that maps `-//JUI//1.0.0` to the DTD file. Simply add the following to your `settings.json`:
-
-```json
-"xml.catalogs": [
-    "<path-to-jui-stack>/jui-stack/support/catalog.xml"
-],
-```
-
-where `<path-to-jui-stack>` is the absolute path to the checked out version of `jui-stack`.
-
-If you don't have the project checked out, but rather have the JAR files installed locally, then you can extract the DTD and craft a custom catalog. To extract the file, run the following in a suitable location:
-
-```bash
-jar xf <maven-repo-location>/com/effacy/jui/jui-platform/<version>/jui-platform-<version>.jar jui-module-1.0.0.dtd
-```
-
-In the same location create a `catalog.xml`:
-
-```xml
-<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
-
-  <public
-      publicId="-//JUI//1.0.0"
-      uri="./jui-module-1.0.0.dtd" />
-
-</catalog>
-```
-
-Finally modify your `settings.json` as above but to reference this `catalog.xml`.
 
 #### Syntax highlighting
 

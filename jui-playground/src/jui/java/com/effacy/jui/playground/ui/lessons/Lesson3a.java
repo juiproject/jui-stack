@@ -18,7 +18,6 @@ package com.effacy.jui.playground.ui.lessons;
 import com.effacy.jui.core.client.component.ComponentCreator;
 import com.effacy.jui.core.client.component.SimpleComponent;
 import com.effacy.jui.core.client.component.layout.CardFitLayout;
-import com.effacy.jui.core.client.dom.builder.Div;
 import com.effacy.jui.core.client.dom.builder.P;
 import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Insets;
@@ -30,9 +29,8 @@ import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.ui.client.InfoBlockCreator;
 import com.effacy.jui.ui.client.NotificationDialog;
 import com.effacy.jui.ui.client.icon.FontAwesome;
-import com.effacy.jui.ui.client.tabs.TabSet;
-import com.effacy.jui.ui.client.tabs.TabbedPanel;
-import com.effacy.jui.ui.client.tabs.TabbedPanelCreator;
+import com.effacy.jui.ui.client.navigation.TabNavigator;
+import com.effacy.jui.ui.client.navigation.TabNavigatorCreator;
 
 import elemental2.dom.Element;
 
@@ -46,8 +44,8 @@ public class Lesson3a extends LessonPanel {
             });
         })).update (null);
 
-        add (TabbedPanelCreator.create(cfg -> {
-            cfg.style (TabSet.Config.Style.VERTICAL);
+        add (TabNavigatorCreator.create(cfg -> {
+            cfg.style (TabNavigator.Config.Style.VERTICAL);
             cfg.padding (Insets.em (0));
             cfg.effect (CardFitLayout.Config.Effect.FADE_IN);
         }, tabs -> {
@@ -66,8 +64,8 @@ public class Lesson3a extends LessonPanel {
             })).icon (FontAwesome.cow ());
         }));
 
-        add (TabbedPanelCreator.create(cfg -> {
-            cfg.style (TabSet.Config.Style.VERTICAL);
+        add (TabNavigatorCreator.create(cfg -> {
+            cfg.style (TabNavigator.Config.Style.VERTICAL);
             cfg.padding (Insets.em (0));
             cfg.effect (CardFitLayout.Config.Effect.FADE_IN);
         }, tabs -> {
@@ -95,16 +93,16 @@ public class Lesson3a extends LessonPanel {
             })).icon (FontAwesome.cog ());
         }));
 
-        add (TabbedPanelCreator.create(cfg -> {
-            cfg.style (TabSet.Config.Style.VERTICAL);
+        add (TabNavigatorCreator.create(cfg -> {
+            cfg.style (TabNavigator.Config.Style.VERTICAL);
             cfg.padding (Insets.em (0));
             cfg.effect (CardFitLayout.Config.Effect.FADE_IN);
         }, tabs -> {
             tabs.css (el -> CSS.HEIGHT.apply(el, Length.px (400)));
             
             // First set of tabs.
-            tabs.tab ("tab1", "Tab 1", TabbedPanelCreator.create (cfg -> {
-                cfg.style (TabSet.Config.Style.HORIZONTAL_BAR);
+            tabs.tab ("tab1", "Tab 1", TabNavigatorCreator.create (cfg -> {
+                cfg.style (TabNavigator.Config.Style.HORIZONTAL_BAR);
                 cfg.padding (Insets.em (1));
             }, tabs2 -> {
                 tabs2.tab ("taba", "Tab A", ComponentCreator.build (r -> {
@@ -116,8 +114,8 @@ public class Lesson3a extends LessonPanel {
             }));
 
             // Second set of tabs.
-            tabs.tab ("tab2", "Tab 2", TabbedPanelCreator.create (cfg -> {
-                cfg.style (TabSet.Config.Style.HORIZONTAL_UNDERLINE);
+            tabs.tab ("tab2", "Tab 2", TabNavigatorCreator.create (cfg -> {
+                cfg.style (TabNavigator.Config.Style.HORIZONTAL_UNDERLINE);
                 cfg.padding (Insets.em (1));
             }, tabs2 -> {
                 tabs2.tab ("taba", "Tab A", ComponentCreator.build (r -> {
@@ -129,8 +127,8 @@ public class Lesson3a extends LessonPanel {
             }));
         }));
 
-        add (TabbedPanelCreator.create(cfg -> {
-            cfg.style (TabSet.Config.Style.VERTICAL);
+        add (TabNavigatorCreator.create(cfg -> {
+            cfg.style (TabNavigator.Config.Style.VERTICAL);
             cfg.effect (CardFitLayout.Config.Effect.FADE_IN);
         }, tabs -> {
             tabs.css (el -> CSS.HEIGHT.apply(el, Length.px (400)));
@@ -141,19 +139,19 @@ public class Lesson3a extends LessonPanel {
         }));
 
         // Example 1
-        add (TabbedPanelCreator.create(cfg -> {
-            cfg.style (TabSet.Config.Style.VERTICAL);
+        add (TabNavigatorCreator.create(cfg -> {
+            cfg.style (TabNavigator.Config.Style.VERTICAL);
             cfg.padding (Insets.em (0));
             cfg.effect (CardFitLayout.Config.Effect.FADE_IN);
         }, tabs -> {
             tabs.css (el -> CSS.HEIGHT.apply(el, Length.px (400)));
-            tabs.tab ("tab1", "Tab 1", new ExampleA1 (TabSet.Config.Style.HORIZONTAL_BAR));
-            tabs.tab ("tab2", "Tab 2", new ExampleA1 (TabSet.Config.Style.HORIZONTAL_UNDERLINE));
+            tabs.tab ("tab1", "Tab 1", new ExampleA1 (TabNavigator.Config.Style.HORIZONTAL_BAR));
+            tabs.tab ("tab2", "Tab 2", new ExampleA1 (TabNavigator.Config.Style.HORIZONTAL_UNDERLINE));
         }));
 
         // Example 2
-        add (TabbedPanelCreator.create(cfg -> {
-            cfg.style (TabSet.Config.Style.VERTICAL);
+        add (TabNavigatorCreator.create(cfg -> {
+            cfg.style (TabNavigator.Config.Style.VERTICAL);
             cfg.padding (Insets.em (1));
             cfg.effect (CardFitLayout.Config.Effect.FADE_IN);
         }, tabs -> {
@@ -189,10 +187,10 @@ public class Lesson3a extends LessonPanel {
 
     }
 
-    public static class ExampleA1 extends TabbedPanel {
+    public static class ExampleA1 extends TabNavigator {
 
-        public ExampleA1(TabSet.Config.Style style) {
-            super (new TabbedPanel.Config().style (style));
+        public ExampleA1(TabNavigator.Config.Style style) {
+            super (new TabNavigator.Config().style (style));
 
             tab ("taba", "Tab A", ComponentCreator.build(root -> {
                 P.$ (root).text ("Tab A (componentUuid=" + this.getUUID() + ")");

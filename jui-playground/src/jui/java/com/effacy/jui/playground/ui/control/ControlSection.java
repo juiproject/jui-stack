@@ -27,16 +27,15 @@ import com.effacy.jui.ui.client.control.Controls;
 import com.effacy.jui.ui.client.control.builder.ControlForm;
 import com.effacy.jui.ui.client.control.builder.ControlFormCreator;
 import com.effacy.jui.ui.client.icon.FontAwesome;
+import com.effacy.jui.ui.client.navigation.TabNavigator;
+import com.effacy.jui.ui.client.navigation.TabNavigatorCreator;
 import com.effacy.jui.ui.client.panel.PanelCreator;
-import com.effacy.jui.ui.client.tabs.TabSet;
-import com.effacy.jui.ui.client.tabs.TabbedPanel;
-import com.effacy.jui.ui.client.tabs.TabbedPanelCreator;
 import com.effacy.jui.validation.model.validator.Validators;
 
-public class ControlSection extends TabbedPanel {
+public class ControlSection extends TabNavigator {
 
     public ControlSection() {
-        super (TabbedPanelCreator.config ().style (TabSet.Config.Style.HORIZONTAL_UNDERLINE).padding (Insets.em (0)));
+        super (TabNavigatorCreator.config ().style (TabNavigator.Config.Style.HORIZONTAL_UNDERLINE).padding (Insets.em (0)));
 
         tab ("simple", "Simple form", new ControlExamples ());
         tab ("dynamic", "Dynamic form", new DynamicControl ());

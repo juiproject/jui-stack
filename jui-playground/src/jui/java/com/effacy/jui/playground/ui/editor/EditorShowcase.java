@@ -15,15 +15,14 @@
  ******************************************************************************/
 package com.effacy.jui.playground.ui.editor;
 
-import com.effacy.jui.ui.client.tabs.TabSet;
-import com.effacy.jui.ui.client.tabs.TabbedPanel;
-import com.effacy.jui.ui.client.tabs.TabbedPanelCreator;
+import com.effacy.jui.ui.client.navigation.TabNavigator;
+import com.effacy.jui.ui.client.navigation.TabNavigatorCreator;
 
-public class EditorShowcase extends TabbedPanel {
+public class EditorShowcase extends TabNavigator {
     
     public EditorShowcase() {
-        super (TabbedPanelCreator.config (cfg -> {
-            cfg.style (TabSet.Config.Style.HORIZONTAL);
+        super (TabNavigatorCreator.config (cfg -> {
+            cfg.style (TabNavigator.Config.Style.HORIZONTAL);
         }));
 
         tab ("uc", "Use Case", new UCEditor ());

@@ -1259,7 +1259,7 @@ To see what is happening look closely at:
 ```java
 tab ("lesson1", "Lesson 1",
     TabNavigatorCreator.create (cfg -> {
-        cfg.style (TabSet.Config.Style.HORIZONTAL_UNDERLINE);
+        cfg.style (TabNavigator.Config.Style.HORIZONTAL_UNDERLINE);
         cfg.tab ("lesson1a", "Part A", new Lesson1a ());
 }));
 ```
@@ -1268,7 +1268,7 @@ We see that we are adding a tab named `Lesson 1` associated with the component r
 
 ```java
 cfg -> {
-    cfg.style (TabSet.Config.Style.HORIZONTAL_UNDERLINE);
+    cfg.style (TabNavigator.Config.Style.HORIZONTAL_UNDERLINE);
     ...
 }
 ```

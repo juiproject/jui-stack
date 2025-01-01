@@ -378,7 +378,7 @@ Building on the principles explored so far, we can combine child components with
 add (ComponentCreator.build (root -> {
     P.$ (root).$ (p -> p.text ("The following is a set of tabs:"));
     TabNavigatorCreator.$ (root, cfg -> {
-        cfg.style (TabSet.Config.Style.HORIZONTAL_UNDERLINE);
+        cfg.style (TabNavigator.Config.Style.HORIZONTAL_UNDERLINE);
         cfg.padding (Insets.em (1));
         cfg.effect (Effect.FADE_IN);
         cfg.tab ("tab1", "Tab 1", ComponentCreator.build (tab -> {

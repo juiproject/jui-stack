@@ -18,14 +18,12 @@ package com.effacy.jui.ui.client.explorer;
 import com.effacy.jui.core.client.component.Component;
 import com.effacy.jui.core.client.dom.css.Insets;
 import com.effacy.jui.ui.client.InfoBlockCreator;
+import com.effacy.jui.ui.client.navigation.TabNavigator;
 import com.effacy.jui.ui.client.panel.SplitPanel;
-import com.effacy.jui.ui.client.tabs.TabSet;
-import com.effacy.jui.ui.client.tabs.TabbedPanel;
+
 
 /**
- * RendererExamples
- *
- * @author Jeremy Buckley
+ * Renders out the themes.
  */
 public class Themes extends SplitPanel {
 
@@ -41,7 +39,7 @@ public class Themes extends SplitPanel {
             });
         })).update (ThemeRenderer.ThemeStyle.colors ().size ());
 
-        TabbedPanel tabbed = add (new TabbedPanel.Config (TabSet.Config.Style.HORIZONTAL_UNDERLINE).build ());
+        TabNavigator tabbed = add (new TabNavigator.Config ().style(TabNavigator.Config.Style.HORIZONTAL_UNDERLINE).build ());
         tabbed.tab ("palette", "Palette", new Component<Component.Config> (null, new ThemeRenderer ().convert (a -> ThemeRenderer.ThemeStyle.colors ())));
         tabbed.tab ("topography", "Topography", new Component<Component.Config> (null, new ThemeRenderer ().convert (a -> ThemeRenderer.ThemeStyle.topography ())));
         tabbed.tab ("components", "Components", new Component<Component.Config> (null, new ThemeRenderer ().convert (a -> ThemeRenderer.ThemeStyle.components ())));

@@ -27,13 +27,12 @@ import com.effacy.jui.playground.ui.PlaygroundApp;
 import com.effacy.jui.ui.client.InfoBlockCreator;
 import com.effacy.jui.ui.client.button.ButtonCreator;
 import com.effacy.jui.ui.client.icon.FontAwesome;
-import com.effacy.jui.ui.client.tabs.TabSet;
-import com.effacy.jui.ui.client.tabs.TabbedPanel;
-import com.effacy.jui.ui.client.tabs.TabbedPanelCreator;
+import com.effacy.jui.ui.client.navigation.TabNavigator;
+import com.effacy.jui.ui.client.navigation.TabNavigatorCreator;
 
 public class Lesson3b extends LessonPanel implements INavigationHandlerProvider {
 
-    private TabbedPanel tabbedPanel;
+    private TabNavigator tabbedPanel;
 
     protected Lesson3b() {
         // This display a title and descriptive text on the page.
@@ -43,8 +42,8 @@ public class Lesson3b extends LessonPanel implements INavigationHandlerProvider 
             });
         })).update (null);
 
-        tabbedPanel = add (TabbedPanelCreator.create(cfg -> {
-            cfg.style (TabSet.Config.Style.VERTICAL);
+        tabbedPanel = add (TabNavigatorCreator.create(cfg -> {
+            cfg.style (TabNavigator.Config.Style.VERTICAL);
             cfg.padding (Insets.em (1));
             cfg.effect (CardFitLayout.Config.Effect.FADE_IN);
         }, tabs -> {

@@ -15,19 +15,18 @@
  ******************************************************************************/
 package com.effacy.jui.playground.ui.tutorial;
 
-import com.effacy.jui.ui.client.tabs.TabSet;
-import com.effacy.jui.ui.client.tabs.TabbedPanel;
-import com.effacy.jui.ui.client.tabs.TabbedPanelCreator;
+import com.effacy.jui.ui.client.navigation.TabNavigator;
+import com.effacy.jui.ui.client.navigation.TabNavigatorCreator;
 
 /**
  * The top-level section that contains the tabs, the first of which is the
  * dashboard being developed.
  */
-public class ApplicationSection extends TabbedPanel {
+public class ApplicationSection extends TabNavigator {
 
     public ApplicationSection() {
         // TODO: Modify the configuration to support the rounded style.
-        super (TabbedPanelCreator.config ().color ("#f0f0f0").style (TabSet.Config.Style.VERTICAL));
+        super (TabNavigatorCreator.config ().color ("#f0f0f0").style (TabNavigator.Config.Style.VERTICAL));
 
         // TODO: Add the tabs here.
     }

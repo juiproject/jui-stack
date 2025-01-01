@@ -63,7 +63,7 @@ Each module declares an XML based *module descriptor* which resides under the mo
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "jui-module-1.0.0.dtd">
+<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "https://juiproject.github.io/jui-stack/jui-module-1.0.0.dtd">
 <module>
   <inherits name="com.effacy.jui.core.Core" />
   <source path="client" />
@@ -107,7 +107,7 @@ A minimalistic module declaration would look something like:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "jui-module-1.0.0.dtd">
+<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "https://juiproject.github.io/jui-stack/jui-module-1.0.0.dtd">
 <module>
   <source path="client" />
   <entry-point class="mymodule.client.MyModule" />
@@ -161,7 +161,7 @@ A minimal module definition follows:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "jui-module-1.0.0.dtd">
+<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "https://juiproject.github.io/jui-stack/jui-module-1.0.0.dtd">
 <module>
   <inherits name="com.effacy.jui.ui.UI" />
   <source path="ui" />
@@ -318,7 +318,7 @@ Relevant to this are `UIInitialiser.class` and `UI.gwt.xml` (along with supporti
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "jui-module-1.0.0.dtd">
+<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "https://juiproject.github.io/jui-stack/jui-module-1.0.0.dtd">
 <module>
   <inherits name="com.effacy.jui.ui.UI" />
   <source path="ui" />
@@ -363,7 +363,7 @@ We begin describing `PlaygroundApp.gwt.xml`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "jui-module-1.0.0.dtd">
+<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "https://juiproject.github.io/jui-stack/jui-module-1.0.0.dtd">
 <module>
   <inherits name="myapplication.jui.UI" />
   <source path="ui" />
@@ -750,7 +750,7 @@ Modules always include a descriptor (a file that ends with `.gwt.xml`; these are
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "jui-module-1.0.0.dtd">
+<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "https://juiproject.github.io/jui-stack/jui-module-1.0.0.dtd">
 <module>
   <inherits name="com.effacy.jui.core.Core" />
   <source path="client" />

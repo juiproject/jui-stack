@@ -59,7 +59,7 @@ The simplest approach to this is:
 3. Run a `git diff release/XXXX release/YYYY --name-only` to work out what files have changed. The important changes will by under `user` (and used the guide above). You can pipe this to filter on package prefix ` | grep '^package/'` (i.e. ` | grep '^user/super/com/google/gwt/emul/'`)
 4. Copy across the relevant changes.
 
-In addition you should ensure that the [Modifications: Emulation](#emulation) changes are also applied, unless they have been addressed otherwise (i.e. fixed or updated from the version of GWT being upgraded to).
+In addition you should ensure that the [Modifications](#modifications) are also applied, unless they have been addressed otherwise (i.e. fixed or updated from the version of GWT being upgraded to).
 
 ### Modifications
 
@@ -77,7 +77,39 @@ This has not been implemented as part of the standard emulation (stated reason b
 
 #### Scheduler
 
-It appeared that invoking `Scheduler.scheduleFinally(...)` outside of the browser event loop would result in the command only being run on the next event (one than is captured, such as a mouse move). The effect of this was that some script injections were being delayed resulting in initially no CSS being applied. To resolve `Impl.running()` was added to determine if the entry was in process. `Scheduler.scheduleFinally(ScheduledCommand)` was modified to check if we are in enter and if not then to execute the command immediately.
+It appeared that invoking `Scheduler.scheduleFinally(...)` outside of the browser event loop would result in the command only being run on the next event (one than is captured, such as a mouse move). The effect of this was that some script injections were being delayed resulting in initially no CSS being applied.
+
+To resolve this `running()` was added to `Impl` to determine if the entry was in progress:
+
+```java
+/**
+ * This has been added to the GWT base code.
+ * <p>
+ * Determine if the entry is running or not.
+ * 
+ * @return {@code true} if it is.
+ */
+public static boolean running() {
+    return (entryDepth > 0);
+}
+```
+
+Then `Scheduler.scheduleFinally(ScheduledCommand)` was modified to check if we are in entry and if not then to execute the command immediately:
+
+```java
+@Override
+public void scheduleFinally(ScheduledCommand cmd) {
+    if (!Impl.running()) {
+        // Run immediately.
+        try {
+            cmd.execute();
+        } catch (Throwable e) {
+            GWT.reportUncaughtException (e);
+        }
+    } else
+        finallyCommands = push(finallyCommands, Task.create(cmd));
+}
+```
 
 ### Pending decoupling work
 

@@ -534,6 +534,7 @@
 .juiPGuage {
     --frag-guage-bg: #eaeaea;
     --frag-guage-dial: var(--jui-color-primary50);
+    --frag-guage-text: #666;
     display: inline-block;
 }
 
@@ -559,7 +560,7 @@
 
 .juiPGuage > div > div > span {
     font-weight: 600;
-    color: #666;
+    color: var(--frag-guage-text);
     font-size: 0.95em;
     position: relative;
     left: 1px;
@@ -568,6 +569,15 @@
 .juiPGuage > div > div > span > i {
     font-size: 0.65em;
     font-style: normal;
+    top: -0.5em;
+    position: relative;
+}
+
+.juiPGuage > div > div > em {
+    font-weight: 600;
+    color: var(--frag-guage-text);
+    font-size: 1.2em;
+    position: relative;
 }
 
 /*************************************************

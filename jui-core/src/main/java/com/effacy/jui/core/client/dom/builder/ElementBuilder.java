@@ -23,11 +23,11 @@ import java.util.Map;
 import org.gwtproject.safehtml.shared.SafeHtml;
 import org.gwtproject.safehtml.shared.SafeHtmlBuilder;
 
+import com.effacy.jui.core.client.Debug;
 import com.effacy.jui.core.client.dom.UIEventType;
 import com.effacy.jui.core.client.dom.css.CSS.CSSProperty;
 import com.effacy.jui.core.client.dom.css.CSS.ICSSProperty;
 import com.effacy.jui.platform.util.client.StringSupport;
-import com.effacy.jui.core.client.Debug;
 
 import elemental2.dom.DomGlobal;
 import elemental2.dom.Element;
@@ -373,6 +373,10 @@ public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
      * <p>
      * This takes a CSS declaration as it would appear in a CSS file and splits it
      * into property and value.
+     * <p>
+     * Note that if the property is a CSS variable (i.e. starts with --) then it
+     * will be assigned to the style via <code>setProperty</code> (rather than
+     * <code>set</code>).
      * 
      * @param line
      *             combined property and value separated by a colon.
@@ -528,7 +532,10 @@ public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
                         continue;
                     if (StringSupport.empty (value))
                         continue;
-                    ((HTMLElement) element).style.set (property, value);
+                    if (property.startsWith("--"))
+                        ((HTMLElement) element).style.setProperty (property, value);
+                    else
+                        ((HTMLElement) element).style.set (property, value);
                 }
             }
         }

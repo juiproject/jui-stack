@@ -16,7 +16,6 @@
 package com.effacy.jui.ui.client;
 
 
-import com.effacy.jui.platform.util.client.ScriptInjector;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.google.gwt.core.client.EntryPoint;
 
@@ -29,7 +28,6 @@ public class Initialiser implements EntryPoint {
     public void onModuleLoad() {
         Theme.init ();
         FontAwesome.inject ();
-        ScriptInjector.injectFromModuleBase ("editor.js");
     }
 }
 

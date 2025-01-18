@@ -1,1 +1,1 @@
-// TODO: When native is supported move content from editor.js to here.
+// TODO: When native is supported move content from jui_text_editor.js to here.

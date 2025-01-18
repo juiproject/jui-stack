@@ -30,7 +30,7 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 /**
- * Implementation is found in {@code <module-script-base>/editor.js}.
+ * Implementation is found in {@code <module-script-base>/jui_text_editor.js}.
  */
 @JsType(isNative = true, namespace = JsPackage.GLOBAL)
 public class EditorSupport {

@@ -22,7 +22,7 @@ For service patch a bugfix branch `bugfix/<version>` is created off the `main` b
 
 ## Maven Central
 
-Here we discuss the process by which one releases artefacts to the [Maven Central Repository](https://mvnrepository.com/repos/central). This involves (for our purposes) deploying the project as a single component into the [Sonatype Portal](https://central.sonatype.org) from which it can be deployed manually (while the process is new for the project, later we will switch to automated deployments).
+Here we discuss the process by which one releases artefacts to the [Maven Central Repository](https://mvnrepository.com/repos/central). This involves (for our purposes) deploying the project as a single component into the [Sonatype Portal](https://central.sonatype.com) from which it can be deployed manually (while the process is new for the project, later we will switch to automated deployments).
 
 ### Github releases
 
@@ -31,8 +31,8 @@ The preferred approach is to release through Github whereby the Github action [r
 1. Select **Create new release**.
 2. Ensure the `main` branch is selected.
 3. Create a new tag of the form `version/<version>` where `<version>` is the version number (i.e. `0.1.0`). Note that the [version format](#versions) is enforced during release.
-4. Give the release the title `v<version>` (i.e. `v0.1.0.M`).
-5. Publish the release. This will result in the [release.yml](.github/workflows/release.yml) being run and a newly created component in the [Sonatype Portal](https://central.sonatype.org).
+4. Give the release the title `v<version>` (i.e. `v0.1.0`).
+5. Publish the release. This will result in the [release.yml](.github/workflows/release.yml) being run and a newly created component in the [Sonatype Portal](https://central.sonatype.com).
 6. Login to the [Sonatype Portal](https://central.sonatype.org) and deploy the component.
 
 #### Maintenace

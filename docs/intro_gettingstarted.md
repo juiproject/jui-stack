@@ -174,6 +174,14 @@ The POM file follows (replace the version JUI with the latest):
         <groupId>com.effacy.jui</groupId>
         <artifactId>jui-maven-plugin</artifactId>
         <version>${version.effacy-jui}</version>
+        <!-- Needed to resolve the GWT dependency; this need will be removed in a future release of the plugin -->
+        <dependencies>
+          <dependency>
+            <groupId>org.gwtproject</groupId>
+            <artifactId>gwt-dev</artifactId>
+            <version>2.12.1</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <phase>compile</phase>

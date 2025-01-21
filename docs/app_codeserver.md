@@ -88,6 +88,7 @@ The simplest way to run the code server is using the `codeserver` goal of the `j
     <profile>
       <id>codeserver</id>
       <build>
+        <defaultGoal>initialize</defaultGoal>
         <plugins>
           <plugin>
             <groupId>com.effacy.jui</groupId>
@@ -162,10 +163,10 @@ Walking through the configuration (see [Appendix: Maven configuration](#maven-co
 
 If you are encouter problems getting the code sever up-and-running then try adding the configuration parameter `<diagnose>true</diagnose>`. This will print to logs the classpath used to run the code server along with the options passed (without attempting to launch the code server).
 
-The code server can then be run with:
+The code server can then be run with (the specification of the defaul goal runs as if `initialize` were included):
 
 ```bash
-mvn -Pcodeserver initialize
+mvn -Pcodeserver
 ```
 
 ?> It is possible to run the code server via a run configuration (see the [Appendix](#run-configuration) for details) however that can be a littly tricky. These are generally run from a project and passes through the classpath relevant to that project. This will include dependencies and sometimes source code but generally you need to manually reference source code in sibling projects (this very much depends on how your IDE setups run configurations). In all cases you need to manually add in the code server JAR file itself. In the most part this is fine but if your project includes Spring Boot then autoconfiguration can interfere with the code server (which also uses Spring Boot). The Maven plugin does exhibit this problem but the use of filters reduces the burden of the problem significantly and the associated classpath tends to be quite minmalistic (only including JUI compilable code).

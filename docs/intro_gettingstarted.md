@@ -174,14 +174,6 @@ The POM file follows (replace the version JUI with the latest):
         <groupId>com.effacy.jui</groupId>
         <artifactId>jui-maven-plugin</artifactId>
         <version>${version.effacy-jui}</version>
-        <!-- Needed to resolve the GWT dependency; this need will be removed in a future release of the plugin -->
-        <dependencies>
-          <dependency>
-            <groupId>org.gwtproject</groupId>
-            <artifactId>gwt-dev</artifactId>
-            <version>2.12.1</version>
-          </dependency>
-        </dependencies>
         <executions>
           <execution>
             <phase>compile</phase>
@@ -428,6 +420,7 @@ The easiest way to run the codeserver is by using the `jui-maven-plugin`'s `code
   <profile>
     <id>codeserver</id>
     <build>
+      <defaultGoal>initialize</defaultGoal>
       <plugins>
         <plugin>
           <groupId>com.effacy.jui</groupId>
@@ -461,10 +454,10 @@ Take note of the explicit specification of the source directories (why this is n
 
 #### Running the code server
 
-With the changes to the POM as described above, you can run the code server with the following:
+With the changes to the POM as described above, you can run the code server with the following (there is no need to specify a lifecycle phase as `initialize` is declared as the default goal and that is all that is needed):
 
 ```bash
-mvn -Pcodeserver initialize
+mvn -Pcodeserver
 ```
 
 Observing the log stream you should eventually see something similar to the following (this example was obtained under MacOS, hence the locations of the temporary folders):

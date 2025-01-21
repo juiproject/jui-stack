@@ -28,6 +28,17 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.gwtproject</groupId>
+      <artifactId>gwt-dev</artifactId>
+      <version>${version.gwt}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.effacy.jui</groupId>
+      <artifactId>jui-platform-codeserver</artifactId>
+      <classifier>jar-with-dependencies</classifier>
+      <version>${revision}</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.maven.shared</groupId>
       <artifactId>maven-artifact-transfer</artifactId>
       <version>${version.maven-artifact-transfer}</version>

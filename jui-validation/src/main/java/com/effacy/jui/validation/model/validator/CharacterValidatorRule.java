@@ -70,7 +70,7 @@ public class CharacterValidatorRule {
      *            the character sequence to test.
      * @return {@code true} if passes.
      */
-    public boolean test(final CharSequence cs) {
+    public boolean test(CharSequence cs) {
         int sz = cs.length ();
         for (int i = 0; i < sz; i++) {
             char nowChar = cs.charAt (i);
@@ -78,13 +78,13 @@ public class CharacterValidatorRule {
                 continue;
             if (newline && ((nowChar == '\r') || (nowChar == '\n')))
                 continue;
-            if (letter && Character.isLetter(nowChar))
+            if (letter && CharacterSupport.isLetter(nowChar))
                 continue;
-            if (space && Character.isSpaceChar(nowChar))
+            if (space && CharacterSupport.isSpaceChar(nowChar))
                 continue;
-            if (whitespace && Character.isWhitespace(nowChar))
+            if (whitespace && CharacterSupport.isWhitespace(nowChar))
                 continue;
-            if (digit && Character.isDigit(nowChar))
+            if (digit && CharacterSupport.isDigit(nowChar))
                 continue;
             return false;
         }

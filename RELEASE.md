@@ -46,7 +46,7 @@ This should be limited to maintaining the secrets used by [release.yml](.github/
 |`GPG_SIGNING_KEY_PASSWORD`|The GPG passphrase (see below).|
 |`GPG_SIGNING_KEY`|The encoded GPG siging key (see below).|
 
-For GPG signing (see [GPG](https://central.sonatype.org/publish/requirements/gpg/) for a full description) we require a key and passphrase. This can be created locally (see aforementioned link) then a suitabley encoded key created running:
+For GPG signing (see [GPG keys](#gpg-keys) for a brief description) we require a key and passphrase. This can be created locally (see aforementioned link) then a suitabley encoded key created running:
 
 ```bash
 gpg --armor --export-secret-keys <id>
@@ -113,3 +113,7 @@ Deployment to Maven Central is configured under the `release` profile and consis
 5. `central-publishing-maven-plugin` to deploy the generated artefacts.
 
 The requirements are defined in [Sonatype: Publish](https://central.sonatype.org/register/central-portal/) with minor modifications as per [Github: Setup Java](https://github.com/actions/setup-java/blob/v3.11.0/docs/advanced-usage.md#Publishing-using-Apache-Maven) to ensure the setup works when using Github actions.
+
+#### GPG keys
+
+A full description on GPG key creation and distribution can be found at [GPG](https://central.sonatype.org/publish/requirements/gpg/). If a new (or personal) GPG key is required then it must not only be generated but distributed (i.e. to [keys.openpgp.org](https://keys.openpgp.org)). The aforementioned documentation does describe how to distribute keys in a generic fashion however experience is that distribution comes with some hooks and the generic approach may fail (for example one may need to verify ones email address). Its recommended to follow the distribution process as described explicitly for the given keyserver (i.e the [keys.openpgp.org usage guide](https://keys.openpgp.org/about/usage)).

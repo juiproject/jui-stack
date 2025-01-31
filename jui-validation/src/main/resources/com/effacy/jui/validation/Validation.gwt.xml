@@ -3,4 +3,6 @@
 <module>
   <inherits name="org.gwtproject.regexp.RegExp" />
   <source path="model" />
+  <super-source path="super" />
+    <entry-point class="com.effacy.jui.validation.model.Initialiser" />
 </module>

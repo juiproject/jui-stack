@@ -799,6 +799,18 @@ This makes use of a different set of `$(...)` methods that is a little cleaner a
 
 *Throughout the documentation we will tend to lean towards the lambda-expression approach, though not exclusively. In practice you may find youself starting with the simpler method then converting to a lambda-expression when you need to accommodate more complex arrangements.*
 
+For fairly static content (with some allowance for property value replacement) you can include direct HTML:
+
+```java
+...
+Html.$(root, """
+  <p>
+    This is a simple <strong>JUI</strong> <em>application</em>
+  </p>
+""");
+...
+```
+
 ### Working with components
 
 #### Custom components

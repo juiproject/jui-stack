@@ -16,10 +16,19 @@
 package com.effacy.jui.ui.client.panel;
 
 import com.effacy.jui.core.client.component.IComponentCSS;
+import com.effacy.jui.core.client.component.layout.CardFitLayout;
 import com.effacy.jui.core.client.component.layout.LayoutData;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.google.gwt.core.client.GWT;
 
+/**
+ * Simple content panel that uses the default {@link CardFitLayout} and
+ * configuration for spacing and scrolling. Content can be added via the
+ * {@link #add(com.effacy.jui.core.client.component.IComponent)} family of
+ * methods.
+ * <p>
+ * See the README.md in this package for more information.
+ */
 public class Panel extends PanelBase<Panel.Config> {
 
     /**

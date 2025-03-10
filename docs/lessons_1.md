@@ -1805,6 +1805,7 @@ Using the tools and techniques that you have been exposed to in this part try to
 1. In our panels we apply a fixed height. If we remove that height the panel it will vanish, why?
 2. In the last example of the lesson part we made use of the custom class `LeftRightPanel` to setout three buttons and some content. Create a variant of this that makes use of a separate custom class that extends `LeftRightPanel` and setout the content in the constructor (this is the usual way of doing this). For the content allow this to be passed through the constructor and for it to only display if there is content to display.
 3. How could we have used a different approach to `use(...)`? *Hint: consider the dom selector that can be passed to the `renderer(...)` method.*
+4. **Advanced** Create a component that can be used to build pages that have a tool bar at the top and a custom content area below. The content area needs be populated using the `renderer(...)` method while the top should be populated with a dedicated `add(...)` method. *Hint: override the `renderer(...)` method which should create the basic structure then delegate to the passed consumer to build the content area; use a region with the action bar layout for the top section.* 
 
 ## Solutions to exercises
 
@@ -2633,6 +2634,7 @@ Exercises are:
 1. In our panels we apply a fixed height. If we remove that height the panel it will vanish, why?
 2. In the last example of the lesson part we made use of the custom class `LeftRightPanel` to setout three buttons and some content. Create a variant of this that makes use of a separate custom class that extends `LeftRightPanel` and setout the content in the constructor (this is the usual way of doing this). For the content allow this to be passed through the constructor and for it to only display if there is content to display.
 3. How could we have used a different approach to `use(...)`? *Hint: consider the dom selector that can be passed to the `renderer(...)` method.*
+4. **Advanced** Create a component that can be used to build pages that have a tool bar at the top and a custom content area below. The content area needs be populated using the `renderer(...)` method while the top should be populated with a dedicated `add(...)` method. *Hint: override the `renderer(...)` method which should create the basic structure then delegate to the passed consumer to build the content area; use a region with the action bar layout for the top section.* 
 
 #### Exercise 1
 
@@ -2698,3 +2700,58 @@ renderer(el -> {
 });
 ...
 ```
+
+#### Exercise 4
+
+A candidate panel uses the `ActionBarLayout` for the top and an `add(...)` method to add components to the region. The content area is generated via the `renderer(...)` method.
+
+```java
+public abstract class TopPanel extends SimpleComponent {
+
+    private static String REGION_TOP = "top";
+
+    protected TopPanel() {
+        findRegionPoint(REGION_TOP).setLayout(ActionBarLayoutCreator.create(cfg -> {
+            cfg.zone(Zone.$(HAlignment.LEFT));
+        }));
+    }
+
+    protected <C extends IComponent> C add(C cpt) {
+        findRegionPoint(REGION_TOP).add(cpt, new ActionBarLayout.Data(0));
+        return cpt;
+    }
+
+    protected void renderer(Consumer<ElementBuilder> builder, Consumer<NodeContext> onbuild) {
+        super.renderer(root -> {
+            root.css("display: flex; flex-direction: column; height: 100%;");
+            Div.$ (root).css("background: #fff; border-bottom: 1px solid #ccc; padding: 0.75em 1em;").$ (
+                Div.$().use (n -> {
+                    findRegionPoint(REGION_TOP).setElement((Element) n);
+                })
+            );
+            Div.$ (root).css("flex-grow: 1; padding: 1em;").$ (bottom -> {
+                builder.accept(bottom);
+            });
+        }, onbuild);
+    }
+
+}
+```
+
+With an example usage:
+
+```java
+public class MySample extends TopPanel {
+
+    public MySample() {
+        add(ButtonCreator.build (cfg -> {
+            cfg.label("Add something");
+        }));
+        renderer(root -> {
+            // Render contents.
+        });
+    }
+}
+```
+
+A potential extension would be to create left and right zones for the action bar layout and adapt the `add(...)` method to specify which zone to add the passed component to.

@@ -1,9 +1,9 @@
-package com.effacy.jui.ui.client;
+package com.effacy.jui.core.client;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.effacy.jui.ui.client.MarkupParser.Block;
+import com.effacy.jui.core.client.MarkupParser.Block;
 
 public class MarkupParserTest {
 
@@ -79,4 +79,5 @@ public class MarkupParserTest {
         if (content != null)
             Assertions.assertEquals(content, block.text());
     }
+    
 }

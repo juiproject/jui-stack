@@ -18,6 +18,7 @@ package com.effacy.jui.core.client.store;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Predicate;
 
 import com.effacy.jui.platform.util.client.Carrier;
 import com.effacy.jui.platform.util.client.TimerSupport;
@@ -363,6 +364,27 @@ public abstract class PaginatedStore<V> extends StoreSelection<V> implements IPa
         if (prior != this.status)
             fireEvent(IStoreStatusListener.class).onStoreStatucChanged(this, this.status, prior);
         _onClear ();
+    }
+
+    /**
+     * Remove all elements that match the given predicate. This will not perform a
+     * reload.
+     * 
+     * @param test
+     *             the test to use.
+     */
+    public void remove(Predicate<V> test) {
+        if (items.removeIf(v -> {
+            if (!test.test(v))
+                return false;
+            totalAvailable--;
+            return true;
+        })) {
+            if (items.isEmpty())
+                reload();
+            else
+                _onChange ();
+        }
     }
 
     @Override

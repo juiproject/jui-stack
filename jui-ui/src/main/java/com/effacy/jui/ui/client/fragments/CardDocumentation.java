@@ -16,11 +16,14 @@
 package com.effacy.jui.ui.client.fragments;
 
 import com.effacy.jui.core.client.component.ComponentCreator;
+import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
 import com.effacy.jui.core.client.dom.builder.P;
 import com.effacy.jui.ui.client.explorer.ComponentDocumentation;
 import com.effacy.jui.ui.client.explorer.ComponentDocumentation.Config.Type;
+import com.effacy.jui.ui.client.fragments.Card.CardFragment;
 
 public class CardDocumentation {
+    
     public static ComponentDocumentation documentation() {
         return new ComponentDocumentation.Config ()
             .title ("Card")
@@ -33,5 +36,9 @@ public class CardDocumentation {
                 });
             }))
         .build ();
+    }
+
+    public static CardFragment example1(IDomInsertableContainer<?> root) {
+        return Card.$(root);
     }
 }

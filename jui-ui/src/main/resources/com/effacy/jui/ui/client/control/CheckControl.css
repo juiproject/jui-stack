@@ -2,6 +2,7 @@
     --jui-checkctl-text: var(--jui-ctl-text);
     --jui-checkctl-description: var(--jui-ctl-text);
     --jui-checkctl-labelgap: 0.75em;
+    --jui-checkctl-size: 1rem;
 }
 
 /**************************************
@@ -9,6 +10,7 @@
 */
 
 .component .inner {
+    font-size: var(--jui-checkctl-size);
 	display: flex;
 	flex-direction: column;
 	gap: var(--jui-checkctl-labelgap);
@@ -18,7 +20,7 @@
 .component .inner .item {
 	display: flex;
 	flex-direction: row;
-    align-items: flex-start;
+    align-items: center;
 }
 
 .component .inner .item.reverse {

@@ -1,7 +1,7 @@
 .component .tabs  {
     height: var(--cpt-tabbedpanel-height);
     max-height: var(--cpt-tabbedpanel-height);
-    background: var(--cpt-tabbedpanel-bg);
+    background: var(--cpt-navigator-bg);
     position: relative;
     transition: max-height 0.2s ease-in;
     display: table;

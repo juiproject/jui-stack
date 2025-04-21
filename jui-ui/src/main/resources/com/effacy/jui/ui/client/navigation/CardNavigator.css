@@ -2,13 +2,17 @@
     --jui-cardnavigator-action-bg: var(--jui-btn-bg);
     --jui-cardnavigator-notice: #fff;
     --jui-cardnavigator-notice-bg: var(--jui-color-secondary30);
+    --jui-cardnavigator-header-border: #eee;
+    --jui-cardnavigator-header-bg: transparent;
+    --jui-cardnavigator-header-color: inherit;
+    --jui-cardnavigator-maxwidth: 200px;
 }
 
 .component > .wrap {
     height: 100%;
     display: flex;
     flex-direction: column;
-    min-width: 400px;
+    min-width: var(--jui-cardnavigator-maxwidth);
 }
 
 .component > .wrap > .header {
@@ -16,7 +20,9 @@
 }
 
 .component.body > .wrap > .header {
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--jui-cardnavigator-header-border);
+    background: var(--jui-cardnavigator-header-bg);
+    color: var(--jui-cardnavigator-header-color);
 }
 
 .component > .wrap > .header .crumb {

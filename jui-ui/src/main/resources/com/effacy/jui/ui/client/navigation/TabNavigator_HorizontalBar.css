@@ -1,5 +1,5 @@
 .component  {
-    --cpt-tabbedpanel-bg: var(--jui-tabset-bg-02);
+    --cpt-navigator-bg: var(--jui-tabset-bg-02);
     --cpt-tabbedpanel-bg-tab-inactive: transparent;
     --cpt-tabbedpanel-bg-tab-active: var(--jui-tabset-bg-05);
     --cpt-tabbedpanel-bg-tab-hover: var(--jui-tabset-bg-03);
@@ -11,7 +11,7 @@
   border: 1px solid var(--cpt-tabbedpanel-outline);
   border-radius: 8px;
   margin: 1em;
-  background: var(--cpt-tabbedpanel-bg);
+  background: var(--cpt-navigator-bg);
 }
 
 .component .tabs  ul {

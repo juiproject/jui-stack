@@ -817,73 +817,73 @@
 /***************************************
  * FilterOptionGroup
  */
- .juiFilterOptionGroup {
-    --juiFilterOptionGroup-relief-border: var(--jui-color-neutral20);
-    --juiFilterOptionGroup-relief: 3px;
-    --juiFilterOptionGroup-radius: 6px;
-    --juiFilterOptionGroup-shadow: var(--jui-color-neutral30);
-    --juiFilterOptionGroup-bg: var(--jui-color-neutral10);
-    --juiFilterOptionGroup-bg-hover: var(--jui-color-neutral20);
-    --juiFilterOptionGroup-bg-selected: var(--jui-color-aux-white);
-    --juiFilterOptionGroup-text: var(--jui-color-neutral60);
-    --juiFilterOptionGroup-text-hover: var(--juiFilterOptionGroup-text);
-    --juiFilterOptionGroup-text-selected: var(--jui-color-neutral90);
-    --juiFilterOptionGroup-text-weight: 300;
-    --juiFilterOptionGroup-option-lr: 1em;
-    --juiFilterOptionGroup-option-tb: 0.5em;
-    --juiFilterOptionGroup-option-radius: var(--juiFilterOptionGroup-radius);
+ .juiChoiceSelector {
+    --juiChoiceSelector-relief-border: var(--jui-color-neutral20);
+    --juiChoiceSelector-relief: 3px;
+    --juiChoiceSelector-radius: 6px;
+    --juiChoiceSelector-shadow: var(--jui-color-neutral30);
+    --juiChoiceSelector-bg: var(--jui-color-neutral10);
+    --juiChoiceSelector-bg-hover: var(--jui-color-neutral20);
+    --juiChoiceSelector-bg-selected: var(--jui-color-aux-white);
+    --juiChoiceSelector-text: var(--jui-color-neutral60);
+    --juiChoiceSelector-text-hover: var(--juiChoiceSelector-text);
+    --juiChoiceSelector-text-selected: var(--jui-color-neutral90);
+    --juiChoiceSelector-text-weight: 300;
+    --juiChoiceSelector-option-lr: 1em;
+    --juiChoiceSelector-option-tb: 0.5em;
+    --juiChoiceSelector-option-radius: var(--juiChoiceSelector-radius);
  }
  
- .juiFilterOptionGroup {
+ .juiChoiceSelector {
     display: flex;
     width: fit-content;
-    gap: var(--juiFilterOptionGroup-relief);
-    padding: var(--juiFilterOptionGroup-relief);
-    border: 1px solid var(--juiFilterOptionGroup-relief-border);
-    border-radius: var(--juiFilterOptionGroup-radius);
-    background: var(--juiFilterOptionGroup-bg);
-    color: var(--juiFilterOptionGroup-text);
+    gap: var(--juiChoiceSelector-relief);
+    padding: var(--juiChoiceSelector-relief);
+    border: 1px solid var(--juiChoiceSelector-relief-border);
+    border-radius: var(--juiChoiceSelector-radius);
+    background: var(--juiChoiceSelector-bg);
+    color: var(--juiChoiceSelector-text);
     overflow: hidden;
 }
 
-.juiFilterOptionGroup > div {
-    padding: var(--juiFilterOptionGroup-option-tb) var(--juiFilterOptionGroup-option-lr);
-    font-weight: var(--juiFilterOptionGroup-text-weight);
-    color: var(--juiFilterOptionGroup-text);
-    border-radius: var(--juiFilterOptionGroup-option-radius);
+.juiChoiceSelector > div {
+    padding: var(--juiChoiceSelector-option-tb) var(--juiChoiceSelector-option-lr);
+    font-weight: var(--juiChoiceSelector-text-weight);
+    color: var(--juiChoiceSelector-text);
+    border-radius: var(--juiChoiceSelector-option-radius);
     flex-grow: 1;
     text-align: center;
 }
 
-.juiFilterOptionGroup > div.active {
-    background: var(--juiFilterOptionGroup-bg-selected);
-    color: var(--juiFilterOptionGroup-text-selected);
+.juiChoiceSelector > div.active {
+    background: var(--juiChoiceSelector-bg-selected);
+    color: var(--juiChoiceSelector-text-selected);
 }
 
-.juiFilterOptionGroup.dropshadow > div.active {
-    box-shadow: 0 0 6px var(--juiFilterOptionGroup-shadow);
+.juiChoiceSelector.dropshadow > div.active {
+    box-shadow: 0 0 6px var(--juiChoiceSelector-shadow);
 }
 
-.juiFilterOptionGroup > div:not(.active):hover {
-    background: var(--juiFilterOptionGroup-bg-hover);
-    color: var(--juiFilterOptionGroup-text-hover);
+.juiChoiceSelector > div:not(.active):hover {
+    background: var(--juiChoiceSelector-bg-hover);
+    color: var(--juiChoiceSelector-text-hover);
     cursor: pointer;
 }
 
-.juiFilterOptionGroup > div > em {
+.juiChoiceSelector > div > em {
     margin-right: 0.5em;
 }
 
-.juiFilterOptionGroup.variant-standard {
+.juiChoiceSelector.variant-standard {
 
 }
 
-.juiFilterOptionGroup.variant-control {
-    --juiFilterOptionGroup-relief: 0;
-    --juiFilterOptionGroup-option-tb: 0.25em;
-    --juiFilterOptionGroup-text-weight: 600;
-    --juiFilterOptionGroup-option-radius: 0;
-    --juiFilterOptionGroup-text: var(--jui-color-neutral40);
+.juiChoiceSelector.variant-control {
+    --juiChoiceSelector-relief: 0;
+    --juiChoiceSelector-option-tb: 0.25em;
+    --juiChoiceSelector-text-weight: 600;
+    --juiChoiceSelector-option-radius: 0;
+    --juiChoiceSelector-text: var(--jui-color-neutral40);
 }
 
 /***************************************

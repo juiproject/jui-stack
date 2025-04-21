@@ -4,10 +4,12 @@
     --cpt-btn-bg-hover: var(--jui-btn-bg-hover);
     --cpt-btn-border: var(--jui-btn-border);
 	--cpt-btn-text: var(--jui-btn-text);
+    --cpt-btn-text-size: 1em;
     --cpt-btn-disabled-bg: var(--jui-color-aux-white);
     --cpt-btn-disabled-border: var(--jui-state-disabled);
     --cpt-btn-disabled-text: var(--jui-state-disabled);
     --cpt-btn-disabled-opacity: 1;
+    --cpt-btn-padding-lr: 1em;
 }
 
 .component {
@@ -18,7 +20,9 @@
     overflow: hidden;
     margin: 2px 4px;
     align-items: center;
-}
+    background: var(--cpt-btn-bg);
+    font-size: var(--cpt-btn-text-size);
+} 
 
 .component .outer {
 	margin: 0;
@@ -57,8 +61,8 @@
 	align-items: center;
     justify-content: center;
 	position: relative;
-	padding-left: 1em;
-	padding-right: 1em;
+	padding-left: var(--cpt-btn-padding-lr);
+	padding-right: var(--cpt-btn-padding-lr);
 	text-align: center;
 	text-decoration: none;
 	outline: none;

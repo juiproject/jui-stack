@@ -1,16 +1,28 @@
 .component {
-	
-}
-
-.component.tight {
-	padding-top: 0;
+    --jui-multicheckctl-size: 0.85em;
+    --jui-multicheckctl-border-radius: 20px;
+    --jui-multicheckctl-border-width: 0;
+    --jui-multicheckctl-border-color: transparent;
+	--jui-multicheckctl-bg: #ccc;
+    --jui-multicheckctl-padding: 2px;
+    --jui-multicheckctl-item-weight: 500;
+    --jui-multicheckctl-item-text:  #fff;
+    --jui-multicheckctl-item-padding-tb: 1px;
+    --jui-multicheckctl-item-padding-lr: 8px;
+    --jui-multicheckctl-item-border-radius: var(--jui-multicheckctl-border-radius);
+    --jui-multicheckctl-item-border-radius-inner: var(--jui-multicheckctl-item-border-radius);
+    --jui-multicheckctl-item-hover-bg: var(--jui-ctl-active);
+    --jui-multicheckctl-item-selected-weight: 600;
+    --jui-multicheckctl-item-selected-bg: var(--jui-ctl-active);
+    --jui-multicheckctl-item-selected-text:  #fff;
+    --jui-multicheckctl-label-weight: 500;
+    --jui-multicheckctl-label-weight-bold: 600;
 }
 
 .component .inner {
 	display: flex;
 	flex-direction: column;
 	gap: 0.75em;
-	color: var(--jui-ctl-text);
 }
 
 .component .inner .item {
@@ -25,11 +37,11 @@
 
 .component .inner .item span {
 	user-select: none;
-	font-weight: 500;
+	font-weight: var(--jui-multicheckctl-label-weight);
 }
 
 .component .inner .item.bold span {
-	font-weight: 600;
+	font-weight: var(--jui-multicheckctl-label-weight-bold);
 }
 
 .component .inner .item span.spacer {
@@ -45,19 +57,25 @@
 	user-select: none;
 	cursor: pointer;
 	margin-top: 1px;
-	font-weight: 500;
+	font-weight: var(--jui-multicheckctl-label-weight);
 }
 
 .component .inner .item.bold label {
-	font-weight: 600;
+	font-weight: var(--jui-multicheckctl-label-weight-bold);
 }
+
+/******************************************
+* Options.
+*/
 
 .component .inner .item div.toggle {
 	display: flex;
 	align-items: center;
-	border-radius: 20px;
-	background: var(--jui-ctl-bg-offset);
-	padding: 2px;
+    border: var(--jui-multicheckctl-border-width) solid transparent;
+    border-color: var(--jui-multicheckctl-border-color);
+	border-radius: var(--jui-multicheckctl-border-radius);
+	background: var(--jui-multicheckctl-bg);
+	padding: var(--jui-multicheckctl-padding);
 }
 
 .component .inner .item div.toggle label {
@@ -66,9 +84,23 @@
 	position: relative;
 	flex: 1;
 	text-align: center;
-	padding: 1px 8px;
+	padding: var(--jui-multicheckctl-item-padding-tb) var(--jui-multicheckctl-item-padding-lr);
 	border-left: none;
-	border-radius: 20px;
+	border-radius: var(--jui-multicheckctl-item-border-radius-inner);
+}
+
+.component .inner .item div.toggle label:hover {
+    background: var(--jui-multicheckctl-item-hover-bg);
+}
+
+.component .inner .item div.toggle label:first-child {
+    border-top-left-radius: var(--jui-multicheckctl-item-border-radius);
+    border-bottom-left-radius: var(--jui-multicheckctl-item-border-radius);
+}
+
+.component .inner .item div.toggle label:last-child {
+    border-top-right-radius: var(--jui-multicheckctl-item-border-radius);
+    border-bottom-right-radius: var(--jui-multicheckctl-item-border-radius);
 }
 
 .component .inner .item div.toggle label.first {
@@ -78,7 +110,7 @@
 }
 
 .component .inner .item div.toggle label.active {
-	background: var(--jui-ctl-active);
+	background: var(--jui-multicheckctl-item-selected-bg);
 }
 
 .component .inner .item div.toggle label input {
@@ -91,19 +123,24 @@
 }
 
 .component .inner .item div.toggle label span {
-	font-weight: 600;
-	font-size: 0.85em;
-	color: #fff;
+	font-size: var(--jui-multicheckctl-size);
+	font-weight: var(--jui-multicheckctl-item-weight);
+	color: var(--jui-multicheckctl-item-text);
 }
 
-.component.invalid .inner input:focus {
-	box-shadow: 0 0 3px 2px var(--jui-ctl-err-focus-offset);
+.component .inner .item div.toggle label.active span {
+	font-weight: var(--jui-multicheckctl-item-selected-weight);
+	color: var(--jui-multicheckctl-item-selected-text);
 }
 
 .component.focus .item div.toggle {
 	border-color: var(--jui-ctl-focus);
     box-shadow: 0 0 0 2px var(--jui-ctl-focus-offset);
 }
+
+/******************************************
+* States.
+*/
 
 .component.waiting .inner input {
 	animation: eff-waiting-bg 1s infinite;
@@ -114,10 +151,16 @@
 	visibility: hidden;
 }
 
-.active {
-	
+.component.invalid .inner input:focus {
+	box-shadow: 0 0 3px 2px var(--jui-ctl-err-focus-offset);
 }
 
-.read_only {
-	
+/******************************************
+* General.
+*/
+
+.active {
+}
+
+.read_only {	
 }

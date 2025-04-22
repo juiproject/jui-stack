@@ -3,30 +3,38 @@
     --cpt-btn-bg: var(--jui-btn-bg);
     --cpt-btn-bg-hover: var(--jui-btn-bg-hover);
     --cpt-btn-border: var(--jui-btn-border);
+    --cpt-btn-border-width: 1px;
+    --cpt-btn-border-radius: var(--jui-btn-border-radius);
 	--cpt-btn-text: var(--jui-btn-text);
     --cpt-btn-text-size: 1em;
-    --cpt-btn-disabled-bg: var(--jui-color-aux-white);
+    --cpt-btn-text-lineheight: 1.8em;
+    --cpt-btn-disabled-bg: var(--jui-state-disabled-bg);
     --cpt-btn-disabled-border: var(--jui-state-disabled);
-    --cpt-btn-disabled-text: var(--jui-state-disabled);
-    --cpt-btn-disabled-opacity: 1;
+    --cpt-btn-disabled-text: var(--cpt-btn-disabled-border);
+    --cpt-btn-disabled-opacity: 0.8;
+    --cpt-btn-waiting-bg: var(--jui-state-disabled-bg);
+    --cpt-btn-waiting-border: var(--jui-state-disabled);
+    --cpt-btn-waiting-text: var(--jui-state-disabled-offset);
     --cpt-btn-padding-lr: 1em;
+    --cpt-btn-padding: 3px 2px;
+    --cpt-btn-margin: 2px 4px;
 }
 
 .component {
 	position: relative;
 	display: inline-flex;
-	border-radius: var(--jui-btn-border-radius);
-	border: 1px solid var(--cpt-btn-border);
+	border-radius: var(--cpt-btn-border-radius);
+	border: var(--cpt-btn-border-width) solid var(--cpt-btn-border);
     overflow: hidden;
-    margin: 2px 4px;
+    margin: var(--cpt-btn-margin);
     align-items: center;
     background: var(--cpt-btn-bg);
-    font-size: var(--cpt-btn-text-size);
+    font-size: var(--cpt-btn-text-size);Ø
 } 
 
 .component .outer {
 	margin: 0;
-	padding: 3px 2px;
+	padding: var(--cpt-btn-padding);
 	background: var(--cpt-btn-bg);
     width: 100%;
     height: var(--cpt-btn-height);
@@ -35,7 +43,7 @@
     justify-content: center;
 }
 
-.component .outer:hover {
+.component:not(.disabled):not(.waiting) .outer:hover {
 	background: var(--cpt-btn-bg-hover);
 }
 
@@ -51,13 +59,10 @@
 	background: var(--cpt-btn-disabled-bg) !important;
 }
 
-.component.waiting .outer {
-	background: var(--jui-btn-bg-disabled) !important;
-}
-
 .component a {
 	display: flex;
 	flex-direction: row;
+    gap: 0.7em;
 	align-items: center;
     justify-content: center;
 	position: relative;
@@ -82,7 +87,7 @@
 }
 
 .component a span {
-	line-height: 1.8em;
+	line-height: var(--cpt-btn-text-lineheight);
 	font-size: 1em;
 	white-space: nowrap;
 	font-weight: 400;
@@ -90,14 +95,7 @@
 }
 
 .component a em {
-	margin-right: 0.7em;
-	margin-left: -0.5em;
 	text-shadow: none;
-}
-
-.component.icon_right a em {
-	margin-left: 0.7em;
-	margin-right: -0.5em;
 }
 
 .component a i {
@@ -111,7 +109,11 @@
 }
 
 .component.waiting {
-	border-color: var(--jui-btn-bg-disabled);
+	border-color: var(--cpt-btn-waiting-border);
+}
+
+.component.waiting .outer {
+	background: var(--cpt-btn-waiting-bg);
 }
 
 .component.waiting a {
@@ -129,7 +131,7 @@
 
 .component.waiting a i {
 	display: block;
-    color: var(--jui-btn-bg-disabled-offset);
+    color: var(--cpt-btn-waiting-text);
 }
 
 .component.disabled a {

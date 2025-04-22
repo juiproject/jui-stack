@@ -7,6 +7,6 @@
 	background: var(--jui-btn-text);
 }
 
-.component .outer:hover * {
+.component:not(.disabled):not(.waiting) .outer:hover * {
 	color: var(--jui-btn-text);
 }

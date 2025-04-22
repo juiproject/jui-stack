@@ -154,7 +154,7 @@
     --jui-ctl-err-focus: var(--jui-state-error);
     --jui-ctl-err-focus-offset: var(--jui-state-error-offset);
 
-    /* Button */
+    /* Buttons */
     --jui-btn-bg: var(--jui-color-primary50);
     --jui-btn-bg-hover: var(--jui-color-primary60);
     --jui-btn-bg-disabled: var(--jui-state-disabled);

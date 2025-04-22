@@ -296,9 +296,10 @@
     --juiButton-margin: 2px;
     --juiButton-base: var(--jui-btn-bg);
     --juiButton-border: var(--juiButton-base);
-    --juiButton-radius: var(--jui-border-radius);
+    --juiButton-radius: var(--jui-btn-border-radius);
     --juiButton-text: var(--jui-color-aux-white);
     --juiButton-text-hover: var(--juiButton-text);
+    --juiButton-text-weight: 400;
     --juiButton-bg: var(--juiButton-base);
     --juiButton-bg-hover: var(--jui-btn-bg-hover);
     --juiButton-padding-tb: 0.45em;
@@ -310,7 +311,7 @@
     align-items: center;
     padding: var(--juiButton-padding-tb) var(--juiButton-padding-lr);
     letter-spacing: 0.02em;
-    font-weight: 400;
+    font-weight: var(--juiButton-text-weight);
     cursor: pointer;
     display: inline-flex;
     text-wrap-mode: nowrap;
@@ -365,6 +366,7 @@
 .juiButton.nature-danger {
     --juiButton-base: var(--jui-btn-danger-bg);
     --juiButton-bg-hover: var(--jui-btn-danger-bg-hover);
+    --juiButton-text-weight: 600;
 }
 
 .juiButton.nature-warning {

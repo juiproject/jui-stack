@@ -1,15 +1,29 @@
+.component {
+    --jui-textctl-height: var(--jui-ctl-height);
+    --jui-textctl-border: var(--jui-ctl-border);
+    --jui-textctl-border-radius: var(--jui-ctl-border-radius);
+    --jui-textctl-bg: var(--jui-ctl-bg);
+    --jui-textctl-text: var(--jui-ctl-text);
+    --jui-textctl-text-disabled: var(--jui-ctl-text-disabled);
+    --jui-textctl-text-readonly: var(--jui-ctl-text-readonly);
+    --jui-textctl-text-placeholder: var(--jui-ctl-text-placeholder);
+    --jui-textctl-icon: var(--jui-ctl-action);
+    --jui-textctl-icon-disabled: var(--jui-ctl-action-disabled);
+    --jui-textctl-icon-readonly: var(--jui-ctl-action-readonly);
+}
+
 .component .inner {
-    height: var(--jui-ctl-height);
-	border: 1px solid var(--jui-ctl-border);
-	border-radius: var(--jui-ctl-border-radius);
+    height: var(--jui-textctl-height);
+	border: 1px solid var(--jui-textctl-border);
+	border-radius: var(--jui-textctl-border-radius);
 	box-sizing: content-box;
 	padding: 0 0.75em;
-	background: var(--jui-ctl-bg);
+	background: var(--jui-textctl-bg);
 	display: flex;
 	flex-direction: row;
 	gap: 0.5em;
 	align-items: center;
-	color: var(--jui-ctl-text);
+	color: var(--jui-textctl-text);
 }
 
 .component.read_only em.left {
@@ -18,7 +32,7 @@
 
 .component.read_only em.read_only {
 	display: inline;
-	color: var(--jui-ctl-action);
+	color: var(--jui-textctl-icon);
 }
 
 .component em.read_only {
@@ -35,21 +49,25 @@
 }
 
 .component.disabled input {
-	color: var(--jui-ctl-text-disabled);
+	color: var(--jui-textctl-text-disabled);
 	cursor: not-allowed;
 }
 
 .component.read_only input {
-	color: var(--jui-ctl-text-readonly);
+	color: var(--jui-textctl-text-readonly);
 	cursor: not-allowed;
 }
 
 .component em {
-	color: var(--jui-ctl-action);
+	color: var(--jui-textctl-icon);
 }
 
 .component.read_only em {
-	color: var(--jui-ctl-action-readonly);
+	color: var(--jui-textctl-icon-readonly);
+}
+
+.component.disabled em {
+	color: var(--jui-textctl-icon-disabled);
 }
 
 .component .left {
@@ -57,13 +75,13 @@
 }
 
 .component em.clear {
-	color: var(--jui-ctl-text-placeholder);
+	color: var(--jui-textctl-text-placeholder);
 	visibility: hidden;
 	cursor: pointer;
 }
 
 .component:hover em.clear {
-	color: var(--jui-ctl-text);
+	color: var(--jui-textctl-text);
 }
 
 .component.clear em.clear {

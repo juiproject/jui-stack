@@ -1,6 +1,7 @@
 .component {
 	--cpt-btn-bg: var(--jui-btn-text);
 	--cpt-btn-text: var(--jui-btn-bg);
+    --cpt-btn-disabled-bg: transparent;
 }
 
 .component .outer {

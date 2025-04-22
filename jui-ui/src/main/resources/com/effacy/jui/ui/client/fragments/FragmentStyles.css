@@ -161,10 +161,16 @@
 */
 
 .juiMenuActivator {
+    --juiMenuActivator-radius: 30px;
+    --juiMenuActivator-padding: 6px 11px;
+}
+
+.juiMenuActivator {
     position: relative;
-    padding: 4px 9px;
-    border-radius: var(--jui-border-radius);
+    padding: var(--juiMenuActivator-padding);
+    border-radius: var(--juiMenuActivator-radius);
     transition: background-color 0.1s ease-in;
+    display: inline-block;
 }
 
 .juiMenuActivator > em {

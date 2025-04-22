@@ -1,13 +1,4 @@
-@def panelBorderColor #e1e1e1;
-@def panelBGColor #fff;
-@def activeBGColor #f1f1f1;
-@def hoverBGColor #f6f6f6;
-@def textColor #1A2F45;
-@def marginTop 0.5em;
-@def marginOffset 8px;
-@def marginOffsetGap 4px;
 @def marginOffsetNegative -2px;
-@def fontSize 1em;
 
 @media only screen and (max-width: 700px) {
     .component header.vertical {
@@ -26,16 +17,44 @@
     }
 }
 
+@media only screen and (max-width: 500px) {
+    .component header.vertical {
+        width: 3.2em;
+    }
+    .component .tabs .group h6 span {
+        display: none;
+    }
+    .component .tabs .group .header {
+        display: none;
+    }
+    .component .tabs ul li>strong {
+        right: 0;
+        top: 0;
+        font-size: 0.65em;
+    }
+    .component .tabs ul li {
+        padding: 0.45em;
+    }
+    .component .tabs ul li div em {
+        margin-left: 0.05em !important;
+    }
+    .component .tabs ul li span {
+        display: none;
+    }
+}
+
 .component {
     --cpt-tabbedpanel-gap: 3px;
     --cpt-tabbedpanel-width: 13em;
+    --cpt-navigator-item-bg-color-hover: #f6f6f6;
+    --cpt-navigator-item-bg-color-active: #f1f1f1;
+    --cpt-navigator-vert-tm: 0.5em;
 }
 
 .component .tabs  {
   height: 100%;
   width: var(--cpt-tabbedpanel-width);
-  border-right: 1px solid panelBorderColor;
-  background: panelBGColor;
+  border-right: 1px solid var(--cpt-navigator-line-color);
   box-sizing: border-box;
   overflow-y: auto;
   padding: 1em 0.5em;
@@ -43,18 +62,22 @@
   flex-direction: column;
 }
 
+/*************************************
+* Groups
+**************************************/
+
 .component .tabs .group {
   display: block;
-  padding-top: marginTop;
+  padding-top: var(--cpt-navigator-vert-tm);
 }
 
 .component .tabs .group h6 {
   display: block;
   padding: 1em 0 0.5em 0;
   margin: 0 1em 0 1.25em;
-  color: #bbb;
+  color: var(--cpt-navigator-group-text-color);
   font-weight: 500;
-  font-size: 0.8em;
+  font-size: var(--cpt-navigator-group-text-size);
   text-transform: uppercase;
 }
 
@@ -62,7 +85,7 @@
   margin-right: 0.5em;
 }
 
-.component .tabs >div {
+.component .tabs > div {
 	
 }
 
@@ -70,16 +93,16 @@
   
 }
 
+/*************************************
+* Items
+**************************************/
+
+/* Item structure */
 .component .tabs .group ul li {
   padding: 0.55em;
-  color: textColor;
   overflow: hidden;
   margin: 0 0 var(--cpt-tabbedpanel-gap) 0;
   border-radius: var(--cpt-tabbedpanel-radius);
-}
-
-.component .tabs .group ul li:hover {
-  background: hoverBGColor;
 }
 
 .component .tabs .group ul li div {
@@ -89,36 +112,63 @@
   text-overflow: ellipsis;
 }
 
+/* Item icon */
 .component .tabs .group ul li div em {
   width: 1em;
   margin-left: 1em;
   text-align: center;
-  color: rgba(29,28,29,0.45);
+  color: var(--cpt-navigator-item-icon-color);
 }
 
 .component .tabs .group ul li div em::before {
-  font-size: fontSize;
+  font-size: var(--cpt-navigator-item-icon-size);
 }
 
-.component .tabs .group ul li:hover div em {
-  
-}
-
+/* Item text */
 .component .tabs .group ul li div span {
-  font-size: fontSize;
+  font-size: var(--cpt-navigator-item-text-size);
   padding-right: 1em;
   margin-left: 1em;
-  color: #444;
+  color: var(--cpt-navigator-item-text-color);
   font-weight: 500;
   -webkit-font-smoothing: antialiased;
 }
 
-.component .tabs .group ul li.active {
-  background: activeBGColor;
-}
-
+/* Indicator */
 .component .tabs .group ul li div i {
   position: absolute;
   right: 0;
   top: 0.4em;
+}
+
+/*************************************
+* Hover state
+**************************************/
+
+.component .tabs .group ul li:not(.active):hover {
+  background: var(--cpt-navigator-item-bg-color-hover);
+}
+
+.component .tabs .group ul li:not(.active):hover div em {
+    color: var(--cpt-navigator-item-icon-color-hover);
+}
+
+.component .tabs .group ul li:not(.active):hover div span {
+  color: var(--cpt-navigator-item-text-color-hover);
+}
+
+/*************************************
+* Active state
+**************************************/
+
+.component .tabs .group ul li.active {
+  background: var(--cpt-navigator-item-bg-color-active);
+}
+
+.component .tabs .group ul li.active div em {
+  color: var(--cpt-navigator-item-icon-color-active);
+}
+
+.component .tabs .group ul li.active div span {
+  color: var(--cpt-navigator-item-text-color-active);
 }

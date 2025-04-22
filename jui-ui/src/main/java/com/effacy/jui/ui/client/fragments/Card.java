@@ -47,22 +47,58 @@ public class Card {
      * Implementation
      ************************************************************************/
 
-    public enum Variant {
-        OUTLINED;
+     /**
+      * Defines a variant for a card.
+      */
+    public interface Variant {
+
+        /**
+         * Outlined card.
+         */
+        public static final Variant OUTLINED = Variant.create("variant-outlined");
+
+        /**
+         * A CSS class to apply in addition.
+         */
+        public String style();
+
+        /**
+         * Convenience to create an instance of a variant.
+         */
+        public static Variant create(String style) {
+            return new Variant() {
+                public String style() { return style; }
+            };
+        }
     }
 
     public static class CardFragment extends ACardFragment<CardFragment> {}
 
     public static class ACardFragment<T extends ACardFragment<T>> extends APaperFragment<T> {
 
+        /**
+         * See {@link #variant(Variant)}.
+         */
         protected Variant variant = Variant.OUTLINED;
 
+        /**
+         * See {@link #padding(Insets)}.
+         */
         protected Insets padding;
 
+        /**
+         * See {@link #onclick(BiConsumer)}.
+         */
         protected BiConsumer<UIEvent,Element> onclick;
 
+        /**
+         * See {@link #gap(Length)}.
+         */
         protected Length gap;
 
+        /**
+         * See {@link #horizontal(boolean)}.
+         */
         protected boolean horizontal;
 
         /**
@@ -191,8 +227,9 @@ public class Card {
 
         @Override
         protected void buildInto(ElementBuilder root) {
-            root.style ("juiCard", "juiCard-" + variant.name ().toLowerCase ());
-            root.style (horizontal, "juiCard_horizontal");
+            root.style ("juiCard", variant.style ());
+            if (horizontal)
+                root.style ("horizontal");
             if (gap != null)
                 root.css (CSS.GAP, gap);
             if (padding != null)

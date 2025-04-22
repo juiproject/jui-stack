@@ -33,7 +33,6 @@ import com.effacy.jui.core.client.dom.css.Color;
 import com.effacy.jui.core.client.dom.css.Insets;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.core.client.dom.jquery.JQuery;
-import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.platform.util.client.TimerSupport;
 import com.effacy.jui.ui.client.modal.Modal.IModalController;
@@ -212,7 +211,6 @@ public abstract class PanelBase<C extends PanelBase.Config<C>> extends Component
         }
 
     }
-
 
     /**
      * The contents area reference.

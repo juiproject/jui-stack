@@ -532,7 +532,7 @@ public class ActionBarLayout extends Layout {
         public ZoneElement(Zone config, Element el) {
             this.el = el;
             if (config.getSpacing () != null)
-                CSS.GAP.with (config.spacing).apply (el);
+                CSS.COLUMN_GAP.with (config.spacing).apply (el);
             if (config.align == HAlignment.LEFT)
                 el.classList.add (LocalCSS.instance ().left ());
             else if (config.align == HAlignment.RIGHT)

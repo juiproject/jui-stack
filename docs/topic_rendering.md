@@ -308,7 +308,17 @@ Wrap.$ (el).$ (outer -> {
 }).build ();
 ```
 
-This also means that components can be inserted intermingled with other insertables (including other components and DOM builders) in a way that respects order.
+While the use of `Cpt` to implement the same insertion maintains consistency with the use of helper classes:
+
+```java
+Wrap.$ (el).$ (outer -> {
+    Div.$ (outer).$ (inner -> {
+        Cpt.$ (inner, /* component instance */); 
+    });
+}).build ();
+```
+
+This means that components can be intermingled with other insertables (including other components and DOM builders) in a natural way.
 
 The component is rendered during the call to `build ()` on the DOM builder structure and the component instance is returned in the `NodeContext` (which allows the parent to capture and manage the component as a child).
 
@@ -331,6 +341,63 @@ Wrap.$ (el).$ (outer -> {
 ```
 
 This approach maintains consistency with the use of the standard DOM helper classes and the guidelines for component creator `$` methods reflect this (again, see [Components](ess_components.md) for details).
+
+### Inserting direct HTML
+
+A (currently) rudimentary way of inserting direct HTML makes use of the `Html` helper and multi-line strings:
+
+```java
+Wrap.$ (el).$ (outer -> {
+    Html.$ (outer, """
+        <div class='description'>
+            <h3>Service description</h3>
+            <p>This particular service affords one the...</p>
+        </div>
+    """);
+}).build ();
+```
+
+Here HTML is instered directly as presented (this makes use of the `innerHTML` propert on the elemental `Node`). One needs to take note of the following restrictions:
+
+1. It is expected that the content will have a single root level element (in the above example it is the `DIV`).
+2. The content is inserted as inner HTML so is not filtered in anyway (i.e. unsafe content remains unchecked).
+3. Take care that class name are literal so would need substitution if using the [local styles](ess_styles.md#local-styles) model of CSS.
+4. Avoid javascript or declaring event handlers (if you need to then extract them on build with the `use(...)` method and `JQuery`).
+
+Content substitution is also supported in a limited manner:
+
+```java
+Html.$(detail, """
+    <div class='selected'>
+        <div class='icon'>
+            <em class='${icon}' style='transform:rotate(90deg)'></em>
+            <span>Please select a report to generate</span>
+        </div>
+    </div>
+""", Map.of ("icon", FontAwesome.arrowTurnDown()));
+```
+
+The passed map contains the name-value pairs to substitute with references in the template made by way of `${...}`.
+
+Finally one can insert additional children into the HTML content by declaring a (single) content region with `$$`:
+
+```java
+Html.$(detail, """
+    <div item='reviewers'>
+        <h4>Action report</h4>
+        <p>This report declares all the actions that have been taken since creation.</p>
+        <div>$$</div>
+    </div>
+""").$ (
+    ButtonCreator.$ (cfg -> {
+        ...
+    })
+);
+```
+
+In this case the parent element containing the `$$` is considered as the containment node for the passed children (the return type for `Html.$(...)` is `HtmlBuilder` which is an `IDomInsertableContainer` so naturally slots into the builder structure).
+
+Despite the limitations this is a very good approach to building out descriptive content (help, guidance, etc). Overtime it is expected that this mechanism will be enhanced to support a richer templative mechanism for content rendering.
 
 ### Re-use with fragments
 

@@ -861,6 +861,40 @@ public class MyComponent extends Component<MyComponent.Config> {
 }
 ```
 
+### Record-based configuration
+
+This is an alternative to the formal configuration as described in the previous section ([Configuration](#configuration)) which can be used by `SimpleComponent`. Here we embody the configuration data into a `record` and provide a family of constructors:
+
+```java
+public class MyComponent extends SimpleComponent {
+
+    public static record Config(String title, String icon) {
+        public static Config of(String title) {
+            return new Config(title, null);
+        }
+        public static Config of(String title, String icon) {
+            return new Config(title, icon);
+        }
+    }
+
+    public MyComponent(Config config) {
+        renderer(root -> {
+            ...
+            H4.$(...).text(config.title());
+            ...
+        });
+    }
+}
+```
+
+and employed such as:
+
+```java
+Cpt.$(parent, new MyComponent(MyComponent.Config.of("My component title")));
+```
+
+This is not as flexible as the formal approach but where there is a small number of configuration parameters this can be quite effective.
+
 ### Creators
 
 Creators provide a means to create components with specific common configurations. As a convention there are always the following creator methods:

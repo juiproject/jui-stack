@@ -1,12 +1,13 @@
 .component {
 	--cpt-btn-bg: var(--jui-btn-text);
 	--cpt-btn-text: var(--jui-btn-bg);
+    --cpt-btn-disabled-bg: transparent;
 }
 
 .component .outer {
 	background: var(--jui-btn-text);
 }
 
-.component .outer:hover * {
+.component:not(.disabled):not(.waiting) .outer:hover * {
 	color: var(--jui-btn-text);
 }

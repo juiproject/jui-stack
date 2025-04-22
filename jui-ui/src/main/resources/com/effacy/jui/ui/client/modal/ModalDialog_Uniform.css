@@ -27,3 +27,66 @@
 	background: #fff;
 	border-top: none;
 }
+
+.component.z1 .outer .inner .height {
+  left: 8px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.component.z1 .outer .inner .slider .height {
+  left: 16px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.component.z2 .outer .inner .height {
+  left: 16px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.component.z2 .outer .inner .slider.height {
+  left: 32px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.component.z3 .outer .inner .height {
+  left: 24px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.component.z3 .outer .inner .slider .height {
+  left: 48px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.component.z4 .outer .inner .height {
+  left: 32px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.component.z5 .outer .inner .height {
+  left: 40px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.component.z6 .outer .inner .height {
+  left: 48px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}

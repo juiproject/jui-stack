@@ -17,6 +17,7 @@ package com.effacy.jui.ui.client.fragments;
 
 import com.effacy.jui.core.client.Invoker;
 import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
+import com.effacy.jui.core.client.dom.builder.Div;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.builder.I;
@@ -28,6 +29,20 @@ import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 
+import elemental2.dom.Element;
+
+/**
+ * Displays an avatar rendered as an image (if there is an image), as a custom
+ * icon (via CSS) or as a standard icon with an optional pair of letters serving
+ * as initials.
+ * <p>
+ * Optionally the avatar can be made clickable (see
+ * {@link AvatarFragment#onclick(Invoker)}).
+ * <p>
+ * This also has basic provision for a failed image load (this can happen when
+ * the avatar is hosted externally). In this case a "bug" icon is displayed
+ * along with an error message when the user hovers over the avatar.
+ */
 public class Avatar {
 
     /**
@@ -102,6 +117,11 @@ public class Avatar {
         protected BorderStyle border = BorderStyle.SOLID;
 
         /**
+         * See {@link #loaderror(String)}.
+         */
+        protected String loaderror = "Your avatar failed to load. This usually fixes itself after a little while.";
+
+        /**
          * Construct with the CSS of an icon.
          * 
          * @param icon
@@ -112,17 +132,16 @@ public class Avatar {
         }
         
         /**
-         * The icon (CSS) to use when no avatar HREF is available.
+         * Specifies an alternative error message in the case that an image load fails.
          * <p>
-         * The default is {@link FontAwesome#user()}.
+         * A {@code null} value disables the hover message.
          * 
-         * @param icon
-         *             the icon CSS to apply.
+         * @param loaderror
+         *                  the error message.
          * @return this fragment instance.
          */
-        public AvatarFragment icon(String icon) {
-            if (icon != null)
-                this.icon = icon;
+        public AvatarFragment loaderror(String loaderror) {
+            this.loaderror = loaderror;
             return this;
         }
 
@@ -154,6 +173,12 @@ public class Avatar {
                 else
                     this.initials = this.initials.substring(0,1) + this.initials.substring(i + 1, i + 2);
             }
+            return this;
+        }
+
+        public AvatarFragment icon(String icon) {
+            if (icon != null)
+                this.icon = icon;
             return this;
         }
 
@@ -204,7 +229,18 @@ public class Avatar {
             return Span.$ (parent).$ (outer -> {
                 outer.style ("juiAvatar", "border_" + border.name().toLowerCase());
                 if (!StringSupport.empty (href)) {
-                    Img.$ (outer, href);
+                    if (loaderror != null)
+                        Div.$(outer).style("hover").text(loaderror);
+                    Img.$ (outer, href)
+                        .use(n -> {
+                            ((Element) n).onerror= (Element.OnerrorFn) (e -> {
+                                n.parentElement.classList.add("failed");
+                                return null;
+                            });
+                        });
+                    Span.$(outer).style("failed").$(
+                        Em.$().style(FontAwesome.bug())
+                    );
                 } else if (initials != null) {
                     Span.$ (outer).$ (ico -> {
                         I.$ (ico).text(initials);

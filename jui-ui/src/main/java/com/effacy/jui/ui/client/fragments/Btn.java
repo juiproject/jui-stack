@@ -15,16 +15,34 @@
  ******************************************************************************/
 package com.effacy.jui.ui.client.fragments;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
+
 import com.effacy.jui.core.client.Invoker;
 import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
+import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.platform.util.client.StringSupport;
+import com.effacy.jui.ui.client.button.Button;
+import com.effacy.jui.ui.client.button.IButtonHandler.IButtonActionCallback;
+import com.effacy.jui.ui.client.icon.FontAwesome;
 
+import elemental2.dom.Element;
+import elemental2.dom.HTMLButtonElement;
+
+/**
+ * Simple button fragment.
+ * <p>
+ * This doesn't have the sophistication of the {@link Button} component but does
+ * have a range of styling and the ability to act on a click.
+ */
 public class Btn {
+
     public static BtnFragment $(String label) {
         return new BtnFragment (label);
     }
@@ -36,32 +54,95 @@ public class Btn {
         return frg;
     }
 
-    public enum Variant {
+    /**
+     * The visual form that the button takes.
+     */
+    public interface Variant {
+
         /**
          * Standard button presentation.
          */
-        STANDARD,
+        public static final Variant STANDARD = Variant.create("variant-standard");
+
+        /**
+         * Standard button presentation that is rounded.
+         */
+        public static final Variant STANDARD_ROUNDED = Variant.create("variant-standard variant-rounded");
         
         /**
          * Same as {@link #STANDARD} but expands the padding.
          */
-        STANDARD_EXPANDED,
+        public static final Variant STANDARD_EXPANDED = Variant.create("variant-standard variant-expanded");
+        
+        /**
+         * Same as {@link #STANDARD_EXPANDED} but is rounded.
+         */
+        public static final Variant STANDARD_EXPANDED_ROUNDED = Variant.create("variant-standard variant-expanded variant-rounded");
         
         /**
          * Draws with an outline.
          */
-        OUTLINED,
+        public static final Variant OUTLINED = Variant.create("variant-outlined");
+
+        /**
+         * Same as {@link #OUTLINED} but is rounded.
+         */
+        public static final Variant OUTLINED_ROUNDED = Variant.create("variant-outlined variant-rounded");
         
         /**
          * Text only (link-like).
          */
-        TEXT;
+        public static final Variant TEXT = Variant.create("variant-text");
+        
+        /**
+         * Same as {@link #TEXT} but is compact (no padding).
+         */
+        public static final Variant TEXT_COMPACT = Variant.create("variant-text variant-compact");
+
+        /**
+         * A CSS class to apply in addition.
+         */
+        public String style();
+
+        /**
+         * Convenience to create an instance of a variant.
+         */
+        public static Variant create(String style) {
+            return new Variant() {
+                public String style() { return style; }
+            };
+        }
     }
 
-    public enum Nature {
-        NORMAL, WARNING, DANGER, SUCCESS;
+    /**
+     * Various colour schemes that are phrased in the language of use.
+     */
+    public interface Nature {
+
+        public static final Nature NORMAL = Nature.create("nature-normal");
+        public static final Nature WARNING = Nature.create("nature-warning");
+        public static final Nature DANGER = Nature.create("nature-danger");
+        public static final Nature SUCCESS = Nature.create("nature-success");
+        public static final Nature GREY = Nature.create("nature-grey");
+
+        /**
+         * A CSS class to apply in addition.
+         */
+        public String style();
+
+        /**
+         * Convenience to create an instance of a variant.
+         */
+        public static Nature create(String style) {
+            return new Nature() {
+                public String style() { return style; }
+            };
+        }
     }
 
+    /**
+     * Fragment implementation.
+     */
     public static class BtnFragment extends BaseFragment<BtnFragment> {
 
         /**
@@ -95,19 +176,19 @@ public class Btn {
         private Length width;
 
         /**
-         * See {@link #compact(boolean)}.
+         * See {@link #onclick(Consumer<IButtonActionCallback>)}.
          */
-        private boolean compact;
-
-        /**
-         * See {@link #onclick(Invoker)}.
-         */
-        private Invoker onclick;
+        private Consumer<IButtonActionCallback> onclick;
 
         /**
          * See {@link #testId(String)}.
          */
         private String testId;
+
+        /**
+         * See {@link #attr(String, String)}.
+         */
+        private Map<String,String> attributes;
 
         /**
          * Construct with the label for the button.
@@ -170,25 +251,6 @@ public class Btn {
         }
 
         /**
-         * See {@link #compact(boolean)}. Convenience to pass {@code true}.
-         */
-        public BtnFragment compact() {
-            return compact (true);
-        }
-
-        /**
-         * To render in a compact form.
-         * 
-         * @param compact
-         *              {@code true} if to render in compact form.
-         * @return the fragment instance.
-         */
-        public BtnFragment compact(boolean compact) {
-            this.compact = compact;
-            return this;
-        }
-
-        /**
          * The width.
          * 
          * @param width
@@ -201,6 +263,25 @@ public class Btn {
         }
 
         /**
+         * Adds an attribute to add to the root element.
+         * 
+         * @param name
+         *              the name of the attribute.
+         * @param value
+         *              the value of the attribute.
+         * @return the fragment instance.
+         */
+        public BtnFragment attr(String name, String value) {
+            if (attributes == null)
+                attributes = new HashMap<>();
+            if (value == null)
+                attributes.remove(name);
+            else
+                attributes.put(name, value);
+            return this;
+        }
+
+        /**
          * Adds an on-click handler to the icon.
          * 
          * @param onclick
@@ -208,6 +289,21 @@ public class Btn {
          * @return this icon instance.
          */
         public BtnFragment onclick(Invoker onclick) {
+            this.onclick = (cb -> {
+                onclick.invoke();
+                cb.complete();
+            });
+            return this;
+        }
+
+        /**
+         * Adds an on-click handler to the icon.
+         * 
+         * @param onclick
+         *                the handler.
+         * @return this icon instance.
+         */
+        public BtnFragment onclick(Consumer<IButtonActionCallback> onclick) {
             this.onclick = onclick;
             return this;
         }
@@ -229,22 +325,38 @@ public class Btn {
             if (label == null)
                 return null;
             ElementBuilder btn = com.effacy.jui.core.client.dom.builder.Button.$ (parent);
+            if (attributes != null)
+                attributes.forEach((k,v) -> btn.attr(k, v));
             if (!StringSupport.empty(icon))
                 Em.$ (btn).style (icon);
             if (testId != null)
                 btn.testId (testId);
-            btn.text (label);
-            btn.style ("juiButton", "juiButton-" + variant.name ().toLowerCase (), "juiButton-" + nature.name ().toLowerCase ());
-            if (compact)
-                btn.style ("compact");
+            btn.$(
+                Span.$().style("running").$(
+                    Em.$().style(FontAwesome.spinner(FontAwesome.Option.SPIN))
+                ),
+                Span.$().style("label").text (label)
+            );
+            btn.style ("juiButton", variant.style(), nature.style());
             if (size != null)
                 btn.css (CSS.FONT_SIZE, size);
-            if (width != null)
+            if (width != null) {
                 btn.css (CSS.WIDTH, width);
-            if (onclick != null)
-                btn.onclick (e -> onclick.invoke());
+                btn.style("left");
+            }
+            if (onclick != null) {
+                btn.onclick ((e, n) -> {
+                    ((HTMLButtonElement)n).disabled = true;
+                    ((Element)n).classList.add("running");
+                    onclick.accept(() -> {
+                        ((Element)n).classList.remove("running");
+                        ((HTMLButtonElement)n).disabled = false;
+                    });
+                });
+            }
             return btn;
         }
 
     }
 }
+

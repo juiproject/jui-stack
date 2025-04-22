@@ -1,63 +1,18 @@
 .component {
-    display: inline-block;
+    --cpt-btn-bg: transparent;
+    --cpt-btn-bg-hover: transparent;
+    --cpt-btn-text: var(--jui-btn-bg);
+    --cpt-btn-border: transparent;
+    --cpt-btn-border-width: 0;
+    --cpt-btn-padding: 0;
+    --cpt-btn-text-lineheight: 0;
+    --cpt-btn-margin: 0;
+    --cpt-btn-waiting-bg: transparent;
+    --cpt-btn-disabled-bg: transparent;
+    --cpt-btn-disabled-border: transparent;
+    --cpt-btn-disabled-text: var(--jui-state-disabled);
 }
 
-.component * {
-    color: var(--jui-text-link);
-}
-
-.component .outer {
-	display: inline-block;
-    padding: 0 0.5em;
-}
-
-.component a {
-    position: relative;
-	display: flex;
-	flex-direction: row;
-	align-items: center;
-	text-decoration: none;
-	outline: none;
-	cursor: pointer;
-    gap: 0.5em;
-}
-
-.component a:hover span {
-	text-decoration: underline;
-}
-
-.component.icon_right a {
-	flex-direction: row-reverse;
-}
-
-.component a i {
-	display: none;
-	position: absolute;
-	left: 50%;
-	top: 50%;
-	margin-top: -0.5em;
-	margin-left: -0.5em;
-	font-size: 1.4em;
-}
-
-.component.waiting a {
-	opacity: 0.6;
-	cursor: default;
-}
-
-.component.waiting a span {
-	visibility: hidden;
-}
-
-.component.waiting a em {
-	visibility: hidden;
-}
-
-.component.waiting a i {
-	display: block;
-}
-
-.component.disabled * {
-    color: var(--jui-state-disabled) !important;
-    text-decoration: none !important;
+.component:not(.disabled) a:hover span {
+    text-decoration: underline;
 }

@@ -21,6 +21,9 @@ import com.effacy.jui.core.client.component.layout.LayoutData;
 import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
 import com.effacy.jui.platform.util.client.With;
 
+/**
+ * Standard creator helper for {@link TitlePanel}.
+ */
 public class TitlePanelCreator {
 
     /**

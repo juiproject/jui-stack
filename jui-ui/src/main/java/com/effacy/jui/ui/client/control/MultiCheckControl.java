@@ -27,10 +27,10 @@ import com.effacy.jui.core.client.dom.UIEvent;
 import com.effacy.jui.core.client.dom.UIEvent.KeyCode;
 import com.effacy.jui.core.client.dom.UIEventType;
 import com.effacy.jui.core.client.dom.builder.Div;
-import com.effacy.jui.core.client.dom.builder.DomBuilder;
 import com.effacy.jui.core.client.dom.builder.Input;
 import com.effacy.jui.core.client.dom.builder.Label;
 import com.effacy.jui.core.client.dom.builder.Span;
+import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.core.client.util.UID;
@@ -40,6 +40,7 @@ import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.platform.util.client.TimerSupport;
 import com.google.gwt.core.client.GWT;
 
+import elemental2.dom.Element;
 import elemental2.dom.HTMLInputElement;
 import jsinterop.base.Js;
 
@@ -62,11 +63,11 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
     public static class Config<V> extends Control.Config<V, Config<V>> {
 
         /********************************************************************
-         * Styles for the tab set.
+         * Styles for the control.
          ********************************************************************/
 
         /**
-         * Style for the tab set (defines presentation configuration including CSS).
+         * Style for the control (defines presentation configuration including CSS).
          */
         public interface Style {
 
@@ -97,6 +98,11 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
              * Standard style.
              */
             public static final Style STANDARD = create(StandardLocalCSS.instance ());
+
+            /**
+             * Panel style.
+             */
+            public static final Style PANEL = create(PanelLocalCSS.instance ());
 
         }
 
@@ -173,10 +179,13 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
                 this.label = label;
             }
 
+            /**
+             * Unique name for the option (is included in the label).
+             */
             public String name() {
                 if (name == null) {
                     if (StringSupport.empty (Config.this.getName ()))
-                        name = "multiselect_ctl_" + UID.createUID ();
+                        name = "multicheck_ctl_" + UID.createUID ();
                     else
                         name = Config.this.getName ();
                 }
@@ -200,8 +209,20 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
          */
         public Config(Style style) {
             super ();
+            style(style);
+        }
+
+        /**
+         * Assigns an alternative style.
+         * 
+         * @param style
+         *              the style.
+         * @return this configuration instance.
+         */
+        public Config<V> style(Style style) {
             if (style != null)
                 this.style = style;
+            return this;
         }
 
         /**
@@ -406,46 +427,48 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
      * @see com.effacy.jui.core.client.component.Component#buildNode(com.effacy.jui.core.client.component.Component.Config)
      */
     @Override
-    protected INodeProvider buildNode(Config<V> data) {
-        return DomBuilder.div (inner -> {
-            inner.style (styles ().inner ());
-            Div.$ (inner).$ (item -> {
-                item.style (styles ().item ());
-                if (data.left)
-                    item.style (styles ().reverse ());
-                if (data.expand)
-                    item.style (styles ().expand ());
-                if (data.labelBold)
-                    item.style (styles ().bold ());
-                Div.$ (item).$ (grp -> {
-                    grp.style (styles ().toggle ());
-                    if (data.span != null)
-                        grp.css (CSS.WIDTH, data.span);
-                    Itr.forEach (data.options, (c, option) -> {
-                        Label.$ (grp).$ (toggle -> {
-                            if (c.first ())
-                                toggle.style (styles ().first ());
-                            if (c.last ())
-                                toggle.style (styles ().last ());
-                            toggle.attr ("for", "check_ctl_" + option.uid);
-                            Input.$ (toggle, "radio").id ("check_ctl_" + option.uid)
-                                .attr ("item", "" + c.index ())
-                                .attr ("value", option.uid)
-                                .attr ("name", option.name ())
-                                .on (e -> handleChange (e), UIEventType.ONCHANGE)
-                                .on (e -> handleKeyPress (e), UIEventType.ONKEYPRESS)
-                                .by ("radio")
-                                .testId (buildTestId ("input_" + c.index ()))
-                                .testRef ("input_" + c.index ());
-                            Span.$ (toggle).$ (content -> {
-                                content.text (option.label);
+    protected INodeProvider buildNode(Element el) {
+        return Wrap.$(el).$ (root -> {
+            Div.$(root).$(inner -> {
+                inner.style (styles ().inner ());
+                Div.$ (inner).$ (item -> {
+                    item.style (styles ().item ());
+                    if (config().left)
+                        item.style (styles ().reverse ());
+                    if (config().expand)
+                        item.style (styles ().expand ());
+                    if (config().labelBold)
+                        item.style (styles ().bold ());
+                    Div.$ (item).$ (grp -> {
+                        grp.style (styles ().toggle ());
+                        if (config().span != null)
+                            grp.css (CSS.WIDTH, config().span);
+                        Itr.forEach (config().options, (c, option) -> {
+                            Label.$ (grp).$ (toggle -> {
+                                if (c.first ())
+                                    toggle.style (styles ().first ());
+                                if (c.last ())
+                                    toggle.style (styles ().last ());
+                                toggle.attr ("for", "check_ctl_" + option.uid);
+                                Input.$ (toggle, "radio").id ("check_ctl_" + option.uid)
+                                    .attr ("item", "" + c.index ())
+                                    .attr ("value", option.uid)
+                                    .attr ("name", option.name ())
+                                    .on (e -> handleChange (e), UIEventType.ONCHANGE)
+                                    .on (e -> handleKeyPress (e), UIEventType.ONKEYPRESS)
+                                    .by ("radio")
+                                    .testId (buildTestId ("input_" + c.index ()))
+                                    .testRef ("input_" + c.index ());
+                                Span.$ (toggle).$ (content -> {
+                                    content.text (option.label);
+                                });
                             });
                         });
                     });
-                });
-                Span.$ (item).style (styles ().spacer ());
-                Span.$ (item).$ (label -> {
-                    label.text (data.label);
+                    Span.$ (item).style (styles ().spacer ());
+                    Span.$ (item).$ (label -> {
+                        label.text (config().label);
+                    });
                 });
             });
         }).build (tree -> {
@@ -515,13 +538,7 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
     }
 
     public static interface ILocalCSS extends IControlCSS {
-
-        /**
-         * Remove padding at top (which is to give reasonable space at the top of the
-         * control).
-         */
-        public String tight();
-
+        
         /**
          * Inner wrap around the control (for the border).
          */
@@ -561,6 +578,28 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
         public static ILocalCSS instance() {
             if (STYLES == null) {
                 STYLES = (StandardLocalCSS) GWT.create (StandardLocalCSS.class);
+                STYLES.ensureInjected ();
+            }
+            return STYLES;
+        }
+    }
+
+    /**
+     * Component CSS (horizontal).
+     */
+    @CssResource({
+        IComponentCSS.COMPONENT_CSS,
+        "com/effacy/jui/ui/client/control/MultiCheckControl.css",
+        "com/effacy/jui/ui/client/control/MultiCheckControl_Override.css",
+        "com/effacy/jui/ui/client/control/MultiCheckControl_Panel.css"
+    })
+    public static abstract class PanelLocalCSS implements ILocalCSS {
+
+        private static PanelLocalCSS STYLES;
+
+        public static ILocalCSS instance() {
+            if (STYLES == null) {
+                STYLES = (PanelLocalCSS) GWT.create (PanelLocalCSS.class);
                 STYLES.ensureInjected ();
             }
             return STYLES;

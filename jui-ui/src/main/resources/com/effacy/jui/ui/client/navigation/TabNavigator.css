@@ -6,7 +6,6 @@
     --cpt-tabbedpanel-text: var(--jui-tabset-text);
     --cpt-tabbedpanel-text-active: var(--jui-tabset-text);
     --cpt-tabbedpanel-icon: var(--jui-tabset-icon);
-    --cpt-tabbedpanel-bg: transparent;
     --cpt-tabbedpanel-bg-tab-inactive: var(--jui-tabset-bg-03);
     --cpt-tabbedpanel-bg-tab-active: var(--jui-tabset-bg-01);
     --cpt-tabbedpanel-bg-tab-hover: var(--jui-tabset-bg-03);
@@ -15,6 +14,22 @@
     --cpt-tabbedpanel-radius: var(--jui-border-radius);
     --cpt-tabbedpanel-indicator: #fff;
     --cpt-tabbedpanel-indicator-bg: var(--jui-color-secondary30);
+
+    --cpt-navigator-line-color: #e1e1e1;
+    --cpt-navigator-group-text-size: 0.8em;
+    --cpt-navigator-group-text-color: #bbb;
+    --cpt-navigator-item-bg-color: transparent;
+    --cpt-navigator-item-bg-color-hover: var(--cpt-navigator-item-bg-color);
+    --cpt-navigator-item-bg-color-active: var(--cpt-navigator-item-bg-color-hover);
+    --cpt-navigator-item-text-size: 1em;
+    --cpt-navigator-item-text-color: #444;
+    --cpt-navigator-item-text-color-hover: var(--cpt-navigator-item-text-color);
+    --cpt-navigator-item-text-color-active: var(--cpt-navigator-item-text-color-hover);
+    --cpt-navigator-item-icon-size: 1em;
+    --cpt-navigator-item-icon-color: rgba(29,28,29,0.45);
+    --cpt-navigator-item-icon-color-hover: var(--cpt-navigator-item-icon-color);
+    --cpt-navigator-item-icon-color-active: var(--cpt-navigator-item-icon-color-active);
+    --cpt-navigator-bg: transparent;
 }
 
 .component {
@@ -29,7 +44,7 @@
   
 .component > .wrap > .tabs {
     position: relative;
-    background-color: var(--cpt-tabbedpanel-bg);
+    background-color: var(--cpt-navigator-bg);
 }
 
 .component > .wrap > .body {
@@ -88,7 +103,7 @@
     font-style: normal;
     margin-left: 1em;
     font-size: 0.65em;
-    color: var(--jui-color-aux-white);
+    color: var(--cpt-tabbedpanel-text);
     background: var(--cpt-tabbedpanel-warn);
     padding: 0 0.5em;
     border-radius: 100%;

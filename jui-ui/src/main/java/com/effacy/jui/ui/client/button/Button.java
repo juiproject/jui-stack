@@ -83,17 +83,17 @@ public class Button extends Component<Button.Config> implements IButton {
             public static final Style NORMAL = create (NormalCSS.instance ());
 
             /**
-             * 
+             * Normal visual style but colored for success.
              */
             public static final Style NORMAL_SUCCESS = create (NormalSuccessCSS.instance ());
 
             /**
-             * 
+             * Normal visual style but colored for warning.
              */
             public static final Style NORMAL_WARNING = create (NormalWarningCSS.instance ());
 
             /**
-             * 
+             * Normal visual style but colored for danger.
              */
             public static final Style NORMAL_DANGER = create (NormalDangerCSS.instance ());
 
@@ -312,6 +312,7 @@ public class Button extends Component<Button.Config> implements IButton {
          * @see Config#testId(String)
          */
         @Override
+        @SuppressWarnings("unchecked")
         public Button.Config testId(String testId) {
             return (Button.Config) super.testId(testId);
         }
@@ -686,6 +687,7 @@ public class Button extends Component<Button.Config> implements IButton {
      */
     @CssResource({
         IComponentCSS.COMPONENT_CSS,
+        "com/effacy/jui/ui/client/button/Button.css",
         "com/effacy/jui/ui/client/button/Button_Link.css",
         "com/effacy/jui/ui/client/button/Button_Link_Override.css"
     })

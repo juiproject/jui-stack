@@ -28,6 +28,20 @@ import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.Element;
 
+/**
+ * Similar in nature to {@link Panel} except that it supports two content areas
+ * that can be configured side-by-side or one-above-the-other. This is often
+ * employed for a galley or table (in the main content area) and filter controls
+ * (in the other area).
+ * <p>
+ * The default layout for the main area is {@link CardFitLayout} and can be
+ * added to using the {@link #add(IComponent)} family of methods. The other
+ * content area also uses the {@link CardFitLayout} (but is often replaced by
+ * {@link ActionBayLayout}) and can be added to with the
+ * {@link #addOther(IComponent)} family of methods.
+ * <p>
+ * See the README.md in this package for more information.
+ */
 public class SplitPanel extends PanelBase<SplitPanel.Config> {
 
     public static class Config extends PanelBase.Config<Config> {

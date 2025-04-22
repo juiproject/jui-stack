@@ -16,6 +16,8 @@
 	align-items: center;
 	justify-content: center;
 	flex-grow: 1;
+    flex-wrap: wrap;
+    row-gap: 0.5em;
 }
 
 .layout > .zone.left {
@@ -28,4 +30,3 @@
 
 .layout > .zone > .item {
 }
-

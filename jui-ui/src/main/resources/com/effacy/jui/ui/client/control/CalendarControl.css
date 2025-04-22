@@ -64,6 +64,7 @@
 }
 
 .component #selector {
+    min-width: 210px;
 	z-index: 10;
     position: absolute;
     top: 100%;

@@ -28,6 +28,13 @@ import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.Element;
 
+/**
+ * Builds on the {@link SplitPanel} model but adds in a third area. In this case
+ * our content areas are the main one (as with {@link Panel}) and two areas top
+ * and bottom.
+ * <p>
+ * See the README.md in this package for more information.
+ */
 public class TriSplitPanel extends PanelBase<TriSplitPanel.Config> {
 
     public static class Config extends PanelBase.Config<Config> {

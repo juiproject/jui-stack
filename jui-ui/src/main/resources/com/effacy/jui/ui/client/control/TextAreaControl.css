@@ -1,39 +1,40 @@
 .component {
-    --jui-textareactl-counter: var(--jui-ctl-text);
     --jui-textareactl-counter-limit: var(--jui-color-error70);
+    --jui-textareactl-counter-text-color: var(--jui-ctl-text);
+    --jui-testareactl-bg: var(--jui-ctl-bg);
+    --jui-testareactl-text: var(--jui-ctl-text);
+    --jui-testareactl-text-size: 1em;
+    --jui-testareactl-border: var(--jui-ctl-border);
+    --jui-testareactl-border-radius: var(--jui-ctl-border-radius);
+    --jui-testareactl-margin: 0.4em;
+    --jui-testareactl-disabled-text: var(--jui-ctl-text-disabled);
+    --jui-testareactl-readonly-text: var(--jui-ctl-text-readonly);
+    --jui-testareactl-counter-text-size: 0.9em;
 }
 
 .component .inner {
-	border: 1px solid var(--jui-ctl-border);
-	border-radius: var(--jui-ctl-border-radius);
+	border: 1px solid var(--jui-testareactl-border);
+	border-radius: var(--jui-testareactl-border-radius);
 	box-sizing: content-box;
-	padding: 0.4em;
-	background: var(--jui-ctl-bg);
+	background: var(--jui-testareactl-bg);
 	display: flex;
-	flex-direction: row;
+	flex-direction: column;
 	gap: 0.5em;
-	align-items: center;
-	color: var(--jui-ctl-text);
-}
-
-.component.read_only em.read_only {
-	display: inline;
-}
-
-.component em.read_only {
-	display: none;
+	align-items: normal;
+	color: var(--jui-testareactl-text);
+    overflow: hidden;
 }
 
 .component textarea {
+	margin: var(--jui-testareactl-margin);
 	background: inherit;
 	color: inherit;
 	outline: none;
 	border: none;
-	width: 100%;
 	resize: none;
     transition: min-height 0.2s ease;
     min-height: 0;
-    font-size: 1em;
+    font-size: var(--jui-testareactl-text-size);
 }
 
 .component.resizable textarea {
@@ -41,33 +42,24 @@
 }
 
 .component.disabled textarea {
-	color: var(--jui-ctl-text-disabled);
+	color: var(--jui-testareactl-disabled-text);
 	cursor: not-allowed;
-    font-size: 1em;
 }
 
 .component.read_only textarea {
-	color: var(--jui-ctl-text-readonly);
+	color: var(--jui-testareactl-readonly-text);
 	cursor: not-allowed;
 }
 
 .component .counter {
     text-align: right;
-    font-size: 0.9em;
+    font-size: var(--jui-testareactl-counter-text-size);
     margin-top: 0.25em;
-    color: var(--jui-textareactl-counter);
+    color: var(--jui-textareactl-counter-text-color);
 }
 
 .component .counter.limit {
     color: var(--jui-textareactl-counter-limit);
-}
-
-.component em {
-	color: var(--jui-ctl-action);
-}
-
-.component.read_only em {
-    color: var(--jui-ctl-action-readonly);
 }
 
 .component.waiting .inner {

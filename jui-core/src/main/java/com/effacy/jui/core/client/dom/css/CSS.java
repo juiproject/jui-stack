@@ -80,6 +80,10 @@ public class CSS {
 
     public static final LengthProperty GAP = new LengthProperty ("gap");
 
+    public static final LengthProperty ROW_GAP = new LengthProperty ("row-gap");
+
+    public static final LengthProperty COLUMN_GAP = new LengthProperty ("column-gap");
+
     public static final LengthProperty TOP = new LengthProperty ("top");
 
     public static final LengthProperty BOTTOM = new LengthProperty ("bottom");

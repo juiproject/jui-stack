@@ -126,28 +126,71 @@ As you may guess you can build out quite complex DOM structures. You are encoura
 
 ### Applying styles
 
-Now let us have a closer look and the EM tag. We see the call to `style (...)`; this applies a CSS class to the tag. The call to `FontAwesome.user()` returns a CSS class from the (free version of the) [Font Awesome](https://fontawesome.com/) icon library. We aren't restricted to just applying CSS classes but can apply CSS directly using the `css(...)` family of methods. The following 
+Now let us have a closer look and the EM tag. We see the call to `style (...)`; this applies a CSS class to the tag. The call to `FontAwesome.user()` returns a CSS class from the (free version of the) [Font Awesome](https://fontawesome.com/) icon library.
+
+We aren't restricted to just applying CSS classes but can apply CSS directly using the `css(...)` family of methods, as illustrated in the following:
 
 ```java
 add (ComponentCreator.build (root -> {
-    P.$ (root).css ("display", "flex").css ("flex-direction:", "column").css ("gap", "1em").css ("align-items", "baseline").$ (outer -> {
-        Em.$ (outer).style (FontAwesome.user ());
+    P.$ (root)
+        .css ("display", "flex")
+        .css ("flex-direction:", "column")
+        .css ("gap", "1em")
+        .css ("align-items", "baseline")
+        .$ (outer -> {
+            Em.$ (outer).style (FontAwesome.user ());
+            Text.$ (outer, "Some content");
+        });
+}));
+```
+
+Here we apply a number of CSS styles directly to the P tag, these styles layout the contents of the tag more aesthetically. Note the variant of the `css(...)` method we are using here is one that takes the property name as the first argument and the value as the second. There is a type-safe version of this where the property is declared in the `CSS` class and the corresponding value is strictly typed:
+
+```java
+ P.$ (root).css (CSS.GAP, Length.em (1));
+```
+
+This approach can be quite useful when parameterising styles for components and fragments, but is not that pratical in general.
+
+There is a version of `css(...)` which simply takes a string that contains a list (semi-colon separated) of CSS styles:
+
+```java
+add (ComponentCreator.build (root -> {
+    P.$ (root)
+        .css("display: flex; flex-direction: row; gap: 1em; align-items: baseline;")
+        .$ (outer -> {
+            Em.$ (outer).style (FontAwesome.user());
+            Text.$ (outer, "Some content");
+        });
+}));
+```
+
+If the line becomes a little long you can consider using a multi-line string:
+
+```java
+String CSS_P = """
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+  align-items: baseline;
+""";
+add (ComponentCreator.build (root -> {
+    P.$ (root).css(CSS_P).$ (outer -> {
+        Em.$ (outer).style (FontAwesome.user());
         Text.$ (outer, "Some content");
     });
 }));
 ```
 
-Here we apply a number of CSS styles directly to the P tag, these styles layout the contents of the tag more aesthetically.
-
-As it stands the long chain of CSS assignments can be a little unwieldly and we can make this a little more readable by employing the `$(...)` function twice:
+Another option is to employ the `$(...)` function twice and `css(...)` separately for each style:
 
 ```java
 add (ComponentCreator.build (root -> {
     P.$ (root).$ (outer -> {
-        outer.css ("display", "flex");
-        outer.css ("flex-direction", "row");
-        outer.css ("gap", "1em");
-        outer.css ("align-items", "baseline");
+        outer.css ("display: flex;");
+        outer.css ("flex-direction: row;");
+        outer.css ("gap: 1em;");
+        outer.css ("align-items: baseline;");
     }).$ (outer -> {
         Em.$ (outer).style (FontAwesome.user());
         Text.$ (outer, "Some content");
@@ -155,30 +198,22 @@ add (ComponentCreator.build (root -> {
 }));
 ```
 
-You don't need to apply `$(...)` twice and the following is equally valid, though possibly less readable:
+In fact you don't need to apply `$(...)` twice and the following is equally valid, though possibly less readable:
 
 ```java
 add (ComponentCreator.build (root -> {
     P.$ (root).$ (outer -> {
-        outer.css ("display", "flex");
-        outer.css ("flex-direction", "row");
-        outer.css ("gap", "1em");
-        outer.css ("align-items", "baseline");
+        outer.css ("display: flex;");
+        outer.css ("flex-direction: row;");
+        outer.css ("gap: 1em;");
+        outer.css ("align-items: baseline;");
         Em.$ (outer).style (FontAwesome.user());
         Text.$ (outer, "Some content");
     });
 }));
 ```
 
-As you explore JUI code in general you may come across the `CSS` class as a means of applying CSS styles. This class provides for a number of commonly used styles that can be applied in a type-safe manner. For example the application `outer.css ("gap", "1em");` has as its `CSS` equivalant:
-
-```java
-outer.css (CSS.GAP, Length.em (1));
-```
-
-*You are encouraged to explore applying other styles, both directly and using `CSS`.*
-
-?> In general, styles applied this way usually arise from some parameterisation or configuration. The other scenario is during prototyping (before you develop out a style sheet). In this case you can make use of a very compact way which is to combine into a single statement: `.css ("display: flex; flex-direction: row; gap: 1em; align-items: baseline")`. 
+As you can see there are multiple ways to apply CSS, its ultimately a style preference as to which you choose (and different approaches are suitable for different occasions).
 
 We'll finish this section by applying a custom CSS class. Look at `lesson.css` and note the class `lesson1_mystyle`:
 
@@ -197,8 +232,7 @@ We can dispense with the direct application of individual styles and apply this 
 
 ```java
 add (ComponentCreator.build (root -> {
-    P.$ (root).$ (outer -> {
-        outer.style ("lesson1_mystyle");
+    P.$ (root).style ("lesson1_mystyle").$ (outer -> {
         Em.$ (outer).style (FontAwesome.user());
         Text.$ (outer, "Some content");
     });
@@ -250,10 +284,9 @@ The following example introduces two such directly applied event handlers onto t
 ```java
 add (ComponentCreator.build (root -> {;
     Div.$ (root).$ (area -> {
-        area.css ("width", "2em");
-        area.css ("height", "2em");
-        area.css ("border", "1px solid #ccc");
-        area.css ("background", "#f1f1f1");
+        area.css ("width: 2em; height: 2em;");
+        area.css ("border: 1px solid #ccc;");
+        area.css ("background: #f1f1f1;");
         area.on ((e,n) -> {
             CSS.BACKGROUND_COLOR.apply ((Element) n, Color.raw ("#ccc"));
         }, UIEventType.ONMOUSEENTER);
@@ -1805,6 +1838,7 @@ Using the tools and techniques that you have been exposed to in this part try to
 1. In our panels we apply a fixed height. If we remove that height the panel it will vanish, why?
 2. In the last example of the lesson part we made use of the custom class `LeftRightPanel` to setout three buttons and some content. Create a variant of this that makes use of a separate custom class that extends `LeftRightPanel` and setout the content in the constructor (this is the usual way of doing this). For the content allow this to be passed through the constructor and for it to only display if there is content to display.
 3. How could we have used a different approach to `use(...)`? *Hint: consider the dom selector that can be passed to the `renderer(...)` method.*
+4. **Advanced** Create a component that can be used to build pages that have a tool bar at the top and a custom content area below. The content area needs be populated using the `renderer(...)` method while the top should be populated with a dedicated `add(...)` method. *Hint: override the `renderer(...)` method which should create the basic structure then delegate to the passed consumer to build the content area; use a region with the action bar layout for the top section.* 
 
 ## Solutions to exercises
 
@@ -2633,6 +2667,7 @@ Exercises are:
 1. In our panels we apply a fixed height. If we remove that height the panel it will vanish, why?
 2. In the last example of the lesson part we made use of the custom class `LeftRightPanel` to setout three buttons and some content. Create a variant of this that makes use of a separate custom class that extends `LeftRightPanel` and setout the content in the constructor (this is the usual way of doing this). For the content allow this to be passed through the constructor and for it to only display if there is content to display.
 3. How could we have used a different approach to `use(...)`? *Hint: consider the dom selector that can be passed to the `renderer(...)` method.*
+4. **Advanced** Create a component that can be used to build pages that have a tool bar at the top and a custom content area below. The content area needs be populated using the `renderer(...)` method while the top should be populated with a dedicated `add(...)` method. *Hint: override the `renderer(...)` method which should create the basic structure then delegate to the passed consumer to build the content area; use a region with the action bar layout for the top section.* 
 
 #### Exercise 1
 
@@ -2698,3 +2733,58 @@ renderer(el -> {
 });
 ...
 ```
+
+#### Exercise 4
+
+A candidate panel uses the `ActionBarLayout` for the top and an `add(...)` method to add components to the region. The content area is generated via the `renderer(...)` method.
+
+```java
+public abstract class TopPanel extends SimpleComponent {
+
+    private static String REGION_TOP = "top";
+
+    protected TopPanel() {
+        findRegionPoint(REGION_TOP).setLayout(ActionBarLayoutCreator.create(cfg -> {
+            cfg.zone(Zone.$(HAlignment.LEFT));
+        }));
+    }
+
+    protected <C extends IComponent> C add(C cpt) {
+        findRegionPoint(REGION_TOP).add(cpt, new ActionBarLayout.Data(0));
+        return cpt;
+    }
+
+    protected void renderer(Consumer<ElementBuilder> builder, Consumer<NodeContext> onbuild) {
+        super.renderer(root -> {
+            root.css("display: flex; flex-direction: column; height: 100%;");
+            Div.$ (root).css("background: #fff; border-bottom: 1px solid #ccc; padding: 0.75em 1em;").$ (
+                Div.$().use (n -> {
+                    findRegionPoint(REGION_TOP).setElement((Element) n);
+                })
+            );
+            Div.$ (root).css("flex-grow: 1; padding: 1em;").$ (bottom -> {
+                builder.accept(bottom);
+            });
+        }, onbuild);
+    }
+
+}
+```
+
+With an example usage:
+
+```java
+public class MySample extends TopPanel {
+
+    public MySample() {
+        add(ButtonCreator.build (cfg -> {
+            cfg.label("Add something");
+        }));
+        renderer(root -> {
+            // Render contents.
+        });
+    }
+}
+```
+
+A potential extension would be to create left and right zones for the action bar layout and adapt the `add(...)` method to specify which zone to add the passed component to.

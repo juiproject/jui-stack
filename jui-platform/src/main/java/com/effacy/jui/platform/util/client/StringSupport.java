@@ -27,7 +27,7 @@ public final class StringSupport {
     /**
      * The character used to split on (by default).
      */
-    public static final String SPLIT_CHAR = "\r";
+    public static final String SPLIT_CHAR = "\r|\n";
 
     /**
      * Compose a collection of lines into a single line that can be passed to the

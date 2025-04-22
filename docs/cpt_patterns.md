@@ -669,7 +669,7 @@ public class MyFrag extends Fragment<MyFrag> {
 }
 ```
 
-To apply adornments:
+To apply adornments (such as when `css(...)` is used against the fragment):
 
 ```java
 public MyFrag(/* Configuration */) {
@@ -819,6 +819,125 @@ public void build(ContainerBuilder<?> parent) {
     });
 }
 ```
+
+#### Styling
+
+The recommended approach for styling fragments is to create a non-conflicting CSS style sheet in the `public` directory of the module which is loaded in the initialiser (see [injected CSS](ess_styles.md#injected-css )). Fragments are then scoped by a unique class:
+
+```java
+public class MyFrag extends Fragment<MyFrag> {
+
+    ...
+
+    public MyFrag(Variant variant, /* Configuration */) {
+        super (parent -> {
+            Div.$(parent).style("fragMyFrag").$ (
+                /* DOM content */
+            );
+        });
+    }
+}
+```
+
+with CSS:
+
+```css
+.fragMyFrag {
+    ...
+}
+.fragMyFrag > div {
+    ...
+}
+...
+```
+
+#### Variations
+
+Sometimes you want to support variantions of a fragment (for example, a button may be text, outlined or full). This can be embodied by specifying the variations as a `enum` (or possibly multiple where you may have a variation in form and a variation in style):
+
+```java
+public class MyFrag extends Fragment<MyFrag> {
+
+    public enum Variant {
+        VARIANT1, VARIANT2, ...;
+    }
+
+    public static MyFrag $(IDomInsertableContainer<?> parent, Variant variant, /* Configuration */) {
+        MyFrag frg = new MyFrag (/* Configuration */);
+        if (parent != null)
+            parent.insert (frg);
+        return frg;
+    }
+
+    public MyFrag(Variant variant, /* Configuration */) {
+        super (parent -> {
+            Div.$(parent).style("fragMyFrag", variant.name().toLowerCase()).$ (
+                /* DOM content */
+            );
+        });
+    }
+}
+```
+
+Here the variant is applied as a style to the root element of the fragment (and should be declared in the CSS for the fragment).
+
+#### Variations (by interface)
+
+If the fragment is included in a library then you may want to allow users to provide additional customisation through their own variants. The `enum` approach does not allow for extension however replacing it with an interface is a way out:
+
+```java
+public class MyFrag extends Fragment<MyFrag> {
+
+    public interface Variant {
+
+        public final static VARIANT1 = Variant.create("variant1", ...);
+        
+        public final static VARIANT2 = Variant.create("variant2", ...);
+
+        public String style();
+
+        /* Other configuration */
+
+        public static Variant create(String style, /* Other configuration */) {
+            return new Variant() {
+                public String style() { return style; }
+                ...
+            };
+        }
+    }
+
+    public static MyFrag $(IDomInsertableContainer<?> parent, Variant variant, /* Configuration */) {
+        MyFrag frg = new MyFrag (/* Configuration */);
+        if (parent != null)
+            parent.insert (frg);
+        return frg;
+    }
+
+    public MyFrag(Variant variant, /* Configuration */) {
+        super (parent -> {
+            Div.$(parent).style("fragMyFrag", variant.style()).$ (
+                /* DOM content */
+            );
+        });
+    }
+}
+```
+
+These behave nearly identically to the `enum` variety (so provides a migration pathway) but allows users to create their own variants and associated styles:
+
+```java
+public class MyFragVariants {
+    public static final Variant MYVARIANT1 = Variant.create("myvariant1");
+}
+```
+
+```css
+.fragMyFrag.myvariant1 {
+    ...
+}
+```
+
+Where the variant can be applied as `MyFrag.$(parent, MyFragVariants.MYVARIANT1)`.
 
 ### Controls
 
@@ -1072,9 +1191,9 @@ public class XXXControlCreator {
 
 ## Modal dialogs
 
-### Inline modal (with a form)
+### Inline modals
 
-An inline modal that wraps and processes a form. Note the generic types `Void`; these can be replaced by types as required.
+An inline modal that wraps and processes a (in this case a form) component. Note the generic types `Void`; these can be replaced by types as required.
 
 ```java
 ModalDialogCreator.build (ControlFormCreator.<Void,Void> build (cfg -> ControlFormCreator.configureForDialog (cfg), form -> {
@@ -1107,29 +1226,33 @@ ModalDialogCreator.build (ControlFormCreator.<Void,Void> build (cfg -> ControlFo
                 form.fail ();
                 return;
             }
-            /* Perform action */
+            // Perform action
             form.success ();
         });
     });
 }).open ();
 ```
 
-### Modal for a pane
+### Modal enabling a component
+
+Here we consider a component that can be used directly or as a model. The latter is invoked by a static `open(...)` method.
+
+#### Simple dialog
 
 ```java
-public static class MyComponent extends SimpleComponent implements IProcessable<Object> {
+public static class MyComponent extends SimpleComponent {
 
-    private static IDialogOpener<Void, Object> DIALOG;
+    private static IDialogOpener<Void, Void> DIALOG;
 
-    public static void open(Consumer<Optional<Object>> cb) {
+    public static void open() {
         if (DIALOG == null)
-            DIALOG = ModalDialogCreator.<Void, Object, MyComponent>dialog (new MyComponent (), cfg -> {
+            DIALOG = ModalDialogCreator.<Void, Void, MyComponent>dialog (new MyComponent (), cfg -> {
                 cfg.style (ModalStyle.UNIFORM)
-                        .title ("Create something")
-                        .type (Type.CENTER)
-                        .width (Length.px(500));
+                    .title ("Create something")
+                    .type (Type.CENTER)
+                    .width (Length.px(500));
             }, b -> b.label ("cancel"), b -> b.label ("Create something"));
-        DIALOG.open (null, cb);
+        DIALOG.open (null, null);
     }
 
     public MyComponent() {   
@@ -1138,64 +1261,119 @@ public static class MyComponent extends SimpleComponent implements IProcessable<
 }
 ```
 
-### In-component modals
+#### Processing dialog
 
-There are times when an component wants to open a modal to interrogate and update its own state. An inline modal may do the job but if the interactions within the modal are more complex then a separate component is in order. In these cases the dialog component can be created as a inner class:
+This makes use of `IProcessable` to manage a response that is returned through to a callback:
+
+1. If the dialog is cancelled the optional value is empty.
+2. If the dialog is processed then optional value contains the returned value from the `process(...)` method.
+3. Passing an empty optional in the `process(...)` method indicates a failure of the processing and assumes the some form of error message is being displayed; the dialog is not closed.
 
 ```java
-public class MyComponent extends SimpleComponent {
+public static class MyComponent extends SimpleComponent implements IProcessable<ResponseType> {
 
-    ...
+    private static IDialogOpener<Void, ResponseType> DIALOG;
 
-    @Override
-    protected void render(Element el) {
-        Wrap.$ (el).$ (root -> {
-            Btn.$ (btn, "Open").onclick (() -> {
-                new MyInnerDialog ().open ();
-            });
-        }).build ();
+    public static void open(Consumer<Optional<ResponseType>> cb) {
+        if (DIALOG == null)
+            DIALOG = ModalDialogCreator.<Void, ResponseType, MyComponent>dialog (new MyComponent (), cfg -> {
+                cfg.style (ModalStyle.UNIFORM)
+                    .title ("Create something")
+                    .type (Type.CENTER)
+                    .width (Length.px(500));
+            }, b -> b.label ("cancel"), b -> b.label ("Create something"));
+        DIALOG.open (null, cb);
     }
 
-    protected void update(/* data */) {
-        ...
-    }
-
-    /**
-     * An inner class that has access to the parent class members.
-     */
-    class MyInnerDialog extends SimpleComponent {
-
-        /**
-         * Wraps this component into a dialog.
-         */
-        public void open() {
-            ModalDialogCreator.build (this, cfg -> {
-                cfg.title ("Demo dialog");
-                cfg.removeOnClose ();
-                cfg.action().label ("close").link ();
-                cfg.action ().label ("Apply").handler (ctx -> {
-                    apply (); // Can also be invoked by "ctx.contents ().apply ();"
-                    ctx.success ();
-                });
-            }).open ();
-        }
-
+    public MyComponent() {   
         ...
 
         @Override
-        protected INodeProvider buildNode(Element el) {
-            return Wrap.$ (el).$ (root -> {
-                ...
-            }).build ();
-        }
+        public void process(Consumer<Optional<ResponseType>> outcome) {
+            ResponseType response = ...;
 
-        public void apply() {
-            MyComponent.this.update (...);
+            if (response == null)
+                // This keeps the dialog open.
+                outcome.accept(Optional.empty());
+            else
+                // While this closes the dialog ane
+                outcome.accept(Optional.of(response));
         }
-     }
+    }
 }
-
 ```
+
+#### Configurable dialog
+
+Activates the dialog passing configuration data through to the component. This can be combined with [Processing dialog](#processing-dialog).
+
+```java
+public static class MyComponent extends SimpleComponent implements IEditable<ConfigType> {
+
+    private static IDialogOpener<ConfigType, Void> DIALOG;
+
+    public static void open(ConfigType config) {
+        if (DIALOG == null)
+            DIALOG = ModalDialogCreator.<ConfigType, Void, MyComponent>dialog (new MyComponent (), cfg -> {
+                cfg.style (ModalStyle.UNIFORM)
+                    .title ("Create something")
+                    .type (Type.CENTER)
+                    .width (Length.px(500));
+            }, b -> b.label ("cancel"), b -> b.label ("Create something"));
+        DIALOG.open (config, null);
+    }
+
+    public MyComponent() {   
+        ...
+
+        @Override
+        public void edit(ConfigType config) {
+            ...
+        }
+    }
+}
+```
+
+Note that if the component extends `ControlForm<ConfigType,?>` then `edit(ConfigType)` is provided by the base class and will be used to populate the form contents.
+
+#### Configurable dialog using a record
+
+It is often the case that a dialog will need component-specific configuration (i.e. beyond that provided by an existing type). Here you can use a `record` as the configuration object.
+
+```java
+public static class MyComponent extends SimpleComponent implements IEditable<MyComponent.MyComponentConfig> {
+
+    public static record MyComponentConfig(...) {
+        public static MyComponentConfig of(...) {
+            return new MyComponentConfig(...);
+        }
+        ...
+    }
+
+    private static IDialogOpener<MyComponentConfig, Void> DIALOG;
+
+    public static void open(MyComponentConfig config) {
+        ...
+    }
+
+    public MyComponent() {   
+        ...
+
+        @Override
+        public void edit(MyComponentConfig config) {
+            ...
+        }
+    }
+}
+```
+
+Which can then be invoked by:
+
+```java
+MyComponent.open(MyComponentConfig.of(...));
+```
+
+The use of the static `of(...)` methods allows for various configuration arrangements to be supplied in a constrained manner.
 
 ## Form patterns
 

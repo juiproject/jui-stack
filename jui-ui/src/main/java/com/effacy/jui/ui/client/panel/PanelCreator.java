@@ -25,6 +25,9 @@ import com.effacy.jui.core.client.dom.css.Insets;
 import com.effacy.jui.platform.util.client.With;
 import com.effacy.jui.core.client.component.layout.ActionBarLayout.HAlignment;
 
+/**
+ * Standard creator helper for {@link Panel}.
+ */
 public class PanelCreator {
 
     /**

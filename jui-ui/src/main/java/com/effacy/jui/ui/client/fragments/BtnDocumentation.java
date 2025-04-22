@@ -17,28 +17,47 @@ package com.effacy.jui.ui.client.fragments;
 
 import com.effacy.jui.core.client.component.ComponentCreator;
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
-import com.effacy.jui.core.client.dom.builder.P;
+import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.ui.client.explorer.ComponentDocumentation;
 import com.effacy.jui.ui.client.explorer.ComponentDocumentation.Config.Type;
-import com.effacy.jui.ui.client.fragments.Card.CardFragment;
+import com.effacy.jui.ui.client.fragments.Btn.BtnFragment;
+import com.effacy.jui.ui.client.icon.FontAwesome;
 
-public class CardDocumentation {
-    
+public class BtnDocumentation {
+
     public static ComponentDocumentation documentation() {
         return new ComponentDocumentation.Config ()
-            .title ("Card")
-            .className (Card.class.getCanonicalName ())
+            .title ("Btn")
+            .className (Btn.class.getCanonicalName ())
             .type (Type.FRAGMENT)
-            .description ("Fragment for displaying a card.")
+            .description ("Fragment for displaying an interactive button.")
             .example (ComponentCreator.build (cpt -> {
-                Card.$ (cpt).$ (content -> {
-                    P.$ (content).text ("Card content");
-                });
+                example01(cpt);
             }))
         .build ();
     }
 
-    public static CardFragment example1(IDomInsertableContainer<?> root) {
-        return Card.$(root);
+    public static BtnFragment example01(IDomInsertableContainer<?> root) {
+        return Btn.$(root, "Filter")
+            .icon(FontAwesome.sliders())
+            .variant(Btn.Variant.OUTLINED)
+            .nature(Btn.Nature.GREY)
+            .onclick(() -> Logger.info("Btn.example01.Click"));
+    }
+
+    public static BtnFragment example02(IDomInsertableContainer<?> root) {
+        return Btn.$(root, "Filter")
+            .icon(FontAwesome.sliders())
+            .variant(Btn.Variant.STANDARD)
+            .nature(Btn.Nature.GREY)
+            .onclick(() -> Logger.info("Btn.example02.Click"));
+    }
+
+    public static BtnFragment example03(IDomInsertableContainer<?> root) {
+        return Btn.$(root, "Filter")
+            .icon(FontAwesome.sliders())
+            .variant(Btn.Variant.TEXT)
+            .nature(Btn.Nature.GREY)
+            .onclick(() -> Logger.info("Btn.example03.Click"));
     }
 }

@@ -15,6 +15,7 @@
  ******************************************************************************/
 package com.effacy.jui.ui.client.control;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.gwtproject.safehtml.shared.SafeHtmlBuilder;
@@ -26,6 +27,7 @@ import com.effacy.jui.core.client.control.Control;
 import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.UIEventType;
 import com.effacy.jui.core.client.dom.builder.Div;
+import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Textarea;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.core.client.dom.css.CSS;
@@ -409,6 +411,13 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
      */
     protected HTMLElement counterEl;
 
+    protected Consumer<ElementBuilder> footer;
+
+    public TextAreaControl footer(Consumer<ElementBuilder> footer) {
+        this.footer = footer;
+        return this;
+    }
+
     /**
      * This is used to assign a new height at run time. Often used to increase the
      * size of the text area when activated.
@@ -492,6 +501,8 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
                         ta.attr ("wrap", "off");
                     ta.testId (buildTestId ("input")).testRef ("input");
                 });
+                if (footer != null)
+                    footer.accept(inner);
             });
             if (config().counter) {
                 Div.$(root).style(styles().counter()).by("counter").text ((config().max <= 0) ? "0 characters" : "0 / " + config().max);

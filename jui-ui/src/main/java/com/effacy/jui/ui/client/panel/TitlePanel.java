@@ -29,6 +29,11 @@ import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.Element;
 
+/**
+ * Similar to {@link Panel} but allows for a title block at the top.
+ * <p>
+ * See the README.md in this package for more information.
+ */
 public class TitlePanel extends PanelBase<TitlePanel.Config> {
 
     public static class Config extends PanelBase.Config<Config> {

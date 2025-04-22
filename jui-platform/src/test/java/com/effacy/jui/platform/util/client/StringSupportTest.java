@@ -23,8 +23,8 @@ public class StringSupportTest {
     @Test
     public void test_split() {
         Assertions.assertEquals (1, StringSupport.split("kashkjasdghk").length);
-        Assertions.assertEquals (1, StringSupport.split("kashkj\nasdghk").length);
-        Assertions.assertEquals (2, StringSupport.split("kashkj\nasdghk".replace("\n", "\r")).length);
+        Assertions.assertEquals (2, StringSupport.split("kashkj\nasdghk").length);
+        Assertions.assertEquals (3, StringSupport.split("ka\rhkj\nasdghk").length);
         Assertions.assertEquals (2, StringSupport.split("kashkj\rasdghk").length);
         Assertions.assertEquals (6, StringSupport.split("\r\rkashkj\r\r\rasdghk\r").length);
     }

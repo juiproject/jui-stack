@@ -164,6 +164,17 @@ public class Fragment<T extends Fragment<T>> implements IDomInsertable {
      * The builder will be invoked with the parent into which it will build its
      * contents. More than one element can be inserted into the parent and
      * adornments need to be handled manually.
+     * <p>
+     * If adornments (including any assigned {@link #use(Consumer)}) need to be
+     * appllied then they may be done manually by a call to
+     * {@link #adorn(ElementBuilder)}. For example:
+     * <tt>
+     * builder(parent -> {
+     *   adorn(Div.$(parent)).$ (
+     *     ...
+     *   );
+     * });
+     * </tt>
      * 
      * @param builder
      *                the builder.
@@ -200,8 +211,6 @@ public class Fragment<T extends Fragment<T>> implements IDomInsertable {
             builder.accept (parent);
         } else {
             ElementBuilder el = createRoot (parent);
-            if (use != null)
-                el.use (use);
             if (el != null) {
                 el.$ (root -> {
                     buildInto (root);
@@ -242,14 +251,21 @@ public class Fragment<T extends Fragment<T>> implements IDomInsertable {
     }
 
     /**
-     * To apply any registered adornments.
+     * To apply any registered adornments (as well as any other preparations, such
+     * as the use).
      * 
      * @param target
      *               the target to apply the adornments to.
+     * @return the passed target.
      */
-    protected void adorn(ElementBuilder target) {
-        if ((adornments != null) && (target != null))
+    protected <E extends ElementBuilder> E adorn(E target) {
+        if (target == null)
+            return target;
+        if (use != null)
+            target.use (use);
+        if (adornments != null)
             adornments.forEach (adornment -> adornment.adorn (target));
+        return target;
     }
     
     /************************************************************************

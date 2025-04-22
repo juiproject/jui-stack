@@ -198,12 +198,10 @@ Now when it comes to using these styles we simply access the style via the stati
 NormalCSS.instance ().styles ().outer ();
 ```
 
-for example:
+for example, to apply to an `ElementBuilder`:
 
 ```java
-DomBuilder.div (root -> {
-    root.style (NormalCSS.instance ().styles ().outer ());
-});
+el.style (NormalCSS.instance ().styles ().outer ());
 ```
 When it comes to components we override the `Component`'s `styles()` method to supply the styles we want to use (this is not a requirement, this is only if you are using localised styles for a component):
 
@@ -240,6 +238,25 @@ protected INodeProvider buildNode (Element el) {
 
 ?> As a side note we see that styles used in components extend `IComponentCSS` which declares some standard CSS classes. One of these is `component`. The `Component` will, if styles are supplied by overriding the `styles()` method, apply the `component` CSS class to the root element of the component. Our convention is to scope all CSS with `component` which adds an additional layer of protection against CSS name clashing and pollution.
 
+### Mixing styles (strictness)
+
+You are not required to have every style represented in the styles interface; styles can exist in the CSS file that dont't have a matching method and still can be used by direct reference:
+
+```java
+protected INodeProvider buildNode (Element el) {
+    return Wrap.$ (el).$ (root -> {
+        Div.$ (root).style ("outer").$ (outer -> {
+            ...
+        });
+    }).build ();
+}
+```
+
+This means you can mix obfuscated styles with non-ofuscated ones. Here you can gain the benefit of scoping (by an obfuscated one) as well a having a localised style sheet while not having to have every style represented in the CSS interface.
+
+This is not really a recommended approach (especially for component libraries) but is certainly a useful feature when converting from a global or injected CSS to a localised one.
+
+
 ## Inline styles
 
 Style inlining is straightforward but comes at the cost of maintanance. However, where highly localised styling, or adjustments need to be made to imposed styling, this can be a convenient option (certainly can be during prototyping).
@@ -264,6 +281,7 @@ Note that the structured styles approach is quite good for applying adjustments 
 Here we describe a number of techniques to make it easy to re-theme a component (specifically a JUI standard component). These consist of:
 
 1. [Global variables and styles](#global-variables-and-styles) are styles and CSS variables that are used across all JUI components.
+2. [Isolated changes](#isolated-changes) are small adjustments on a per-component instance case.
 2. [Component variables](#component-variables) allows one to override variables using additional styles.
 3. [Stylesheet overrides](#stylesheet-overrides) where a project replaces a stylesheet in a module.
 4. [Style packs](#style-packs) which allow for components to take on a plurality of styles (including custom styles).
@@ -347,6 +365,26 @@ Controls.check(cfg -> {
 ```
 
 This is only good for changes that can be parameterised by these variables, but in many cases this is sufficient.
+
+### Isolated changes
+
+If you are looking to make changes on a per-component instance (or fragment) basis then you could consider applying adjustments directly to the root element with the `css(...)` method:
+
+```java
+MyComponentCreator.build(cfg -> {
+    cfg.css("margin-top: 2em;");
+});
+```
+
+This is useful for positional changes but is otherwise limited in terms of internal styles. For the latter you can leveage [component variables](#component-variables) (if available):
+
+```java
+CheckControlCreator.build(cfg -> {
+    cfg.css("--jui-checkctl-text: green;");
+}); 
+```
+
+which is an alternative to creating a separate (but re-usable) style class.
 
 ### Stylesheet overrides
 

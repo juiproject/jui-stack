@@ -722,7 +722,23 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             ((CardFitLayout) findRegionPoint (REGION_BODY).getLayout ()).activate (cpt).onFulfillment (v -> promise.fulfill (v));
             return promise;
         }
+
+        @Override
+        protected void onNavigationBackward(NavigationContext context, List<String> path, Consumer<List<String>> propagator) {
+            super.onNavigationBackward(context, path, propagator);
+            onAfterNavigate(path);
+        }
     };
+    
+    /**
+     * Convenience to report the current navigation path.
+     * 
+     * @param path
+     *             the path.
+     */
+    protected void onAfterNavigate(List<String> path) {
+        // Nothing.
+    }
 
     protected void buildBreadcrumb(ElementBuilder header, NavigationContext context, List<CardConfiguration> path) {
         CardConfiguration card = path.get(path.size() - 1);

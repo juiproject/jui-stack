@@ -1,0 +1,15 @@
+.component {
+    --jui-multicheckctl-border-radius: 5px;
+    --jui-multicheckctl-border-width: 1px;
+    --jui-multicheckctl-border-color: #ddd;
+    --jui-multicheckctl-padding: 0;
+    --jui-multicheckctl-item-border-radius: 3px;
+    --jui-multicheckctl-item-border-radius-inner: 0;
+    --jui-multicheckctl-item-weight: 500;
+    --jui-multicheckctl-item-selected-weight: 600;
+    --jui-multicheckctl-size: 1em;
+    --jui-multicheckctl-bg: var(--jui-ctl-bg);
+    --jui-multicheckctl-item-text: #888;
+    --jui-multicheckctl-item-padding-tb: 6px;
+    --jui-multicheckctl-item-hover-bg: #eee;
+}

@@ -154,7 +154,7 @@
     --jui-ctl-err-focus: var(--jui-state-error);
     --jui-ctl-err-focus-offset: var(--jui-state-error-offset);
 
-    /* Button */
+    /* Buttons */
     --jui-btn-bg: var(--jui-color-primary50);
     --jui-btn-bg-hover: var(--jui-color-primary60);
     --jui-btn-bg-disabled: var(--jui-state-disabled);
@@ -193,7 +193,7 @@
     --jui-container-bg: var(--jui-color-neutral05);
     --jui-container-bg-offset: var(--jui-color-neutral10);
 
-    /* Fragments */
+    /* TO BE REMOVED */
     --jui-frag-card-outlined-bg: var(--jui-color-aux-white);
     --jui-frag-card-outlined-border: var(--jui-line-light);
     --jui-frag-card-outlined-border-radius: var(--jui-border-radius);

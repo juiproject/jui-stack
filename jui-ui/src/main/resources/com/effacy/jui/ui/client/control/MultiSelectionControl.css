@@ -4,6 +4,7 @@
     --jui-selectctl-text-light: var(--jui-ctl-text-placeholder);
     --jui-selectctl-bg: var(--jui-ctl-bg);
     --jui-selectctl-chip-border-radius: 12px;
+    --jui-selectctl-chip-size: 0.9em;
 }
 
 .component {
@@ -129,6 +130,7 @@
     border: 1px solid #ddd;
     cursor: default;
     max-width: 100%;
+    font-size: var(--jui-selectctl-chip-size);
 }
 
 .component span.chip > span {

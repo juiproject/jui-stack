@@ -19,22 +19,30 @@ import com.effacy.jui.core.client.component.ComponentCreator;
 import com.effacy.jui.ui.client.explorer.ComponentDocumentation;
 import com.effacy.jui.ui.client.explorer.ComponentDocumentation.Config.Type;
 
-public class PercentageGuageDocumentation {
+public class PercentageLineDocumentation {
     public static ComponentDocumentation documentation() {
         return new ComponentDocumentation.Config ()
-            .title ("PercentageGuage")
-            .className (PercentageGuage.class.getCanonicalName ())
+            .title ("PercentageLine")
+            .className (PercentageLine.class.getCanonicalName ())
             .type (Type.FRAGMENT)
-            .description ("Fragment for displaying percentage progress guage.")
+            .description ("Fragment for displaying a horizontal percentage progress bar.")
             .example (ComponentCreator.build (cpt -> {
-                PercentageGuage.$ (cpt, 45)
-                    .css("width: 4em;");
+                PercentageLine.$ (cpt, 45)
+                    .css("width: 10em;");
             }))
             .option("percentage", opt -> {
                 opt.constructor ();
                 opt.required ();
                 opt.description ("The percentage progress that should be displayed.");
                 opt.valueDescription("An integer between 0 and 100 (inclusive).");
+            })
+            .option("label", opt -> {
+                opt.description ("An optional display label that appears above the bar on the left (the percentage progress appears on the same line but to the right, if there is no label the percentage appears to the right of the bar).");
+                opt.valueDescription("Text content.");
+            })
+            .option("progress", opt -> {
+                opt.description ("If present replaces the percentage progress label.");
+                opt.valueDescription("Conditional text content.");
             })
         .build ();
     }

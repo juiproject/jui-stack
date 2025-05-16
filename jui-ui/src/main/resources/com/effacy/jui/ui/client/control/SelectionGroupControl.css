@@ -53,6 +53,14 @@
     font-size: 0.95em;
 }
 
+.component .inner .item.indented {
+    margin-left: 2em;
+}
+
+.component .inner .item.disabled .label {
+    opacity: 0.6;
+}
+
 .component.invalid .inner input {
 	border-color: var(--jui-ctl-err-focus);
     box-shadow: 0 0 0 2px var(--jui-ctl-err-focus-offset);

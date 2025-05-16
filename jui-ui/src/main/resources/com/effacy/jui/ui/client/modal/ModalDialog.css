@@ -136,6 +136,7 @@
 .component .dialog .body {
 	flex: 1;
 	overflow: auto;
+    position: relative;
 }
 
 .component .dialog .body .contents {

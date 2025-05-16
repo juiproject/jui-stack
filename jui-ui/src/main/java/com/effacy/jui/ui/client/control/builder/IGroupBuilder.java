@@ -240,9 +240,24 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
          * 
          * @param title
          *              the title.
+         * @param css
+         *              any additional css to apply.
          * @return this header builder.
          */
-        public IHeaderBuilder title(String title);
+        default public IHeaderBuilder title(String title) {
+            return title(title, null);
+        }
+
+        /**
+         * Declare a title.
+         * 
+         * @param title
+         *              the title.
+         * @param css
+         *              any additional css to apply.
+         * @return this header builder.
+         */
+        public IHeaderBuilder title(String title, String css);
 
         /**
          * Declare am icon (displayed to the left of the title).
@@ -260,7 +275,20 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
          *                    the instructions.
          * @return this header builder.
          */
-        public IHeaderBuilder instruction(String instruction);
+        default public IHeaderBuilder instruction(String instruction) {
+            return instruction(instruction, null);
+        }
+
+        /**
+         * Declare instructions to display (these appear under the title).
+         * 
+         * @param instruction
+         *                    the instructions.
+         * @param css
+         *              any additional css to apply.
+         * @return this header builder.
+         */
+        public IHeaderBuilder instruction(String instruction, String css);
 
         /**
          * To render the header (does not use the other data).
@@ -345,7 +373,34 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
         public IGroupConditionalBuilder handler(BiConsumer<IModificationContext,Boolean> handler);
     }
 
+    /**
+     * To interact with the row.
+     */
+    public interface IRowHandler {
+
+        /**
+         * Show the cell.
+         */
+        public void show();
+
+        /**
+         * Hide the cell.
+         */
+        public void hide();
+
+    }
+
+    /**
+     * Builder for a row.
+     */
     public interface IRowBuilder<SRC,DST> {
+
+        /**
+         * Handler for the row.
+         * 
+         * @return the handler.
+         */
+        public IRowHandler handler();
 
         /**
          * Convenuence to apply CSS directly to the root element (see
@@ -435,7 +490,21 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
          *                the builder to build content.
          * @return this builder.
          */
-        public IRowBuilder<SRC,DST> insert(Consumer<ElementBuilder> builder);
+        default public IRowBuilder<SRC,DST> insert(Consumer<ElementBuilder> builder) {
+            return insert(builder, null);
+        }
+
+        /**
+         * Inserts DOM content via a builder. This will build directly into the cell
+         * container.
+         * 
+         * @param builder
+         *                the builder to build content.
+         * @param handler
+         *                to further configure the cell.
+         * @return this builder.
+         */
+        public IRowBuilder<SRC,DST> insert(Consumer<ElementBuilder> builder, Consumer<ICell> handler);
 
         /**
          * Adds a component to the row.
@@ -465,6 +534,30 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
          * @return this builder.
          */
         public IRowBuilder<SRC,DST> expander();
+
+        /**
+         * To interact with the cell.
+         */
+        public interface ICellHandler {
+
+            /**
+             * Show the cell.
+             */
+            public void show();
+
+            /**
+             * Hide the cell.
+             */
+            public void hide();
+
+            /**
+             * Updates the label.
+             * 
+             * @param label
+             *              the label.
+             */
+            public void updateLabel(String label);
+        }
 
         /**
          * User to further configure a cell.
@@ -499,6 +592,14 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
              * @return this cell instance.
              */
             public ICell guidance(String guidance);
+
+            /**
+             * Obtains a handler to the cell.
+             * 
+             * @return the handler.
+             */
+            public ICellHandler handler();
+
         }
 
         /**
@@ -617,6 +718,13 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
              * @return this cell instance.
              */
             public IControlCell<V,CTL,SRC,DST> guidance(String guidance);
+
+            /**
+             * Obtains a handler to the cell.
+             * 
+             * @return the handler.
+             */
+            public ICellHandler handler();
 
             /**
              * User to clear a control (set to empty).

@@ -39,7 +39,9 @@ import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
 import com.effacy.jui.core.client.dom.builder.Input;
 import com.effacy.jui.core.client.dom.builder.Label;
 import com.effacy.jui.core.client.dom.builder.Li;
+import com.effacy.jui.core.client.dom.builder.Markup;
 import com.effacy.jui.core.client.dom.builder.P;
+import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.builder.Text;
 import com.effacy.jui.core.client.dom.builder.Ul;
 import com.effacy.jui.core.client.dom.builder.Wrap;
@@ -47,6 +49,7 @@ import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.core.client.dom.jquery.JQuery;
 import com.effacy.jui.core.client.util.UID;
+import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.platform.util.client.TimerSupport;
 import com.effacy.jui.ui.client.control.builder.IGroupBuilder.IRowBuilder.IControlCell;
@@ -168,6 +171,9 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
      */
     private Length gap;
 
+    /**
+     * See {@link #adorn}.
+     */
     private BiConsumer<ElementBuilder,ElementBuilder> adorn;
 
     /**
@@ -485,9 +491,14 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
     public class HeaderBuilder implements IDomInsertable, IHeaderBuilder {
 
         /**
-         * See {@link #title(String)}.
+         * See {@link #title(String, String)}.
          */
         protected String title;
+
+        /**
+         * See {@link #title(String, String)}.
+         */
+        protected String titleCss;
 
         /**
          * See {@link #icon(String)}.
@@ -495,9 +506,14 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
         protected String icon;
 
         /**
-         * See {@link #instruction(String)}.
+         * See {@link #instruction(String,String)}.
          */
         protected String instruction;
+
+        /**
+         * See {@link #instruction(String,String)}.
+         */
+        protected String instructionCss;
 
         /**
          * See {@link #renderer(Consumer)}.
@@ -505,8 +521,9 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
         protected Consumer<ElementBuilder> renderer;
 
         @Override
-        public IHeaderBuilder title(String title) {
+        public IHeaderBuilder title(String title, String css) {
             this.title = title;
+            this.titleCss = css;
             return this;
         }
 
@@ -517,8 +534,9 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
         }
 
         @Override
-        public IHeaderBuilder instruction(String instruction) {
+        public IHeaderBuilder instruction(String instruction, String css) {
             this.instruction = instruction;
+            this.instructionCss = css;
             return this;
         }
 
@@ -541,14 +559,21 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
             Div.$ (parent).style (config.styles ().header ()).$ (header -> {
                 if (!StringSupport.empty (title)) {
                     H3.$ (header).$ (h3 -> {
+                        if (titleCss != null)
+                            h3.css(titleCss);
                         if (!StringSupport.empty (icon))
                             Em.$ (h3).style (icon);
                         if (!StringSupport.empty (title)) 
                             Text.$ (h3, title);
                     });
                 }
-                if (!StringSupport.empty (instruction))
-                    P.$ (header).text (instruction);
+                if (!StringSupport.empty (instruction)) {
+                    P.$ (header).$ (p -> {
+                        if (instructionCss != null)
+                            p.css(instructionCss);
+                        Text.$(p, instruction);
+                    });
+                }
             });
         }
     }
@@ -602,9 +627,9 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                 return;
             Div.$ (parent).style (config.styles ().footer ()).$ (header -> {
                 if (!StringSupport.empty (guidance))
-                    P.$ (header)
-                        .text (guidance)
-                        .use (n -> guidanceEl = (Element) n);
+                    P.$ (header).$ (
+                        Markup.$(guidance)
+                    ).use (n -> guidanceEl = (Element) n);
             });
         }
     }
@@ -671,6 +696,11 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
          */
         protected List<RowCell<?,?>> cells = new ArrayList<>();
 
+        /**
+         * The root element.
+         */
+        private Element el;
+
         @SuppressWarnings("unchecked")
         boolean forEachCell(Function<RowBuilder.RowCell<?, IControl<?>>, Boolean> visitor) {
             for (RowCell<?,?> cell : cells) {
@@ -687,9 +717,14 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                 Div.$ (parent).style (config.styles ().row ()).$ (row -> {
                     if (adorner != null)
                         adorner.accept(row);
+                    row.use(n -> el = (Element) n);
                     // Create a cell for each of the items in the row.
                     cells.forEach (cell -> {
                         Div.$ (row).style (config.styles ().cell ()).$ (c -> {
+                            // Grap the element. This can be used by the cell handler.
+                            c.use (n -> {
+                                cell.el = (Element) n;
+                            });
                             if (cell.control != null) {
                                 // Attach event handlers that change the cell (and row) state.
                                 c.use (n -> {
@@ -734,8 +769,10 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                                 c.css ("align-items", "end");
                             // The label (if any).
                             Label.$ (c).$ (l -> {
-                                if (!StringSupport.empty (cell.label))
-                                    l.text (cell.label);
+                                if (!StringSupport.empty(cell.label))
+                                    Span.$(l)
+                                        .text(cell.label)
+                                        .use(n -> cell.elLabel = (Element) n);
                                 if (cell.required)
                                     l.style (config.styles ().required ());
                                 if (!StringSupport.empty (cell.help)) {
@@ -768,7 +805,9 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                             Ul.$ (c).style (config.styles ().error (), null).$ (error -> {});
                             // Disply any assigned guidance.
                             if (!StringSupport.empty(cell.guidance))
-                                Div.$ (c).style (config.styles ().guidance ()).text (cell.guidance);
+                                Div.$ (c).style (config.styles ().guidance ()).$ (
+                                    Markup.$(cell.guidance)
+                                );
                         });
                     });
                     // Hide the label elements if there are no labels.
@@ -779,6 +818,25 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                         row.style (config.styles ().hidden ());
                 });
             }
+        }
+
+        @Override
+        public IRowHandler handler() {
+            return new IRowHandler() {
+
+                @Override
+                public void show() {
+                    if (el != null)
+                        JQuery.$(el).show();
+                }
+
+                @Override
+                public void hide() {
+                    if (el != null)
+                        JQuery.$(el).hide();
+                }
+
+            };
         }
         
         @Override
@@ -799,10 +857,12 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
         }
 
         @Override
-        public IRowBuilder<SRC,DST> insert(Consumer<ElementBuilder> builder) {
+        public IRowBuilder<SRC,DST> insert(Consumer<ElementBuilder> builder, Consumer<ICell> handler) {
             if (builder == null)
                 return this;
             RowCell<Void,IControl<Void>> cell = new RowCell<>(builder);
+            if (handler != null)
+                handler.accept (cell);
             cells.add (cell);
             return this;
         }
@@ -867,6 +927,10 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
 
             protected CTL control;
 
+            protected Element el;
+
+            protected Element elLabel;
+
             RowCell() {
                 // Expander.
                 grow = 1;
@@ -883,6 +947,30 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
             RowCell(String label, CTL control) {
                 this.label = label;
                 this.control = control;
+            }
+
+            public ICellHandler handler() {
+                return new ICellHandler() {
+
+                    @Override
+                    public void show() {
+                        if (el != null)
+                            JQuery.$(el).show();
+                    }
+
+                    @Override
+                    public void hide() {
+                        if (el != null)
+                            JQuery.$(el).hide();
+                    }
+
+                    @Override
+                    public void updateLabel(String label) {
+                        if (elLabel != null)
+                            elLabel.textContent = label;
+                    }
+
+                };
             }
 
             @Override
@@ -1127,8 +1215,11 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                             Text.$ (label, title);
                         });
                     });
-                    if (!StringSupport.empty (instruction))
-                        P.$ (hdr).text (instruction);
+                    if (!StringSupport.empty (instruction)) {
+                        P.$ (hdr).$ (
+                            Markup.$(instruction)
+                        );
+                    }
                 });
             } else if (header != null)
                 group.insert (header);

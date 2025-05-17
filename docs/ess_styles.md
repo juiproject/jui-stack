@@ -13,6 +13,7 @@ Each of above is described within. In addition we include the following related 
 
 1. [Themes](#themes) describes a mechanism employed by JUI standard components (in the manner in which CSS resources are declared and overridden as well as the employment of CSS variables) to enable re-styling of components.
 2. [Fonts and icons](#fonts-and-icons) outlines JUI inclusion (as a convenience) if a mechanism for leveraging the free version of [FontAwesome](https://fontawesome.com/) (which employs CSS as the delivery mechanism).
+3. [Override modules](#override-modules) provides a way of overriding stylesheets and JUI source code (for fixes and enhancements) without creating your own JUI distribution.
 
 Finally, as noted at the beginning of this section, [Patterns](#patterns) provides summary guidance and template code that can get you started.
 
@@ -168,11 +169,11 @@ We describe the various elements as follows:
 Another convenient aspect of the above is that we can create multuple variants of the `ILocalCSS` for different stylings. We can do this just by creating another `XXXCSS` class. The following is also taken from `Button`:
 
 ```java
-@StyleResource(source = {
+@CssResource({
     IComponentCSS.COMPONENT_CSS,
+    "com/effacy/jui/ui/client/button/Button.css",
     "com/effacy/jui/ui/client/button/Button_Link.css",
     "com/effacy/jui/ui/client/button/Button_Link_Override.css"
-
 })
 public static abstract class LinkCSS implements ILocalCSS {
 
@@ -189,6 +190,70 @@ public static abstract class LinkCSS implements ILocalCSS {
 ```
 
 This time we refer to the CSS files `Button_Link.css` and `Button_Link_Override.css` rather than `Button.css` and `Button_Override.css`.  The `Button` component can be supplied which styles to use during construction (there is a little more to it than that as we employ a particular pattern for style changes to components, one that allows more than just changing CSS, but the principle is the same - see `Button.Config.Style`).
+
+### Inlining the stylesheet
+
+You are not restricted to providing file-based stylesheets, you do have the option to inline them. This is quite good for shorter stylesheets or when you are prototyping. To inline you need to declare the styles using the `stylesheet` property of `@CssResource`:
+
+```java
+@CssResource(stylesheet = """
+    .component {
+        position: relative;
+        display: inline-flex;
+        ...
+    } 
+    .component .outer {
+        margin: 0;
+        width: 100%;
+        ...
+    }
+    ...
+""")
+public static abstract class LinkCSS implements ILocalCSS {
+
+    private static LinkCSS STYLES;
+
+    public static ILocalCSS instance() {
+        if (STYLES == null) {
+            STYLES = (LinkCSS) GWT.create (LinkCSS.class);
+            STYLES.ensureInjected ();
+        }
+        return STYLES;
+    }
+}
+```
+
+You can also combine the inlined stylesheet with file-based ones:
+
+```java
+@CssResource(value = IComponentCSS.COMPONENT_CSS, stylesheet = """
+    .component {
+        position: relative;
+        display: inline-flex;
+        ...
+    } 
+    .component .outer {
+        margin: 0;
+        width: 100%;
+        ...
+    }
+    ...
+""")
+public static abstract class LinkCSS implements ILocalCSS {
+
+    private static LinkCSS STYLES;
+
+    public static ILocalCSS instance() {
+        if (STYLES == null) {
+            STYLES = (LinkCSS) GWT.create (LinkCSS.class);
+            STYLES.ensureInjected ();
+        }
+        return STYLES;
+    }
+}
+```
+
+The one caveat with inlining is that you cannot override stylesheets (see [Stylesheet overrides](#stylesheet-overrides)). However, this is only a limitation with libraries.
 
 ### Using the styles
 
@@ -415,6 +480,8 @@ The main stylesheet `Button.css` contains the default styles while `Button_Overr
 
 You should see only the change in the disabled colour.
 
+?>This approach is not limited to CSS files but also works if you want to override source code. This may be necessary if you want to modify JUI classes (i.e. fixing a bug or adding an enhancement) but you do not want to create you own JUI distribution. However, since the source sits outside of the source tree it does not play well with your IDE. A better approach is to create an override module as outlined in [Override modules](#override-modules).
+
 ### Style packs
 
 *The most effective approach to re-styling is to create a custom style for a given component. These extend the existing styles and is good when you want to continue to use the existing ones.*
@@ -587,6 +654,28 @@ If you have a license to the **professional version** then you can replace (or s
 
 *There is a **caveat** here in that the `FontAwesome` class only declares static method for icons that are available in some form with the free version. The professional version only fonts won't be represented. In this instance one can emply the `public static String format(String name, Option... options)` method passing the name of the icon as the first argument (i.e. `face-awesome` or `sparkles`).*
 
+## Override modules
+
+Previously we described how you can override (by replacement) CSS files from JUI using [Stylesheet overrides](#stylesheet-overrides) by making use of the `super-source` directive in your module declaration. However, since this source sits outside the source tree your IDE may not play nicely with it. An alternative it to create a overriding module.
+
+To do this create a package `com.effacy.jui` in your JUI source (both source code and resources trees). In the resource tree create the file `JUIContrib.gwt.xml`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC "-//JUI//1.0.0" "jui-module-1.0.0.dtd">
+<module>
+  <inherits name="com.effacy.jui.ui.UI" />
+</module>
+```
+
+In the application module where you include the JUI modules also include `JUIContrib`:
+
+```xml
+ <inherits name="com.effacy.jui.JUIContrib" />
+```
+
+Now simply provide replacements for the stylesheets and source code as needed under the package `com.effacy.jui` (the way the transpilation works, these files will take precedence over those in the JUI modules).
+
 ## Patterns
 
 As a convenience template code and a summary of the key points for each of the approaches to stylesheets are described within. You can use this code as a template for your own.
@@ -655,7 +744,6 @@ Since injected stylesheets are injected later that local ones you sometimes (not
 
 1. Consider using an `init()` method invoked from the application entry point (see discussion at the end of [Injected CSS](#injected-css))
 2. Switch to a global stylesheet or to us local styles (see [Migrating from injected to local](#migrating-from-injected-to-local)).
-
 
 ### Local styles
 

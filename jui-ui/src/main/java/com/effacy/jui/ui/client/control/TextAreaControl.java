@@ -34,6 +34,7 @@ import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.StringSupport;
+import com.effacy.jui.platform.util.client.TimerSupport;
 import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.Element;
@@ -160,6 +161,11 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
          * See {@link #keyPressHandler(Function)}.
          */
         private Function<String, Boolean> keyPressHandler;
+
+        /**
+         * See {@link #pasteProcessor(Function)}.
+         */
+        private Function<String, String> pasteProcessor;
 
         /**
          * Construct with a default style.
@@ -345,6 +351,37 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
         }
 
         /**
+         * Registers a paste processor. This converts the incoming content to be placed
+         * into the text area.
+         * 
+         * @param pasteProcessor
+         *                       the handler.
+         * @return this configuration instance.
+         */
+        public Config pasteProcessor(Function<String, String> pasteProcessor) {
+            this.pasteProcessor = pasteProcessor;
+            return this;
+        }
+
+        /**
+         * Registers the default paste processor which performs some basic cleanup.
+         * @return this configuration instance.
+         */
+        public Config defaultPasteProcessor() {
+            this.pasteProcessor = v -> {
+                return v
+                    .replaceAll("[\u2018\u2019\u02BC]", "'") // smart single quotes
+                    .replaceAll("[\u201C\u201D]", "\"")      // smart double quotes
+                    .replaceAll("\u2014", "--")              // em dash
+                    .replaceAll("\u2013", "-")               // en dash
+                    .replaceAll("\u2026", "...")             // ellipsis
+                    .replaceAll("\u00A0", " ")               // non-breaking space
+                    .replaceAll("[\u200B\u200C\u200D]", "");
+            };
+            return this;
+        }
+
+        /**
          * Assigns placeholder text to display when the field is empty.
          * 
          * @param placeholder
@@ -485,7 +522,14 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
                         if (!filterKeyPress (e.getKeyCode (), inputEl.value))
                             e.stopEvent ();
                     }, UIEventType.ONKEYPRESS);
-                    ta.on (e -> modified (), UIEventType.ONKEYUP, UIEventType.ONPASTE);
+                    ta.on (e -> modified (), UIEventType.ONKEYUP);
+                    ta.on (e -> {
+                        TimerSupport.defer(() -> {
+                            if (config().pasteProcessor != null)
+                                inputEl.value = config().pasteProcessor.apply(inputEl.value);
+                            modified ();
+                        });
+                    }, UIEventType.ONPASTE);
                     ta.attr ("name", StringSupport.empty (data.getName ()) ? "" + getUUID () : data.getName ());
                     if (data.rows > 0)
                         ta.attr ("rows", "" + data.rows);

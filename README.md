@@ -9,7 +9,7 @@
 
 ## Overview
 
-JUI is a Java to JavaScript suite of libraries and tools for building web UI's in Java. It has its origins in [GWT](https://www.gwtproject.org/) however has been largely decoupled from this is it heads towards becoming a standalone platform. JUI does continue to employ the GWT compiler as it remains mature and relevant (with the intention of continuing to do so as long as is feasible; this is currently being maintained under the [GWT Project](https://github.com/gwtproject/gwt)).
+JUI is a Java to JavaScript suite of libraries and tools for building web UI's in Java. It has its origins in [GWT](https://www.gwtproject.org/) however has been largely decoupled from this as it heads towards becoming a standalone platform. JUI does continue to employ the GWT compiler as it remains mature and relevant (with the intention of continuing to do so as long as is feasible; this is currently being maintained under the [GWT Project](https://github.com/gwtproject/gwt)).
 
 
 ## Libraries

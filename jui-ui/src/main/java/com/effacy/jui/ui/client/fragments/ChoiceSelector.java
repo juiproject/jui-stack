@@ -26,6 +26,7 @@ import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
 import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Color;
+import com.effacy.jui.core.client.dom.css.Colors;
 import com.effacy.jui.platform.util.client.StringSupport;
 
 /**
@@ -37,12 +38,12 @@ import com.effacy.jui.platform.util.client.StringSupport;
  */
 public class ChoiceSelector {
 
-    public static FilterOptionGroupFragment $() {
-        return new FilterOptionGroupFragment ();
+    public static ChoiceSelectorFragment $() {
+        return new ChoiceSelectorFragment ();
     }
 
-    public static FilterOptionGroupFragment $(IDomInsertableContainer<?> parent) {
-        FilterOptionGroupFragment frg = $ ();
+    public static ChoiceSelectorFragment $(IDomInsertableContainer<?> parent) {
+        ChoiceSelectorFragment frg = $ ();
         if (parent != null)
             parent.insert (frg);
         return frg;
@@ -52,6 +53,15 @@ public class ChoiceSelector {
      * Implementation
      ************************************************************************/
 
+    public static record State(boolean active, boolean disabled) {
+        public static State of(boolean active) {
+            return new State(active, false);
+        }
+        public static State of(boolean active, boolean disabled) {
+            return new State(active, disabled);
+        }
+    }
+
     /**
      * Represents a selectable option.
      * 
@@ -59,25 +69,49 @@ public class ChoiceSelector {
      *                the display label.
      * @param icon
      *                an optional icon CSS class (i.e. {@link FontAwesome}).
-     * @param color
-     *                an optional color to use.
+     * @param colors
+     *                an optional set of colors to use.
      * @param active
      *                {@code true} if it is activated (i.e. selected).
      * @param handler
      *                to be invoked when the option is selected.
      */
-    public static record Option(String label, String icon, Color color, boolean active, Invoker handler) {
+    public static record Option(String label, String icon, Colors colors, State state, Invoker handler) {
         public static Option of(String label, boolean active, Invoker handler) {
-            return new Option(label, null, null, active, handler);
+            return new Option(label, null, null, State.of(active), handler);
+        }
+        public static Option of(String label, State state, Invoker handler) {
+            return new Option(label, null, null, state, handler);
+        }
+        public static Option of(String label, Colors color, boolean active, Invoker handler) {
+            return new Option(label, null, color, State.of(active), handler);
+        }
+        public static Option of(String label, Colors color, State state, Invoker handler) {
+            return new Option(label, null, color, state, handler);
         }
         public static Option of(String label, Color color, boolean active, Invoker handler) {
-            return new Option(label, null, color, active, handler);
+            return new Option(label, null, Colors.of(color), State.of(active), handler);
+        }
+        public static Option of(String label, Color color, State state, Invoker handler) {
+            return new Option(label, null, Colors.of(color), state, handler);
         }
         public static Option of(String label, String icon, boolean active, Invoker handler) {
-            return new Option(label, icon, null, active, handler);
+            return new Option(label, icon, null, State.of(active), handler);
+        }
+        public static Option of(String label, String icon, State state, Invoker handler) {
+            return new Option(label, icon, null, state, handler);
+        }
+        public static Option of(String label, String icon, Colors color, boolean active, Invoker handler) {
+            return new Option(label, icon, color, State.of(active), handler);
+        }
+        public static Option of(String label, String icon, Colors color, State state, Invoker handler) {
+            return new Option(label, icon, color, state, handler);
         }
         public static Option of(String label, String icon, Color color, boolean active, Invoker handler) {
-            return new Option(label, icon, color, active, handler);
+            return new Option(label, icon, Colors.of(color), State.of(active), handler);
+        }
+        public static Option of(String label, String icon, Color color, State state, Invoker handler) {
+            return new Option(label, icon, Colors.of(color), state, handler);
         }
     }
 
@@ -105,9 +139,9 @@ public class ChoiceSelector {
         }
     }
 
-    public static class FilterOptionGroupFragment extends AFilterOptionGroupFragment<FilterOptionGroupFragment> {}
+    public static class ChoiceSelectorFragment extends AChoiceSelectorFragment<ChoiceSelectorFragment> {}
 
-    public static class AFilterOptionGroupFragment<T extends AFilterOptionGroupFragment<T>> extends BaseFragment<T> {
+    public static class AChoiceSelectorFragment<T extends AChoiceSelectorFragment<T>> extends BaseFragment<T> {
 
         /**
          * See {@link #variant(Variant)}.
@@ -170,16 +204,23 @@ public class ChoiceSelector {
                 root.style("dropshadow");
             options.forEach(option -> {
                 Div.$(root).$(op -> {
-                    if (option.active())
-                        op.style("active");
+                    if (option.state().disabled()) {
+                        op.style("disabled");
+                    } else {
+                        if (option.state().active())
+                            op.style("active");
+                        if (option.handler() != null)
+                            op.onclick(e -> option.handler().invoke());
+                    }
                     if (!StringSupport.empty(option.icon()))
                         Em.$(op).style(option.icon());
-                    if (option.color() != null)
-                        op.css(CSS.COLOR, option.color());
-                    Span.$(op).text(option.label());
-                    if (option.handler() != null) {
-                        op.onclick(e -> option.handler().invoke());
+                    if (option.colors() != null) {
+                        if (option.colors().foreground() != null)
+                            op.css(CSS.COLOR, option.colors().foreground());
+                        if (option.colors().background() != null)
+                            op.css(CSS.BACKGROUND_COLOR, option.colors().background());
                     }
+                    Span.$(op).text(option.label());
                 });
             });
         }

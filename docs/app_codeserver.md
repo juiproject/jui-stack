@@ -8,7 +8,8 @@ This documentation is separated into four sections:
 2. [Getting started](#getting-started) being a practical guide to using the code server in a project setting.
 3. [More than one module](#more-than-one-module) describes how to deploy more than one JUI modules onto a single code server instance.
 4. [Under-the-hood](#under-the-hood) to introduce some of the technical aspects of the code server and where to look if you want to modify the code server codebase.
-4. [Configuration options](#appendix) describes the various configuration options that can be passed to the code server.
+5. [Troubleshooting](#troubleshooting) to resolve issues that you may face using the code server.
+6. [Configuration options](#appendix) describes the various configuration options that can be passed to the code server.
 
 ## How it works
 
@@ -77,7 +78,73 @@ Note that the code server build from the source code in your project, which mean
 
 ### Starting the code server
 
-The simplest way to run the code server is using the `codeserver` goal of the `jui-maven-plugin` from the project (or projects) that server web content. First you need to add a profile to the projects `pom.xml`. The following is for `jui-playground`:
+The simplest way to run the code server is using the `codeserver` goal of the `jui-maven-plugin` from the project (or projects) that server web content.
+
+First you need to add a profile to the (web) projects `pom.xml`. The general form looks similar to the following (for the playground see the following section):
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project ...>
+  ...
+  <profiles>
+    <!-- Runs the codeserver for this project -->
+    <profile>
+      <id>codeserver</id>
+      <build>
+        <defaultGoal>initialize</defaultGoal>
+        <plugins>
+          <plugin>
+            <groupId>com.effacy.jui</groupId>
+            <artifactId>jui-maven-plugin</artifactId>
+            <version>${release}</version>
+            <configuration>
+              <module>myproject.Application</module>
+              <jvmArgs>-Xmx3g</jvmArgs>
+              <sources>
+                <source>src/jui/java</source>
+                <source>src/jui/resources</source>
+              </sources>
+              <inclusions>
+                <inclusion>org.pepstock:charba:*</inclusion>
+              </inclusions>
+            </configuration>
+            <executions>
+              <execution>
+                <id>codeserver</id>
+                <phase>initialize</phase>
+                <goals>
+                  <goal>codeserver</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>
+```
+
+Walking through the configuration (see [Appendix: Maven configuration](#maven-configuration) for a full list of configuration options):
+
+1. The `version` is the version of JUI you are using (for `jui-playground` this is provided by the `release` property since the version of the `jui-maven-plugin` is just the version of the reactor).
+2. **Required** The `module` parameter contains the fully qualified name of the entry-point module (the file with the `.gwt.xml` extension).
+3. The `jvmArgs` parameter contains a comma-separated list arguments to pass through to the JVM. The most common being the maximum heap size (3G is usually sufficient).
+4. The `sources` parameter contains all the source directories you wish to include in scope of JUI compilation. For a single project this will just be the JUI source trees for that project (normally `src/jui/java` and `src/jui/resources`). For a multi-module project you need to include the JUI source trees for each project separately (which can be referenced relatively) (see the playground example in the following section).
+5. In addition to the project sources we also need to include any referenced JAR files that contain compilable code. We can do this by filtering the classpath of the fully dependency-resolved project to include (and exclude) specific artefacts (the JUI artefacts and principle dependencies are included automatically). This is where the `inclusions` and `exclusions` come in. Each of these specifies a list of Maven cooridinates (allowing for wildcards) to filter against. Note that  the JUI libraries and their know dependencies are automatically included. In the above we illustrate this with the inclusion of `org.pepstock:charba:*`.
+
+If you are encouter problems getting the code sever up-and-running then try adding the configuration parameter `<diagnose>true</diagnose>`. This will print to logs the classpath used to run the code server along with the options passed (without attempting to launch the code server).
+
+The code server can then be run with (the specification of the defaul goal runs as if `initialize` were included):
+
+```bash
+mvn -Pcodeserver
+```
+?> It is possible to run the code server via a run configuration (see the [Appendix](#run-configuration) for details) however that can be a littly tricky. These are generally run from a project and passes through the classpath relevant to that project. This will include dependencies and sometimes source code but generally you need to manually reference source code in sibling projects (this very much depends on how your IDE setups run configurations). In all cases you need to manually add in the code server JAR file itself. In the most part this is fine but if your project includes Spring Boot then autoconfiguration can interfere with the code server (which also uses Spring Boot). The Maven plugin does exhibit this problem but the use of filters reduces the burden of the problem significantly and the associated classpath tends to be quite minmalistic (only including JUI compilable code).
+
+#### Example: Playground
+
+The following is for `jui-playground`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -153,23 +220,10 @@ The simplest way to run the code server is using the `codeserver` goal of the `j
   </profiles>
 </project>
 ```
-Walking through the configuration (see [Appendix: Maven configuration](#maven-configuration) for a full list of configuration options):
+Most of the configuration is explained in the previous section, for the playground the additional points apply:
 
-1. The `version` is the version of JUI you are using (for `jui-playground` this is provided by the `release` property since the version of the `jui-maven-plugin` is just the version of the reactor).
-2. **Required** The `module` parameter contains the fully qualified name of the entry-point module (the file with the `.gwt.xml` extension).
-3. The `jvmArgs` parameter contains a comma-separated list arguments to pass through to the JVM. The most common being the maximum heap size (3G is usually sufficient).
-4. The `sources` parameter contains all the source directories you wish to include in scope of JUI compilation. For a single project this will just be the JUI source trees for that project (normally `src/jui/java` and `src/jui/resources`). For a multi-module project you need to include the JUI source trees for each project separately (which can be referenced relatively). In the example we need to include the source trees for most of the sibling modules as well as their respective `target/classes`. The latter is only needed as many of these project make use of rebinding and the compiled version of those classes is needed during compilation.
-5. In addition to the project sources we also need to include any referenced JAR files that contain compilable code. We can do this by filtering the classpath of the fully dependency-resolved project to include (and exclude) specific artefacts. This is where the `inclusions` and `exclusions` come in. Each of these specifies a list of Maven cooridinates (allowing for wildcards) to filter against. Note that  the JUI libraries and their know dependencies are automatically included. For the `jui-project` we actually want to exclude these as we want to access the uncompiled versions so we can respond to changes in those files (which we could not do if the code server only saw the libraries). Hence they are exlcuded (this is not normally the case).
-
-If you are encouter problems getting the code sever up-and-running then try adding the configuration parameter `<diagnose>true</diagnose>`. This will print to logs the classpath used to run the code server along with the options passed (without attempting to launch the code server).
-
-The code server can then be run with (the specification of the defaul goal runs as if `initialize` were included):
-
-```bash
-mvn -Pcodeserver
-```
-
-?> It is possible to run the code server via a run configuration (see the [Appendix](#run-configuration) for details) however that can be a littly tricky. These are generally run from a project and passes through the classpath relevant to that project. This will include dependencies and sometimes source code but generally you need to manually reference source code in sibling projects (this very much depends on how your IDE setups run configurations). In all cases you need to manually add in the code server JAR file itself. In the most part this is fine but if your project includes Spring Boot then autoconfiguration can interfere with the code server (which also uses Spring Boot). The Maven plugin does exhibit this problem but the use of filters reduces the burden of the problem significantly and the associated classpath tends to be quite minmalistic (only including JUI compilable code).
+1. We need to include the source trees for most of the sibling modules as well as their respective `target/classes`. The latter is only needed as many of these project make use of rebinding and the compiled version of those classes is needed during compilation.
+2. The JUI libraries and their know dependencies are automatically included. In this case we actually want to exclude these as we want to access the uncompiled versions so we can respond to changes in those files (which we could not do if the code server only saw the libraries). Hence they are exlcuded (this is not normally the case).
 
 ### First time running
 
@@ -270,6 +324,14 @@ Those familar with [GWT](www.gwtproject.org) will notice some similarities, and 
 
 All relevant technical documentation is contained within the project itself and referenced from the projects main `README.md` file.
 
+## Troubleshooting
+
+#### Failure to start after changing the JUI version
+
+The most likely issue is that the previous version is still be referenced. To test this add the diagnose option `<diagnose>true</diagnose>` and run the server. This will list the classpath elements being included. If it is indeed the previous version you should see those JAR's being listed.
+
+To resolve ensure that you are not inadvertently referencing the previous version for the code server Maven plugin. If that passes scrutiny then try performing a full build and install of your project (ignoring tests is fine). This may resolve the issue (i.e. refreshing a flattened pom).
+
 # Appendix
 
 ## Maven configuration
@@ -366,16 +428,4 @@ Note that `LOCAL-SNAPSHOT` is fine for the `jui-playground`, othewise replace th
 Note that the built JAR files for each of the JUI projects also includes the sources, this is needed for JUI compilation. The IDE however does not place source files on the classpath for project dependencies, this means that you need to include them explicitly. Hence the entries for `${workspaceFolder}/jui-platform/src/main/java`, etc.
 
 We draw attention to the `args` property which includes `com.effacy.jui.playground.PlaygroundApp`, this is the module reference to the playground application.
-
-### Configuration options
-
-As per the example above you can pass configuration options to the compiler via the `args` property. Available options are:
-
-|Option|Description|
-|------|-----------|
-|`-port <port>`|The port to rune the code server on (default is 9876).|
-|`-logLevel <ALL,ERROR,INFO,DEBUG,TRACE>`|Passed to the compiler. The log-level the compiler should run at (see [Compiler](app_compilation.md)). Default is `INFO`.|
-|`-sourceLevel <level>`|Passed to the compiler. The Java source-level the compiler should run at (see [Compiler](app_compilation.md)). Defalt is `17`.|
-|`-generateJsInteropExports`|Passed to the compiler. The log-level the compiler should run at (see [Compiler](app_compilation.md)).|
-|`-style <DETAILED,OBFUSCATED,PRETTY>`|Passed to the compiler. The log-level the compiler should run at (see [Compiler](app_compilation.md)). Default is `OBFUSCATED`.|
 

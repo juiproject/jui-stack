@@ -46,6 +46,7 @@ import com.effacy.jui.core.client.dom.css.Insets;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.core.client.dom.jquery.JQuery;
 import com.effacy.jui.platform.css.client.CssResource;
+import com.effacy.jui.platform.util.client.TimerSupport;
 import com.effacy.jui.rpc.client.ErrorMessage;
 import com.effacy.jui.ui.client.control.builder.GroupBuilder.IGroupBuilderCSS;
 import com.effacy.jui.ui.client.control.builder.IGroupBuilder.IRowBuilder.IControlCell;
@@ -1023,10 +1024,13 @@ public class ControlForm<SRC,DST> extends Component<ControlForm.Config> implemen
 
         // Check the loading state. If loading then we set the controls into the waiting
         // state. If not then we perform a reset (which sets focus among other things).
-        if (loading)
+        if (loading) {
             controls ().waiting (true);
-        else
-            reset ();
+        } else {
+            TimerSupport.defer(() -> {
+                reset();
+            });
+        }
     }
     
     @Override

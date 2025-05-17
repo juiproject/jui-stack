@@ -198,6 +198,11 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
         private BiConsumer<ElementBuilder,String> emptyError;
 
         /**
+         * See {@link #onclick(Consumer)}.
+         */
+        private Consumer<R> onclick;
+
+        /**
          * See {@linl #header(String)}.
          */
         private List<Header> headers = new ArrayList<> ();
@@ -489,6 +494,22 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
         }
 
         /**
+         * Handler to be invoked when clicking on a row.
+         * <p>
+         * If this is set then the cursor will appear as a pointer over each row and the
+         * active row will have a background applied via
+         * <code>--jui-table-hover-bg</code>.
+         * 
+         * @param onclick
+         *                the handler.
+         * @return this configuration instance.
+         */
+        public Config<R> onclick(Consumer<R> onclick) {
+            this.onclick = onclick;
+            return this;
+        }
+
+        /**
          * Assign a rendering for the case where there are no results at all
          * (unfiltered).
          * 
@@ -664,6 +685,11 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
                 // Extract the row element (which is mapped to by an wrapper).
                 for (RecordWrapper wrapper : currentRecords) {
                     if (wrapper.getElement () == el) {
+                        if (config.onclick != null) {
+                            config.onclick.accept(wrapper.record);
+                            event.stopEvent ();
+                            return true;
+                        }
                         if (wrapper.handleUIEvent (event, (Element) cellEl)) {
                             event.stopEvent ();
                             return true;
@@ -1001,6 +1027,8 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
                     });
                     Tbody.$ (table).$ (gallery -> {
                         gallery.by ("body");
+                        if (data.onclick != null)
+                            gallery.style(styles().clickable());
                     });
                     Div.$ (table).$ (empty -> {
                         empty.by ("empty");
@@ -1033,6 +1061,8 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
             emptyFilteredEl = JQuery.$ ((Element) tree.first ("filtered"));
             emptyErrorEl = JQuery.$ ((Element) tree.first ("error"));
             contentEl = tree.first ("body");
+            if (data.onclick != null)
+                UIEventType.ONCLICK.attach (contentEl);
             scrollerEl = tree.first ("scroller");
         });
     }
@@ -1546,6 +1576,8 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
         public String selector();
 
         public String icon();
+
+        public String clickable();
 
     }
 

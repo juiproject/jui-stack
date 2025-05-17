@@ -33,8 +33,10 @@ import com.effacy.jui.core.client.dom.builder.Input;
 import com.effacy.jui.core.client.dom.builder.Label;
 import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.builder.Wrap;
+import com.effacy.jui.core.client.dom.jquery.JQuery;
 import com.effacy.jui.core.client.util.UID;
 import com.effacy.jui.platform.css.client.CssResource;
+import com.effacy.jui.platform.util.client.Carrier;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.platform.util.client.TimerSupport;
 import com.google.gwt.core.client.GWT;
@@ -150,6 +152,11 @@ public class SelectionGroupControl<V> extends Control<List<V>, SelectionGroupCon
             private String description;
 
             /**
+             * If the option is nested.
+             */
+            private boolean nested;
+
+            /**
              * Construct an option.
              * 
              * @param icon
@@ -160,12 +167,16 @@ public class SelectionGroupControl<V> extends Control<List<V>, SelectionGroupCon
              *                    the display label.
              * @param description
              *                    (optional) a description.
+             * @param nested
+             *                    if this option is nested under the previous (un-nested)
+             *                    option.
              */
-            public Option(V value, String icon, String label, String description) {
+            public Option(V value, String icon, String label, String description, boolean nested) {
                 this.value = value;
                 this.icon = icon;
                 this.label = label;
                 this.description = description;
+                this.nested = nested;
                 this.uid = UID.createUID ();
             }
 
@@ -241,7 +252,29 @@ public class SelectionGroupControl<V> extends Control<List<V>, SelectionGroupCon
          * @return this configuration.
          */
         public Config<V> option(V value, String label, String description) {
-            options.add (new Option (value, null, label, description));
+            return option(value, label, description, false);
+        }
+
+        /**
+         * Specifies an option that can be selected.
+         * <p>
+         * Note that the option can be nested in which case it will appear below the
+         * last previous un-nested option. The option is also disabled when the parent
+         * is unchecked.
+         * 
+         * @param value
+         *                    the underlying value.
+         * @param label
+         *                    the display label.
+         * @param description
+         *                    (optional) supporting description.
+         * @param nested
+         *                    if the option should be nested (only one level is
+         *                    permitted).
+         * @return this configuration.
+         */
+        public Config<V> option(V value, String label, String description, boolean nested) {
+            options.add (new Option (value, null, label, description, nested));
             return this;
         }
 
@@ -259,7 +292,31 @@ public class SelectionGroupControl<V> extends Control<List<V>, SelectionGroupCon
          * @return this configuration.
          */
         public Config<V> option(V value, String icon, String label, String description) {
-            options.add (new Option (value, icon, label, description));
+            return option (value, icon, label, description, false);
+        }
+
+        /**
+         * Specifies an option that can be selected.
+         * <p>
+         * Note that the option can be nested in which case it will appear below the
+         * last previous un-nested option. The option is also disabled when the parent
+         * is unchecked.
+         * 
+         * @param icon
+         *                    (optional) the CSS class for an icon.
+         * @param value
+         *                    the underlying value.
+         * @param label
+         *                    the display label.
+         * @param description
+         *                    (optional) supporting description.
+         * @param nested
+         *                    if the option should be nested (only one level is
+         *                    permitted).
+         * @return this configuration.
+         */
+        public Config<V> option(V value, String icon, String label, String description, boolean nested) {
+            options.add (new Option (value, icon, label, description, nested));
             return this;
         }
 
@@ -396,6 +453,19 @@ public class SelectionGroupControl<V> extends Control<List<V>, SelectionGroupCon
      */
     protected void updateSelected() {
         for (HTMLInputElement inputEl : inputEls) {
+            String depends = (String) JQuery.$(inputEl).attr("depends");
+            LOOP: for (HTMLInputElement dependEl : inputEls) {
+                if (dependEl.id.equals(depends)) {
+                    if (dependEl.checked) {
+                        inputEl.disabled = false;
+                        inputEl.parentElement.parentElement.classList.remove (styles().disabled());
+                    } else {
+                        inputEl.disabled = true;
+                        inputEl.parentElement.parentElement.classList.add (styles().disabled());
+                    }
+                    break LOOP;
+                }
+            }
             if (inputEl.checked)
                 inputEl.parentElement.parentElement.classList.add (styles().selected());
             else
@@ -412,8 +482,11 @@ public class SelectionGroupControl<V> extends Control<List<V>, SelectionGroupCon
     protected INodeProvider buildNode(Element el, Config<V> data) {
         return Wrap.$ (el).$ (root -> {
             Div.$ (root).style (styles ().inner ()).$ (inner -> {
+                Carrier<String> currentOption = Carrier.of();
                 data.options.forEach (option -> {
-                    Div.$ (inner).style (styles ().item ()).$ (
+                    if (!option.nested)
+                        currentOption.set(option.uid);
+                    Div.$ (inner).style (styles ().item ()).style(option.nested, styles().indented()).$ (
                         Label.$ ().attr ("for", "selection_group_" + option.uid).$ (
                             Input.$ (option.isRadio () ? "radio" : "checkbox")
                                 .by ("input")
@@ -421,6 +494,7 @@ public class SelectionGroupControl<V> extends Control<List<V>, SelectionGroupCon
                                 .attr ("testid", option.getTestId ())
                                 .attr ("name", option.getName ())
                                 .attr ("value", "" + option.uid)
+                                .attr ("depends", (option.nested) && !currentOption.isNull() ? "selection_group_" + currentOption.get() : "")
                                 .on (e -> handleKeyPress (e), UIEventType.ONKEYPRESS)
                                 .on (e -> handleChange (e), UIEventType.ONCHANGE),
                             Div.$ ().style (styles ().label ()).$ (
@@ -489,6 +563,8 @@ public class SelectionGroupControl<V> extends Control<List<V>, SelectionGroupCon
         public String description();
 
         public String selected();
+
+        public String indented();
     }
 
     /**

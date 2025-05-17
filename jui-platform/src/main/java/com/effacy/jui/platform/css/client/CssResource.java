@@ -36,6 +36,14 @@ public @interface CssResource {
      */
     public String [] value() default {};
 
+
+    /**
+     * The content of the stylesheet (rather than pulling in from a resource).
+     * 
+     * @return the content.
+     */
+    public String stylesheet() default "";
+
     /**
      * The various means of combining CSS files (see {@link #values()}).
      */

@@ -16,8 +16,11 @@
 package com.effacy.jui.ui.client.control;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.core.client.component.layout.LayoutData;
@@ -33,6 +36,7 @@ import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Length;
+import com.effacy.jui.core.client.dom.jquery.JQuery;
 import com.effacy.jui.core.client.util.UID;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.Itr;
@@ -368,6 +372,29 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
         super (config);
     }
 
+    private Predicate<V> preRenderTest;
+
+    /**
+     * Filters (shows / hides) options.
+     * 
+     * @param test
+     *             the predicate test to which option is enabled.
+     */
+    public void filterOptions(Predicate<V> test) {
+        if (test == null)
+            return;
+        if (isRendered()) {
+            config().options.forEach(option -> {
+                if (test.test(option.value))
+                    JQuery.$(options.get(option.uid)).show();
+                else
+                    JQuery.$(options.get(option.uid)).hide();
+            });
+        } else {
+            this.preRenderTest = test;
+        }
+    }
+
     /**
      * {@inheritDoc}
      *
@@ -421,6 +448,8 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
         }
     }
 
+    private Map<String,Element> options = new HashMap<>();
+
     /**
      * {@inheritDoc}
      *
@@ -445,6 +474,7 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
                             grp.css (CSS.WIDTH, config().span);
                         Itr.forEach (config().options, (c, option) -> {
                             Label.$ (grp).$ (toggle -> {
+                                toggle.use(n -> options.put(option.uid, (Element) n));
                                 if (c.first ())
                                     toggle.style (styles ().first ());
                                 if (c.last ())
@@ -465,15 +495,19 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
                             });
                         });
                     });
-                    Span.$ (item).style (styles ().spacer ());
-                    Span.$ (item).$ (label -> {
-                        label.text (config().label);
-                    });
+                    if (!StringSupport.empty(config().label)) {
+                        Span.$ (item).style (styles ().spacer ());
+                        Span.$ (item).$ (label -> {
+                            label.text (config().label);
+                        });
+                    }
                 });
             });
         }).build (tree -> {
             inputEls = tree.all ("radio");
             inputEls.forEach (i -> manageFocusEl (i));
+            if (preRenderTest != null)
+                filterOptions(preRenderTest);
         });
     }
 

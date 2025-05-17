@@ -116,6 +116,7 @@ public class CssDeclarationGenerator extends Generator {
                 // Get the resources and determine if we are being strict (so that every declared style must have a
                 // corresponding CSS entry).
                 List<String> resources = new ArrayList<> ();
+                String stylesheet = null;
                 CssResource resourceDeclaration = type.getAnnotation (CssResource.class);
                 boolean strict = true;
                 boolean generateCssDecarations = false;
@@ -124,11 +125,14 @@ public class CssDeclarationGenerator extends Generator {
                         resources.add (resource);
                     strict = resourceDeclaration.strict ();
                     generateCssDecarations = resourceDeclaration.generateCssDecarations ();
+                    stylesheet = resourceDeclaration.stylesheet();
                 }
 
                 CssProcessor processor = new CssProcessor ();
                 for (IResource resource : ResourceSupport.findResources (logger, context, type.getPackage (), resources, false))
                     processor.load (resource.getResourceAsString ());
+                if ((stylesheet != null) && !stylesheet.isBlank())
+                    processor.load (stylesheet);
                 Map<String,Map<String,String>> declarations = generateCssDecarations ? processor.declarations () : null;
 
                 // Here we loop over each method and determine if it matches the profile for a

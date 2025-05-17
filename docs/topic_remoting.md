@@ -1182,6 +1182,49 @@ Finally we note that the `accessCheck(...)` family of methods generate exception
 
 Both cases are then handled as described above.
 
+##### Command value remapping
+
+It is quite common to re-map a command value onto something else which is actually applied to the entity. This is typical when the value is another entity that is being referenced by an ID. Remapping can be performed by passing a `Function` to `updateByCmd(...)`:
+
+```java
+modification
+    .updater(entity::updateUser)
+    .currentValue(entity.getUser())
+    .updateByCmd(command.getUser(), id -> {
+        if (id == null)
+            return null;
+        UserEntity user = ...; // Lookup by ID.
+        return user;
+    });
+```
+
+##### Deferred access rights
+
+You can pass to `accessCheck(...)` a `Supplier` that can defer evaluation of access rights (this is useful when access rights checks are expensive and you only want to perform a check when a change is requested).
+
+As best practice you should cache the access rights determination once it has been calculated.
+
+##### Tricky updaters
+
+Normally an updater is specified as a direct application of a command value (or a value derived from a command value) via a single-valued method (setter or updater). However, some updaters may take multiple arguments.
+
+An approach to this is to create an inner `record` that captures the arguments then apply them through:
+
+```java
+...
+record ValueUpdate(String v1, String v2) {}
+...
+modification
+    .updater((ValueSetter<ValueUpdate>) v -> {
+        entity.set...
+    })
+    .currentValue (new ValueUpdate(entity.getV1(), entity.getV2()))
+    ...
+    .updateByCmd (command.getValueBeingUpdated(), v -> {
+        return new ValueUpdate(...);
+    });
+```
+
 #### Audit logging
 
 *This builds on [Modification](#modification) above.*

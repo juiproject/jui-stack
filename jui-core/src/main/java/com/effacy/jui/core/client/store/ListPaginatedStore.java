@@ -17,10 +17,11 @@ package com.effacy.jui.core.client.store;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import com.effacy.jui.platform.util.client.Logger;
+import com.effacy.jui.platform.util.client.StringSupport;
 
 /**
  * This is a type of {@link PaginatedStore} that is based by a list of records
@@ -31,24 +32,80 @@ import com.effacy.jui.platform.util.client.Logger;
  *
  * @author Jeremy Buckley
  */
-public abstract class ListPaginatedStore<R> extends PaginatedStore<R> implements IFilteredStore<R> {
+public class ListPaginatedStore<R> extends PaginatedStore<R> implements IFilteredStore<R>, ISearchStore<R> {
 
     /**
      * The totality of all records being represented.
      */
-    private List<R> records;
+    private List<R> records = new ArrayList<> ();
 
     /**
-     * The filtered set of records.
+     * Search keywords.
      */
-    private List<R> filtered;
+    private String keywords;
+
+    /**
+     * The filter to apply.
+     */
+    private BiPredicate<R,String> filter;
 
     /**
      * Construct an instance of the store.
      */
-    public ListPaginatedStore() {
-        records = new ArrayList<> ();
+    protected ListPaginatedStore() {
+        this.keywords = null;
         populate (records);
+    }
+
+    /**
+     * Construct with a keyword filter. The filter takes a record and keywords (only
+     * if assigned) and returns {@code true} if filtered in.
+     * 
+     * @param filter
+     *               the keyword filter mechanism.
+     */
+    public ListPaginatedStore(BiPredicate<R,String> filter) {
+        super();
+        this.filter = (v,k) -> StringSupport.empty(k) || filter.test(v, k);
+        this.keywords = "";
+        populate(records);
+    }
+
+    /**
+     * Construct with a non-keyword filter. The filter takes a record and returns
+     * {@code true} if filtered in.
+     * 
+     * @param filter
+     *               the filter mechanism.
+     */
+    public ListPaginatedStore(Predicate<R> filter) {
+        super();
+        this.filter = (v,k) -> filter.test(v);
+        this.keywords = null;
+        populate(records);
+    }
+
+    /**
+     * Refresh the list with the given items.
+     * 
+     * @param source
+     *               the items.
+     */
+    public void refresh(List<R> source) {
+        this.records.clear();
+        this.records.addAll(source);
+        reload();
+    }
+
+    /**
+     * A alternative to loading the records is to overrides this method and populate
+     * the passed list.
+     * 
+     * @param records
+     *                the records list to populate.
+     */
+    protected void populate(List<R> records) {
+        // Nothing.
     }
 
     /**
@@ -59,15 +116,6 @@ public abstract class ListPaginatedStore<R> extends PaginatedStore<R> implements
     protected List<R> records() {
         return records;
     }
-
-    /**
-     * Populate the passed list with the body of records the store represents.
-     * 
-     * @param records
-     *                the records list to populate.
-     */
-    protected abstract void populate(List<R> records);
-
     /**
      * {@inheritDoc}
      *
@@ -76,18 +124,20 @@ public abstract class ListPaginatedStore<R> extends PaginatedStore<R> implements
      */
     @Override
     protected void requestLoad(int page, int pageSize, ILoadRequestCallback<R> cb) {
-        List<R> results;
-        List<R> source = (filtered != null) ? filtered : records;
-        int beginIdx = page * pageSize;
-        int endIdx = (page + 1) * pageSize;
-        if (beginIdx < source.size ()) {
-            if (endIdx >= source.size ())
-                endIdx = source.size ();
-            results = source.subList (beginIdx, endIdx);
-        } else
-            results = new ArrayList<> ();
-        Logger.log (getClass ().getSimpleName () + " filtered=" + (filtered != null) + " page=" + page + " pageSize=" + pageSize + " results=" + source.size ());
-        cb.onSuccess (results, source.size (), (filtered != null));
+        // Filter the records as needed.
+        List<R> filtered = new ArrayList<>(records);
+        if (filter != null)
+            filtered.removeIf(v -> !filter.test(v,keywords));
+
+        // Extract out from the filtered list the relevant page (or partial page).
+        List<R> subset = new ArrayList<>();
+        int fromIndex = page * pageSize;
+        if (fromIndex < filtered.size()) {
+            int toIndex = Math.min(fromIndex + pageSize, filtered.size());
+            subset.addAll(filtered.subList(fromIndex, toIndex));
+        }
+        Logger.log (getClass ().getSimpleName () + " filtered=" + (filtered != null) + " page=" + page + " pageSize=" + pageSize + " results=" + records.size ());
+        cb.onSuccess(subset, filtered.size(), false);
     }
 
     /**
@@ -97,22 +147,46 @@ public abstract class ListPaginatedStore<R> extends PaginatedStore<R> implements
      */
     @Override
     public void clear() {
-        filtered = null;
+        if (this.keywords != null)
+            this.keywords = "";
+        else
+            this.filter = null;
         super.clear ();
     }
 
     @Override
     public void clearFilter() {
-        filtered = null;
+        if (this.keywords != null)
+            this.keywords = "";
+        else
+            this.filter = null;
         reload (10);
     }
 
+    /**
+     * Perform a keyword filter with the given keywords.
+     * <p>
+     * This requires that a keyword filter has been provided.
+     * 
+     * @param keywords
+     *                 the keywords to filter on.
+     */
+    @Override
+    public void filter(String keywords) {
+        if (this.keywords != null)
+            this.keywords = (keywords == null) ? "" : keywords;
+        reload(10);
+    }
+
+    /**
+     * Replaces the filter last used with a new filter. Note that this will negate
+     * any keyword filter that has been set and so {@link #filter(String)} will no
+     * longer work.
+     */
     @Override
     public void filter(Predicate<R> filter) {
-        if (filter == null)
-            filtered = null;
-        else
-            filtered = records.stream ().filter (filter).collect (Collectors.toList ());
+        this.keywords = null;
+        this.filter = (v,k) -> filter.test(v);
         reload (10);
     }
 }

@@ -16,6 +16,7 @@
 package com.effacy.jui.playground.ui.lessons;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 import com.effacy.jui.core.client.component.SimpleComponent;
 import com.effacy.jui.core.client.component.layout.VertLayout;
@@ -319,7 +320,7 @@ public class Lesson4a extends Panel implements INavigationAware {
                     cfg.width (Length.px (200));
                     cfg.modifiedHandler (DelayedModifiedHandler.create (300, (ctl, val, prior) -> {
                         if (StringSupport.empty (val))
-                            store.filter (null);
+                            store.filter ((Predicate<SampleRecord>)null);
                         else
                             store.filter (r -> 
                                 r.name.toLowerCase ().contains (val.toLowerCase ()) ||

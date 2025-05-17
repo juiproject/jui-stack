@@ -1,5 +1,6 @@
 .component {
     --jui-table-selectorwidth: 3.5em;
+    --jui-table-hover-bg: #fafafa;
 }
 
 .component {
@@ -149,4 +150,12 @@
 .component #error {
     position: absolute;
     inset: 0;
+}
+
+.component .table .clickable tr {
+	cursor: pointer;
+}
+
+.component .table .clickable tr:hover td {
+	background: var(--jui-table-hover-bg);
 }

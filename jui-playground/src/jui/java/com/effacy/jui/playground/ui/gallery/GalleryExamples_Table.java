@@ -16,6 +16,7 @@
 package com.effacy.jui.playground.ui.gallery;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 import com.effacy.jui.core.client.IActivateAware;
 import com.effacy.jui.core.client.component.layout.ActionBarLayout;
@@ -77,14 +78,14 @@ public class GalleryExamples_Table extends SplitPanel implements IActivateAware 
         // modification delay mechanism that won't invoke the store filter until key
         // presses have slowed or stopped (otherwise we will generate a lot of RPC
         // queries for the case where the store retrieves its data remotely).
-        addOther (searchCtl = new TextControl.Config () //
-                .iconLeft (FontAwesome.search ()) //
-                .width (Length.em (15)) //
-                .placeholder ("Search records") //
-                .clearAction () //
+        addOther (searchCtl = new TextControl.Config ()
+                .iconLeft (FontAwesome.search ())
+                .width (Length.em (15))
+                .placeholder ("Search records")
+                .clearAction ()
                 .modifiedHandler (DelayedModifiedHandler.create (300, (ctl, val, prior) -> {
                     if (StringSupport.empty (val))
-                        store.filter (null);
+                        store.filter ((Predicate<SampleRecord>)null);
                     else
                         store.filter (r -> r.name ().toLowerCase ().contains (val.toLowerCase ()));
                 })).build (), new ActionBarLayout.Data (0));

@@ -1,6 +1,14 @@
 .component {
+	--cpt-gallery-bg: transparent;
+}
+
+.component {
 	overflow: hidden;
     position: relative;
+}
+
+.component .gallery {
+    background: var(--cpt-gallery-bg);
 }
 
 /* Not 100% height which is needed in some cases */
@@ -56,6 +64,14 @@
 
 .component.empty .empty {
 	display: block;
+}
+
+.component .empty #unfiltered {
+    height: 100%;
+}
+
+.component .empty #filtered {
+    height: 100%;
 }
 
 .component.empty .gallery {

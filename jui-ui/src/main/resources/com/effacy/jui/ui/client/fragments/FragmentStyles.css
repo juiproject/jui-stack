@@ -705,6 +705,51 @@
     position: relative;
 }
 
+
+
+/*************************************************
+* Percentage line.
+*/
+
+.juiPLine {
+    --juiPLine-height: 1em;
+    --juiPLine-border: #eee;
+    --juiPLine-bg: #eee;
+    --juiPLine-bar-bg: var(--jui-color-secondary30);
+    --juiPLine-text: #999;
+    --juiPLine-text-weight: 500;
+    --juiPLine-text-size: 0.9em;
+    display: inline-block;
+}
+
+.juiPLine .info {
+    display: flex;
+    padding: 0 0.25em 0.2em 0.25em;
+    font-size: var(--juiPLine-text-size);
+    font-weight: var(--juiPLine-text-weight);
+    color: var(--juiPLine-text);
+}
+
+.juiPLine .wrap {
+    display: flex;
+    gap: 0.75em;
+    align-items: center;
+}
+
+.juiPLine .wrap .bar {
+    flex-grow: 1;
+    height: var(--juiPLine-height);
+    border: 1px solid var(--juiPLine-border);
+    background: var(--juiPLine-bg);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.juiPLine .wrap .bar div {
+    height: 100%;
+    background: var(--juiPLine-bar-bg);
+}
+
 /*************************************************
 * Typography family.
 */
@@ -840,6 +885,7 @@
     --juiChoiceSelector-option-lr: 1em;
     --juiChoiceSelector-option-tb: 0.5em;
     --juiChoiceSelector-option-radius: var(--juiChoiceSelector-radius);
+    --juiChoiceSelector-opacity-disabled: 0.4;
  }
  
  .juiChoiceSelector {
@@ -872,7 +918,7 @@
     box-shadow: 0 0 6px var(--juiChoiceSelector-shadow);
 }
 
-.juiChoiceSelector > div:not(.active):hover {
+.juiChoiceSelector > div:not(.active):not(.disabled):hover {
     background: var(--juiChoiceSelector-bg-hover);
     color: var(--juiChoiceSelector-text-hover);
     cursor: pointer;
@@ -880,6 +926,14 @@
 
 .juiChoiceSelector > div > em {
     margin-right: 0.5em;
+}
+
+.juiChoiceSelector > div.disabled {
+    cursor: no-drop;
+}
+
+.juiChoiceSelector > div.disabled > span {
+    opacity: var(--juiChoiceSelector-opacity-disabled);
 }
 
 .juiChoiceSelector.variant-standard {
@@ -891,7 +945,12 @@
     --juiChoiceSelector-option-tb: 0.25em;
     --juiChoiceSelector-text-weight: 600;
     --juiChoiceSelector-option-radius: 0;
-    --juiChoiceSelector-text: var(--jui-color-neutral40);
+    --juiChoiceSelector-text: var(--jui-color-neutral50);
+    --juiChoiceSelector-line: #e1e1e1;
+}
+
+.juiChoiceSelector.variant-control > div:not(:first-child) {
+    border-left: 1px solid var(--juiChoiceSelector-line);
 }
 
 /***************************************
@@ -959,4 +1018,13 @@
     border-radius: 0 0 var(--juiDialog-border-radius) var(--juiDialog-border-radius);
     overflow: hidden;
     border-top: 1px solid var(--juiDialog-border-color);
+}
+
+/**********************************
+* Useful styles
+***********************************/
+
+.juiFragments-hover-shadow:hover {
+    box-shadow: 0 0 10px #ccc;
+    transition: box-shadow 0.2s;
 }

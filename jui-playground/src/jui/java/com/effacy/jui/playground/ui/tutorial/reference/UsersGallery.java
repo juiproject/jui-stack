@@ -15,6 +15,8 @@
  ******************************************************************************/
 package com.effacy.jui.playground.ui.tutorial.reference;
 
+import java.util.function.Predicate;
+
 import com.effacy.jui.core.client.IResetable;
 import com.effacy.jui.core.client.component.Component;
 import com.effacy.jui.core.client.control.DelayedModifiedHandler;
@@ -73,7 +75,7 @@ public class UsersGallery extends Component<Component.Config> implements IReseta
                         // press.
                         cfg.modifiedHandler (DelayedModifiedHandler.create (300, (ctl, val, prior) -> {
                             if (StringSupport.empty (val))
-                                store.filter (null);
+                                store.filter ((Predicate<UserResult>)null);
                             else
                                 store.filter (r -> r.getName ().toLowerCase ().contains (val.toLowerCase ()));
                         }));

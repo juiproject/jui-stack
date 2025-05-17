@@ -17,13 +17,13 @@ package com.effacy.jui.ui.client.fragments;
 
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
 import com.effacy.jui.platform.util.client.Logger;
-import com.effacy.jui.ui.client.fragments.ChoiceSelector.FilterOptionGroupFragment;
+import com.effacy.jui.ui.client.fragments.ChoiceSelector.ChoiceSelectorFragment;
 import com.effacy.jui.ui.client.fragments.ChoiceSelector.Option;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 
 public class ChoiceSelectorDocumentation {
 
-    public static FilterOptionGroupFragment example1(IDomInsertableContainer<?> root) {
+    public static ChoiceSelectorFragment example1(IDomInsertableContainer<?> root) {
         return ChoiceSelector.$(root)
             .option(Option.of("Apples", FontAwesome.sliders(), true, () -> Logger.info("A")))
             .option(Option.of("Pears", FontAwesome.tree(), false, () -> Logger.info("B")))

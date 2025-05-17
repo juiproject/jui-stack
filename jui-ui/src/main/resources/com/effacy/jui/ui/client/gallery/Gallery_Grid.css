@@ -1,6 +1,11 @@
+.component {
+    --cpt-gallery-grid-padding: 1em;
+    --cpt-gallery-grid-gap: 1em;
+}
+
 .component .gallery > div {
-	padding: 1em;
+	padding: var(--cpt-gallery-grid-padding);
 	display: flex;
     flex-wrap: wrap;
-	gap: 1em;
+	gap: var(--cpt-gallery-grid-gap);
 }

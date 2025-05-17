@@ -112,6 +112,10 @@
     margin: 0;
 }
 
+.component .group > .header strong {
+    font-weight: 600;
+}
+
 .component .group.collapse > .header {
     margin: 0;
 }

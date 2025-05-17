@@ -101,12 +101,23 @@ public interface IEditable<V> {
      *                 the resolver.
      */
     default public void edit(IResolver<V> resolver) {
+        onEditByResolver(resolver);
         editLoading ();
         resolver.resolve (v -> {
             edit (v);
         }, f -> {
             editFailed (f);
         });
+    }
+
+    /**
+     * Called when a resolver is passed through (see {@link #edit(IResolver)}).
+     * 
+     * @param resolver
+     *                 the resolver.
+     */
+    default public void onEditByResolver(IResolver<V> resolver) {
+        // Nothing.
     }
 
     /**

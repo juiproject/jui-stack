@@ -62,11 +62,6 @@
     color: var(--jui-textareactl-counter-limit);
 }
 
-.component.waiting .inner {
-	animation: eff-waiting-bg 1s infinite;
-	border: transparent;
-}
-
 .component.waiting .inner * {
 	visibility: hidden;
 }

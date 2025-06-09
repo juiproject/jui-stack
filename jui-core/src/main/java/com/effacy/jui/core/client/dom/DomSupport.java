@@ -514,6 +514,48 @@ public class DomSupport {
      ********************************************************************/
 
     /**
+     * Determines if the two elements share the same parent and the first element is
+     * earlier than the latter in the natural sequence of siblings.
+     * 
+     * @param el1
+     *            the first element.
+     * @param el2
+     *            the second element.
+     * @return {@code true} if the first is before the last.
+     */
+    public static boolean before(Element el1, Element el2) {
+        if ((el1 == null) || (el2 == null))
+            return false;
+        if (!el2.parentNode.equals(el1.parentNode))
+            return false;
+        if (el1.equals(el2))
+            return false;
+        Node cur = el1.previousSibling;
+        while (cur != null) {
+            if (cur.equals(el2))
+                return true;
+            cur = cur.previousSibling;
+        }
+        return false;
+    }
+
+    /**
+     * Determines if the two elements share the same parent and the first element is
+     * later than the latter in the natural sequence of siblings.
+     * 
+     * @param el1
+     *            the first element.
+     * @param el2
+     *            the second element.
+     * @return {@code true} if the first is after the last.
+     */
+    public static boolean after(Element el1, Element el2) {
+        if ((el1 == null) || (el2 == null))
+            return false;
+        return !el1.equals(el2) && !before(el2, el1);
+    }
+
+    /**
      * Traverse the tree whose root is the passed node.
      * 
      * @param node
@@ -753,7 +795,7 @@ public class DomSupport {
          * 
          * @return The style.
          */
-        @UseStyle("egwt-mask")
+        @UseStyle("jui-mask")
         public abstract String mask();
 
         /**
@@ -761,7 +803,7 @@ public class DomSupport {
          * 
          * @return The style.
          */
-        @UseStyle("egwt-masked")
+        @UseStyle("jui-masked")
         public abstract String masked();
 
         /**
@@ -770,7 +812,7 @@ public class DomSupport {
          * 
          * @return The style.
          */
-        @UseStyle("egwt-masked-relative")
+        @UseStyle("jui-masked-relative")
         public abstract String maskedRelative();
 
         private static DomSupportCSS STYLES;

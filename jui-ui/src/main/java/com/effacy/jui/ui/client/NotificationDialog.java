@@ -28,6 +28,7 @@ import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.builder.Div;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Em;
+import com.effacy.jui.core.client.dom.builder.Markup;
 import com.effacy.jui.core.client.dom.builder.P;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.core.client.dom.css.Length;
@@ -781,7 +782,9 @@ public class NotificationDialog extends ModalDialog<NotificationDialogContent> {
                         config ().getRenderer ().accept (outer);
                     } else {
                         config().getContents().forEach(notice -> {
-                            P.$ (outer).text (notice);
+                            P.$ (outer).$ (
+                                Markup.$(notice)
+                            );
                         });
                     }
             });

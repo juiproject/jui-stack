@@ -44,12 +44,10 @@ public class CharacterValidatorRule {
         return this;
     }
 
-
     public CharacterValidatorRule letter() {
         this.letter = true;
         return this;
     }
-
 
     public CharacterValidatorRule digit() {
         this.digit = true;
@@ -62,7 +60,6 @@ public class CharacterValidatorRule {
         return this;
     }
 
-
     /**
      * Tests the validity of the passed character sequence.
      * 
@@ -74,23 +71,35 @@ public class CharacterValidatorRule {
         int sz = cs.length ();
         for (int i = 0; i < sz; i++) {
             char nowChar = cs.charAt (i);
-            if (includes (nowChar))
-                continue;
-            if (newline && ((nowChar == '\r') || (nowChar == '\n')))
-                continue;
-            if (letter && CharacterSupport.isLetter(nowChar))
-                continue;
-            if (space && CharacterSupport.isSpaceChar(nowChar))
-                continue;
-            if (whitespace && CharacterSupport.isWhitespace(nowChar))
-                continue;
-            if (digit && CharacterSupport.isDigit(nowChar))
+            if (test(nowChar))
                 continue;
             return false;
         }
         return true;
     }
 
+    /**
+     * Tests a single character whether it complies with the ruleset.
+     * 
+     * @param ch
+     *           the character to test.
+     * @return {@code true} if it passes.
+     */
+    public boolean test(char ch) {
+        if (includes (ch))
+            return true;
+        if (newline && ((ch == '\r') || (ch == '\n')))
+            return true;
+        if (letter && CharacterSupport.isLetter(ch))
+            return true;
+        if (space && CharacterSupport.isSpaceChar(ch))
+            return true;
+        if (whitespace && CharacterSupport.isWhitespace(ch))
+            return true;
+        if (digit && CharacterSupport.isDigit(ch))
+            return true;
+        return false;
+    }
 
     /**
      * Determines if the passed characters is included in the configured
@@ -112,5 +121,25 @@ public class CharacterValidatorRule {
                 return true;
         }
         return false;
+    }
+
+    /**
+     * Given a string, this strips out all non-compliant characters.
+     * 
+     * @param str
+     *            the string to strip.
+     * @return the stripped content.
+     */
+    public String strip(CharSequence str) {
+        if (str == null)
+            return null;
+        int sz = str.length ();
+        StringBuffer out = new StringBuffer(sz);
+        for (int i = 0; i < sz; i++) {
+            char ch = str.charAt (i);
+            if (test(ch))
+                out.append(ch);
+        }
+        return out.toString();
     }
 }

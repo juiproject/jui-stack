@@ -49,7 +49,6 @@ import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.core.client.dom.jquery.JQuery;
 import com.effacy.jui.core.client.util.UID;
-import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.platform.util.client.TimerSupport;
 import com.effacy.jui.ui.client.control.builder.IGroupBuilder.IRowBuilder.IControlCell;
@@ -805,7 +804,7 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                             Ul.$ (c).style (config.styles ().error (), null).$ (error -> {});
                             // Disply any assigned guidance.
                             if (!StringSupport.empty(cell.guidance))
-                                Div.$ (c).style (config.styles ().guidance ()).$ (
+                                Div.$ (c).style (config.styles ().guidance ()).css(cell.guidanceCss).$ (
                                     Markup.$(cell.guidance)
                                 );
                         });
@@ -920,6 +919,8 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
             protected String label;
 
             protected String guidance;
+
+            protected String guidanceCss;
 
             protected Consumer<ElementBuilder> builder;
 
@@ -1068,7 +1069,13 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
 
             @Override
             public RowCell<V,CTL> guidance(String guidance) {
+                return guidance(guidance, null);
+            }
+
+            @Override
+            public RowCell<V,CTL> guidance(String guidance, String css) {
                 this.guidance = guidance;
+                this.guidanceCss = css;
                 return this;
             }
 

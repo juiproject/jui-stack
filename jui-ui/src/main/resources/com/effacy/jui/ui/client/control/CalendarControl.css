@@ -1,10 +1,14 @@
 .component {
     --jui-calendarctl-icon: var(--jui-ctl-text-placeholder);
+    --jui-calendarctl-selector-month-border: #e1e1e1;
     --jui-calendarctl-selector-size: 1em;
     --jui-calendarctl-selector-bg: #fff;
     --jui-calendarctl-selector-shadow: #ccc;
     --jui-calendarctl-selector-border: 1px;
     --jui-calendarctl-selector-text: var(--jui-text);
+    --jui-calendarctl-selector-item: var(--jui-color-primary50);
+    --jui-calendarctl-selector-item-hover: var(--jui-color-primary40);
+    --jui-calendarctl-selector-item-selected: var(--jui-color-primary60);
 }
 
 .component {
@@ -44,6 +48,25 @@
 	display: none;
 }
 
+.component em.clear {
+	color: var(--jui-calendarctl-icon);
+	visibility: hidden;
+	cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.component:hover em.clear {
+	color: var(--jui-textctl-text);
+}
+
+.component em.clear:hover {
+    transform: rotate(90deg)
+}
+
+.component.clear em.clear {
+	visibility: visible;
+}
+
 .component input {
 	background: inherit;
 	color: inherit;
@@ -73,6 +96,7 @@
     display: none;
     width: 100%;
     font-size: var(--jui-calendarctl-selector-size);
+	cursor: default;
 }
 
 .component #selector.selector_top {
@@ -89,19 +113,63 @@
     animation: eff-open .1s ease-in-out;
 }
 
+.component.open #selector > div {
+    display: flex;
+}
+
+.component.open #selector > div div.extra {
+    border-left: solid 1px #ddd;
+    margin: 0 0 0.75em 0;
+    padding: 0.75em 1em 0 1em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25em;
+    justify-content: flex-start;
+    align-items: normal;
+    width: 100%;
+}
+
+.component.open #selector > div div.extra > div {
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+.component.open #selector > div div.extra > h5 {
+    margin: 0;
+    font-weight: 400;
+    text-transform: uppercase;
+    font-size: 0.8em;
+    padding-left: 4px;
+    color: #999;
+}
+
+.component.open #selector > div div.extra > h5:not(:first-child) {
+    margin-top: 6px;
+}
+
+.component.open #selector > div div.extra > div:hover {
+    color: #fff;
+    background: var(--jui-calendarctl-selector-item-hover);
+    cursor: pointer;
+}
+
 .component #selector > div {
     background: var(--jui-calendarctl-selector-bg);
 	border: 1px solid var(--jui-calendarctl-selector-border);
 	border-radius: var(--jui-ctl-border-radius);
-	display: flex;
-    flex-direction: column;
     box-shadow: 0 0 8px var(--jui-calendarctl-selector-shadow);
     overflow: hidden;
     padding: 1em 0 0.25em 0;
     color: var(--jui-calendarctl-selector-text);
 }
 
-.component #selector.selector_top > div {
+.component #selector > div div.calendar {
+	display: flex;
+    flex-direction: column;
+}
+
+.component #selector.selector_top > div div.calendar {
     flex-direction: column-reverse;
     padding: 0.25em 0 1em 0;
 }
@@ -124,7 +192,7 @@
 }
 
 .component #selector .months > em:hover {
-    border-color: #e1e1e1;
+    border-color: var(--jui-calendarctl-selector-month-border);
 }
 
 .component #selector .months > div {
@@ -134,7 +202,7 @@
 }
 
 .component #selector .dates {
-    padding: 0.75em 0.75em 0.25em 0.75em;
+    padding: 0.25em 0.75em 0.25em 0.75em;
 }
 
 .component #selector .dates table {
@@ -152,6 +220,7 @@
     border-radius: 3px;
     position: relative;
     padding: 4px;
+	cursor: pointer;
 }
 
 .component #selector .dates td em {
@@ -167,11 +236,11 @@
 }
 
 .component #selector .dates td.current {
-    color: var(--jui-color-primary50);
+    color: var(--jui-calendarctl-selector-item);
 }
 
 .component #selector .dates td.current em {
-    background: var(--jui-color-primary50);
+    background: var(--jui-calendarctl-selector-item);
 }
 
 .component #selector .dates td:hover em {
@@ -182,19 +251,25 @@
     color: #ccc;
 }
 
-.component #selector .dates td:not(.outside):hover {
+.component #selector .dates td:not(.outside):not(.disabled):hover {
     color: #fff;
-    background-color: var(--jui-color-primary40);
+    background-color: var(--jui-calendarctl-selector-item-hover);
 }
 
-.component #selector .dates td.outside:hover {
+.component #selector .dates td:not(.disabled).outside:hover {
     color: #fff;
     background-color: #ccc;
 }
 
+.component #selector .dates td.disabled {
+    color: #ccc;
+    background: #f1f1f1;
+    cursor: default;
+}
+
 .component #selector .dates td.selected {
     color: #fff;
-    background-color: var(--jui-color-primary60);
+    background-color: var(--jui-calendarctl-selector-item-selected);
 }
 
 .component #selector .dates td.selected em {

@@ -43,7 +43,6 @@ import com.effacy.jui.core.client.util.SizeSupport;
 import com.effacy.jui.core.client.util.UID;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.ComparisonSupport;
-import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.ui.client.control.FileUploadControl.FileAttachment;
 import com.effacy.jui.ui.client.icon.FontAwesome;
@@ -754,11 +753,13 @@ public class FileUploadControl extends Control<List<FileAttachment>, FileUploadC
                          getRoot().classList.add (styles ().drag());
                     else
                         getRoot().classList.remove (styles ().drag());
+                    e.preventDefault();
                 }, UIEventType.DRAGENTER, UIEventType.DRAGOVER, UIEventType.DRAGLEAVE);
                 dr.on (e -> {
                     if (e.getDataTransfer().files.length > 0)
                         add (e.getDataTransfer().files.asList());
                     getRoot().classList.remove (styles ().drag());
+                    e.preventDefault();
                 }, UIEventType.DROP);
             });
             if (config().limit > 1) {
@@ -872,7 +873,6 @@ public class FileUploadControl extends Control<List<FileAttachment>, FileUploadC
                 );
             } else if (item.status == FileAttachmentItemStatus.COMPLETE) {
                 Div.$ (content).style (styles ().info ()).$ (
-                    // Em.$ ().style (FontAwesome.check()),
                     Text.$ ("Processed " + SizeSupport.convertToDataSize (item.size(), 1, SizeSupport.MIXED)).iff (item.size() > 0),
                     Text.$ ("Processed").iff (item.size() <= 0),
                     Div.$ ().css ("flex-grow", "1")
@@ -1065,7 +1065,7 @@ public class FileUploadControl extends Control<List<FileAttachment>, FileUploadC
     }
 
     /**
-     * Component CSS (horizontal).
+     * Component CSS (standard version).
      */
     @CssResource({
         IComponentCSS.COMPONENT_CSS, IControlCSS.CONTROL_CSS,
@@ -1086,7 +1086,7 @@ public class FileUploadControl extends Control<List<FileAttachment>, FileUploadC
     }
 
     /**
-     * Component CSS (horizontal).
+     * Component CSS (compact version).
      */
     @CssResource({
         IComponentCSS.COMPONENT_CSS, IControlCSS.CONTROL_CSS,

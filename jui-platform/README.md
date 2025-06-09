@@ -59,7 +59,7 @@ The simplest approach to this is:
 3. Run a `git diff release/XXXX release/YYYY --name-only` to work out what files have changed. The important changes will by under `user` (and used the guide above). You can pipe this to filter on package prefix ` | grep '^package/'` (i.e. ` | grep '^user/super/com/google/gwt/emul/'`)
 4. Copy across the relevant changes.
 
-In addition you should ensure that the [Modifications](#modifications) are also applied, unless they have been addressed otherwise (i.e. fixed or updated from the version of GWT being upgraded to).
+In addition you should ensure that the [Modifications](#modifications) are also applied, unless they have been addressed otherwise (i.e. fixed or updated from the version of GWT being upgraded to), and the `GWTBridge` classes are copied across (see [GWTBridge classes](#gwtbridge-classes)).
 
 ### Modifications
 
@@ -110,17 +110,19 @@ public void scheduleFinally(ScheduledCommand cmd) {
         finallyCommands = push(finallyCommands, Task.create(cmd));
 }
 ```
+### GWTBridge classes
+
+These are under `com.google.gwt.core.client` and `com.google.gwt.core.shared` in the **gwt-dev.jar** and need to be copied arcoss to allow for unit testing of classes that include `GWT.create(...)`. The issue is that we only include **gwt-dev.jar** during compilation however unit testing requires these classes to be on the classpath. Copying them across verbatim (no modifications) seems to do the trick.
 
 ### Pending decoupling work
 
 The following activities are pending decoupling from GWT:
 
-1. CSS resources
-2. i18n resources
-3. Style is still being used
-4. Window is still being used
-5. com.google.gwt code minimisation
-6. Minimisation of module configuration
+1. i18n resources
+2. Style is still being used
+3. Window is still being used
+4. com.google.gwt code minimisation
+5. Minimisation of module configuration
 
 ### GWT compilation process
 

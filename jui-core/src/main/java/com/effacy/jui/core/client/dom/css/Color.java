@@ -72,5 +72,20 @@ public class Color implements ICSSProperty {
         return value ();
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (!(obj instanceof Color))
+            return false;
+        if (raw == null)
+            return (((Color) obj).raw == null);
+        if (((Color) obj).raw == null)
+            return false;
+        return raw.equals(((Color) obj).raw);
+    }
+
 }
 

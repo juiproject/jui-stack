@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.effacy.jui.core.client.Debug;
@@ -111,6 +112,28 @@ import elemental2.dom.Element;
  * with the users name.
  */
 public class CardNavigator extends Component<CardNavigator.Config> implements INavigationHandlerWithProvider {
+
+    /**
+     * See {@link Config#navigationHandler(IOnNavigationHandler)}.
+     */
+    @FunctionalInterface
+    public interface IOnNavigationHandler {
+
+        /**
+         * Invoked to handle an internal navigation request (arising from the
+         * breadcrumb).
+         * <p>
+         * This allows for re-direction of a navigation request based on additional
+         * data.
+         * 
+         * @param current
+         *                the current navigation path (of the active card that is).
+         * @param target
+         *                the target navigation path (to the desired card).
+         * @return {@code true} if it stop the navigation event.
+         */
+        public boolean handle(String current, String target);
+    }
 
     /**
      * Navigation context metadata property that contains the label to use for the
@@ -421,6 +444,11 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         private List<CardConfiguration> cards = new ArrayList<>();
 
         /**
+         * See {@link #navigationHandler(Function)}.
+         */
+        private IOnNavigationHandler navigationHandler;
+
+        /**
          * Assigns a presentation style.
          * 
          * @param style
@@ -501,6 +529,24 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             if (config != null)
                 config.accept(cfg);
             cards.add(cfg);
+            return this;
+        }
+
+        /**
+         * Hook into the navigation system when navigation is invoked from the
+         * breadcrumb trail. Allows for alternative navigation to be applied.
+         * <p>
+         * Note that this is not triggered by a programmatic navigation request, only
+         * from the UI.
+         * 
+         * @param navigationHandler
+         *                          the handler (returns {@code true} if navigation
+         *                          should be
+         *                          stopped).
+         * @return this configuration.
+         */
+        public Config navigationHandler(IOnNavigationHandler navigationHandler) {
+            this.navigationHandler = navigationHandler;
             return this;
         }
 
@@ -725,6 +771,19 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
 
         @Override
         protected void onNavigationBackward(NavigationContext context, List<String> path, Consumer<List<String>> propagator) {
+            // Normally the path will have the card reference path included. However, if the
+            // component is a navigable itself this seems to get lost. Not sure why that is
+            // the case so should look into the underlying cause. For now this will put the
+            // prefix in if it is not found. This is not perfect as if the prefix is
+            // reflected in the sub-navigation then that will appear as correct when it is
+            // not. This is not a high-likely scenario and not a big stopper as references
+            // can easily be changed.
+            CardConfiguration card = (CardConfiguration) activeChild();
+            if ((path != null) && (card != null) && (card.reference != null) && (card.reference.length > 0)) {
+                if (path.isEmpty() || !card.reference[0].equals(path.get(0)))
+                    for (int i = card.reference.length - 1; i >= 0; i--)
+                    path.add(0, card.reference[i]);
+            }
             super.onNavigationBackward(context, path, propagator);
             onAfterNavigate(path);
         }
@@ -747,6 +806,10 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             Span.$ (crumb).style (styles ().clickable ()).$ (
                 Em.$ ().style(FontAwesome.arrowLeft ())
             ).onclick (e -> {
+                if (config().navigationHandler != null) {
+                    if (config().navigationHandler.handle(NavigationSupport.build(path.get(path.size()-1).reference), "/"))
+                        return;
+                }
                 navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false));
             }).text (config().title);
             ListSupport.forEach (path, (ctx, c) -> {
@@ -762,6 +825,10 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
                 } else {
                     Em.$ (crumb).style (FontAwesome.chevronRight ());
                     Span.$ (crumb).style (styles ().clickable ()).onclick (e -> {
+                        if (config().navigationHandler != null) {
+                            if (config().navigationHandler.handle(NavigationSupport.build(path.get(path.size()-1).reference), NavigationSupport.build(c.reference)))
+                                return;
+                        }
                         navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false), c.reference);
                     }).text (c.label());
                 }
@@ -771,6 +838,10 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             A.$ (h2).$ (
                 Em.$ ().style(FontAwesome.chevronLeft ())
             ).onclick(e -> {
+                if (config().navigationHandler != null) {
+                    if (config().navigationHandler.handle(NavigationSupport.build(path.get(path.size()-1).reference), (path.size() <= 1) ? "/" : NavigationSupport.build (path.get(path.size() - 2).reference)))
+                        return;
+                }
                 if (path.size() <= 1)
                     navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false));
                 else

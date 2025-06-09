@@ -542,15 +542,6 @@
 }
 
 /*************************************************
-* PersonWithAvatar styles.
-*/
-.juiPersonWithAvatar h4 {
-    font-weight: 600;
-    color: var(--jui-text-header);
-    margin: 0;
-}
-
-/*************************************************
 * Notice styles.
 */
 

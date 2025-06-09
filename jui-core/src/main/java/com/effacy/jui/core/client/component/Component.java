@@ -2368,7 +2368,7 @@ public class Component<C extends Component.Config> implements IEventListener, IC
                     if (handler.handleEvent (event)) {
                         // We stop the event unless it is a key press. The reason for that is stopping a
                         // key press will stop subsequent events.
-                        if (!event.isEvent (UIEventType.ONKEYPRESS, UIEventType.ONKEYDOWN, UIEventType.ONKEYUP, UIEventType.ONPASTE))
+                        if (!event.isEvent (UIEventType.ONKEYPRESS, UIEventType.ONKEYDOWN, UIEventType.ONKEYUP, UIEventType.ONPASTE, UIEventType.DRAGSTART, UIEventType.DRAGOVER, UIEventType.DRAGEND, UIEventType.DRAGENTER, UIEventType.DRAGLEAVE, UIEventType.DROP))
                             event.stopEvent ();
                         return;
                     }

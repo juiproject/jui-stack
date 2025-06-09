@@ -13,18 +13,15 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
-package com.effacy.jui.test.description;
+package com.effacy.jui.test.bridge.rebind;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Repeatable;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.reflect.Method;
 
-@Target({ ElementType.METHOD })
-@Retention(RetentionPolicy.SOURCE)
-@Repeatable(TestDescriptions.class)
-public @interface TestDescription {
+import net.bytebuddy.implementation.bind.annotation.Origin;
 
-    public String summary();
+public class StringMethodNameInterceptor {
+    
+    public static String intercept(@Origin Method method) {
+        return method.getName();
+    }
 }

@@ -115,6 +115,18 @@ public class ListStore<V> extends Observable implements IStoreMutable<V>, IStore
     }
 
     /**
+     * See {@link #add(Object...)} but takes values embodied as a list.
+     */
+    final public ListStore<V> add(List<V> values) {
+        if ((values != null) && !values.isEmpty()) {
+            for (V value : values)
+                items.add (value);
+            fireEvent (IStoreChangedListener.class).onStoreChanged (this);
+        }
+        return this;
+    }
+
+    /**
      * {@inheritDoc}
      *
      * @see com.effacy.jui.core.client.store.IStore#getStatus()

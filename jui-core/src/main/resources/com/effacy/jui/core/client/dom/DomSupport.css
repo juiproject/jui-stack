@@ -1,4 +1,4 @@
-.egwt-mask {
+.jui-mask {
   position: absolute;
   z-index: 10000000;
   top: 0;
@@ -11,14 +11,14 @@
   zoom: 1;
 }
 
-.egwt-masked {
+.jui-masked {
   overflow: hidden !important;
 }
 
-.egwt-masked select, .egwt-masked object, .egwt-masked embed {
+.jui-masked select, .jui-masked object, .jui-masked embed {
   visibility: hidden;
 }
 
-.egwt-masked-relative {
+.jui-masked-relative {
   position: relative !important;
 }

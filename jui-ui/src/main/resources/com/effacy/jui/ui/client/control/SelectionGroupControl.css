@@ -71,10 +71,23 @@
 	cursor: not-allowed;
 }
 
+.component.disabled label {
+    opacity: 0.6;
+}
+
+.component.disabled label * {
+	color: var(--jui-ctl-text-disabled);
+    cursor: default;
+}
+
 .component.read_only .inner input {
 	background: var(--jui-ctl-bg-readonly);
 	color: var(--jui-ctl-text-readonly);
 	cursor: not-allowed;
+}
+
+.component.read_only label {
+	color: var(--jui-ctl-text-readonly);
 }
 
 .component input {
@@ -109,11 +122,12 @@
 	box-shadow: 0 0 3px 2px var(--jui-ctl-err-focus-offset);
 }
 
-.component.waiting .inner input {
-	animation: eff-waiting-bg 1s infinite;
-	border: transparent;
+.component.waiting .inner .item {
+	animation: jui-animation-waiting 1s infinite;
+	border-color: transparent;
+    background-color: var(--jui-ctl-bg-wait);
 }
 
-.component.waiting .inner * {
+.component.waiting .inner .item * {
 	visibility: hidden;
 }

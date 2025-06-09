@@ -1,12 +1,151 @@
 # Testing
 
-*Examples of the below are provided in the* **playground** *and, where relevant, references are provided.*
+*Examples of the below are provided in the* **playground** *and, where relevant, references are provided. Also the testing frameworks are still relatively new and inchoate.*
 
-## Test mode
+This document covers testing under the following circumstances:
 
-There are two scenarios underwhich JUI code can be tested: (1) using a simple unit test and, (2)  running in a browser (or similar).  The former occurs entirely in the JVM (so does not require compilation and will generally not have access to a DOM model or browser emulation) while the second operates in a JavaScript environment (and relies on access to DOM). The latter is what you would expect when running integration tests through the UI and is the topic of this documentation.
+1. [Unit testing](#unit-testing) of JUI code classes.
+2. [UI testing](#ui-testing) of JUI generated code.
 
-From a JUI standpoint we can distinguish among these cases through the `isUnitTestMode()` and `isTestMode()` static methods on `Debug`. The former return `true` if the code is running in a simple unit test (in a JVM). The latter returns `true` only when an appropriately configured META tag is present. This tag will usually be placed into the entry point HTML:
+Unit testing is very early on in its development and will be expected to undergo considerable further development. UI testing is more mature in its approach, however there is still a lot of work to be done on the supporting classes.
+
+Finally, note that the test support is contained in the `jui-test` library and this needs to be included in test scope (replacing `JUI_VERSION` with the JUI version being used):
+
+```xml
+<dependency>
+    <groupId>com.effacy.jui</groupId>
+    <artifactId>jui-test</artifactId>
+    <version>${JUI_VERSION}</version>
+    <scope>test</scope>
+</dependency>
+```
+
+Now included is a dependency on ByteBuddy. This is used for rebinding (see [Rebinding](#rebinding) under the description of unit testing). It is possible that this could conflict with other libraries that depend on it (i.e. JPA). Its use is fairly limited so it is likely safe to exclude it and use the version from the other library (or libraries) that use it:
+
+```xml
+<dependency>
+    <groupId>com.effacy.jui</groupId>
+    <artifactId>jui-test</artifactId>
+    <version>${JUI_VERSION}</version>
+    <scope>test</scope>
+    <exclusions>
+        <exclusion>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+```
+## Unit testing
+
+JUI is expected to be compiled (rather, transpiled) to JavaScript and run against a DOM inside of a browser. Unit testing, in this context, tests against the Java code only (pre-transpiled). This does introduce some challenges:
+
+1. Dealing with native JavaScript.
+2. Dealing with the DOM.
+3. Handling rebinding.
+
+At this stage we have only progressed as far as (3) and that is to provide a basic framework that can mimic rebinding.
+
+### Test mode
+
+JUI code can determine if it is running in a unit test (i.e. in a JVM) by a call to `Debug.isUnitTestMode()`.
+
+### Rebinding
+
+Rebinding is a mechanism offered by the GWT compiler that allows for class implementations to created at compile time to provide boiler-plate (often configuration driven through annotations) implementations. The most common examples are the CSS interfaces used with localised styles (see [Styles: Localised CSS](ess_styles.md#localised-css)) and i18n message bundles.
+
+Rebinded classes are accessed through the `GWT.create(Class)` method:
+
+```java
+public class MyMessages {
+
+    public static String labelForSomething() {
+        return MESSAGES.labelForSomething();
+    }
+    
+    public interface IMyMessages extends Messages {
+
+        @DefaultMessage("for something")
+        public String labelForSomething();
+    }
+
+    private static final IMyMessages MESSAGES = (IMyMessages) GWT.create (IMyMessages.class);
+}
+```
+
+This simple and self-contained example declare messages on an interface (that extends `Messages`) for which an instance is created with `GWT.create (IMyMessages.class)`. When transpiled the rebinding mechanism will create a custom class that implements `IMessages` and the implementation of `GWT.create(...)` returns an instance of that class (the details on this are not important).
+
+When running this inside a unit test no transpilation is performed and a call to `GWT.create(...)` will fail. However GWT does provide a solution and this is to allow one to provide a custom implementation through a *bridge*.
+
+JUI implements such a bridge which is initialised by calling `JUITestEnvironment.init()`. An example JUnit test would be:
+
+```java
+public class MyMessagesTest {
+
+    @Test
+    public void forSomething() {
+        Assertions.assertEquals("for something", MyMessages.labelForSomething());
+    }
+
+    @BeforeEach
+    public void setup() {
+        JUITestEnvironment.init();
+    }
+
+}
+```
+
+When `MyMessages.labelForSomething()` is invoked the `MESSAGES` is established. In this case the call to `GWT.create(IMyMessages.class)` is delegated through to the bridge. The bridge is configured with a `Rebinder` that knows how to handle interfaces that extend `Messages` and produce a suitable implementation. In our case the implementation returns the default message as determined by the `@DefaultMessage` annotation.
+
+### Standard rebinders
+
+The standard rebinders are declared in the package `com.effacy.jui.test.bridge.rebind` and are included by default in `RebinderBuilder` (added after any custom rebinders).
+
+The standard rebinders and their current limitations are described below:
+
+|Target class|Applies to|Constraints|
+|------------|----------|-----------|
+|`Messages`|Any interface that extends `Messages`.|Only respects the `@DefaultMessage` annotation (returning that declared value), if there is no annotation the method name is returned. No support for properties files or locales.|
+|`CssDeclaration`|Any class that implements `CssDeclaration`.|Limited to having the style methods return the method name. No support for reading style files or stylesheet content (or processing of any annotation).|
+|`DateTimeFormationInfoImpl`|Instances of that class.|Basic implementation with no overrides.|
+|`LocaleInfoImpl`|Instances of that class.|The `getRuntimeLocale` method returns the value of `JUITestEnvironment.LOCALE`, otherwise, no overrides.|
+|`CldrImpl`|Instances of that class.|Basic implementation with no overrides.|
+
+### Custom rebinders
+
+Although the standard rebinders should suffice in most cases you may need to supplement this when you are rebinding yourself or where a standard rebinder does not do the job you need it to.
+
+Rebinders are provided by an implementation of `Rebinder`:
+
+```java
+@FunctionalInterface
+public interface Rebinder {
+
+    public <T> Optional<T> create(Class<T> klass) throws Exception;
+}
+```
+
+The implementation must test the passed class and if it can process it then return a suitable implementation. If it cannot process it, it should return `Optional.empty()`. If there is an error processing it then an exception should be thrown.
+
+Once you have a rebinder it can be added during initialisation of the JUI test environment:
+
+```java
+JUITestEnvironment.init(cfg -> {
+    cfg.add(new MyRebinder());
+});
+```
+
+In terms of how to go about implementing a rebinder have a look at some of the standard ones. They tend to make use of [ByteBuddy](https://bytebuddy.net/).
+
+## UI testing
+
+In this context UI testing is assumed to act against transpiled JUI code running in a browser (i.e. using Selenium).
+
+### Test mode
+
+The JUI code may need to know if it is being tested (for example, to expose test ID's) and whether testing is being performed in browser or in a JVM (i.e. as a unit test).
+
+We can distinguish among these cases through the static methods `Debug.isUnitTestMode()` and `Debug.isTestMode()`. The former return `true` if the code is running in a simple unit test (in a JVM). The latter returns `true` only when an appropriately configured META tag is present. This tag will usually be placed into the entry point HTML:
 
 ```html
 <meta name="jui:test" content="true" />
@@ -14,7 +153,7 @@ From a JUI standpoint we can distinguish among these cases through the `isUnitTe
 
 This mode will ensure the varous test related attributes are applied to DOM nodes that can be used for inspection (in the following we will say the application is running in *test mode*).
 
-## Test attributes
+### Test attributes
 
 When running in test mode components will automatically apply test attributes to their root elements. These are described in the following table.
 
@@ -53,9 +192,9 @@ Wrap.$ (el).$ (el, root -> {
 
 Note that it is a matter of convention to assign to `test-id` the components `test-id` extended by the `test-ref` (when present).
 
-## Integration testing
+### Integration testing
 
-### Local server with Selenium
+#### Local server with Selenium
 
 A very good approach to developing UI integration tests is to operate against a locally run instance of the application you are testing (for example, what you may use during development). In this case you can run the code as a bare-bones unit test.
 

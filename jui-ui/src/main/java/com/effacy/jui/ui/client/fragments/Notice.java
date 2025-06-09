@@ -80,6 +80,16 @@ public class Notice {
     }
 
     /**
+     * See {@link #error(String, List)} but inserts into the given parent.
+     */
+    public static NoticeFragment error(IDomInsertableContainer<?> parent, String message, List<ErrorMessage> messages) {
+        NoticeFragment frg = error (message, messages);
+        if (parent != null)
+            parent.insert (frg);
+        return frg;
+    }
+
+    /**
      * A convenience to create a standardised error message for display a collection
      * of error messages.
      * 
@@ -101,13 +111,26 @@ public class Notice {
     }
 
     /**
-     * See {@link #error(String, List)} but inserts into the given parent.
+     * A convenience to create a standardised error message for display a collection
+     * of error messages.
+     * 
+     *  @param parent
+     *               the parent to insert into.
+     * @param message
+     *                 Appears above the list of errors.
+     * @param messages
+     *                 the messages to display.
+     * @return the fragment.
      */
-    public static NoticeFragment error(IDomInsertableContainer<?> parent, String message, List<ErrorMessage> messages) {
-        NoticeFragment frg = error (message, messages);
-        if (parent != null)
-            parent.insert (frg);
-        return frg;
+    public static NoticeFragment errorAsString(IDomInsertableContainer<?> parent, String message, List<String> messages) {
+        return Notice.$(parent)
+            .variant(Notice.Variant.DANGER)
+            .build(notice -> {
+                notice.block().add(message);
+                messages.forEach(error -> {
+                    notice.block().list().add (error);
+                });
+            });
     }
 
     /************************************************************************

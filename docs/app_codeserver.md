@@ -324,15 +324,62 @@ Those familar with [GWT](www.gwtproject.org) will notice some similarities, and 
 
 All relevant technical documentation is contained within the project itself and referenced from the projects main `README.md` file.
 
+# Appendix
+
 ## Troubleshooting
+
+#### Strange exceptions or code changes not compiling
+
+You may find a code change does not seem to apply after compilation, or you get unexcepted exceptions where previously you did not (or even debugging flows seem to be out-of-sync with the code).
+
+The codeserver, when asked to recompile (i.e. by clicking on the **Dev Mode On** bookmark button) attempts to compile incrementally (i.e. recompiling only what has changed and what is dependent on what has changed). This speeds up re-compilation dramatically and on-the-whole works well. However, sometimes changes (and particularly dependencies) are not always adequately accounted for. Separate to this is code that depends on rebinding (for example, creating a new serialised class where rebinding is used to build the (de-)serialiser). In this case the compiler has not way to determine the dependency and won't invoke a rebind.
+
+If you seem to be entering this fairly strange territory, open the codeserver admin (i.e http://localhost:9876) and click on **Clear server cache**. This will force a full re-compilation the next time you recompie (i.e. by clicking on the **Dev Mode On** bookmark button).
+
+#### Progressivley sluggish behaviour
+
+Over time browser responsiveness slows down when you have the browsers' developer tooling open.
+
+The likely reason for this is that as you re-compile (or reload the application) the tooling tends to retain and accumulate resources (if you memory profile you can see this accumulation each time you re-compile).
+
+The simplest solution is to close and reopen the tooling (which will release those retained resources). 
+
+#### Compilation starts to slow down
+
+This refers to compilation initiated from the browser (i.e. by clicking on the **Dev Mode On** bookmark button). As you keep recompiling you may notice a gradual increase in perceived compilation time (perceived in the sense that you need to factor in the browsers response to the compilation as it reloads the application). The most common casues are resource related:
+
+1. Significant memory consumption by the browser (you can check this from the browsers memory profiler) which reduces responsiveness particularly during re-compilation.
+2. Increase resource consumption by the codeserver or the environment the codeserver is running in.
+
+To resolve:
+
+1. If you have developer tooling open then first try the resolution described in [Progressivley sluggish behaviour](#progressivley-sluggish-behaviour).
+2. If that does not resolve the issue try restarting the codeserver.
+3. If that stills does to resolve the issues, and you are running the codeserver from within your IDE (either directly or via terminal), restart your IDE (as it may be consuming resources).
 
 #### Failure to start after changing the JUI version
 
-The most likely issue is that the previous version is still be referenced. To test this add the diagnose option `<diagnose>true</diagnose>` and run the server. This will list the classpath elements being included. If it is indeed the previous version you should see those JAR's being listed.
+There are a couple of possible causes for this:
 
-To resolve ensure that you are not inadvertently referencing the previous version for the code server Maven plugin. If that passes scrutiny then try performing a full build and install of your project (ignoring tests is fine). This may resolve the issue (i.e. refreshing a flattened pom).
+1. The most likely is that the previous version is still being referenced. You can check for this by setting the `diagnose` option to `true` (i.e. `<diagnose>true</diagnose>`). If it is indeed the previous version you should see those JAR's being listed.
+2. The next most likely is that code compiled with the previous version remains in cache or on disk.
 
-# Appendix
+To resolve try each of the following until the issue resolves itself:
+
+1. Ensure that you are not inadvertently referencing the previous version for the code server Maven plugin.
+2. Perform a full build and install of your project (ignoring tests is fine).
+3. Delete any old cache locations used by the codeserver.
+
+For item (3) the codeserver displays the working and caching locations when it starts:
+
+```bash
+...
+Code server starting up
+[INFO]    Working in /var/folders/sq/2bn4nbq53_q7px8p5fz8mm1h0000gn/T/jui-codeserver-18009504922290023409.tmp
+[INFO]    Caching in /var/folders/sq/2bn4nbq53_q7px8p5fz8mm1h0000gn/T/gwt-cache-FC147F4859A2CC0A1F7F2203E97450B8
+...
+```
+Stop the codeserver, delete both these directories and start the codeserver again.
 
 ## Maven configuration
 

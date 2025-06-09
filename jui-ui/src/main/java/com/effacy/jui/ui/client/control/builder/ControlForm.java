@@ -778,6 +778,31 @@ public class ControlForm<SRC,DST> extends Component<ControlForm.Config> implemen
         return false;
     }
 
+    /**
+     * Scroll to the top of the form.
+     * <p>
+     * This will only work in cases where the form itself has been rendereding into
+     * an element that scrolls on overflow. The implementation reaches out to the
+     * parent elemnt of the components root and sets the <code>scrollTop</code> to
+     * zero. A more formal approach would be to enusre that the parent component
+     * has scollable content and exposes a suitable interface for scrolling.
+     * Practically, however, this approach covers most cases so is good enough.
+     */
+    public void scrollTop() {
+        if (isRendered())
+            getRoot().parentElement.scrollTop = 0;
+    }
+
+    /**
+     * Scroll to the bottom of the form.
+     * <p>
+     * See supporting notes on {@link #scrollTop()}.
+     */
+    public void scrollBottom() {
+        if (isRendered())
+            getRoot().parentElement.scrollTop = getRoot().parentElement.scrollHeight;
+    }
+
     /************************************************************************
      * Behaviour as {@link IInvalidatable}
      ************************************************************************/
@@ -835,6 +860,11 @@ public class ControlForm<SRC,DST> extends Component<ControlForm.Config> implemen
             }
         });
         JQuery.$ (errorMessageEl).show ();
+
+        // Scroll to the top of the form.
+        TimerSupport.defer(() -> {
+            scrollTop();
+        });
     }
 
     @Override
@@ -891,8 +921,12 @@ public class ControlForm<SRC,DST> extends Component<ControlForm.Config> implemen
     protected void _loading(boolean loading) {
         if (this.loading == loading)
             return;
-        if (isRendered ())
+        if (isRendered ()) {
             _clearInvalid ();
+            TimerSupport.defer(() -> {
+                scrollTop();
+            });
+        }
         this.loading = loading;
         controls ().waiting (loading);
     }

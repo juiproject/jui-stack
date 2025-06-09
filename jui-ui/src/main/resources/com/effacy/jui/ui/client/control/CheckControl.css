@@ -20,7 +20,7 @@
 .component .inner .item {
 	display: flex;
 	flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
 }
 
 .component .inner .item.reverse {
@@ -172,11 +172,12 @@
 * Waiting state
 */
 
-.component.waiting .inner input {
-	animation: eff-waiting-bg 1s infinite;
-	border: transparent;
+.component.waiting .inner .item {
+	animation: jui-animation-waiting 1s infinite;
+	border-color: transparent;
+    background-color: var(--jui-ctl-bg-wait);
 }
 
-.component.waiting .inner * {
+.component.waiting .inner .item * {
 	visibility: hidden;
 }

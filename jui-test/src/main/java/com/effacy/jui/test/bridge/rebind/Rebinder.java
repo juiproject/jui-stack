@@ -13,18 +13,12 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
-package com.effacy.jui.test.description;
+package com.effacy.jui.test.bridge.rebind;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Repeatable;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.util.Optional;
 
-@Target({ ElementType.METHOD })
-@Retention(RetentionPolicy.SOURCE)
-@Repeatable(TestDescriptions.class)
-public @interface TestDescription {
+@FunctionalInterface
+public interface Rebinder {
 
-    public String summary();
+    public <T> Optional<T> create(Class<T> klass) throws Exception;
 }

@@ -720,6 +720,17 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
             public IControlCell<V,CTL,SRC,DST> guidance(String guidance);
 
             /**
+             * Displays the guidance text.
+             * 
+             * @param guidance
+             *                 the guidance text to display.
+             * @param css
+             *                 any additional CSS to apply.
+             * @return this cell instance.
+             */
+            public IControlCell<V,CTL,SRC,DST> guidance(String guidance, String css);
+
+            /**
              * Obtains a handler to the cell.
              * 
              * @return the handler.

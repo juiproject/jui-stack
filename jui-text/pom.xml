@@ -10,6 +10,7 @@
   <artifactId>jui-text</artifactId>
   <packaging>jar</packaging>
   <name>JUI Stack - Text</name>
+  <url>https://github.com/juiproject/jui-stack</url>
 
   <dependencies> 
     <dependency>

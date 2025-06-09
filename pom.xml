@@ -191,10 +191,11 @@
         <configuration>
           <updatePomFile>true</updatePomFile>
           <pomElements>
+            <name/>
             <developers/>
             <description/>
-            <url/>
             <scm/>
+            <url/>
           </pomElements>
         </configuration>
         <executions>

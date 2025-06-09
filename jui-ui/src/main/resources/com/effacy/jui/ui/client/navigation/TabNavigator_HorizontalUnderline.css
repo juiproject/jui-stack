@@ -1,4 +1,5 @@
 .component {
+    --cpt-tabbedpanel-hu-height: 4em;
     --cpt-tabbedpanel-hu-indent: 1.5em;
     --cpt-tabbedpanel-hu-lift: 0.75em;
     --cpt-tabbedpanel-hu-line: var(--jui-line);
@@ -10,7 +11,7 @@
 }
 
 .component .tabs {
-  height: 4em;
+  height: var(--cpt-tabbedpanel-hu-height);
   position: relative;
   overflow: hidden;
 }

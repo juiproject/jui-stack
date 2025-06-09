@@ -10,6 +10,7 @@
   <artifactId>jui-playground</artifactId>
   <packaging>jar</packaging>
   <name>JUI Stack - Playground</name>
+  <url>https://github.com/juiproject/jui-stack</url>
 
   <properties>
     <version.charba>6.3</version.charba>

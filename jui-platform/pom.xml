@@ -10,6 +10,7 @@
   <artifactId>jui-platform</artifactId>
   <packaging>jar</packaging>
   <name>JUI Stack - Platform</name>
+  <url>https://github.com/juiproject/jui-stack</url>
 
   <properties>
     <version.ph-css>7.0.1</version.ph-css>

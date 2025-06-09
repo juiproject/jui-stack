@@ -10,6 +10,7 @@
   <artifactId>jui-platform-codeserver</artifactId>
   <packaging>jar</packaging>
   <name>JUI Stack - Platform (CodeServer)</name>
+  <url>https://github.com/juiproject/jui-stack</url>
 
   <properties>
     <version.spring-boot>3.0.6</version.spring-boot>

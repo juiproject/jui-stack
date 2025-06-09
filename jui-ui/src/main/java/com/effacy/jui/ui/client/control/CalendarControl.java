@@ -15,6 +15,13 @@
  ******************************************************************************/
 package com.effacy.jui.ui.client.control;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.gwtproject.safehtml.shared.SafeHtmlBuilder;
@@ -27,6 +34,7 @@ import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.UIEventType;
 import com.effacy.jui.core.client.dom.builder.Div;
 import com.effacy.jui.core.client.dom.builder.Em;
+import com.effacy.jui.core.client.dom.builder.H5;
 import com.effacy.jui.core.client.dom.builder.Input;
 import com.effacy.jui.core.client.dom.builder.Table;
 import com.effacy.jui.core.client.dom.builder.Tbody;
@@ -36,14 +44,24 @@ import com.effacy.jui.core.client.dom.builder.Th;
 import com.effacy.jui.core.client.dom.builder.Thead;
 import com.effacy.jui.core.client.dom.builder.Tr;
 import com.effacy.jui.core.client.dom.builder.Wrap;
+import com.effacy.jui.core.client.dom.css.CSS;
+import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.platform.css.client.CssResource;
+import com.effacy.jui.platform.util.client.Itr;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.i18n.client.DateTimeFormat;
 
 import elemental2.dom.Element;
 import elemental2.dom.HTMLInputElement;
 
+/**
+ * Allows the user to select a date (either manually entering one or from a
+ * calendar selector).
+ * <p>
+ * The date object managed is {@link CalendarDate}.
+ */
 public class CalendarControl extends Control<CalendarDate, CalendarControl.Config> {
 
     /**
@@ -55,6 +73,36 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
      * The default locale to use for all date formats.
      */
     public static String DEFAULT_LOCALE = "en-us";
+
+    /**
+     * Collection of standard formatters that can be used to parse a date.
+     * <p>
+     * This is public so one can access this list for one's own purposes (i.e.
+     * building a custom parser).
+     */
+    public static final List<DateTimeFormat> FORMATTERS = Arrays.asList(
+        DateTimeFormat.getFormat("d/M/yyyy"),
+        DateTimeFormat.getFormat("d-M-yyyy"),
+        DateTimeFormat.getFormat("yyyy-M-d"),
+        DateTimeFormat.getFormat("yyyy/M/d"),
+        DateTimeFormat.getFormat("M/d/yyyy"),
+        DateTimeFormat.getFormat("M-d-yyyy"),
+        DateTimeFormat.getFormat("d MMM yyyy"),
+        DateTimeFormat.getFormat("d MMMM yyyy"),
+        DateTimeFormat.getFormat("d MMM"),
+        DateTimeFormat.getFormat("d MMMM"),
+        DateTimeFormat.getFormat("MMM d"),
+        DateTimeFormat.getFormat("MMMM d"),
+        DateTimeFormat.getFormat("d"),
+        DateTimeFormat.getFormat("MMM"),
+        DateTimeFormat.getFormat("MMMM"),
+        DateTimeFormat.getFormat("d MMM, yyyy"),
+        DateTimeFormat.getFormat("d MMMM, yyyy"),
+        DateTimeFormat.getFormat("MMM d, yyyy"),
+        DateTimeFormat.getFormat("MMMM d, yyyy")
+    );
+
+    public static record Option(boolean header, String label, CalendarDate value, Object reference) {}
 
     /**
      * Configuration for building a {@link CalendarControl}.
@@ -166,6 +214,51 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
         private boolean selectorTop;
 
         /**
+         * See {@link #selectorWidth(Length)}.
+         */
+        private Length selectorWidth;
+
+        /**
+         * See {@link #clearAction(boolean)}.
+         */
+        private boolean clearAction;
+
+        /**
+         * See {@link #dateFilter(Predicate)}.
+         */
+        private Predicate<CalendarDate> dateFilter;
+
+        /**
+         * See {@link #option(String, CalendarDate, Object)}.
+         */
+        private List<Option> options;
+
+        /**
+         * See {@link #optionsLoader(Consumer)}.
+         */
+        private Consumer<Config> optionsLoader;
+
+        /**
+         * See {@link #onoption(Consumer)}.
+         */
+        private Consumer<Option> onoption;
+
+        /**
+         * See {@link #dateParser(Function)}.
+         */
+        private Function<String,CalendarDate> dateParser = (str) -> {
+            for (DateTimeFormat dtf : FORMATTERS) {
+                try {
+                    Date d = dtf.parse(str);
+                    return new CalendarDate(d.getYear() + 1900, d.getMonth() + 1, d.getDate());
+                } catch (IllegalArgumentException e) {
+                    // Nothing.
+                }
+            }
+            return null;
+        };
+
+        /**
          * Construct with a default style.
          */
         public Config() {
@@ -271,12 +364,147 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
         }
 
         /**
+         * Sets the width of the selector.
+         * <p>
+         * This only makes sense when there is extra content.
+         * 
+         * @param selectorWidth
+         *                      the width (for extra content).
+         * @return this configuration instance.
+         */
+        public Config selectorWidth(Length selectorWidth) {
+            this.selectorWidth = selectorWidth;
+            return this;
+        }
+        
+
+        /**
          * See {@link #selectorLeft(boolean)}. Convenience to pass {@code true}.
          * 
          * @return this configuration instance.
          */
         public Config selectorLeft() {
             return selectorLeft (true);
+        }
+
+        /**
+         * Conveience to call {@link #clearAction(boolean)} passing {@code true}.
+         */
+        public Config clearAction() {
+            return clearAction(true);
+        }
+
+        /**
+         * Determines if an empty ({@code null}) value is allowed (i.e. the date can be
+         * cleared).
+         * 
+         * @param clearAction
+         *                    {@code true} to allow for an empty value and display of a
+         *                    clear action.
+         * @return this configuration instance.
+         */
+        public Config clearAction(boolean clearAction) {
+            this.clearAction = clearAction;
+            return this;
+        }
+
+        /**
+         * Used to filter in permissible dates. If supplied the predicate should return
+         * {@code true} for allowed date (dates that can be selected).
+         * 
+         * @param dateFilter
+         *                   the date filter.
+         * @return this configuration instance.
+         */
+        public Config dateFilter(Predicate<CalendarDate> dateFilter) {
+            this.dateFilter = dateFilter;
+            return this;
+        }
+
+        /**
+         * Assigns a date parser to use to parser any manually entered date. The parser
+         * should return {@code null} if the date could not be parsed.
+         * <p>
+         * This replaces the default parser.
+         * 
+         * @param dateParser
+         *                   the parser to use.
+         * @return this configuration instance.
+         */
+        public Config dateParser(Function<String,CalendarDate> dateParser) {
+            if (dateParser != null)
+                this.dateParser = dateParser;
+            return this;
+        }
+
+        /**
+         * See {@link #option(String, CalendarDate, Object)} but with no additional
+         * reference data.
+         */
+        public Config option(String label, CalendarDate value) {
+            return option(label, value, null);
+        }
+
+        /**
+         * Adds an option for display to the right of the calendar selector. Options are
+         * displayed downwards and allow for selection of standard dates (such as
+         * quarters).
+         * 
+         * @param label
+         *                  the display label for the option.
+         * @param value
+         *                  the value to assign to the control when selected.
+         * @param reference
+         *                  an optional reference object that can be used if an
+         *                  {@link #onoption(Consumer)} handler has been supplied.
+         * @return this configuration instance.
+         */
+        public Config option(String label, CalendarDate value, Object reference) {
+            if (this.options == null)
+                this.options = new ArrayList<>();
+            this.options.add (new Option(false, label, value, reference));
+            return this;
+        }
+
+        /**
+         * An option (see {@link #option(String, CalendarDate, Object)}) header. This is
+         * not selectable.
+         * 
+         * @param header
+         *               the header title.
+         * @return this configuration instance.
+         */
+        public Config option(String header) {
+            if (this.options == null)
+                this.options = new ArrayList<>();
+            this.options.add (new Option(true, header, null, null));
+            return this;
+        }
+
+        /**
+         * If this is present then each time the selector is opened the options set will
+         * be cleared and this invoked to allow the options to be reloaded (refreshed).
+         * 
+         * @param optionsLoader
+         *                      the loader to register.
+         * @return this configuration instance.
+         */
+        public Config optionsLoader(Consumer<Config> optionsLoader) {
+            this.optionsLoader = optionsLoader;
+            return this;
+        }
+
+        /**
+         * Registers a handler for processing options when selected (see
+         * {@link #option(String, CalendarDate, Object)}).
+         * 
+         * @param onoption
+         *                 the handler.
+         * @return this configuration instance.
+         */
+        public Config onoption(Consumer<Option> onoption) {
+            this.onoption = onoption;
+            return this;
         }
 
         /**
@@ -311,6 +539,9 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
      */
     protected HTMLInputElement inputEl;
 
+    /**
+     * The element that contains the selector (see {@link #updateSelector()}).
+     */
     protected Element selectorEl;
 
     /**
@@ -318,8 +549,14 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
      */
     private CalendarDate date;
 
+    /**
+     * Manages display of selector.
+     */
     private ActivationHandler selector;
 
+    /**
+     * The date as managed by the selector.
+     */
     private CalendarDate selectorDate;
 
     /**
@@ -344,6 +581,11 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
     }
 
     /**
+     * Used to flag that there was an attempt at manual entry.
+     */
+    private boolean manualEntry = false;
+
+    /**
      * {@inheritDoc}
      *
      * @see com.effacy.jui.core.client.component.Component#buildNode(com.effacy.jui.core.client.component.Component.Config)
@@ -358,9 +600,23 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
                     input.on (e -> modified (), UIEventType.ONKEYUP, UIEventType.ONPASTE);
                     input.ref ("input");
                     input.on (e -> {
-                        // if (!filterKeyPress (e.getKeyCode (), e.getKey(), inputEl.value))
-                        //     e.stopEvent ();
-                    }, UIEventType.ONKEYPRESS);
+                        if (manualEntry) {
+                            // Try to parse the date.
+                            if (StringSupport.empty(inputEl.value)) {
+                                this.date = null;
+                            } else {
+                                CalendarDate d = config().dateParser.apply(inputEl.value);
+                                if (d != null)
+                                    this.date = d;
+                            }
+                            refreshDate();
+                            modified();
+                        }
+                        manualEntry = false;
+                    }, UIEventType.ONBLUR);
+                    input.on (e -> {
+                        manualEntry = true;
+                    }, UIEventType.ONKEYDOWN);
                     if (StringSupport.empty (data.getName ()))
                         input.attr ("name", "" + getUUID ());
                     else
@@ -371,6 +627,15 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
                         input.attr ("placeholder", "No date");
                     input.testId (buildTestId ("input")).testRef ("input");
                 }),
+                Em.$ ().iff (data.clearAction)
+                    .style (styles ().clear (), FontAwesome.times ())
+                    .testId (buildTestId ("clear")).testRef ("clear")
+                    .on (e -> {
+                        this.date = null;
+                        selector.close();
+                        refreshDate();
+                        modified ();
+                    }, UIEventType.ONCLICK),
                 Em.$ ().style (FontAwesome.calendar())
             )
             .onclick(e -> {
@@ -384,7 +649,8 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
                 if (data.selectorLeft)
                     selector.style (styles ().selector_left ());
                 selector.onclick(e -> {
-                    applyAction (e.getTarget().getAttribute("action"), e.getTarget().getAttribute("item"));
+                    if (!e.getTarget().classList.contains(styles().disabled()))
+                        applyAction (e.getTarget().getAttribute("action"), e.getTarget().getAttribute("item"));
                 });
             });
         }).build (tree -> {
@@ -393,8 +659,8 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
             selector = new ActivationHandler(tree.first("activator"), el, styles().open())
                 .listen(open -> {
                     if (open) {
-                            // Set the selector date to be at the start of the month (this allows us to
-                            // adjust by date selected to get the desired date).
+                        // Set the selector date to be at the start of the month (this allows us to
+                        // adjust by date selected to get the desired date).
                         selectorDate = (date == null) ? CalendarDate.now() : date;
                         selectorDate = new CalendarDate (selectorDate.year(), selectorDate.month(), 1);
                         updateSelector();
@@ -404,7 +670,22 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
         });
     }
 
+    /**
+     * Applies the store date to the UI.
+     */
     protected void refreshDate() {
+        // Clear the manual entry flag.
+        manualEntry = false;
+        
+        // Update the clear action based on the current date value.
+        if (config ().clearAction) {
+            if (this.date == null)
+                getRoot ().classList.remove (styles ().clear ());
+            else
+                getRoot ().classList.add (styles ().clear ());
+        }
+
+        // Update the UI to reflect the new date value.
         if (this.date == null) {
             inputEl.value = "";
         } else {
@@ -412,6 +693,14 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
         }
     }
 
+    /**
+     * Applies an action from a click event in the selector.
+     * 
+     * @param action
+     *               the action performed (e.g. "month-prev" or "date-select").
+     * @param item
+     *               the item data for the action (i.e. the date).
+     */
     protected void applyAction(String action, String item) {
         if ("month-prev".equals(action)) {
             selectorDate = selectorDate.month(-1);
@@ -429,10 +718,32 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
             } catch (NumberFormatException e) {
                 // Nothing.
             }
+        } else if ("option-select".equals(action)) {
+            try {
+                int idx = Integer.parseInt(item);
+                Option option = config().options.get(idx);
+                date = option.value();
+                refreshDate();
+                modified();
+                selector.close();
+                if (config().onoption != null)
+                    config().onoption.accept(option);
+            } catch (NumberFormatException e) {
+                // Nothing.
+            }
         }
     }
 
+    /**
+     * Refreshes the selector display.
+     */
     protected void updateSelector() {
+        // Reload any options.
+        if (config().optionsLoader != null) {
+            config().options = null;
+            config().optionsLoader.accept(config());
+        }
+
         String month = CalendarSupport.nameOfMonth(config().formatLocale.get(), selectorDate.month());
         int[] datesInTable = CalendarSupport.dateTable (selectorDate.year(), selectorDate.month());
 
@@ -441,53 +752,82 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
         int fEndIdx = CalendarSupport.endOfMonth(datesInTable);
         int fSelectedDate = CalendarSupport.indexOf(datesInTable, selectorDate, date);
         int fCurrentDate = CalendarSupport.indexOf(datesInTable, selectorDate, CalendarDate.now());
-        
+
+        CSS.MIN_WIDTH.apply(selectorEl,config().selectorWidth);
         Wrap.buildInto(selectorEl, selector -> {
-            Div.$(selector).$ (
-                Div.$ ().style(styles().months()).$ (
-                    Em.$().style(FontAwesome.angleLeft())
-                        .attr("action", "month-prev"),
-                    Div.$().text (month + " " + selectorDate.year()),
-                    Em.$().style(FontAwesome.angleRight())
-                        .attr("action", "month-next")
-                ),
-                Div.$ ().style(styles().dates()).$ (dates -> {
-                    Table.$(dates).$ (table -> {
-                        Thead.$(table).$ (
-                            Th.$ ().text ("Su"),
-                            Th.$ ().text ("Mo"),
-                            Th.$ ().text ("Tu"),
-                            Th.$ ().text ("We"),
-                            Th.$ ().text ("Th"),
-                            Th.$ ().text ("Fr"),
-                            Th.$ ().text ("Sa")
-                        );
-                        Tbody.$ (table).$ (body -> {
-                            for (int i = 0; i < (datesInTable.length / 7); i++) {
-                                int fi = i;
-                                Tr.$ (body).$ (row -> {
-                                    for (int j = 0; j < 7; j++) {
-                                        int idx = j+7*fi;
-                                        Td.$ (row).$ (cell -> {
-                                            Text.$ (cell, "" + datesInTable[idx]);
-                                            if ((idx < fStartIdx) || (fEndIdx < idx))
-                                                cell.style(styles().outside());
-                                            cell.attr ("action", "date-select");
-                                            cell.attr ("item", "" + (idx - fStartIdx));
-                                            if (idx == fSelectedDate)
-                                                cell.style(styles().selected());
-                                            if (idx == fCurrentDate) {
-                                                cell.style(styles().current());
-                                                Em.$(cell);
-                                            }
-                                        });
-                                    }
-                                });
+            Div.$(selector).$ (outer -> {
+                Div.$(outer).style(styles().calendar()).$ (
+                    Div.$ ().style(styles().months()).$ (
+                        Em.$().style(FontAwesome.angleLeft())
+                            .attr("action", "month-prev"),
+                        Div.$().text (month + " " + selectorDate.year()),
+                        Em.$().style(FontAwesome.angleRight())
+                            .attr("action", "month-next")
+                    ),
+                    Div.$ ().style(styles().dates()).$ (dates -> {
+                        Table.$(dates).$ (table -> {
+                            Thead.$(table).$ (
+                                Th.$ ().text ("Su"),
+                                Th.$ ().text ("Mo"),
+                                Th.$ ().text ("Tu"),
+                                Th.$ ().text ("We"),
+                                Th.$ ().text ("Th"),
+                                Th.$ ().text ("Fr"),
+                                Th.$ ().text ("Sa")
+                            );
+                            Tbody.$ (table).$ (body -> {
+                                for (int i = 0; i < (datesInTable.length / 7); i++) {
+                                    int fi = i;
+                                    Tr.$ (body).$ (row -> {
+                                        for (int j = 0; j < 7; j++) {
+                                            int idx = j+7*fi;
+                                            Td.$ (row).$ (cell -> {
+                                                Text.$ (cell, "" + datesInTable[idx]);
+                                                if ((idx < fStartIdx) || (fEndIdx < idx))
+                                                    cell.style(styles().outside());
+                                                // Apply any date filtering.
+                                                if (config().dateFilter != null) {
+                                                    CalendarDate d = new CalendarDate(selectorDate.year(), selectorDate.month(), datesInTable[idx]);
+                                                    if (idx < fStartIdx)
+                                                        d = d.month(-1);
+                                                    else if (idx > fEndIdx)
+                                                        d = d.month(1);
+                                                    if (!config().dateFilter.test(d))
+                                                        cell.style(styles().disabled());
+                                                }
+                                                cell.attr ("action", "date-select");
+                                                cell.attr ("item", "" + (idx - fStartIdx));
+                                                if (idx == fSelectedDate)
+                                                    cell.style(styles().selected());
+                                                if (idx == fCurrentDate) {
+                                                    cell.style(styles().current());
+                                                    Em.$(cell);
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        });
+                    })
+                );
+                if ((config().options != null) && !config().options.isEmpty()) {
+                    Div.$(outer).style(styles().extra()).$ (options -> {
+                        Itr.forEach(config().options, (ctx,option) -> {
+                            if (option.header) {
+                                H5.$(options)
+                                    .text(option.label);
+                            } else {
+                                Div.$(options)
+                                    .text(option.label)
+                                    .attr ("action", "option-select")
+                                    .attr ("item", "" + ctx.index());
                             }
                         });
+
                     });
-                })
-            );
+                }
+            });
         });
     }
 
@@ -503,6 +843,10 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
     }
 
     public static interface ILocalCSS extends IControlCSS {
+
+        public String calendar();
+
+        public String extra();
 
         public String inner();
 
@@ -521,6 +865,8 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
         public String selected();
 
         public String current();
+
+        public String clear();
     }
 
     /**

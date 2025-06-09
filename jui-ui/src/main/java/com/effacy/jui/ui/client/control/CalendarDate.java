@@ -93,13 +93,20 @@ public class CalendarDate {
 
     /**
      * Adjusts the date by the given number of months.
+     * <p>
+     * Note that this is day-safe, if the resulting day does not lie in the month
+     * then it will be adjusted to be the end of the month.
      * 
      * @param adjust
      *               the adjustment.
      * @return the date.
      */
     public CalendarDate month(int adjust) {
-        return CalendarDate.from(year, month + adjust, day);
+        CalendarDate d = CalendarDate.from(year, month + adjust + 1, -1);
+        if (d.day <= day)
+            return d;
+        d.day = day;
+        return d;
     }
 
     /**
@@ -111,6 +118,73 @@ public class CalendarDate {
      */
     public CalendarDate day(int adjust) {
         return CalendarDate.from(year, month, day + adjust);
+    }
+
+    /**
+     * Returns a date that is the start of the month.
+     * 
+     * @return the date.
+     */
+    public CalendarDate monthStart() {
+        return new CalendarDate(year, month, 1);
+    }
+
+    /**
+     * Returns a date that is the end of the month.
+     * 
+     * @return the date.
+     */
+    public CalendarDate monthEnd() {
+        return new CalendarDate(year, month + 1, 1).day(-1);
+    }
+
+    /**
+     * Determines if this date is before (strictly) the passed.
+     * 
+     * @param compare
+     *                the date to compare to (if {@code null} then returns
+     *                {@code true}).
+     * @return {@code true} if this is before the passed.
+     */
+    public boolean before(CalendarDate compare) {
+        if (compare == null)
+            return false;
+        if (year < compare.year)
+            return true;
+        if (year > compare.year)
+            return false;
+        if (month < compare.month)
+            return true;
+        if (month > compare.month)
+            return false;
+        return (day < compare.day);
+    }
+
+    /**
+     * Determines if this date is after (strictly) the passed.
+     * 
+     * @param compare
+     *                the date to compare to (if {@code null} then returns
+     *                {@code true}).
+     * @return {@code true} if this is before the passed.
+     */
+    public boolean after(CalendarDate compare) {
+        if (compare == null)
+            return false;
+        if (year > compare.year)
+            return true;
+        if (year < compare.year)
+            return false;
+        if (month > compare.month)
+            return true;
+        if (month < compare.month)
+            return false;
+        return (day > compare.day);
+    }
+
+    @Override
+    public String toString() {
+        return day + ":" + month + ":" + year;
     }
 
     /**

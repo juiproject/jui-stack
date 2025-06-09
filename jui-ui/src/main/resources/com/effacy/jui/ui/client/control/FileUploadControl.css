@@ -1,23 +1,30 @@
 .component {
+    --jui-filectl-padding: 1.5em;
+    --jui-filectl-minwidth: 100px;
+    --jui-filectl-minheight: 40px;
+    --jui-filectl-text-size: 1em;
     --jui-filectl-color-text: #5e7fe8;
     --jui-filectl-color: #a9bdfd;
     --jui-filectl-color-bg: #eef3ff;
+    --jui-filectl-item-padding: 0.75em;
     --jui-filectl-item-color: #666; 
     --jui-filectl-item-color-subtle: #999; 
     --jui-filectl-item-color-border: #eee; 
     --jui-filectl-item-color-bg: #fafafa;
     --jui-filectl-item-color-error: var(--jui-color-error70);
-    --jui-filetctl-border-radius: 6px;
-    --jui-filetctl-icon-scale: 1.5em;
+    --jui-filectl-border-radius: 6px;
+    --jui-filectl-icon-scale: 1.5em;
+    --jui-filectl-icon-bg: #fff;
+    --jui-filectl-icon-dimension: 2em;
 }
 
 .component .dropRegion {
-    padding: 1.5em;
-    min-width: 100px;
-    min-height: 40px;
+    padding: var(--jui-filectl-padding);
+    min-width: var(--jui-filectl-minwidth);
+    min-height: var(--jui-filectl-minheight);
     border: 1px dashed var(--jui-filectl-color);
     background-color: var(--jui-filectl-color-bg);
-    border-radius: var(--jui-filetctl-border-radius);
+    border-radius: var(--jui-filectl-border-radius);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -54,13 +61,14 @@
 
 .component .dropRegion .icon {
     display: flex;
-    width: 2em;
-    height: 2em;
+    width: var(--jui-filectl-icon-dimension);
+    height: var(--jui-filectl-icon-dimension);
     border: 1px solid var(--jui-filectl-color);
     border-radius: 100%;
     justify-content: center;
     align-items: center;
-    font-size: var(--jui-filetctl-icon-scale);
+    font-size: var(--jui-filectl-icon-scale);
+    background: var(--jui-filectl-icon-bg);
 }
 
 .component .dropRegion .icon em {
@@ -68,7 +76,7 @@
 }
 
 .component .dropRegion .title {
-    font-size: 0.95em;
+    font-size: var(--jui-filectl-text-size);
     flex-grow: 1;
     text-align: center;
 }
@@ -99,7 +107,7 @@
     border: 1px solid var(--jui-filectl-item-color-border);
     background-color: var(--jui-filectl-item-color-bg);
     border-radius: 6px;
-    padding: 0.5em;
+    padding: var(--jui-filectl-item-padding);
     margin-top: 0.5em;
     display: flex;
     align-items: center;
@@ -117,7 +125,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: var(--jui-filetctl-icon-scale);
+    font-size: var(--jui-filectl-icon-scale);
     color: var(--jui-filectl-color);
 }
 

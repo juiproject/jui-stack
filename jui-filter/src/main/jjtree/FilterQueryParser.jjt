@@ -1,0 +1,173 @@
+options {
+  LOOKAHEAD = 2;
+  STATIC = false;
+  VISITOR = false;
+  NODE_USES_PARSER = true;
+  JAVA_UNICODE_ESCAPE = true;
+  JAVA_TEMPLATE_TYPE = "modern";
+  MULTI = true;
+  NODE_PREFIX = "Ast";
+  NODE_CLASS = "BaseNode";
+}
+
+PARSER_BEGIN(FilterQueryParser)
+
+package com.effacy.jui.filter.parser;
+
+import com.effacy.jui.filter.builder.ExpressionBuilder;
+import com.effacy.jui.filter.parser.BaseNode.ValueType;
+
+public class FilterQueryParser {
+
+    public static ParsedExpression parse(String content) throws FilterQueryParserException {
+        try {
+            return new ParsedExpression (new FilterQueryParser(content).parse());
+        } catch (java.lang.Throwable e) {
+            throw new FilterQueryParserException(e.getMessage ());
+        }
+    }
+
+    public static class ParsedExpression {
+        protected AstRoot root;
+        ParsedExpression(AstRoot root) {
+            this.root = root;
+        }
+        public AstRoot root() {
+            return root;
+        }
+        public <T> T build(ExpressionBuilder<T> builder) {
+            return root.build(builder);
+        }
+        public void print() {
+            root.print(0);
+        }
+    }
+
+    public static class FilterQueryParserException extends Exception {
+        public FilterQueryParserException(String message) {
+            super (message);
+        }
+    }
+}
+
+PARSER_END(FilterQueryParser)
+
+SKIP : { " " | "\t" | "\n" | "\r" }
+
+// Logical Operators
+TOKEN : { < AND : "AND" > }
+TOKEN : { < OR : "OR" > }
+TOKEN : { < NOT : "NOT" > }
+
+// Comparison Operators
+TOKEN : { < EQ : "=" > }
+TOKEN : { < NEQ : "!=" > }
+TOKEN : { < GT : ">" > }
+TOKEN : { < GTE : ">=" > }
+TOKEN : { < LT : "<" > }
+TOKEN : { < LTE : "<=" > }
+TOKEN : { < IN : "IN" > }
+TOKEN : { < NOT_IN : "NOT IN" > }
+TOKEN : { < IS : "IS" > }
+TOKEN : { < CONTAINS : "CONTAINS" > }
+TOKEN : { < STARTS_WITH : "STARTS WITH" > }
+TOKEN : { < ENDS_WITH : "ENDS WITH" > }
+
+// Parentheses
+TOKEN : { < LPAREN : "(" > }
+TOKEN : { < RPAREN : ")" > }
+
+// Brackets and separators
+TOKEN : { < LBRACKET : "[" > }
+TOKEN : { < RBRACKET : "]" > }
+TOKEN : { < COMMA : "," > }
+
+// Literals
+TOKEN : { < STRING : "\"" (~["\""])* "\"" > }
+TOKEN : { < TRUE : "true" > }
+TOKEN : { < FALSE : "false" > }
+TOKEN : { < INTEGER : ("-" )? ("0" | ["1"-"9"]) (["0"-"9"])* > }
+TOKEN : { < DECIMAL : ("-" )? ("0" | ["1"-"9"]) (["0"-"9"])* "." (["0"-"9"])+ > }
+TOKEN : { < IDENTIFIER : (["A"-"Z", "a"-"z"]) (["A"-"Z", "a"-"z", "0"-"9", "_"])* > }
+
+/** Main production. */
+AstRoot parse() #Root : {}
+{
+  OrExpression() <EOF> { return jjtThis; }
+}
+
+void OrExpression() #void : {}
+{
+  AndExpression()
+  (
+    <OR> AndExpression() #OrExpression(2)
+  )*
+}
+
+void AndExpression() #void : {}
+{
+  NotExpression()
+  (
+    <AND> NotExpression() #AndExpression(2)
+  )*
+}
+
+void NotExpression() #void : {}
+{
+  <NOT> NotExpression() #NotExpression(1)
+  | PrimaryExpression()
+}
+
+void PrimaryExpression() #void : {}
+{
+    ComparisonExpression()
+  | <LPAREN> OrExpression() <RPAREN>
+}
+
+void ComparisonExpression() #void : {}
+{
+  Field()
+  (
+    <EQ> Value() #Equals(2)
+    | <NEQ> Value() #NotEquals(2)
+    | <GT> Value() #GreaterThan(2)
+    | <GTE> Value() #GreaterThanOrEqual(2)
+    | <LT> Value() #LessThan(2)
+    | <LTE> Value() #LessThanOrEqual(2)
+    | <IN> Value() #In(2)
+    | <NOT_IN> Value() #NotIn(2)
+    | <IS> Value() #Is(2)
+    | <CONTAINS> Value() #Contains(2)
+    | <STARTS_WITH> Value() #StartsWith(2)
+    | <ENDS_WITH> Value() #EndsWith(2)
+  )
+}
+
+void Field() #Field : { Token t; }
+{
+  ( t = <IDENTIFIER> )
+  {
+    jjtThis.setImage(t.image);
+  }
+}
+
+void Value() #void : {} 
+{
+    SimpleValue()
+  | ListValue()
+}
+
+void SimpleValue() #Value : { Token t; }
+{
+    t = <STRING> { jjtThis.setImage(t.image.substring(1, t.image.length() - 1)); jjtThis.setValueType(ValueType.STRING); }
+  | t = <IDENTIFIER> { jjtThis.setImage(t.image); jjtThis.setValueType(ValueType.LITERAL); }
+  | t = <INTEGER> { jjtThis.setImage(t.image); jjtThis.setValueType(ValueType.INTEGER); }
+  | t = <DECIMAL> { jjtThis.setImage(t.image); jjtThis.setValueType(ValueType.DECIMAL); }
+  | t = <TRUE> { jjtThis.setImage("true"); jjtThis.setValueType(ValueType.BOOLEAN); }
+  | t = <FALSE> { jjtThis.setImage("false"); jjtThis.setValueType(ValueType.BOOLEAN); }
+}
+
+void ListValue() #List : {}
+{
+    <LBRACKET> SimpleValue() ( <COMMA> SimpleValue() )* <RBRACKET>
+}

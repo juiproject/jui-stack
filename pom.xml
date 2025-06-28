@@ -40,6 +40,7 @@
     <module>jui-core</module>
     <module>jui-ui</module>
     <module>jui-text</module>
+    <module>jui-filter</module>
     <module>jui-test</module>
     <module>jui-playground</module>
   </modules>

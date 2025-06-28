@@ -16,13 +16,12 @@ public interface FilterQueryParserTreeConstants
   public int JJTLESSTHANOREQUAL = 10;
   public int JJTIN = 11;
   public int JJTNOTIN = 12;
-  public int JJTIS = 13;
-  public int JJTCONTAINS = 14;
-  public int JJTSTARTSWITH = 15;
-  public int JJTENDSWITH = 16;
-  public int JJTFIELD = 17;
-  public int JJTVALUE = 18;
-  public int JJTLIST = 19;
+  public int JJTCONTAINS = 13;
+  public int JJTSTARTSWITH = 14;
+  public int JJTENDSWITH = 15;
+  public int JJTFIELD = 16;
+  public int JJTVALUE = 17;
+  public int JJTLIST = 18;
 
 
   public String[] jjtNodeName = {
@@ -39,7 +38,6 @@ public interface FilterQueryParserTreeConstants
     "LessThanOrEqual",
     "In",
     "NotIn",
-    "Is",
     "Contains",
     "StartsWith",
     "EndsWith",
@@ -48,4 +46,4 @@ public interface FilterQueryParserTreeConstants
     "List",
   };
 }
-/* JavaCC - OriginalChecksum=876552fc91e3ab9dcb9dab1dde8cb4c4 (do not edit this line) */
+/* JavaCC - OriginalChecksum=ad5138c80d35755499cdce0a72753125 (do not edit this line) */

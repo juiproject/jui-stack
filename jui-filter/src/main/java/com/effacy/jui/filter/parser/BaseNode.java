@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import com.effacy.jui.filter.builder.ExpressionBuilder;
+import com.effacy.jui.filter.builder.IExpressionBuilder;
 
 public class BaseNode extends SimpleNode {
 
@@ -47,7 +47,7 @@ public class BaseNode extends SimpleNode {
         return null;
     }
 
-    public <T> T build(ExpressionBuilder<T> builder) {
+    public <T> T build(IExpressionBuilder<T> builder) {
         List<T> expressions = new ArrayList<>();
         if (children != null) {
             for (int i = 0; i < children.length; i++)
@@ -62,29 +62,27 @@ public class BaseNode extends SimpleNode {
         if (this instanceof AstNotExpression)
             return builder.not(expressions.get(0));
         if (this instanceof AstEquals)
-            return builder.term(term(), ExpressionBuilder.Operator.EQ, value());
+            return builder.term(term(), IExpressionBuilder.Operator.EQ, value());
         if (this instanceof AstNotEquals)
-            return builder.term(term(), ExpressionBuilder.Operator.NEQ, value());
+            return builder.term(term(), IExpressionBuilder.Operator.NEQ, value());
         if (this instanceof AstGreaterThan)
-            return builder.term(term(), ExpressionBuilder.Operator.GT, value());
+            return builder.term(term(), IExpressionBuilder.Operator.GT, value());
         if (this instanceof AstGreaterThanOrEqual)
-            return builder.term(term(), ExpressionBuilder.Operator.GTE, value());
+            return builder.term(term(), IExpressionBuilder.Operator.GTE, value());
         if (this instanceof AstLessThan)
-            return builder.term(term(), ExpressionBuilder.Operator.LT, value());
+            return builder.term(term(), IExpressionBuilder.Operator.LT, value());
         if (this instanceof AstLessThanOrEqual)
-            return builder.term(term(), ExpressionBuilder.Operator.LTE, value());
+            return builder.term(term(), IExpressionBuilder.Operator.LTE, value());
         if (this instanceof AstIn)
-            return builder.term(term(), ExpressionBuilder.Operator.IN, value());
+            return builder.term(term(), IExpressionBuilder.Operator.IN, value());
         if (this instanceof AstNotIn)
-            return builder.term(term(), ExpressionBuilder.Operator.NOT_IN, value());
-        if (this instanceof AstIs)
-            return builder.term(term(), ExpressionBuilder.Operator.IS, value());
+            return builder.term(term(), IExpressionBuilder.Operator.NOT_IN, value());
         if (this instanceof AstContains)
-            return builder.term(term(), ExpressionBuilder.Operator.CONTAINS, value());
+            return builder.term(term(), IExpressionBuilder.Operator.CONTAINS, value());
         if (this instanceof AstStartsWith)
-            return builder.term(term(), ExpressionBuilder.Operator.STARTS_WITH, value());
+            return builder.term(term(), IExpressionBuilder.Operator.STARTS_WITH, value());
         if (this instanceof AstEndsWith)
-            return builder.term(term(), ExpressionBuilder.Operator.ENDS_WITH, value());
+            return builder.term(term(), IExpressionBuilder.Operator.ENDS_WITH, value());
 
         return null;
     }

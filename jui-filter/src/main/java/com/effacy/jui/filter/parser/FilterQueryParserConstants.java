@@ -33,35 +33,33 @@ public interface FilterQueryParserConstants {
   /** RegularExpression Id. */
   int NOT_IN = 15;
   /** RegularExpression Id. */
-  int IS = 16;
+  int CONTAINS = 16;
   /** RegularExpression Id. */
-  int CONTAINS = 17;
+  int STARTS_WITH = 17;
   /** RegularExpression Id. */
-  int STARTS_WITH = 18;
+  int ENDS_WITH = 18;
   /** RegularExpression Id. */
-  int ENDS_WITH = 19;
+  int LPAREN = 19;
   /** RegularExpression Id. */
-  int LPAREN = 20;
+  int RPAREN = 20;
   /** RegularExpression Id. */
-  int RPAREN = 21;
+  int LBRACKET = 21;
   /** RegularExpression Id. */
-  int LBRACKET = 22;
+  int RBRACKET = 22;
   /** RegularExpression Id. */
-  int RBRACKET = 23;
+  int COMMA = 23;
   /** RegularExpression Id. */
-  int COMMA = 24;
+  int STRING = 24;
   /** RegularExpression Id. */
-  int STRING = 25;
+  int TRUE = 25;
   /** RegularExpression Id. */
-  int TRUE = 26;
+  int FALSE = 26;
   /** RegularExpression Id. */
-  int FALSE = 27;
+  int INTEGER = 27;
   /** RegularExpression Id. */
-  int INTEGER = 28;
+  int DECIMAL = 28;
   /** RegularExpression Id. */
-  int DECIMAL = 29;
-  /** RegularExpression Id. */
-  int IDENTIFIER = 30;
+  int IDENTIFIER = 29;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -73,21 +71,20 @@ public interface FilterQueryParserConstants {
     "\"\\t\"",
     "\"\\n\"",
     "\"\\r\"",
-    "\"AND\"",
-    "\"OR\"",
-    "\"NOT\"",
-    "\"=\"",
-    "\"!=\"",
+    "<AND>",
+    "<OR>",
+    "<NOT>",
+    "<EQ>",
+    "<NEQ>",
     "\">\"",
     "\">=\"",
     "\"<\"",
     "\"<=\"",
-    "\"IN\"",
-    "\"NOT IN\"",
-    "\"IS\"",
-    "\"CONTAINS\"",
-    "\"STARTS WITH\"",
-    "\"ENDS WITH\"",
+    "<IN>",
+    "<NOT_IN>",
+    "<CONTAINS>",
+    "<STARTS_WITH>",
+    "<ENDS_WITH>",
     "\"(\"",
     "\")\"",
     "\"[\"",

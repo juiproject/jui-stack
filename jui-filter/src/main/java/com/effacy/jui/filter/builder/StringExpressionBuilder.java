@@ -3,7 +3,7 @@ package com.effacy.jui.filter.builder;
 import java.lang.reflect.Array;
 import java.util.List;
 
-public class StringExpressionBuilder implements ExpressionBuilder<String> {
+public class StringExpressionBuilder implements IExpressionBuilder<String> {
 
     private boolean operatorAsSymbol = false;
 
@@ -54,6 +54,8 @@ public class StringExpressionBuilder implements ExpressionBuilder<String> {
             return operator.name();
         if (Operator.EQ == operator)
             return "=";
+        if (Operator.NEQ == operator)
+            return "!=";
         if (Operator.GT == operator)
             return ">";
         if (Operator.GTE == operator)
@@ -64,14 +66,16 @@ public class StringExpressionBuilder implements ExpressionBuilder<String> {
             return "<=";
         if (Operator.GT == operator)
             return ">";
-        if (Operator.IS == operator)
-            return "IS";
         if (Operator.CONTAINS == operator)
             return "CONTAINS";
         if (Operator.STARTS_WITH == operator)
             return "STARTS WITH";
         if (Operator.ENDS_WITH == operator)
             return "ENDS WITH";
+        if (Operator.IN == operator)
+            return "IN";
+        if (Operator.NOT_IN == operator)
+            return "NOT IN";
         return operator.name();
     }
 

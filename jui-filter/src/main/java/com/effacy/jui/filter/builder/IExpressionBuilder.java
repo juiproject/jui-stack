@@ -2,10 +2,10 @@ package com.effacy.jui.filter.builder;
 
 import java.util.List;
 
-public interface ExpressionBuilder<T> {
+public interface IExpressionBuilder<T> {
 
     public enum Operator {
-        EQ,NEQ,GT,GTE,LT,LTE,IN,NOT_IN,IS,CONTAINS,STARTS_WITH,ENDS_WITH;
+        EQ,NEQ,GT,GTE,LT,LTE,IN,NOT_IN,CONTAINS,STARTS_WITH,ENDS_WITH;
     }
 
     default public T and(T...expressions) {

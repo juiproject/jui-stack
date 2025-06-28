@@ -14,7 +14,8 @@ PARSER_BEGIN(FilterQueryParser)
 
 package com.effacy.jui.filter.parser;
 
-import com.effacy.jui.filter.builder.ExpressionBuilder;
+import com.effacy.jui.filter.builder.IExpressionBuildable;
+import com.effacy.jui.filter.builder.IExpressionBuilder;
 import com.effacy.jui.filter.parser.BaseNode.ValueType;
 
 public class FilterQueryParser {
@@ -27,15 +28,12 @@ public class FilterQueryParser {
         }
     }
 
-    public static class ParsedExpression {
+    public static class ParsedExpression implements IExpressionBuildable {
         protected AstRoot root;
         ParsedExpression(AstRoot root) {
             this.root = root;
         }
-        public AstRoot root() {
-            return root;
-        }
-        public <T> T build(ExpressionBuilder<T> builder) {
+        public <T> T build(IExpressionBuilder<T> builder) {
             return root.build(builder);
         }
         public void print() {
@@ -55,23 +53,22 @@ PARSER_END(FilterQueryParser)
 SKIP : { " " | "\t" | "\n" | "\r" }
 
 // Logical Operators
-TOKEN : { < AND : "AND" > }
-TOKEN : { < OR : "OR" > }
-TOKEN : { < NOT : "NOT" > }
+TOKEN : { < AND : "AND" | "and" > }
+TOKEN : { < OR : "OR" | "or" > }
+TOKEN : { < NOT : "NOT" | "not" | "!" | "~" > }
 
 // Comparison Operators
-TOKEN : { < EQ : "=" > }
-TOKEN : { < NEQ : "!=" > }
+TOKEN : { < EQ : "=" | "==" | "IS" | "is" > }
+TOKEN : { < NEQ : "!=" | "~=" | "<>" > }
 TOKEN : { < GT : ">" > }
 TOKEN : { < GTE : ">=" > }
 TOKEN : { < LT : "<" > }
 TOKEN : { < LTE : "<=" > }
-TOKEN : { < IN : "IN" > }
-TOKEN : { < NOT_IN : "NOT IN" > }
-TOKEN : { < IS : "IS" > }
-TOKEN : { < CONTAINS : "CONTAINS" > }
-TOKEN : { < STARTS_WITH : "STARTS WITH" > }
-TOKEN : { < ENDS_WITH : "ENDS WITH" > }
+TOKEN : { < IN : "IN" | "in" > }
+TOKEN : { < NOT_IN : "NOT IN" | "not in" > }
+TOKEN : { < CONTAINS : "CONTAINS" | "contains" > }
+TOKEN : { < STARTS_WITH : "STARTS WITH" | "starts with" > }
+TOKEN : { < ENDS_WITH : "ENDS WITH" | "ends with" > }
 
 // Parentheses
 TOKEN : { < LPAREN : "(" > }
@@ -128,18 +125,17 @@ void ComparisonExpression() #void : {}
 {
   Field()
   (
-    <EQ> Value() #Equals(2)
-    | <NEQ> Value() #NotEquals(2)
-    | <GT> Value() #GreaterThan(2)
-    | <GTE> Value() #GreaterThanOrEqual(2)
-    | <LT> Value() #LessThan(2)
-    | <LTE> Value() #LessThanOrEqual(2)
-    | <IN> Value() #In(2)
-    | <NOT_IN> Value() #NotIn(2)
-    | <IS> Value() #Is(2)
-    | <CONTAINS> Value() #Contains(2)
-    | <STARTS_WITH> Value() #StartsWith(2)
-    | <ENDS_WITH> Value() #EndsWith(2)
+    <EQ> SimpleValue() #Equals(2)
+    | <NEQ> SimpleValue() #NotEquals(2)
+    | <GT> SimpleValue() #GreaterThan(2)
+    | <GTE> SimpleValue() #GreaterThanOrEqual(2)
+    | <LT> SimpleValue() #LessThan(2)
+    | <LTE> SimpleValue() #LessThanOrEqual(2)
+    | <IN> ListValue() #In(2)
+    | <NOT_IN> ListValue() #NotIn(2)
+    | <CONTAINS> SimpleValue() #Contains(2)
+    | <STARTS_WITH> SimpleValue() #StartsWith(2)
+    | <ENDS_WITH> SimpleValue() #EndsWith(2)
   )
 }
 
@@ -149,12 +145,6 @@ void Field() #Field : { Token t; }
   {
     jjtThis.setImage(t.image);
   }
-}
-
-void Value() #void : {} 
-{
-    SimpleValue()
-  | ListValue()
 }
 
 void SimpleValue() #Value : { Token t; }

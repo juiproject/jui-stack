@@ -16,12 +16,12 @@ public class FilterQueryParser/*@bgen(jjtree)*/implements FilterQueryParserTreeC
         }
     }
 
-    public static class ParsedExpression implements IExpressionBuildable {
+    public static class ParsedExpression implements IExpressionBuildable<String> {
         protected AstRoot root;
         ParsedExpression(AstRoot root) {
             this.root = root;
         }
-        public <T> T build(IExpressionBuilder<T> builder) {
+        public <T> T build(IExpressionBuilder<T,String> builder) {
             return root.build(builder);
         }
         public void print() {

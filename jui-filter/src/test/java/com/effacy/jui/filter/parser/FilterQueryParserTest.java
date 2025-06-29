@@ -126,6 +126,16 @@ public class FilterQueryParserTest {
         """, "((a = 1 OR b = 2) AND c = 3)");
     }
 
+    /**
+     * Tests for operator alternatives.
+     */
+    @Test
+    public void literals() {
+        assertParse("""
+            (NOT status = ACTIVE)
+        """, "(NOT status = ACTIVE)");
+    }
+
     /************************************************************************
      * Operator tests.
      ************************************************************************/
@@ -180,7 +190,7 @@ public class FilterQueryParserTest {
             assertNotNull(exp);
             exp.print();
             String out = exp.build(new StringExpressionBuilder());
-            assertEquals("a IN [\"ACTIVE\",\"INACTIVE\"]", out);
+            assertEquals("a IN [ACTIVE,INACTIVE]", out);
         } catch (Exception e) {
             fail("Parsing threw an exception: " + e.getMessage());
         }
@@ -236,7 +246,7 @@ public class FilterQueryParserTest {
             assertNotNull(exp);
             exp.print();
             String out = exp.build(new StringExpressionBuilder());
-            assertEquals("a NOT IN [\"ACTIVE\",\"INACTIVE\"]", out);
+            assertEquals("a NOT IN [ACTIVE,INACTIVE]", out);
         } catch (Exception e) {
             fail("Parsing threw an exception: " + e.getMessage());
         }
@@ -278,7 +288,7 @@ public class FilterQueryParserTest {
             """);
             assertNotNull(exp);
             String out = exp.build(new StringExpressionBuilder());
-            assertEquals("(((name = \"John\" AND age > 25) AND ((status IN [\"ACTIVE\",\"PENDING\"] OR priority = \"high\") OR (NOT (category = \"test\" AND deleted = true)))) AND (price >= 100.5 OR name STARTS WITH \"Product\"))", out);
+            assertEquals("(((name = \"John\" AND age > 25) AND ((status IN [ACTIVE,PENDING] OR priority = \"high\") OR (NOT (category = \"test\" AND deleted = true)))) AND (price >= 100.5 OR name STARTS WITH \"Product\"))", out);
         } catch (Exception e) {
             fail("Parsing threw an exception: " + e.getMessage());
         }

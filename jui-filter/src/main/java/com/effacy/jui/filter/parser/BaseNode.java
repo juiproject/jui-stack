@@ -1,11 +1,11 @@
 package com.effacy.jui.filter.parser;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
 import com.effacy.jui.filter.builder.IExpressionBuilder;
+import com.effacy.jui.filter.builder.IExpressionBuilder.Literal;
 
 public class BaseNode extends SimpleNode {
 
@@ -47,7 +47,7 @@ public class BaseNode extends SimpleNode {
         return null;
     }
 
-    public <T> T build(IExpressionBuilder<T> builder) {
+    public <T> T build(IExpressionBuilder<T,String> builder) {
         List<T> expressions = new ArrayList<>();
         if (children != null) {
             for (int i = 0; i < children.length; i++)
@@ -120,6 +120,8 @@ public class BaseNode extends SimpleNode {
             return Integer.parseInt(node.image);
         if (ValueType.DECIMAL == valueType)
             return Double.parseDouble(node.image);
+        if (ValueType.LITERAL == valueType)
+            return new Literal(node.image);
         return node.image;
     }
 

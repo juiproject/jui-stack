@@ -3,9 +3,66 @@ package com.effacy.jui.filter.builder;
 import java.lang.reflect.Array;
 import java.util.List;
 
-public class StringExpressionBuilder implements IExpressionBuilder<String> {
+import com.effacy.jui.filter.parser.FilterQueryParser;
 
-    private boolean operatorAsSymbol = false;
+/**
+ * A type of {@link IExpressionBuilder} that builds a string representation of
+ * an expression.
+ * <p>
+ * This representation is parsable by {@link FilterQueryParser}.
+ * <p>
+ * Note that literals are expected to be mapped to enums.
+ */
+public class StringExpressionBuilder implements IExpressionBuilder<String,String> {
+
+    public static StringExpressionBuilder create() {
+        return new StringExpressionBuilder();
+    }
+
+    public static <F> IExpressionBuilder<String,F> create(FieldMapper<F,String> mapper) {
+        StringExpressionBuilder builder = new StringExpressionBuilder();
+        return new IExpressionBuilder<String,F> () {
+
+            @Override
+            public String and(List<String> expressions) {
+                return builder.and(expressions);
+            }
+
+            @Override
+            public String or(List<String> expressions) {
+                return builder.or(expressions);
+            }
+
+            @Override
+            public String not(String expression) {
+                return builder.not(expression);
+            }
+
+            @Override
+            public String term(F field, Operator operator, Object value) {
+                return builder.term(mapper.map(field), operator, value);
+            }
+            
+        };
+    }
+
+    /**
+     * See {@link #operatorAsSymbol(boolean).
+     */
+    private boolean operatorAsSymbol;
+
+    /**
+     * By default, operators are represented in parsable form (i.e. = or <) rather
+     * than symbolic form (i.e. EQ or LT). Use this to change that behaviour.
+     * 
+     * @param operatorAsSymbol
+     *                         {@code true} to print in symbolic form.
+     * @return this builder instance.
+     */
+    public StringExpressionBuilder operatorAsSymbol(boolean operatorAsSymbol) {
+        this.operatorAsSymbol = operatorAsSymbol;
+        return this;
+    }
 
     @Override
     public String and(List<String> expressions) {
@@ -27,6 +84,15 @@ public class StringExpressionBuilder implements IExpressionBuilder<String> {
         return field + " " + operator(operator) + " " + value(value);
     }
 
+    /**
+     * Given a value, generates a string form for the value that can be parsed back
+     * to the value.
+     * 
+     * @param value
+     *              the value.
+     * @return
+     *         the string form.
+     */
     protected String value(Object value) {
         if (value == null)
             return "null";
@@ -34,6 +100,8 @@ public class StringExpressionBuilder implements IExpressionBuilder<String> {
             return "\"" + value + "\"";
         if (value instanceof Enum)
             return((Enum<?>) value).name();
+        if (value instanceof Literal)
+            return ((Literal) value).value();
         if (value.getClass().isArray()) {
             StringBuffer sb = new StringBuffer();
             sb.append('[');
@@ -49,6 +117,14 @@ public class StringExpressionBuilder implements IExpressionBuilder<String> {
         return value.toString();
     }
 
+    /**
+     * Given an operator, generate its string form. This depends on
+     * {@link #operatorAsSymbol}.
+     * 
+     * @param operator
+     *                 the operator.
+     * @return the string form.
+     */
     protected String operator(Operator operator) {
         if (operatorAsSymbol)
             return operator.name();
@@ -79,6 +155,15 @@ public class StringExpressionBuilder implements IExpressionBuilder<String> {
         return operator.name();
     }
 
+    /**
+     * Generates a suitable expression for an AND or OR operator.
+     * 
+     * @param separater
+     *                    the string form of the operator (i.e. " AND " or " OR ").
+     * @param expressions
+     *                    the expressions being operated on.
+     * @return this composite.
+     */
     protected String composer(String separater, List<String> expressions) {
         if (expressions.isEmpty())
             return "";

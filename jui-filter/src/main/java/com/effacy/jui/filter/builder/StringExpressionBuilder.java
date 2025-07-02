@@ -15,35 +15,38 @@ import com.effacy.jui.filter.parser.FilterQueryParser;
  */
 public class StringExpressionBuilder implements IExpressionBuilder<String,String> {
 
+    /**
+     * Creates a builder over the default field-type of {@link String}.
+     * 
+     * @return the builder.
+     */
     public static StringExpressionBuilder create() {
         return new StringExpressionBuilder();
     }
 
+    /**
+     * Creates a builder over a general field-type with a mapper to map the field
+     * type to a string.
+     * 
+     * @param <F>
+     *               the field-type of the buildable.
+     * @param mapper
+     *               to map instances of the field type to a string (if {@code null}
+     *               then {@link Object#toString()} will be used, or
+     *               {@link Enum#name()} if is an enum).
+     * @return the builder.
+     */
     public static <F> IExpressionBuilder<String,F> create(FieldMapper<F,String> mapper) {
-        StringExpressionBuilder builder = new StringExpressionBuilder();
-        return new IExpressionBuilder<String,F> () {
-
-            @Override
-            public String and(List<String> expressions) {
-                return builder.and(expressions);
-            }
-
-            @Override
-            public String or(List<String> expressions) {
-                return builder.or(expressions);
-            }
-
-            @Override
-            public String not(String expression) {
-                return builder.not(expression);
-            }
-
-            @Override
-            public String term(F field, Operator operator, Object value) {
-                return builder.term(mapper.map(field), operator, value);
-            }
-            
-        };
+        if (mapper == null) {
+            mapper = (v -> {
+                if (v == null)
+                    return null;
+                if (v instanceof Enum)
+                    return ((Enum<?>) v).name();
+                return v.toString();
+            });
+        }
+        return new MappedExpresionBuilder<>(new StringExpressionBuilder(), mapper);
     }
 
     /**

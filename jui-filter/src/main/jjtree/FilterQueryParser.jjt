@@ -14,8 +14,10 @@ PARSER_BEGIN(FilterQueryParser)
 
 package com.effacy.jui.filter.parser;
 
+import com.effacy.jui.filter.builder.FieldMapper;
 import com.effacy.jui.filter.builder.IExpressionBuildable;
 import com.effacy.jui.filter.builder.IExpressionBuilder;
+import com.effacy.jui.filter.builder.MappedExpresionBuilder;
 import com.effacy.jui.filter.parser.BaseNode.ValueType;
 
 public class FilterQueryParser {
@@ -35,6 +37,9 @@ public class FilterQueryParser {
         }
         public <T> T build(IExpressionBuilder<T,String> builder) {
             return root.build(builder);
+        }
+        public <T,F> T build(IExpressionBuilder<T,F> builder, FieldMapper<String,F> mapper) {
+            return build(new MappedExpresionBuilder<T,String,F>(builder, mapper));
         }
         public void print() {
             root.print(0);

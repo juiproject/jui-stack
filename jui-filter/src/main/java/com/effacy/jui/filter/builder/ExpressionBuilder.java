@@ -138,45 +138,23 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
     }
 
     public <G> IExpressionBuilder<Expression<F>,G> mapped(FieldMapper<G,F> mapper) {
-        return new IExpressionBuilder<Expression<F>,G> () {
-
-            @Override
-            public Expression<F> and(List<Expression<F>> expressions) {
-                return ExpressionBuilder.this.and(expressions);
-            }
-
-            @Override
-            public Expression<F> or(List<Expression<F>> expressions) {
-                return ExpressionBuilder.this.or(expressions);
-            }
-
-            @Override
-            public Expression<F> not(Expression<F> expression) {
-                return ExpressionBuilder.this.not(expression);
-            }
-
-            @Override
-            public Expression<F> term(G field, Operator operator, Object value) {
-                return ExpressionBuilder.this.term(mapper.map(field), operator, value);
-            }
-        };
+        return new MappedExpresionBuilder<Expression<F>, G, F> (this, mapper);
     }
 
     /************************************************************************
      * Internals
      ************************************************************************/
 
-    public class ANDExpression extends Expression<F> {
+    abstract class NaryExpression extends Expression<F> {
 
         private List<Expression<F>> expressions;
 
-        ANDExpression(List<Expression<F>> expressions) {
+        NaryExpression(List<Expression<F>> expressions) {
             super(ExpressionBuilder.this);
             this.expressions = expressions;
         }
 
-        @Override
-        public <T> T build(IExpressionBuilder<T,F> builder) {
+        protected <T> List<T> resolve(IExpressionBuilder<T,F> builder) {
             List<T> resolved = new ArrayList<>();
             if (expressions != null) {
                 for (Expression<F> se : expressions) {
@@ -187,7 +165,7 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
                         resolved.add(r);
                 }
             }
-            return builder.and(resolved);
+            return resolved;
         }
 
         @Override
@@ -198,41 +176,66 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
                     exp.traverse(depth + 1, visitor);
                 });
             }
+        }
+
+        protected boolean _equals(ExpressionBuilder<?>.NaryExpression exp) {
+            if ((expressions == null) || expressions.isEmpty())
+                return (exp.expressions == null) || exp.expressions.isEmpty();
+            if ((exp.expressions == null) || exp.expressions.isEmpty())
+                return false;
+            if (exp.expressions.size() != exp.expressions.size())
+                return false;
+            for (int i = 0; i < expressions.size(); i++) {
+                if (!expressions.get(i).equals(exp.expressions.get(i)))
+                    return false;
+            }
+            return true;
         }
     }
 
-    public class ORExpression extends Expression<F> {
+    public class ANDExpression extends NaryExpression {
 
-        private List<Expression<F>> expressions;
-
-        ORExpression(List<Expression<F>> expressions) {
-            super(ExpressionBuilder.this);
-            this.expressions = expressions;
+        ANDExpression(List<Expression<F>> expressions) {
+            super(expressions);
         }
 
         @Override
         public <T> T build(IExpressionBuilder<T,F> builder) {
-            List<T> resolved = new ArrayList<>();
-            if (expressions != null) {
-                for (Expression<F> se : expressions) {
-                    if (se == null)
-                        continue;
-                    T r = se.build(builder);
-                    if (r != null)
-                        resolved.add(r);
-                }
-            }
-            return builder.or(resolved);
+            return builder.and(resolve(builder));
         }
 
         @Override
-        protected void traverse(int depth, IExpressionVisitor<F> visitor) {
-            super.traverse(depth, visitor);
-            if (expressions != null) {
-                expressions.forEach(exp -> {
-                    exp.traverse(depth + 1, visitor);
-                });
-            }
+        public boolean equals(Object exp) {
+            if (exp == null)
+                return false;
+            if (this == exp)
+                return true;
+            if (!(exp instanceof ExpressionBuilder<?>.ANDExpression))
+                return false;
+            return super._equals((ExpressionBuilder<?>.NaryExpression) exp);
+        }
+    }
+
+    public class ORExpression extends NaryExpression {
+
+        ORExpression(List<Expression<F>> expressions) {
+            super(expressions);
+        }
+
+        @Override
+        public <T> T build(IExpressionBuilder<T,F> builder) {
+            return builder.or(resolve(builder));
+        }
+
+        @Override
+        public boolean equals(Object exp) {
+            if (exp == null)
+                return false;
+            if (this == exp)
+                return true;
+            if (!(exp instanceof ExpressionBuilder<?>.ORExpression))
+                return false;
+            return super._equals((ExpressionBuilder<?>.NaryExpression) exp);
         }
     }
 
@@ -260,6 +263,22 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
             super.traverse(depth, visitor);
             if (expression != null)
                 expression.traverse(depth + 1, visitor);
+        }
+
+        @Override
+        public boolean equals(Object exp) {
+            if (exp == null)
+                return false;
+            if (this == exp)
+                return true;
+            if (!(exp instanceof ExpressionBuilder<?>.NOTExpression))
+                return false;
+            ExpressionBuilder<?>.NOTExpression castExp = (ExpressionBuilder<?>.NOTExpression) exp;
+            if (expression == null)
+                return (castExp.expression == null);
+            if (castExp.expression == null)
+                return false;
+            return expression.equals(castExp);
         }
     }
 
@@ -293,6 +312,33 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
 
         public Object value() {
             return value;
+        }
+
+        @Override
+        public boolean equals(Object exp) {
+            if (exp == null)
+                return false;
+            if (this == exp)
+                return true;
+            if (!(exp instanceof ExpressionBuilder<?>.ComparisonExpression))
+                return false;
+            ExpressionBuilder<?>.ComparisonExpression castExp = (ExpressionBuilder<?>.ComparisonExpression) exp;
+            if ((field == null) && (castExp.field != null))
+                return false;
+            if ((field != null) && (castExp.field == null))
+                return false;
+            if ((field != castExp.field) && !field.equals(castExp.field))
+                return false;
+            if (operator != castExp.operator)
+                return false;
+            if ((value == null) && (castExp.value != null))
+                return false;
+            if ((value != null) && (castExp.value == null))
+                return false;
+            // TODO: Need to deal with arrays.
+            if ((value != castExp.field) && !value.equals(castExp.value))
+                return false;
+            return true;
         }
     }
 

@@ -183,7 +183,40 @@ NodeContext node = Div.$ ().styles ("my_class").$ (
 ).build ();
 ```
 
-Although this presentation can be quite comforting it may suffer from IDE imposed code formatting and it is not as amenable to loop and conditional logic as the previous examples. It has its place, however we refrain from using it in this documentation.
+You can also perform some relatively sophisticated presentation:
+
+```java
+// Record to hold data
+public record Person(String name, String title) {}
+
+...
+
+// List of people to display
+List<Person> people = new ArrayList<>();
+people.add(new Person("Jill Jones", "Director"));
+people.add(new Person("Jack Jones", "Director"));
+people.add(new Person("Jane Jones", "Head of Sales"));
+people.add(new Person("James Jones", "Head of Operations"));
+
+...
+
+// Render out the people
+Div.$(grp).css("display: flex; flex-direction: column; gap: 1em;").$(
+    people.stream().<ElementBuilder> map(person -> 
+        Div.$().css("display: flex; align-items: center; border: 1px solid #ccc; border-radius: 8px; padding: 1em;").$(
+            Span.$().css("width: 1em;"),
+            Div.$().css("display: flex; flex-direction: column;").$(
+                Span.$().css("font-weight: bold; font-size: 1.1em;")
+                    .text(person.name()),
+                Span.$().css("color: #666; font-size: 0.95em;")
+                    .text(person.title())
+            )
+        )
+    ).toArray(ElementBuilder[]::new)
+);
+```
+
+However it is not as amenable to loop and conditional logic as the previous examples, but can certainly be intermingled. It has its place, however we generally refrain from using it in this documentation to maintain consistency in our examples.
 
 ### Wrapping the root node
 

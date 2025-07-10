@@ -481,6 +481,8 @@ public class SelectionGroupControl<V> extends Control<List<V>, SelectionGroupCon
     @Override
     protected INodeProvider buildNode(Element el, Config<V> data) {
         return Wrap.$ (el).$ (root -> {
+            if (config().radio)
+                root.style(styles().radio());
             Div.$ (root).style (styles ().inner ()).$ (inner -> {
                 Carrier<String> currentOption = Carrier.of();
                 data.options.forEach (option -> {
@@ -565,6 +567,8 @@ public class SelectionGroupControl<V> extends Control<List<V>, SelectionGroupCon
         public String selected();
 
         public String indented();
+
+        public String radio();
     }
 
     /**

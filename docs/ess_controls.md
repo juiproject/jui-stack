@@ -901,6 +901,10 @@ Of course this needs to be done for all forms. For a universal change the recomm
 
 in the directory `public/com/effacy/jui/ui/client/control/builder` off the module base of the main application JUI project (see [Styles & themes](ess_styles.md)).
 
+#### Debugging
+
+For complex forms which controls may be hidden or obstructed so their error state is not visible you can use the `logControlState()` to log to the console the label, type and validity state of each control.
+
 #### References and control values
 
 Controls are not very useful unless we can assign them values and retrieve value from them. We investigate these properties as well as other actions we can perform on controls.

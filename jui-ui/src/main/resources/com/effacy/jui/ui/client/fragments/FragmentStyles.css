@@ -314,7 +314,7 @@
 
 .juiButton {
     justify-content: center;
-    align-items: center;
+    align-items: end;
     padding: var(--juiButton-padding-tb) var(--juiButton-padding-lr);
     letter-spacing: 0.02em;
     font-weight: var(--juiButton-text-weight);

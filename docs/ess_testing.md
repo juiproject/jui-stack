@@ -302,7 +302,7 @@ Note that Chrome is not the only option available and you are urged to explore [
 
 #### HtmlUnit
 
-An alternative to Selenium is [HtmlUnit](https://htmlunit.sourceforge.io/). This is a popular framework for testing UI's in a purely headless manner (in that no actual browser is needed). In the most part JUI plays well with HtmlUnit however that may not always be the case as HtmlUnit does have a number of limitation in terms of DOM API support and the limitations with [Mozilla Rhino](https://github.com/mozilla/rhino). It is worth noting that Rhino appears to be waning in support so there is an open question as to the future of HtmlUnit. Having said this, the testing framework presented here is agnostic as to the use of HtmlUnit or Selenium (in fact Selenium has itself an HtmlUnit backed web driver) and it is pretty easy to switch to the pure Selenium configuration as described above.
+An alternative to Selenium is [HtmlUnit](https://htmlunit.sourceforge.io/). This is a popular framework for testing UI's in a purely headless manner (in that no actual browser is needed). In the most part JUI plays well with HtmlUnit however that may not always be the case as HtmlUnit does have a number of limitations in terms of DOM API support and the limitations with [Mozilla Rhino](https://github.com/mozilla/rhino) (see `HtmlUnitSupport` below). It is worth noting that Rhino appears to be waning in support so there is an open question as to the future of HtmlUnit. Having said that, the testing framework presented here is agnostic as to the use of HtmlUnit or Selenium (in fact Selenium has itself an HtmlUnit backed web driver) and it is pretty easy to switch to the pure Selenium configuration as described above.
 
 With HtmlUnit we can avoid standing up a server and make use of Spring's [MockMvc](https://docs.spring.io/spring-framework/reference/testing/spring-mvc-test-framework.html). The requires adding to the unit test the `@AutoConfigureMockMvc` annotation:
 
@@ -323,6 +323,7 @@ public class ProfileITTest extends AbstractServerMvcIT {
         WebClient client = MockMvcWebClientBuilder.mockMvcSetup (mockMvc)
           .withDelegate (new WebClient (BrowserVersion.CHROME))
           .build ();
+        client = HtmlUnitSupport.configure(client);
 
         // Note that we now access via this URL.
         HtmlPage page = client.getPage("http://localhost/login");
@@ -336,6 +337,14 @@ public class ProfileITTest extends AbstractServerMvcIT {
     }
 }
 ```
+
+Note the line:
+
+```java
+client = HtmlUnitSupport.configure(client);
+```
+
+This adds a filter that replaces some JS code in JUI that is known to be incompatible with Rhino.
 
 ## Test framework
 

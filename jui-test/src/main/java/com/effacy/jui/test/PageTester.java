@@ -21,13 +21,13 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.htmlunit.WebClient;
+import org.htmlunit.html.HtmlPage;
 import org.junit.jupiter.api.Assertions;
 import org.openqa.selenium.WebDriver;
 
 import com.effacy.jui.test.IPage.INode;
 import com.effacy.jui.test.modal.ModalDialogTester;
-import com.gargoylesoftware.htmlunit.WebClient;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 public class PageTester implements ITester<PageTester> {
 

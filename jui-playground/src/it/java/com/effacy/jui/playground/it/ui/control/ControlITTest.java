@@ -28,12 +28,13 @@ import com.effacy.jui.test.suite.navigation.TabNavigatorTester;
 
 @SpringBootTest(classes = TestApplicationIT.class)
 public class ControlITTest extends AbstractIT {
+
     /**
      * Tests a successful login and display of the profile.
      */
     @Test
     public void testNavigation() throws Exception {
-        PageTester.$ (webClient, "http://localhost/playground?test=true", 4000) //
+        PageTester.$ (webClient, "http://localhost/playground?test=true", 4000)
 
             // Grab the top-level tabset and activate "controls"
             .with (TabNavigatorTester.$ ("applicationui").subclass (), tabs -> {
@@ -47,7 +48,7 @@ public class ControlITTest extends AbstractIT {
                         btn.validateLabel ("Add");
                         btn.click ();
                     });
-            }) //
+            })
 
             // Grab the dialog that has been opened above.
             .modal ("controlpanel001_dialog", dialog -> {

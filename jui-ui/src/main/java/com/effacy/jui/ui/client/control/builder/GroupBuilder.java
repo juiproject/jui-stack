@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*******************************************************************************Add commentMore actions
  * Copyright 2024 Jeremy Buckley
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -49,6 +49,7 @@ import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.core.client.dom.jquery.JQuery;
 import com.effacy.jui.core.client.util.UID;
+import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.platform.util.client.TimerSupport;
 import com.effacy.jui.ui.client.control.builder.IGroupBuilder.IRowBuilder.IControlCell;
@@ -110,6 +111,8 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
         public String error();
 
         public String guidance();
+
+        public String guidance_top();
 
         public String hidden();
 
@@ -357,6 +360,22 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
     public IGroupBuilder<SRC,DST> gap(Length offset) {
         this.gap = offset;
         return this;
+    }
+
+    /**
+     * Convenience to log (debug) the state of controls.
+     */
+    public void logControlState() {
+        forEachCell(cell -> {
+            if (cell.control() != null) {
+                if (cell.control().invalidator().isInvalid()) {
+                    Logger.warn("[invalid] " + cell.control().getClass().getSimpleName() + " [uid=" + cell.control().getName() + "] [label=" + cell.toString() + "]");
+                } else {
+                    Logger.info(cell.control().getClass().getSimpleName() + " [uid=" + cell.control().getName() + "] [label=" + cell.toString() + "]");
+                }
+            }
+            return true;
+        });
     }
 
     void forEachGroup(Function<GroupBuilder<SRC,DST>, Boolean> visitor) {
@@ -781,6 +800,12 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                                     });
                                 }
                             });
+                            // Disply any assigned guidance (top).
+                            if (!StringSupport.empty(cell.guidance) && cell.guidanceTop) {
+                                Div.$ (c).style (config.styles ().guidance_top ()).css(cell.guidanceCss).$ (
+                                    Markup.$(cell.guidance)
+                                );
+                            }
                             // Container for the contents (i.e. component / control).
                             Div.$ (c).$ (inner -> {
                                 if (cell.offsetv != 0)
@@ -801,12 +826,16 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                                 }
                             });
                             // Placeholder for error messages.
-                            Ul.$ (c).style (config.styles ().error (), null).$ (error -> {});
-                            // Disply any assigned guidance.
-                            if (!StringSupport.empty(cell.guidance))
+                            Ul.$ (c).style (config.styles ().error (), null).$ (error -> {
+                                if (!StringSupport.empty(cell.errorCss))
+                                    error.css(cell.errorCss);
+                            });
+                            // Disply any assigned guidance (bottom).
+                            if (!StringSupport.empty(cell.guidance) && !cell.guidanceTop) {
                                 Div.$ (c).style (config.styles ().guidance ()).css(cell.guidanceCss).$ (
                                     Markup.$(cell.guidance)
                                 );
+                            }
                         });
                     });
                     // Hide the label elements if there are no labels.
@@ -921,6 +950,10 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
             protected String guidance;
 
             protected String guidanceCss;
+
+            protected boolean guidanceTop;
+
+            protected String errorCss;
 
             protected Consumer<ElementBuilder> builder;
 
@@ -1069,13 +1102,30 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
 
             @Override
             public RowCell<V,CTL> guidance(String guidance) {
-                return guidance(guidance, null);
+                return guidance(guidance, false, null);
+            }
+
+            @Override
+            public RowCell<V,CTL> guidance(String guidance, boolean top) {
+                return guidance(guidance, top, null);
             }
 
             @Override
             public RowCell<V,CTL> guidance(String guidance, String css) {
+                return guidance(guidance, false, css);
+            }
+
+            @Override
+            public RowCell<V,CTL> guidance(String guidance, boolean top, String css) {
                 this.guidance = guidance;
                 this.guidanceCss = css;
+                this.guidanceTop = top;
+                return this;
+            }
+
+            @Override
+            public IControlCell<V,CTL,SRC,DST> errorCss(String css) {
+                this.errorCss = css;
                 return this;
             }
 
@@ -1129,6 +1179,10 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                 }, this.control.value (), destination);
             }
             
+            @Override
+            public String toString() {
+                return label;
+            }
         }
         
     }

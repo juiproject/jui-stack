@@ -13,6 +13,9 @@ This is a reference to some commonly used code that could be useful when develop
      6. [Controls](#controls)
 2. [Modal dialogs](#modal-dialogs)
 3. [Form patterns](#form-patterns)
+     1. [Create form](#create-form)
+     2. [Update form](#update-form)
+     3. [Update extends create](#update-extends-create)
 4. [State](#state)
 5. [JUI components](#jui-components)
 6. [Remoting](#remoting)
@@ -20,7 +23,7 @@ This is a reference to some commonly used code that could be useful when develop
 
 ## Components
 
-### Constructio
+### Construction
 
 Starter templates are simple code blocks that fully outline a component and that one can build on.
 
@@ -1377,21 +1380,25 @@ The use of the static `of(...)` methods allows for various configuration arrange
 
 ## Form patterns
 
+The following form patterns make use of the `ControlForm<SRC,DST>` base class where `SRC` is the type use to popluate the form and `DST` is the type used to apply form changes to (typically a *command*, see [Remoting](#remoting)).
+
 ### Create form
 
-The following is a template create form that populates a carrier type `XYZCommand` used to invoke remoting. It implements `IProcessable` to return a `Long` (or whatever the type is for the ID of the newly created entity).
+#### Form component
 
-1. The `Void` type stipulates that the form takes no data to populate form fields from (this is used for an update form not a create).
-2. The `Long` type is the ID type of the created entity (if not a `Long` then replace accordingly).
-3. The `XYZCommand` is some type that the form can populate and that captures what is being changed (i.e. see [Remoting](#remoting)).
+For the following template the create form exends `ControlForm<SRC,DST>` with:
+
+1. `SRC` being set to `Void` to reflect that no pre-population is being performed.
+2. `DST` being set to `XYZCommand` which represents a command object to be populated by the form and used to remotely create the associated entity.
+3. Implements `IProcessable<Long>` which dictates the processing mechanism whose response type is a `Long` that confirms to the ID of the created entity (change the type if the ID type is different).
 
 ```java
-public class CreateXYZForm extends ControlForm<Void,XYZCommand> implements IProcessable<Long> {
+public class XYZCreateForm extends ControlForm<Void,XYZCommand> implements IProcessable<Long> {
 
     /**
      * Construct an instane of the form panel.
      */
-    protected CreateXYZForm() {
+    protected XYZCreateForm() {
         super (ControlFormCreator.createForDialog ());
 
         group (grp -> {
@@ -1409,11 +1416,13 @@ public class CreateXYZForm extends ControlForm<Void,XYZCommand> implements IProc
         }
 
         // XYZCommand is some object that serves to capture data for remoting.
+        String title = value("title");
         XYZCommand cmd = apply (
-            new XYZCommand (...)
+            new XYZCommand (new XYZCommand.Construct(title, ...))
         );
 
-        // Choose the desired remote call here. Assumes that 
+        // Choose the desired remote call here. This assumes you are using the
+        // JUI remoting framework with handler MyServiceHandler. 
         new MyServiceHandler<ResolutionsResult> ()
             .onSuccessful (v -> {
                 // The first (and only) element of the resolutions result is
@@ -1422,28 +1431,121 @@ public class CreateXYZForm extends ControlForm<Void,XYZCommand> implements IProc
             })
             .onFailure ((v, s) -> {
                 // Failure delivers an empty outcome.
-                CreateXYZForm.this.invalidate (v);
+                XYZCreateForm.this.invalidate (v);
                 outcome.accept (Optional.empty ());
             })
-            .remoteExecute (new ResolutionsResultLookup (), cmd);
-        return;
+            .remoteExecute (new ResolutionsResultLookup(), cmd);
     }
 
 }
 ```
 
-### Create form as dialog
-
-To turn the [Create form](#create-form) into a dialog:
+If you wanted to return fully populate result of the resulting entity then replace `Long` in `IProcessable` with the DTO type and modify the `process(...)` method accordingly:
 
 ```java
-public class CreateXYZForm extends ControlForm<Void,XYZCommand> implements IProcessable<Long> {
+public class XYZCreateForm extends ControlForm<Void,XYZCommand> implements IProcessable<XYZLookupResult> {
+
+    /**
+     * Construct an instane of the form panel.
+     */
+    protected XYZCreateForm() {
+        super (ControlFormCreator.createForDialog ());
+
+        group (grp -> {
+            grp.control ("title", "Position title", Controls.text (cfg -> {
+                cfg.acceptor ("title").validator (Validators.notEmpty ("please enter a title"));
+            }), cell -> cell.grow (1).required ());
+        });
+    }
+
+    @Override
+    public void process(Consumer<Optional<XYZLookupResult>> outcome) {
+        if (!validate ()) {
+            outcome.accept (Optional.empty ());
+            return;
+        }
+
+        // XYZCommand is some object that serves to capture data for remoting.
+        String title = value("title");
+        XYZCommand cmd = apply (
+            new XYZCommand (new XYZCommand.Construct(title, ...))
+        );
+
+        // Choose the desired remote call here.
+        new MyServiceHandler<XYZLookupResult> ()
+            .onSuccessful (v -> {
+                // The first (and only) element of the resolutions result is
+                Notifier.create ().text ("Successfully created").show (2000);
+                outcome.accept (v);
+            })
+            .onFailure ((v, s) -> {
+                // Failure delivers an empty outcome.
+                XYZCreateForm.this.invalidate (v);
+                outcome.accept (Optional.empty ());
+            })
+            .remoteExecute (XYZLookup.byUniqueReference (cmd.reference()), cmd);
+    }
+
+}
+```
+
+Note that the form does not include any action buttons and the expectation is that to process the form one executes the `process(...)` method and responds to the callback outcome. If this is empty then the form should be considered a failure while a value means success (so can be navigated away from):
+
+```java
+myForm.process(outcome -> {
+    if (outcome.isEmpty()) {
+        // Do nothing as the form is in error.
+        ...
+    } else {
+        // Navigate away or close the form and do something with the result.
+        var result = outcome.get();
+        ...
+    }
+});
+```
+
+Finally you may not want to return either the ID of the created entity or a representation of it. The simplest approach then is to employ an `Object`:
+
+```java
+public class XYZCreateForm extends ControlForm<Void,XYZCommand> implements IProcessable<Object> {
+
+    ...
+
+    @Override
+    public void process(Consumer<Optional<Object>> outcome) {
+        ...
+
+        new MyServiceHandler<Void> ()
+            .onSuccessful (v -> {
+                // The first (and only) element of the resolutions result is
+                Notifier.create ().text ("Successfully created").show (2000);
+                outcome.accept (new Object());
+            })
+            .onFailure ((v, s) -> {
+                // Failure delivers an empty outcome.
+                XYZCreateForm.this.invalidate (v);
+                outcome.accept (Optional.empty ());
+            })
+            .remoteExecute (cmd);
+    }
+
+}
+```
+
+Here the general semantics of processing remain the same (an empty optional means failed processing) so the object is just used to distinguish from empty.
+
+#### Opening in a dialog
+
+The form above can be modified so that it operates as a dialog. Note that the dialog makes use of the fact the form implements `IProcessable` meaning that the callback (of type `Consumer<Optional<Long>>`) will be passed through to the `process(...)` method.
+
+```java
+public class XYZCreateForm extends ControlForm<Void,XYZCommand> implements IProcessable<Long> {
 
     private static IDialogOpener<Void, Long> DIALOG;
 
     public static void open(Consumer<Optional<Long>> cb) {
         if (DIALOG == null)
-            DIALOG = ModalDialogCreator.<Void, Long, CreateXYZForm>dialog (new CreateXYZForm (), cfg -> {
+            DIALOG = ModalDialogCreator.<Void, Long, XYZCreateForm>dialog (new XYZCreateForm (), cfg -> {
                 cfg.style (ModalStyle.UNIFORM)
                     .title ("Create an XYZ")
                     .type (Type.CENTER)
@@ -1458,35 +1560,386 @@ public class CreateXYZForm extends ControlForm<Void,XYZCommand> implements IProc
 }
 ```
 
-Here the dialog makes use of the fact the form implements `IProcessable` meaning that the callback (of type `Consumer<Optional<Long>>`) will be passed through to the `process(...)` method.
-
-### Update form
-
-
-### Form-in-place
+To action:
 
 ```java
-public static class WrapperPanel extends Panel implements INavigationAware {
+XYZCreateForm.open(outcome -> {
+    ...
+});
+```
 
-    private IComponent cpt;
+This can be called from anyware as supports layering of dialogs.
 
-    public WrapperPanel(IComponent cpt) {
-        super(new Panel.Config()
-            .scrollable()
-            .css("background-color: #fff"));
-        this.cpt = add (cpt);
+#### Bare-bones template
+
+A bare-bones version of the above:
+
+```java
+public class XYZCreateForm extends ControlForm<Void,XYZCommand> implements IProcessable<XYZLookupResult> {
+
+    /************************************************************************
+     * Dialog support.
+     ************************************************************************/
+
+    private static IDialogOpener<Void, Long> DIALOG;
+
+    public static void open(Consumer<Optional<Long>> cb) {
+        if (DIALOG == null)
+            DIALOG = ModalDialogCreator.<Void, Long, XYZCreateForm>dialog (new XYZCreateForm (), cfg -> {
+                cfg.style (ModalStyle.UNIFORM)
+                    .title ("Create an XYZ")
+                    .type (Type.CENTER)
+                    .width (Length.px (500));
+            }, cancel -> cancel.label ("cancel"), apply -> apply.label ("Create XYZ"));
+        DIALOG.open (null, cb);
     }
 
-    public void onNavigateTo(NavigationContext context) {
-        if (cpt instanceof INavigationAware)
-            ((INavigationAware) cpt).onNavigateTo(context);
+    /************************************************************************
+     * Form implementation.
+     ************************************************************************/
+
+    protected XYZCreateForm() {
+        super (ControlFormCreator.createForDialog ());
+
+        // Build form
     }
+
+    @Override
+    public void process(Consumer<Optional<XYZLookupResult>> outcome) {
+        if (!validate ()) {
+            outcome.accept (Optional.empty ());
+            return;
+        }
+
+        // Process
+    }
+
 }
 ```
 
+### Update form
+
+#### Form component
+
+For the following template the create form exends `ControlForm<SRC,DST>` with:
+
+1. `SRC` being set to `XZYLookupResult` that contains all the information being updated.
+2. `DST` being set to `XYZCommand` which represents a command object to be populated by the form and used to remotely update the associated entity.
+3. Implements `IProcessable<XZYLookupResult>` which dictates the processing mechanism whose response type is a re-populated lookup result containing the changes.
+
 ```java
-add (new WrapperPanel (new MyForm ()));
+public class XYZUpdateForm extends ControlForm<XZYLookupResult,XYZCommand> implements IProcessable<XZYLookupResult> {
+
+    /**
+     * Construct an instane of the form panel.
+     */
+    protected XYZUpdateForm() {
+        super (ControlFormCreator.createForDialog ());
+
+        group (grp -> {
+            grp.control ("title", "Position title", Controls.text (cfg -> {
+                cfg.acceptor ("title").validator (Validators.notEmpty ("please enter a title"));
+            }), cell -> {
+                cell.grow (1).required ();
+                // This extracts a value from XZYLookupResult and returns that value
+                // which is then assigned to the control.
+                cell.from(v -> v.getTitle());
+                // This takes the value v of the control and applies to to cmd the
+                // instance of XYZCommand. This only occurs if the control is dirty
+                // (it was updated by the user).
+                cell.to((ctx,v,cmd) -> cmd.title(v));
+            });
+        });
+    }
+
+    @Override
+    public void process(Consumer<Optional<XZYLookupResult>> outcome) {
+        if (!validate ()) {
+            outcome.accept (Optional.empty ());
+            return;
+        }
+
+        // XYZCommand is some object that serves to capture data for remoting.
+        // Passing to apply allows the cells in the form to populate the object
+        // (i.e. see cell.to above).
+        XYZCommand cmd = apply (new XYZCommand ());
+
+        // Choose the desired remote call here. This assumes you are using the
+        // JUI remoting framework with handler MyServiceHandler. 
+        new MyServiceHandler<XZYLookupResult> ()
+            .onSuccessful (v -> {
+                // The first (and only) element of the resolutions result is
+                Notifier.create ().text ("Successfully updated").show (2000);
+                outcome.accept (v);
+            })
+            .onFailure ((v, s) -> {
+                // Failure delivers an empty outcome.
+                XYZUpdateForm.this.invalidate (v);
+                outcome.accept (Optional.empty ());
+            })
+            // The call to source() returns the lookup instance used to
+            // populate the form.
+            .remoteExecute (XZYLookup.byId(source().getId()), cmd);
+    }
+
+}
 ```
+
+To populate the form you must call `edit(...)`:
+
+```java
+XZYLookupResult result = ...;
+xyzUpdateForm.edit(result);
+```
+
+Procesing is as per the create form (calling `process(...)`).
+
+#### Opening in a dialog
+
+Similarly to the create form the update form can be turned unto a dialog:
+
+```java
+public class XZYUpdateForm extends ControlForm<XZYLookupResult,XYZCommand> implements IProcessable<XZYLookupResult> {
+
+    private static IDialogOpener<Void, XZYUpdateForm> DIALOG;
+
+    public static void open(XZYLookupResult resultToUpdate, Consumer<Optional<XZYLookupResult>> cb) {
+        if (DIALOG == null)
+            DIALOG = ModalDialogCreator.<XZYLookupResult, XZYLookupResult, XZYUpdateForm>dialog (new XZYUpdateForm (), cfg -> {
+                cfg.style (ModalStyle.UNIFORM)
+                    .title ("Update an XYZ")
+                    .type (Type.CENTER)
+                    .width (Length.px (500));
+            }, cancel -> cancel.label ("cancel"), apply -> apply.label ("Update"));
+        DIALOG.open (resultToUpdate, cb);
+    }
+
+    // Below is as per the previous example above.
+    ...
+
+}
+```
+
+Note that passed is an instance of `XZYLookupResult` which contains the data to pre-populate the form:
+
+```java
+XZYLookupResult result = ...;
+XZYUpdateForm.open(result, outcome -> {
+    ...
+});
+```
+
+This can be called from anyware as supports layering of dialogs.
+
+#### Bare-bones template
+
+A bare-bones version of the above:
+
+```java
+public class XYZUpdateForm extends ControlForm<XYZLookupResult,XYZCommand> implements IProcessable<XYZLookupResult> {
+
+    /************************************************************************
+     * Dialog support.
+     ************************************************************************/
+
+    private static IDialogOpener<XYZLookupResult, XYZLookupResult> DIALOG;
+
+    public static void open(Consumer<Optional<XYZLookupResult>> cb) {
+        if (DIALOG == null)
+            DIALOG = ModalDialogCreator.<XYZLookupResult, XYZLookupResult, XYZUpdateForm>dialog (new XYZUpdateForm (), cfg -> {
+                cfg.style (ModalStyle.UNIFORM)
+                    .title ("Create an XYZ")
+                    .type (Type.CENTER)
+                    .width (Length.px (500));
+            }, cancel -> cancel.label ("cancel"), apply -> apply.label ("Create XYZ"));
+        DIALOG.open (null, cb);
+    }
+
+    /************************************************************************
+     * Form implementation.
+     ************************************************************************/
+
+    protected XYZUpdateForm() {
+        super (ControlFormCreator.createForDialog ());
+
+        // Build form
+    }
+
+    @Override
+    public void edit(QuestionLookupResult result) {
+        // Any form adjustments
+
+        super.edit(result);
+    }
+
+    @Override
+    public void process(Consumer<Optional<XYZLookupResult>> outcome) {
+        if (!validate ()) {
+            outcome.accept (Optional.empty ());
+            return;
+        }
+
+        // Process
+    }
+
+}
+```
+
+### Update extends create
+
+The previous patterns kept update and create separate. In particular the building of the form controls is replicated in both (generally one would expect there to be differences, but often these are not significant). A more effient approach is to build out the form in one class then have the other class extend the first.  For forms the best approach is to have the update extend the create:
+
+```java
+public class XYZCreateForm extends ControlForm<XYZLookupResult,XYZCommand> implements IProcessable<XYZLookupResult> {
+
+    /************************************************************************
+     * Dialog support.
+     ************************************************************************/
+
+    /**
+     * See {@link #open()}.
+     */
+    private static IDialogOpener<Void, XYZLookupResult> DIALOG;
+
+    /**
+     * Opens an instance of the panel in a dialog.
+     * 
+     * @param cb
+     *           the callback.
+     */
+    public static void open(Consumer<Optional<XYZLookupResult>> cb) {
+        if (DIALOG == null)
+            DIALOG = ModalDialogCreator.<Void, XYZLookupResult, XYZCreateForm>dialog (new XYZCreateForm (), cfg -> {
+                cfg.style (ModalStyle.UNIFORM)
+                    .title ("Create XYZ")
+                    .type (Type.SLIDER)
+                    .width (Length.px (625));
+            }, cancel -> cancel.label ("cancel"), apply -> apply.label ("Create XYZ"));
+        DIALOG.open (null, cb);
+    }
+
+    /************************************************************************
+     * Construction.
+     ************************************************************************/
+
+    /**
+     * Construct an instane of the create form.
+     */
+    public XYZCreateForm() {
+        this(true);
+
+        handleAfterRender(() -> {
+            ...
+        });
+        handleReset(ctx -> {
+            ...
+        });
+    }
+
+    /**
+     * Common constructor.
+     */
+    protected XYZCreateForm(boolean create) {
+        super (ControlFormCreator.createForDialog ());
+
+        // Build out the form. Used "create" to control what elements are created and where.
+    }
+
+    /************************************************************************
+     * Lifecycle.
+     ************************************************************************/
+
+    @Override
+    public void process(Consumer<Optional<XYZLookupResult>> outcome) {
+        if (!validate ()) {
+            outcome.accept (Optional.empty ());
+            return;
+        }
+        ...
+    }
+
+}
+```
+
+Note that the `SRC` parameter is assign to that needed for update, which is fine since the create form does not partake in editing so can be ignored. The benefit is only conveyed to the update form as an extension:
+
+```java
+public class XYZUpdateForm extends XZYCreateForm {
+
+    /************************************************************************
+     * Dialog support.
+     ************************************************************************/
+
+    /**
+     * See {@link #open()}.
+     */
+    private static IDialogOpener<XYZLookupResult, XYZLookupResult> DIALOG;
+
+    /**
+     * Opens an instance of the panel in a dialog.
+     * 
+     * @param cb
+     *           the callback.
+     */
+    public static void open(XYZLookupResult resultToUpdate, Consumer<Optional<XYZLookupResult>> cb) {
+        if (DIALOG == null)
+            DIALOG = ModalDialogCreator.<XYZLookupResult, XYZLookupResult, XYZUpdateForm>dialog (new XYZUpdateForm (), cfg -> {
+                cfg.style (ModalStyle.UNIFORM)
+                    .title ("Update XZY")
+                    .type (Type.SLIDER)
+                    .width (Length.px (650));
+            }, cancel -> cancel.label ("cancel"), apply -> apply.label ("Update"));
+        DIALOG.open (resultToUpdate, cb);
+    }
+
+    /************************************************************************
+     * Construction.
+     ************************************************************************/
+
+    /**
+     * Construct an instane of the form panel.
+     */
+    protected XYZUpdateForm() {
+        super(false);
+
+        handleAfterRender(() -> {
+            ...
+        });
+        handleReset(ctx -> {
+            ...
+        });
+    }
+
+    /************************************************************************
+     * Lifecycle.
+     ************************************************************************/
+
+    @Override
+    public void edit(XYZLookupResult result) {
+        // Adjust the form as needed.
+
+        super.edit(result);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @see com.effacy.jui.core.client.IProcessable#process(java.util.function.Consumer)
+     */
+    @Override
+    public void process(Consumer<Optional<XYZLookupResult>> outcome) {
+        if (!validate ()) {
+            outcome.accept (Optional.empty ());
+            return;
+        }
+
+        ...
+    }
+
+}
+```
+
+The form construction code then resides in the create base class.
 
 ## State
 

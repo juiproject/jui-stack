@@ -22,6 +22,10 @@
 	color: var(--jui-selectiongroup-text);
 }
 
+.component:not(.radio) .inner {
+    flex-direction: column;
+}
+
 .component .inner .item input {
     cursor: pointer;
 }
@@ -62,8 +66,8 @@
 }
 
 .component.invalid .inner input {
-	border-color: var(--jui-ctl-err-focus);
-    box-shadow: 0 0 0 2px var(--jui-ctl-err-focus-offset);
+	outline-style: auto;
+    outline-color: var(--jui-ctl-err-focus);
 }
 
 .component.disabled .inner input {

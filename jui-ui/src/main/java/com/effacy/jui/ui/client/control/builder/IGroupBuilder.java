@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*******************************************************************************Add commentMore actions
  * Copyright 2024 Jeremy Buckley
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -724,11 +724,45 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
              * 
              * @param guidance
              *                 the guidance text to display.
+             * @param top
+             *                 {@code true}
+             *                 to assign the top guidance (above the control).
+             * @return this cell instance.
+             */
+            public IControlCell<V,CTL,SRC,DST> guidance(String guidance, boolean top);
+
+            /**
+             * Displays the guidance text.
+             * 
+             * @param guidance
+             *                 the guidance text to display.
              * @param css
              *                 any additional CSS to apply.
              * @return this cell instance.
              */
             public IControlCell<V,CTL,SRC,DST> guidance(String guidance, String css);
+
+            /**
+             * Displays the guidance text.
+             * 
+             * @param guidance
+             *                 the guidance text to display.
+             * @param top
+             *                 {@code true} to assign the top guidance (above the control).
+             * @param css
+             *                 any additional CSS to apply.
+             * @return this cell instance.
+             */
+            public IControlCell<V,CTL,SRC,DST> guidance(String guidance, boolean top, String css);
+
+            /**
+             * Additional CSS to apply to the error message block.
+             * 
+             * @param css
+             *            the CSS.
+             * @return this cell instance.
+             */
+            public IControlCell<V,CTL,SRC,DST> errorCss(String css);
 
             /**
              * Obtains a handler to the cell.

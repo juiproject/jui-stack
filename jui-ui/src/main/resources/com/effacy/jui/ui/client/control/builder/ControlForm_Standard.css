@@ -18,7 +18,7 @@
     --cpt-form-header-depth3-size: 1em;
     --cpt-form-header-depth4-size: 1em;
 
-    --cpt-form-footer-guidance: var(--jui-text-subtle);
+    --cpt-form-footer-guidance: var(--jui-color-neutral50);
     --cpt-form-footer-guidance-size: 0.9em;
     
     --cpt-form-text: var(--jui-text);
@@ -200,6 +200,7 @@
 .component .group > .body {
     display: flex;
     flex-direction: column;
+    flex-grow: 1;
     /* margin-bottom: 1em; */
 }
 
@@ -369,6 +370,13 @@
 
 .component .row .cell div.guidance {
     margin-top: 0.5em;
+    color: var(--cpt-form-footer-guidance);
+    font-size: var(--cpt-form-footer-guidance-size);
+}
+
+.component .row .cell div.guidance_top {
+    margin-top: -0.5em;
+    margin-bottom: 0.5em;
     color: var(--cpt-form-footer-guidance);
     font-size: var(--cpt-form-footer-guidance-size);
 }

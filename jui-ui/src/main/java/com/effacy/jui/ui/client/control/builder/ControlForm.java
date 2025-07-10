@@ -384,6 +384,16 @@ public class ControlForm<SRC,DST> extends Component<ControlForm.Config> implemen
         onDirtyStateChanged (lastDirty);
     }
 
+    /**
+     * For debugging control states.
+     * <p>
+     * Logs to the console each control and the validity state of the control.
+     * Invalid controls are logged as warnings (so appear orange).
+     */
+    public void logControlState() {
+        form.logControlState();
+    }
+
     /************************************************************************
      * Navigation behaviours.
      ************************************************************************/
@@ -965,6 +975,8 @@ public class ControlForm<SRC,DST> extends Component<ControlForm.Config> implemen
      * <p>
      * After all controls have been updated the form will be {@link #reset()}. This
      * will ensure that focus is properly applied.
+     * <p>
+     * If the source is {@code null} it will not be sent to the form.
      * 
      * @param source
      *               the source to obtain data from.
@@ -978,7 +990,8 @@ public class ControlForm<SRC,DST> extends Component<ControlForm.Config> implemen
         updating = true;
         try {
             onEdit (source);
-            form.edit (source);
+            if (source != null)
+                form.edit (source);
             reset ();
         } finally {
             updating = false;

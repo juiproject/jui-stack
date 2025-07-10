@@ -157,7 +157,7 @@ public class FormBuilder<SRC,DST> implements IModificationContext, IGroupBuilder
         return this;
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings("rawtypes")
     @Override
     public void clear() {
         forEachCell (cell -> {
@@ -430,6 +430,15 @@ public class FormBuilder<SRC,DST> implements IModificationContext, IGroupBuilder
         // adding a post-build execution.
         if (onBuild != null)
             parent.apply (n -> onBuild.accept (modificationContext));
+    }
+
+    /**
+     * For debugging control states.
+     */
+    public void logControlState() {
+        groups.forEach(group -> {
+            group.logControlState();
+        });
     }
 
     /************************************************************************

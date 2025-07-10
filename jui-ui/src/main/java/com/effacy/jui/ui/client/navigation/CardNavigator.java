@@ -829,7 +829,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
                             if (config().navigationHandler.handle(NavigationSupport.build(path.get(path.size()-1).reference), NavigationSupport.build(c.reference)))
                                 return;
                         }
-                        navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false), c.reference);
+                        navigate (buildNavigationContext(), c.reference);
                     }).text (c.label());
                 }
             });
@@ -843,9 +843,9 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
                         return;
                 }
                 if (path.size() <= 1)
-                    navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false));
+                    navigate (buildNavigationContext());
                 else
-                    navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false), path.get(path.size() - 2).reference);
+                    navigate (buildNavigationContext(), path.get(path.size() - 2).reference);
             });
             Span.$ (h2)
                 .use (n -> headerLabelEl = (Element) n)
@@ -858,6 +858,24 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
                     I.$(h2).style (icon);
             }
         });
+    }
+
+    /**
+     * Context meta-data.
+     */
+    public static final String BREADCRUMB = "breadcrumb";
+
+    /**
+     * Builds a navigation context when navigation has been invoked from the
+     * breadcrumb trail.
+     * <p>
+     * The default adds the meta-data {@link #BREADCRUMB} set to {@code true} to
+     * indicate that this has originated from the breadcrumb.
+     * 
+     * @return the navigation context.
+     */
+    protected NavigationContext buildNavigationContext() {
+        return new NavigationContext (NavigationContext.Source.INTERNAL, false).metadata(BREADCRUMB, true);
     }
 
     /**
@@ -879,7 +897,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
     public void navigate(NavigationContext context, List<String> path) {
         if (context == null)
             context = new NavigationContext();
-            
+        
         // Empty case we just delegate through (which will activate top).
         if ((path == null) || path.isEmpty()) {
             navigationRouter.navigate (context, path);

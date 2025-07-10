@@ -133,6 +133,28 @@ public class ExpressionBuilderTest {
                 FieldsQueryBuilder.field1(Operator.GT, 22),
                 FieldsQueryBuilder.field2(Operator.EQ, "hubba")
             ),
+            FieldsQueryBuilder.field3(Operator.IN, new Status[] {Status.ACTIVE, Status.INACTIVE})
+        );
+
+        // Here the status has the same contents but in a different order.
+        Expression<Fields> exp2 = FieldsQueryBuilder.and (
+            FieldsQueryBuilder.or (
+                FieldsQueryBuilder.field1(Operator.GT, 22),
+                FieldsQueryBuilder.field2(Operator.EQ, "hubba")
+            ),
+            FieldsQueryBuilder.field3(Operator.IN, new Status[] {Status.INACTIVE, Status.ACTIVE})
+        );
+
+        assertEquals(exp1, exp2);
+    }
+
+    @Test
+    public void equals_04() throws Exception {
+        Expression<Fields> exp1 = FieldsQueryBuilder.and (
+            FieldsQueryBuilder.or (
+                FieldsQueryBuilder.field1(Operator.GT, 22),
+                FieldsQueryBuilder.field2(Operator.EQ, "hubba")
+            ),
             FieldsQueryBuilder.field3(Operator.EQ, Status.ACTIVE)
         );
 

@@ -166,7 +166,7 @@ public class FilterQueryParserTest {
                 a IN [1, 2, 3]
             """);
             assertNotNull(exp);
-            exp.print();
+            // exp.print();
             String out = exp.build(new StringExpressionBuilder());
             assertEquals("a IN [1,2,3]", out);
         } catch (Exception e) {
@@ -177,7 +177,7 @@ public class FilterQueryParserTest {
                 a IN [2.3, 2.2, 3.87]
             """);
             assertNotNull(exp);
-            exp.print();
+            // exp.print();
             String out = exp.build(new StringExpressionBuilder());
             assertEquals("a IN [2.3,2.2,3.87]", out);
         } catch (Exception e) {
@@ -188,7 +188,7 @@ public class FilterQueryParserTest {
                 a IN [ACTIVE, INACTIVE]
             """);
             assertNotNull(exp);
-            exp.print();
+            // exp.print();
             String out = exp.build(new StringExpressionBuilder());
             assertEquals("a IN [ACTIVE,INACTIVE]", out);
         } catch (Exception e) {
@@ -222,7 +222,7 @@ public class FilterQueryParserTest {
                 a NOT IN [1, 2, 3]
             """);
             assertNotNull(exp);
-            exp.print();
+            // exp.print();
             String out = exp.build(new StringExpressionBuilder());
             assertEquals("a NOT IN [1,2,3]", out);
         } catch (Exception e) {
@@ -233,7 +233,7 @@ public class FilterQueryParserTest {
                 a NOT IN [2.3, 2.2, 3.87]
             """);
             assertNotNull(exp);
-            exp.print();
+            // exp.print();
             String out = exp.build(new StringExpressionBuilder());
             assertEquals("a NOT IN [2.3,2.2,3.87]", out);
         } catch (Exception e) {
@@ -244,7 +244,7 @@ public class FilterQueryParserTest {
                 a NOT IN [ACTIVE, INACTIVE]
             """);
             assertNotNull(exp);
-            exp.print();
+            // exp.print();
             String out = exp.build(new StringExpressionBuilder());
             assertEquals("a NOT IN [ACTIVE,INACTIVE]", out);
         } catch (Exception e) {

@@ -24,8 +24,13 @@
       <artifactId>byte-buddy</artifactId>
       <version>${version.byte-buddy}</version>
     </dependency>
-    <dependency>
+    <!-- <dependency>
       <groupId>net.sourceforge.htmlunit</groupId>
+      <artifactId>htmlunit</artifactId>
+      <version>${version.htmlunit}</version> 
+    </dependency> -->
+    <dependency>
+      <groupId>org.htmlunit</groupId>
       <artifactId>htmlunit</artifactId>
       <version>${version.htmlunit}</version> 
     </dependency>

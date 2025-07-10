@@ -26,6 +26,7 @@ JUI consists of the following libraries:
 8. [jui-validation](./jui-validation/) a convenience to perform validation both client and server side in a portable manner.
 9. [jui-test](./jui-test/) a collection of tools to perform testing of UI components and applications.
 10. [jui-playground](./jui-playground/) delivers a component explorer to elucidate the various JUI concepts and core components and controls along with a number of examples (see [Playground](#playground) below).
+11. [jui-filter](./jui-filter/) is an experimental project to provide a simple generic query filter that is parsable.
 
 These are all released against the same version (generated from this multi-module project).
 

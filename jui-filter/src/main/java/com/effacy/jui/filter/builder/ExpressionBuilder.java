@@ -1,6 +1,7 @@
 package com.effacy.jui.filter.builder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -9,8 +10,20 @@ import java.util.List;
  */
 public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilder.Expression<F>,F> {
 
+    /**
+     * Used to visit the nodes in the expression.
+     */
     @FunctionalInterface
     public interface IExpressionVisitor<G> {
+
+        /**
+         * Visits a node of the given expression and of the given depth.
+         * 
+         * @param depth
+         *                   the depth (from 0).
+         * @param expression
+         *                   the expression.
+         */
         public void visit(int depth, Expression<G> expression);
     }
 
@@ -121,22 +134,39 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
         }
     }
 
+    /**
+     * Creates a new expression that is the AND of the passed expressions.
+     */
     public Expression<F> and(List<Expression<F>> expressions) {
         return new ANDExpression(expressions);
     }
 
+    /**
+     * Creates a new expression that is the OR of the passed expressions.
+     */
     public Expression<F> or(List<Expression<F>> expressions) {
         return new ORExpression(expressions);
     }
 
+    /**
+     * Creates a new expression that is the NOT of the passed expression.
+     */
     public Expression<F> not(Expression<F> expression) {
         return new NOTExpression(expression);
     }
 
+    /**
+     * Creates a new expression represents the comparison of the given field with
+     * the given value under the specified operator.
+     */
     public Expression<F> term(F field, Operator operator, Object value) {
         return new ComparisonExpression(field, operator, value);
     }
 
+    /**
+     * Creates a new expression buider over a different field set using the mapper
+     * to translate from the source set to the target.
+     */
     public <G> IExpressionBuilder<Expression<F>,G> mapped(FieldMapper<G,F> mapper) {
         return new MappedExpresionBuilder<Expression<F>, G, F> (this, mapper);
     }
@@ -335,8 +365,16 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
                 return false;
             if ((value != null) && (castExp.value == null))
                 return false;
-            // TODO: Need to deal with arrays.
-            if ((value != castExp.field) && !value.equals(castExp.value))
+            if ((value != null) && (castExp.value != null) && value.getClass().isArray() && castExp.value.getClass().isArray()) {
+                Object[] arr1 = (Object[]) value;
+                Object[] arr2 = (Object[]) castExp.value;
+                if (arr1.length != arr2.length)
+                    return false;
+                List<Object> list1 = new ArrayList<>(Arrays.asList(arr1));
+                List<Object> list2 = new ArrayList<>(Arrays.asList(arr2));
+                if (!list1.containsAll(list2) || !list2.containsAll(list1))
+                    return false;
+            } else if ((value != castExp.value) && (value != null && !value.equals(castExp.value)))
                 return false;
             return true;
         }

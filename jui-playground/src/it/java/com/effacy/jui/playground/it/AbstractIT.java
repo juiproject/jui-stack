@@ -15,14 +15,15 @@
  ******************************************************************************/
 package com.effacy.jui.playground.it;
 
+import org.htmlunit.BrowserVersion;
+import org.htmlunit.WebClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.htmlunit.MockMvcWebClientBuilder;
 
-import com.gargoylesoftware.htmlunit.BrowserVersion;
-import com.gargoylesoftware.htmlunit.WebClient;
+import com.effacy.jui.test.HtmlUnitSupport;
 
 @AutoConfigureMockMvc
 public abstract class AbstractIT {
@@ -40,7 +41,7 @@ public abstract class AbstractIT {
 
     @BeforeEach
     void setup() {
-        webClient = MockMvcWebClientBuilder.mockMvcSetup (mockMvc).withDelegate(new WebClient(BrowserVersion.CHROME)).build ();
+        webClient = HtmlUnitSupport.configure(MockMvcWebClientBuilder.mockMvcSetup (mockMvc).withDelegate(new WebClient(BrowserVersion.CHROME)).build ());
     }
     
 }

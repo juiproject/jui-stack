@@ -1,10 +1,29 @@
 # Filter builder
 
+
 ## Overview
 
-We provide a mechanism for builder general filter queries that consist of comparisons (terms) composed by a combination of NOT, AND and OR operators.
+We provide a mechanism for building general filter queries that consist of comparisons (terms) composed by a combination of NOT, AND and OR operators. This is also compatible with the [filter query parser](../parser/README.md) which can be used to either draft a filter in a human-friendly(-ish) manner or as a way of serialising a filter query.
 
-This builder is also compatible with the [filter query parser](../parser/README.md) which can be used to either draft a filter in a human-friendly(-ish) manner or as a way of serialising a filter query.
+The following illustrates the concepts in action:
+
+```java
+// Define your fields enum
+enum Fields {
+    NAME, AGE, STATUS;
+}
+
+// Create a simple expression
+Expression<Fields> filter = FieldsQueryBuilder.and(
+    FieldsQueryBuilder.field1(Operator.GT, 18),     // age > 18
+    FieldsQueryBuilder.field2(Operator.EQ, "John")  // name = "John"
+);
+
+// Parse from string
+String query = "age > 18 AND name = 'John'";
+Expression<Fields> parsedFilter = FilterQueryParser.parse(query)
+    .build(FieldsQueryBuilder.stringBuilder());
+```
 
 ## Builders and buildables
 
@@ -34,7 +53,7 @@ String out = FilterQueryParser.parse(str).build(new StringExpressionBuilder());
 assertEquals(str, out);
 ```
 
-In practice the builder interface does not constrain the product of fundamental expression sufficiently. The convention is then to create a separate builder that delegates to an instance of `SimpleExpressionBuilder`:
+In practice the builder interface does not constrain the product of fundamental expression sufficiently. The convention is then to create a separate builder that delegates to an instance of `ExpressionBuilder`:
 
 ```java
 public static class FieldsQueryBuilder {
@@ -114,3 +133,131 @@ public static IExpressionBuilder<Expression<Fields>,String> stringBuilder() {
 ```
 
 So one can obtain an expression from a string:
+
+```java
+String query = "field1 > 10 AND field2 = 'test'";
+Expression<Fields> expression = FilterQueryParser.parse(query).build(FieldsQueryBuilder.stringBuilder());
+```
+
+## Error Handling
+
+When working with the filter builder, be aware of these common error scenarios:
+
+### Invalid field names
+```java
+try {
+    String query = "invalidField = 'test'";
+    Expression<Fields> expression = FilterQueryParser.parse(query)
+        .build(FieldsQueryBuilder.stringBuilder());
+} catch (IllegalArgumentException e) {
+    // Handle invalid field name - enum valueOf() will throw this
+    System.err.println("Invalid field name: " + e.getMessage());
+}
+```
+
+### Parse errors
+```java
+try {
+    String malformedQuery = "field1 > > 10"; // Invalid syntax
+    FilterQueryParser.parse(malformedQuery);
+} catch (ParseException e) {
+    // Handle parsing errors
+    System.err.println("Query parsing failed: " + e.getMessage());
+}
+```
+
+### Type Mismatches
+```java
+// Ensure value types match field expectations
+// Wrong: field1 expects int, but string provided
+// FieldsQueryBuilder.field1(Operator.EQ, "not a number"); // Runtime error
+
+// Correct: match expected types
+FieldsQueryBuilder.field1(Operator.EQ, 42); // int value for int field
+```
+
+## Architecture Diagram
+
+```
+┌─────────────────────┐    ┌──────────────────────┐
+│   FilterQueryParser │────│  IExpressionBuildable│
+│                     │    │                      │
+│ Parses string       │    │ Can be applied to    │
+│ queries into        │    │ any builder          │
+│ buildable objects   │    │                      │
+└─────────────────────┘    └──────────────────────┘
+           │                           │
+           │                           ▼
+           │               ┌──────────────────────┐
+           │               │  IExpressionBuilder  │
+           │               │         <T,FIELD>    │
+           │               │                      │
+           │               │ • term()             │
+           │               │ • and()              │
+           │               │ • or()               │
+           │               │ • not()              │
+           │               └──────────────────────┘
+           │                           │
+           ▼                           ▼
+┌─────────────────────┐    ┌──────────────────────┐
+│ StringExpression    │    │ Custom Builder       │
+│ Builder             │    │ (e.g. SQL, MongoDB) │
+│                     │    │                      │
+│ Produces human-     │    │ Produces specific    │
+│ readable strings    │    │ query format         │
+└─────────────────────┘    └──────────────────────┘
+```
+
+The architecture separates concerns:
+- **Parser**: Converts string queries to buildable expressions
+- **Buildable**: Abstract representation that can work with any builder
+- **Builder**: Converts expressions to specific formats (strings, SQL, etc.)
+
+## Troubleshooting
+
+### Problem: "No enum constant" error when parsing
+**Cause**: Field name in query string doesn't match enum values
+**Solution**: 
+```java
+// Ensure enum values match query field names exactly
+enum Fields {
+    FIELD1, FIELD2, FIELD3; // Use same case as in queries
+}
+```
+
+### Problem: Expression not building correctly
+**Cause**: Missing parentheses or operator precedence issues
+**Solution**:
+```java
+// Use explicit grouping
+Expression<Fields> expr = FieldsQueryBuilder.and(
+    FieldsQueryBuilder.or(
+        FieldsQueryBuilder.field1(Operator.GT, 10),
+        FieldsQueryBuilder.field1(Operator.LT, 5)
+    ),
+    FieldsQueryBuilder.field2(Operator.EQ, "test")
+);
+```
+
+### Problem: Null values in expressions
+**Cause**: Passing null values to term() methods
+**Solution**:
+```java
+// Check for null before building
+Object value = getValue();
+if (value != null) {
+    return FieldsQueryBuilder.field1(Operator.EQ, value);
+} else {
+    return FieldsQueryBuilder.field1(Operator.IS_NULL, null);
+}
+```
+
+### Problem: Complex queries failing to parse
+**Cause**: Overly complex nested expressions or unsupported operators
+**Solution**: Break down complex queries into simpler components and test incrementally
+
+### Common Gotchas
+- Field names are case-sensitive
+- String values in queries must be quoted
+- Array values use IN/NOT_IN operators
+- Date/time values need proper formatting

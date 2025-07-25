@@ -35,10 +35,10 @@ public class FilterQueryParser {
         ParsedExpression(AstRoot root) {
             this.root = root;
         }
-        public <T> T build(IExpressionBuilder<T,String> builder) {
+        public <T> T build(IExpressionBuilder<T,String> builder) throws ExpressionBuildException {
             return root.build(builder);
         }
-        public <T,F> T build(IExpressionBuilder<T,F> builder, FieldMapper<String,F> mapper) {
+        public <T,F> T build(IExpressionBuilder<T,F> builder, FieldMapper<String,F> mapper) throws ExpressionBuildException {
             return build(new MappedExpresionBuilder<T,String,F>(builder, mapper));
         }
         public void print() {

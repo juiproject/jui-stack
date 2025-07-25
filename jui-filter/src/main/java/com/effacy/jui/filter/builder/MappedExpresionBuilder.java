@@ -55,7 +55,7 @@ public class MappedExpresionBuilder<T,F1,F2> implements IExpressionBuilder<T,F1>
     }
 
     @Override
-    public T term(F1 field, Operator operator, Object value) {
+    public T term(F1 field, Operator operator, Object value) throws ExpressionBuildException {
         return delegate.term(mapper.map(field), operator, value);
     }
 

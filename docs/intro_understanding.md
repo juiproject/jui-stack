@@ -1,8 +1,8 @@
-# Introduction to the JUI Framework
+# Introduction
 
 JUI is a comprehensive Java-based UI framework that empowers Java developers to create modern web applications using familiar Java tooling and paradigms. JUI leverages the GWT Java-to-JavaScript compiler for code transpilation while implementing its own modern component architecture and UI patterns, enabling developers to build rich, interactive web interfaces without requiring extensive frontend technology expertise. The framework bridges the gap between enterprise Java development and contemporary component-oriented UI design, offering a type-safe, flexible approach to web UI development with minimal constraints.
 
-## Core Philosophy and Objectives
+## Philosophy and Objectives
 
 JUI seeks to empower Java developers to develop web UI components consistent with contemporary notions of component-oriented UI design, without relying on technology skill sets outside of core Java. This paradigm affords Java developers with minimal "frontend" skills the opportunity to participate in building browser-based application experiences while maintaining near-seamless transition between client and server code. The fundamental driver is flexibility in terms of skill set and UI experience—the ability to craft unique experiences while providing standard building blocks that are extensible and replaceable.
 
@@ -10,7 +10,7 @@ JUI seeks to empower Java developers to develop web UI components consistent wit
 
 JUI embraces the component-based architecture that has made frameworks like React and Vue successful. Components are built using familiar Java class structures, where each component can extend base classes with their own configurations. This approach allows developers to compose complex interfaces from reusable, self-contained building blocks while maintaining strong typing and compile-time safety. All three frameworks—JUI, React, and Vue—are conceptually similar, being component-oriented and leveraging similar component lifecycles.
 
-The framework uses a declarative builder pattern that creates intuitive UI structures. Here's how JUI compares to React when building a simple button component:
+The framework uses a declarative builder pattern that creates intuitive UI structures. Here's how JUI compares to React:
 
 ```javascript
 // React example
@@ -41,11 +41,11 @@ public class MyButton extends SimpleComponent {
 
 While JUI may not be quite as expressive as React due to Java's constraints, it provides straightforward, familiar syntax for Java developers. The framework offers flexibility in formalism—developers can choose from relaxed approaches like the example above or more formal approaches with defined configuration classes and separate rendering methods.
 
-## Technology Foundation and History
+## Technology Foundation
 
-JUI builds on the foundation laid by GWT (Google Web Toolkit), launched by Google in 2006 and open-sourced in 2012. GWT was a pioneering framework that enabled Java developers to build rich web frontends by compiling Java into JavaScript—offering strict typing, IDE tooling, and seamless code sharing between client and server.
+JUI builds on the principles laid down by GWT (Google Web Toolkit), launched by Google in 2006 and open-sourced in 2012. GWT was a pioneering framework that enabled Java developers to build rich web frontends by compiling Java into JavaScript—offering strict typing, IDE tooling, and seamless code sharing between client and server.
 
-While GWT introduced many powerful ideas, JUI has progressively decoupled from it as a broader dependency. With the emergence of J2CL and the JsInterop standard, JUI has adopted a more modern approach. It does not use GWT’s widget model or UI components, instead implementing its own component-oriented architecture tailored to contemporary web development needs.
+While JUI draws inspiration from GWT’s foundational ideas, it takes a fundamentally different and modern approach. Its primary reliance on GWT is limited to the underlying compiler infrastructure. With the emergence of J2CL and the JsInterop standard, JUI does not use GWT’s widget model or UI components, but instead implements its own component-oriented architecture tailored to contemporary web development needs.
 
 JUI retains the core advantage of compiling Java into optimized JavaScript that runs in the browser, enabling seamless reuse of shared code—such as data transfer objects and business rules—across both client and server tiers. It integrates with the browser DOM using shadow Java classes via JsInterop, specifically through Elemental2, providing type-safe DOM interaction while preserving the Java development experience, including full IDE support and source-level debugging in the browser.
 
@@ -63,7 +63,7 @@ Enterprise features are built into the framework from the ground up, including i
 
 **Compared to Other Java Frameworks**: Unlike comprehensive frameworks such as Sencha, Vaadin, or DominoKit, JUI is much lighter and focuses more on the component model and supporting structures rather than providing a full suite of UI components. If you're looking for design flexibility, JUI may be the better option; for more of an out-of-the-box experience (particularly in enterprise spaces), these other frameworks are excellent alternatives.
 
-## Learning JUI for React/Vue Developers
+## Adopting JUI
 
 React and Vue experience provides an excellent foundation for learning JUI, as the core concepts translate directly between frameworks.
 
@@ -71,9 +71,9 @@ React and Vue experience provides an excellent foundation for learning JUI, as t
 
 **Adaptation Areas**: The main adjustments involve syntax and tooling rather than conceptual changes. JUI uses a builder pattern with fluent API instead of JSX or template syntax. Configuration objects replace props and reactive data with Java-style configuration approaches. The compilation model shifts from runtime interpretation to build-time optimization. Development workflow moves from npm/webpack tooling to Maven/Gradle within the Java ecosystem.
 
-**Learning Timeline**: React and Vue developers typically become productive with JUI within 2-3 weeks. The first week focuses on understanding JUI patterns and builder syntax. The second week covers component creation and styling approaches. By the third week, developers are working with advanced patterns, forms, and RPC integration. This accelerated timeline stems from the conceptual familiarity—developers are adapting syntax rather than learning entirely new paradigms.
+**Learning Timeline**: Modestly experienced UI developers should become productive with JUI within a few weeks. Initially one should focus on understanding JUI patterns and builder syntax. Then cover component creation and styling approaches. Finally developers should be working with advanced patterns, forms, and RPC integration. This timeline stems from the conceptual familiarity—developers are adapting syntax rather than learning entirely new paradigms.
 
-## Development Skills and Team Structure
+## Development Skills
 
 Successful JUI development requires understanding different skill levels and specializations. These categories help guide team composition and professional development pathways:
 

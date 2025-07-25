@@ -2,6 +2,8 @@ package com.effacy.jui.filter.builder;
 
 import java.util.List;
 
+import com.effacy.jui.filter.parser.FilterQueryParser;
+
 /**
  * A mechanism that is able to generate an expression programtically as a
  * product of expressions through compositions of AND, OR and NOT as well as
@@ -80,6 +82,9 @@ public interface IExpressionBuilder<T,FIELD> {
      * @param value
      *                 the value being compared to.
      * @return the representative expression.
+     * @throws ExpressionBuildException
+     *                              if there is an incompatibility between the
+     *                              field, operator and value.
      */
-    public T term(FIELD field, Operator operator, Object value);
+    public T term(FIELD field, Operator operator, Object value) throws ExpressionBuildException;
 }

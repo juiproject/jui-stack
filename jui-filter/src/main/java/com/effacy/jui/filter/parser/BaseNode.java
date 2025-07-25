@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import com.effacy.jui.filter.builder.ExpressionBuildException;
 import com.effacy.jui.filter.builder.IExpressionBuilder;
 import com.effacy.jui.filter.builder.IExpressionBuilder.Literal;
 
@@ -47,7 +48,7 @@ public class BaseNode extends SimpleNode {
         return null;
     }
 
-    public <T> T build(IExpressionBuilder<T,String> builder) {
+    public <T> T build(IExpressionBuilder<T,String> builder) throws ExpressionBuildException {
         List<T> expressions = new ArrayList<>();
         if (children != null) {
             for (int i = 0; i < children.length; i++)

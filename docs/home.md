@@ -1,4 +1,4 @@
-# Welcome to the JUI Stack Documentation
+# Welcome to JUI Stack
 
 **JUI Stack** is a full-stack web development framework built for Java developers. It enables you to create modern, browser-based applications entirely in Java—without requiring deep knowledge of JavaScript, HTML, or CSS. Using J2CL (Java to Closure), your Java code compiles to efficient JavaScript, allowing you to share logic seamlessly between client and server.
 

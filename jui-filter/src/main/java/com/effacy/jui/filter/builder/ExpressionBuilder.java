@@ -3,6 +3,9 @@ package com.effacy.jui.filter.builder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Predicate;
+
+import com.effacy.jui.platform.util.client.Carrier;
 
 /**
  * A base class for expression builders that produce expressions that are
@@ -132,6 +135,20 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
         protected void traverse(int depth, IExpressionVisitor<G> visitor) {
             visitor.visit(depth, this);
         }
+
+        /**
+         * Tests the expression against the given predicate.
+         * @param test
+         * @return
+         */
+        public boolean test(Predicate<Expression<G>> test) {
+            Carrier<Boolean> found = Carrier.of(false);
+            traverse((depth,e) -> {
+                if (test.test(e))
+                    found.set(true);
+            });
+            return found.get();
+        }
     }
 
     /**
@@ -184,7 +201,7 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
             this.expressions = expressions;
         }
 
-        protected <T> List<T> resolve(IExpressionBuilder<T,F> builder) {
+        protected <T> List<T> resolve(IExpressionBuilder<T,F> builder) throws ExpressionBuildException {
             List<T> resolved = new ArrayList<>();
             if (expressions != null) {
                 for (Expression<F> se : expressions) {
@@ -230,7 +247,7 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
         }
 
         @Override
-        public <T> T build(IExpressionBuilder<T,F> builder) {
+        public <T> T build(IExpressionBuilder<T,F> builder) throws ExpressionBuildException {
             return builder.and(resolve(builder));
         }
 
@@ -253,7 +270,7 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
         }
 
         @Override
-        public <T> T build(IExpressionBuilder<T,F> builder) {
+        public <T> T build(IExpressionBuilder<T,F> builder) throws ExpressionBuildException {
             return builder.or(resolve(builder));
         }
 
@@ -279,7 +296,7 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
         }
 
         @Override
-        public <T> T build(IExpressionBuilder<T,F> builder) {
+        public <T> T build(IExpressionBuilder<T,F> builder) throws ExpressionBuildException {
             if (expression == null)
                 return null;
             T r = expression.build(builder);
@@ -328,7 +345,7 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
         }
 
         @Override
-        public <T> T build(IExpressionBuilder<T,F> builder) {
+        public <T> T build(IExpressionBuilder<T,F> builder) throws ExpressionBuildException {
             return builder.term(field, operator, value);
         }
 

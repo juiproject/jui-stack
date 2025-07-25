@@ -55,7 +55,7 @@ public class ExpressionBuilderTest {
     }
 
     @Test
-    public void fields_04() {
+    public void fields_04() throws Exception {
         Expression<Fields> exp = FieldsQueryBuilder.and (
             FieldsQueryBuilder.or (
                 FieldsQueryBuilder.field1(Operator.GT, 22),

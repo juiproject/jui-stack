@@ -179,7 +179,7 @@ public class ExpressionBuilderTest {
             FIELD1, FIELD2, FIELD3;
         }
 
-        private static ExpressionBuilder<Fields> INSTANCE = new ExpressionBuilder<FieldsQueryBuilder.Fields>(FieldsQueryBuilder.Fields.class);
+        public static ExpressionBuilder<Fields> INSTANCE = new ExpressionBuilder<FieldsQueryBuilder.Fields>(FieldsQueryBuilder.Fields.class);
 
         public static IExpressionBuilder<Expression<Fields>,String> stringBuilder() {
             return INSTANCE.mapped(v -> Fields.valueOf(v));

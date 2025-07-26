@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import com.effacy.jui.filter.builder.optimizer.IExpressionOptimizer;
 import com.effacy.jui.filter.parser.FilterQueryParser;
 import com.effacy.jui.filter.parser.FilterQueryParser.FilterQueryParserException;
 import com.effacy.jui.filter.parser.FilterQueryParser.ParsedExpression;
@@ -330,6 +331,17 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
                 }
             });
             return complexity.get();
+        }
+
+        /**
+         * Optimizes this expression using the given optimizer to produce a minimal 
+         * equivalent form.
+         * 
+         * @param optimizer the optimizer to apply to this expression
+         * @return the optimized expression, or this expression if no optimizations apply
+         */
+        public Expression<G> optimize(IExpressionOptimizer<G> optimizer) {
+            return optimizer.optimize(this);
         }
     }
 

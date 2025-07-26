@@ -301,7 +301,7 @@ public class FilterQueryParserTest {
                 a IN [1, 2, 3]
             """);
             assertNotNull(exp);
-            exp.print();
+            // exp.print();
             String out = exp.build(new StringExpressionBuilder());
             assertEquals("a IN [1,2,3]", out);
         } catch (Exception e) {

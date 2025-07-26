@@ -3,8 +3,8 @@ package com.effacy.jui.filter.builder;
 import java.util.List;
 
 /**
- * Used to allow an expression builder to be used with a different field-type by
- * providing a mapper for values of that type.
+ * Used to allow an expression builder to be used with a builable of a different
+ * field-type by providing a mapper for values of that type.
  * <p>
  * Consider the case where one has a builder over expresion-type T and
  * field-type F2 but we want to use this with a different field-type F1. So long
@@ -56,7 +56,16 @@ public class MappedExpresionBuilder<T,F1,F2> implements IExpressionBuilder<T,F1>
 
     @Override
     public T term(F1 field, Operator operator, Object value) throws ExpressionBuildException {
-        return delegate.term(mapper.map(field), operator, value);
+        F2 mapped = null;
+        try {
+            mapped = mapper.map(field);
+        } catch (Throwable e) {
+            if (field instanceof Enum)
+                throw new ExpressionBuildException("unable to map field " + ((Enum<?>)field).name());
+            throw new ExpressionBuildException("unable to map field " + field);
+        }
+        return delegate.term(mapped, operator, value);
+         
     }
 
 }

@@ -39,15 +39,6 @@ public class BaseNode extends SimpleNode {
             visitor.accept (node);
     }
 
-    @SuppressWarnings("unchecked")
-    protected <T> T find(Class<T> klass) {
-        for (Node child : children) {
-            if (klass.isAssignableFrom(child.getClass()))
-                return (T) child;
-        }
-        return null;
-    }
-
     public <T> T build(IExpressionBuilder<T,String> builder) throws ExpressionBuildException {
         List<T> expressions = new ArrayList<>();
         if (children != null) {
@@ -126,6 +117,9 @@ public class BaseNode extends SimpleNode {
         return node.image;
     }
 
+    /**
+     * Print the node tree for debugging.
+     */
     protected void print(int depth) {
         if (this instanceof AstField)
             System.out.println(" ".repeat(Math.max(0, depth)) + getClass().getSimpleName() + "[" + this.image + "]");

@@ -11,6 +11,10 @@ public interface IExpressionBuildable<F> {
     /**
      * Given a builder, build into that builder the expression that is represented
      * by this instance.
+     * <p>
+     * Note that the field types need to be the same. If they differ then you can
+     * wrap the passed builder in a {@link MappedExpressionBuilder} that performs
+     * the revelvant field mapping.
      * 
      * @param <T>
      *                the expression type.

@@ -3,8 +3,11 @@ package com.effacy.jui.filter.builder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.Optional;
 
+import com.effacy.jui.filter.parser.FilterQueryParser;
+import com.effacy.jui.filter.parser.FilterQueryParser.FilterQueryParserException;
+import com.effacy.jui.filter.parser.FilterQueryParser.ParsedExpression;
 import com.effacy.jui.platform.util.client.Carrier;
 
 /**
@@ -28,6 +31,108 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
          *                   the expression.
          */
         public void visit(int depth, Expression<G> expression);
+    }
+
+    @FunctionalInterface
+    public interface IExpressionValidator<G> {
+    
+        public boolean validate(List<String> errors, G field, Operator op, Object value);
+    }
+
+    /**
+     * Maps a string version of the field to the field (for deserialisation).
+     */
+    private FieldMapper<String,F> stringToFieldMapper;
+
+    /**
+     * Maps a field to its string representation (for serialisation).
+     */
+    private FieldMapper<F,String> fieldToStringMapper;
+
+    /**
+     * Construct without mapper information. This means
+     * {@link #serialise(Expression)} and {@link #deserialise(String)} will not
+     * work.
+     */
+    public ExpressionBuilder() {
+        // Nothing.
+    }
+
+    /**
+     * Construct for a field type that is an enum.
+     * <p>
+     * The type is used to construct mappers for serialisation and deserialisation.
+     * 
+     * @param klass
+     *              the enum class for the field.
+     */
+    public ExpressionBuilder(Class<F> klass) {
+        stringToFieldMapper = str -> {
+            for (F v : klass.getEnumConstants()) {
+                if (str.equalsIgnoreCase(((Enum<?>) v).name()))
+                    return v;
+            }
+            throw new ExpressionBuildException("unable to map field " + str);
+        };
+        fieldToStringMapper = v -> ((Enum<?>) v).name();
+    }
+
+    /**
+     * Construct with mappers to use for {@link #serialise(Expression)} and
+     * {@link #deserialise(String)}. The mappers should be inverses of each other.
+     * <p>
+     * If the field type is an enum thn consider using
+     * {@link #ExpressionBuilder(Class)}.
+     * 
+     * @param stringToFieldMapper
+     *                            maps a string to a field.
+     * @param fieldToStringMapper
+     *                            maps a field to a string.
+     */
+    public ExpressionBuilder(FieldMapper<String,F> stringToFieldMapper, FieldMapper<F,String> fieldToStringMapper) {
+        this.stringToFieldMapper = stringToFieldMapper;
+        this.fieldToStringMapper = fieldToStringMapper;
+    }
+
+    /**
+     * This will serialise the passed expression (produced by this builder) to a
+     * string.
+     * 
+     * @param exp
+     *            the expression to serialise.
+     * @return the serialised expression.
+     */
+    public String serialise(Expression<F> exp) {
+        if (fieldToStringMapper == null)
+            throw new ExpressionBuildException("no field-to-string mapper defined");
+        return exp.build(StringExpressionBuilder.<F> remap(fieldToStringMapper));
+    }
+
+    /**
+     * Deserialised the passed string to an expression supported by this builder.
+     * <p>
+     * The resulting expression will also be validated.
+     * 
+     * @param str
+     *               the string to parse.
+     * @param mapper
+     *               to map string values to
+     * @return
+     * @throws FilterQueryParserException
+     *                                    if there was a problem parsing or
+     *                                    processing the expression.
+     */
+    public Expression<F> deserialise(String str) throws FilterQueryParserException {
+        if (stringToFieldMapper == null)
+            throw new ExpressionBuildException("no string-to-field mapper defined");
+        if (str == null)
+            return null;
+        ParsedExpression pexp = FilterQueryParser.parse(str);
+        try {
+            return pexp.build(mapped(v -> stringToFieldMapper.map(v))).validate();
+        } catch (ExpressionBuildException e) {
+            throw new FilterQueryParserException(e.getMessage());
+        }
     }
 
     /**
@@ -137,17 +242,94 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
         }
 
         /**
-         * Tests the expression against the given predicate.
-         * @param test
-         * @return
+         * See {@link #validate(IExpressionValidator)} but uses the default validator
+         * which expects the field type to implement {@link Field}.
+         * 
+         * @return this expression.
+         * @throws ExpressionBuildException
+         *                                  if validation fails.
          */
-        public boolean test(Predicate<Expression<G>> test) {
-            Carrier<Boolean> found = Carrier.of(false);
-            traverse((depth,e) -> {
-                if (test.test(e))
-                    found.set(true);
+        public Expression<G> validate() throws ExpressionBuildException {
+            return validate(null);
+        }
+
+        /**
+         * Validates the expression using the given validator. If the validator is
+         * {@code null} then the default is used (which expects the field type to
+         * implement {@link Field}).
+         * <p>
+         * If invalid then {@link ExpressionBuildException} will be thrown containing
+         * the error message.
+         * 
+         * @param validator
+         *                  (optional) the validator to use.
+         * @return this expression.
+         * @throws ExpressionBuildException
+         *                                  if validation fails.
+         */
+        public Expression<G> validate(IExpressionValidator<G> validator) throws ExpressionBuildException {
+            List<String> errors = new ArrayList<>();
+            if (!validate(errors, validator)) {
+                StringBuffer sb = new StringBuffer();
+                for (int i = 0, len = errors.size(); i < len; i++) {
+                    if (i > 0) {
+                        if (i < (len - 1))
+                            sb.append(", ");
+                        else
+                            sb.append(" and ");
+                    }
+                    sb.append(errors.get(i));
+                }
+                throw new ExpressionBuildException(sb.toString());
+            }
+            return this;
+        }
+
+        /**
+         * Validates the expression.
+         * 
+         * @param errors
+         *                  to accumulate errors.
+         * @param validator
+         *                  the terms validator to use.
+         * @return {@code true} if valid.
+         */
+        protected boolean validate(List<String> errors, IExpressionValidator<G> validator) {
+            return true;
+        }
+
+        /**
+         * Calculates the complexity of this expression based on node types and nesting depth.
+         * <p>
+         * Uses weighted scoring:
+         *  - Comparison terms: 1 point
+         *  - NOT operations: 2 points  
+         *  - AND operations: 2 points
+         *  - OR operations: 3 points
+         *  - Deep nesting penalty: +1 point per level beyond depth 3
+         * 
+         * @return the complexity score
+         */
+        public int complexity() {
+            Carrier<Integer> complexity = Carrier.of(0);
+            traverse((depth, expr) -> {
+                // Base complexity by expression type
+                if (expr instanceof ExpressionBuilder<?>.ComparisonExpression) {
+                    complexity.set(complexity.get() + 1);
+                } else if (expr instanceof ExpressionBuilder<?>.NOTExpression) {
+                    complexity.set(complexity.get() + 2);
+                } else if (expr instanceof ExpressionBuilder<?>.ANDExpression) {
+                    complexity.set(complexity.get() + 2);
+                } else if (expr instanceof ExpressionBuilder<?>.ORExpression) {
+                    complexity.set(complexity.get() + 3);
+                }
+                
+                // Penalty for deep nesting (beyond depth 3)
+                if (depth > 3) {
+                    complexity.set(complexity.get() + (depth - 3));
+                }
             });
-            return found.get();
+            return complexity.get();
         }
     }
 
@@ -223,6 +405,16 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
                     exp.traverse(depth + 1, visitor);
                 });
             }
+        }
+
+        @Override
+        protected boolean validate(List<String> errors, IExpressionValidator<F> validator) {
+            boolean valid = true;
+            for (Expression<F> exp : expressions) {
+                if (!exp.validate(errors, validator))
+                    valid = false;
+            }
+            return valid;
         }
 
         protected boolean _equals(ExpressionBuilder<?>.NaryExpression exp) {
@@ -311,6 +503,11 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
             if (expression != null)
                 expression.traverse(depth + 1, visitor);
         }
+        
+        @Override
+        protected boolean validate(List<String> errors, IExpressionValidator<F> validator) {
+            return expression.validate(errors, validator);
+        }
 
         @Override
         public boolean equals(Object exp) {
@@ -359,6 +556,21 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
 
         public Object value() {
             return value;
+        }
+
+        @Override
+        protected boolean validate(List<String> errors, IExpressionValidator<F> validator) {
+            if (validator != null)
+                return validator.validate(errors, field, operator, value);
+            if (field instanceof Field) {
+                Optional<String> outcome = (((Field) field).type().validate(operator, value));
+                if (outcome.isEmpty())
+                    return true;
+                String fieldName = (field instanceof Enum) ? ((Enum<?>) field).name() : field.toString();
+                errors.add(outcome.get() + ": " + fieldName + " " + operator.name() + " " + value);
+                return false;
+            }
+            return true;
         }
 
         @Override

@@ -36,7 +36,7 @@ public class StringExpressionBuilder implements IExpressionBuilder<String,String
      *               {@link Enum#name()} if is an enum).
      * @return the builder.
      */
-    public static <F> IExpressionBuilder<String,F> create(FieldMapper<F,String> mapper) {
+    public static <F> IExpressionBuilder<String,F> remap(FieldMapper<F,String> mapper) {
         if (mapper == null) {
             mapper = (v -> {
                 if (v == null)

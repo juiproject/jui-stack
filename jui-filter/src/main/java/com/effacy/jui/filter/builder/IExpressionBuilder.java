@@ -19,6 +19,21 @@ public interface IExpressionBuilder<T,FIELD> {
      */
     public enum Operator {
         EQ,NEQ,GT,GTE,LT,LTE,IN,NOT_IN,CONTAINS,STARTS_WITH,ENDS_WITH;
+
+        /**
+         * Checks if this type is any of the passed type (there must be a match).
+         * 
+         * @param types
+         *              the types to test against.
+         * @return {@code true} if there is a match.
+         */
+        public boolean is(Operator... types) {
+            for (Operator type : types) {
+                if (this == type)
+                    return true;
+            }
+            return false;
+        }
     }
 
     /**

@@ -55,11 +55,13 @@ public interface FilterQueryParserConstants {
   /** RegularExpression Id. */
   int FALSE = 26;
   /** RegularExpression Id. */
-  int INTEGER = 27;
+  int NULL = 27;
   /** RegularExpression Id. */
-  int DECIMAL = 28;
+  int INTEGER = 28;
   /** RegularExpression Id. */
-  int IDENTIFIER = 29;
+  int DECIMAL = 29;
+  /** RegularExpression Id. */
+  int IDENTIFIER = 30;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -93,6 +95,7 @@ public interface FilterQueryParserConstants {
     "<STRING>",
     "\"true\"",
     "\"false\"",
+    "<NULL>",
     "<INTEGER>",
     "<DECIMAL>",
     "<IDENTIFIER>",

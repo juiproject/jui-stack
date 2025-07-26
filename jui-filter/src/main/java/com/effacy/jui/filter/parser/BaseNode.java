@@ -11,7 +11,7 @@ import com.effacy.jui.filter.builder.IExpressionBuilder.Literal;
 public class BaseNode extends SimpleNode {
 
     public enum ValueType {
-        STRING, LITERAL, INTEGER, DECIMAL, BOOLEAN;
+        STRING, LITERAL, INTEGER, DECIMAL, BOOLEAN, NULL;
     }
 
     protected String image;
@@ -105,6 +105,8 @@ public class BaseNode extends SimpleNode {
     protected Object value(BaseNode node) {
         ValueType valueType = node.valueType;
         if (valueType == null)
+            return null;
+        if (ValueType.NULL == valueType)
             return null;
         if (ValueType.BOOLEAN == valueType)
             return "true".equals(node.image);

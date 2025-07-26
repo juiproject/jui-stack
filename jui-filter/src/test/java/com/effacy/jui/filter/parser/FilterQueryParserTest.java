@@ -252,6 +252,46 @@ public class FilterQueryParserTest {
         }
     }
 
+    /**
+     * Tests for NULL value parsing.
+     */
+    @Test
+    public void nullValues() {
+        // Test NULL equality
+        assertParse("""
+            field = NULL
+        """, "field = null");
+        
+        // Test lowercase null
+        assertParse("""
+            field = null
+        """, "field = null");
+        
+        // Test NULL inequality
+        assertParse("""
+            field != NULL
+        """, "field != null");
+        
+        // Test NULL in list
+        assertParse("""
+            field IN [1, NULL, 3]
+        """, "field IN [1,null,3]");
+        
+        // Test NOT NULL
+        assertParse("""
+            NOT field = NULL
+        """, "(NOT field = null)");
+        
+        // Test NULL with boolean operators
+        assertParse("""
+            field = NULL AND other = "value"
+        """, "(field = null AND other = \"value\")");
+        
+        assertParse("""
+            field = NULL OR other = "value"
+        """, "(field = null OR other = \"value\")");
+    }
+
     /************************************************************************
      * General tests.
      ************************************************************************/

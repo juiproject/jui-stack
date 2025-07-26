@@ -81,6 +81,11 @@ public class StringExpressionBuilder implements IExpressionBuilder<String,String
     public String not(String expression) {
         return "(NOT " + expression + ")";
     }
+    
+    @Override
+    public String bool(boolean value) {
+        return value ? "true" : "false";
+    }
 
     @Override
     public String term(String field, Operator operator, Object value) {

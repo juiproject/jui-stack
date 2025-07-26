@@ -323,6 +323,8 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
                     complexity.set(complexity.get() + 2);
                 } else if (expr instanceof ExpressionBuilder<?>.ORExpression) {
                     complexity.set(complexity.get() + 3);
+                } else if (expr instanceof ExpressionBuilder<?>.BoolExpression) {
+                    complexity.set(complexity.get() + 1);
                 }
                 
                 // Penalty for deep nesting (beyond depth 3)
@@ -348,6 +350,7 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
     /**
      * Creates a new expression that is the AND of the passed expressions.
      */
+    @Override
     public Expression<F> and(List<Expression<F>> expressions) {
         return new ANDExpression(expressions);
     }
@@ -355,6 +358,7 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
     /**
      * Creates a new expression that is the OR of the passed expressions.
      */
+    @Override
     public Expression<F> or(List<Expression<F>> expressions) {
         return new ORExpression(expressions);
     }
@@ -362,14 +366,24 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
     /**
      * Creates a new expression that is the NOT of the passed expression.
      */
+    @Override
     public Expression<F> not(Expression<F> expression) {
         return new NOTExpression(expression);
+    }
+
+    /**
+     * Cretes a bool-expression.
+     */
+    @Override
+    public Expression<F> bool(boolean value) {
+        return new BoolExpression(value);
     }
 
     /**
      * Creates a new expression represents the comparison of the given field with
      * the given value under the specified operator.
      */
+    @Override
     public Expression<F> term(F field, Operator operator, Object value) {
         return new ComparisonExpression(field, operator, value);
     }
@@ -620,5 +634,28 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
             return true;
         }
     }
+
+    /**
+     * Expression that represents a boolean literal (true or false).
+     */
+    public class BoolExpression extends Expression<F> {
+
+        private boolean value;
+
+        public BoolExpression(boolean value) {
+            super(ExpressionBuilder.this);
+            this.value = value;
+        }
+
+        @Override
+        public <T> T build(IExpressionBuilder<T,F> builder) throws ExpressionBuildException {
+            return builder.bool(value);
+        }
+
+        public boolean getValue() {
+            return value;
+        }
+    }
+
 
 }

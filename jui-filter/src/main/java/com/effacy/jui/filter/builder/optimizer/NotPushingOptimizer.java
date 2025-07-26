@@ -21,27 +21,19 @@ import com.effacy.jui.filter.builder.IExpressionBuilder.Operator;
  */
 public class NotPushingOptimizer<F> implements IExpressionOptimizer<F> {
     
-    private final ExpressionBuilder<F> builder;
-    
-    public NotPushingOptimizer(ExpressionBuilder<F> builder) {
-        this.builder = builder;
-    }
+    private final ExpressionBuilder<F> builder = new ExpressionBuilder<>();
 
     @Override
     public ExpressionBuilder.Expression<F> optimize(ExpressionBuilder.Expression<F> expression) {
-        if (expression == null) {
+        if (expression == null)
             return null;
-        }
-        
-        if (expression instanceof ExpressionBuilder<F>.NOTExpression) {
+        if (expression instanceof ExpressionBuilder<F>.NOTExpression)
             return optimizeNot((ExpressionBuilder<F>.NOTExpression) expression);
-        } else if (expression instanceof ExpressionBuilder<F>.ANDExpression) {
+        if (expression instanceof ExpressionBuilder<F>.ANDExpression)
             return optimizeAnd((ExpressionBuilder<F>.ANDExpression) expression);
-        } else if (expression instanceof ExpressionBuilder<F>.ORExpression) {
+        if (expression instanceof ExpressionBuilder<F>.ORExpression)
             return optimizeOr((ExpressionBuilder<F>.ORExpression) expression);
-        } else {
-            return expression;
-        }
+        return expression;
     }
     
     private ExpressionBuilder.Expression<F> optimizeNot(ExpressionBuilder<F>.NOTExpression notExpr) {

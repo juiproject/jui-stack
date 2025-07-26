@@ -94,12 +94,10 @@ public class CompositeOptimizer<F> implements IExpressionOptimizer<F> {
      * Uses the equals method if available, otherwise falls back to reference equality.
      */
     private boolean expressionsEqual(ExpressionBuilder.Expression<F> expr1, ExpressionBuilder.Expression<F> expr2) {
-        if (expr1 == expr2) {
+        if (expr1 == expr2)
             return true;
-        }
-        if (expr1 == null || expr2 == null) {
+        if ((expr1 == null) || (expr2 == null))
             return false;
-        }
         return expr1.equals(expr2);
     }
     
@@ -109,12 +107,12 @@ public class CompositeOptimizer<F> implements IExpressionOptimizer<F> {
      * @param builder the expression builder to use for creating new expressions
      * @return a composite optimizer with structural, boolean logic, and comparison optimizers
      */
-    public static <F> CompositeOptimizer<F> standard(ExpressionBuilder<F> builder) {
+    public static <F> CompositeOptimizer<F> standard() {
         return new CompositeOptimizer<>(
-            new StructuralOptimizer<>(builder),
-            new NotPushingOptimizer<>(builder),
-            new BooleanLogicOptimizer<>(builder),
-            new ComparisonOptimizer<>(builder)
+            new StructuralOptimizer<>(),
+            new NotPushingOptimizer<>(),
+            new BooleanLogicOptimizer<>(),
+            new ComparisonOptimizer<>()
         );
     }
     
@@ -124,16 +122,16 @@ public class CompositeOptimizer<F> implements IExpressionOptimizer<F> {
      * @param builder the expression builder to use for creating new expressions
      * @return a composite optimizer with more aggressive optimization settings
      */
-    public static <F> CompositeOptimizer<F> aggressive(ExpressionBuilder<F> builder) {
+    public static <F> CompositeOptimizer<F> aggressive() {
         return new CompositeOptimizer<>(
             20, // More iterations
-            new StructuralOptimizer<>(builder),
-            new NotPushingOptimizer<>(builder),
-            new BooleanLogicOptimizer<>(builder),
-            new ComparisonOptimizer<>(builder),
-            new StructuralOptimizer<>(builder), // Apply structural again after other optimizations
-            new NotPushingOptimizer<>(builder), // Apply NOT pushing again
-            new BooleanLogicOptimizer<>(builder)  // And boolean logic again
+            new StructuralOptimizer<>(),
+            new NotPushingOptimizer<>(),
+            new BooleanLogicOptimizer<>(),
+            new ComparisonOptimizer<>(),
+            new StructuralOptimizer<>(), // Apply structural again after other optimizations
+            new NotPushingOptimizer<>(), // Apply NOT pushing again
+            new BooleanLogicOptimizer<>()  // And boolean logic again
         );
     }
 }

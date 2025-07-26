@@ -126,6 +126,8 @@ void PrimaryExpression() #void : {}
 {
     ComparisonExpression()
   | <LPAREN> OrExpression() <RPAREN>
+  | <TRUE> #TrueExpression
+  | <FALSE> #FalseExpression
 }
 
 void ComparisonExpression() #void : {}

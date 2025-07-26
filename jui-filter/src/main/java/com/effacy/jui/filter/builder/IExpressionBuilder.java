@@ -86,6 +86,15 @@ public interface IExpressionBuilder<T,FIELD> {
     public T not(T expression);
 
     /**
+     * Creates a boolean literal (BOOL) expression.
+     * 
+     * @param value
+     *              the boolean value (true or false).
+     * @return the resultant BOOL expression.
+     */
+    public T bool(boolean value);
+
+    /**
      * Registers a comparison term with the field, comparison operator and value.
      * <p>
      * Values should be mapped
@@ -102,4 +111,5 @@ public interface IExpressionBuilder<T,FIELD> {
      *                              field, operator and value.
      */
     public T term(FIELD field, Operator operator, Object value) throws ExpressionBuildException;
+
 }

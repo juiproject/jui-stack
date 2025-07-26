@@ -292,6 +292,62 @@ public class FilterQueryParserTest {
         """, "(field = null OR other = \"value\")");
     }
 
+    /**
+     * Tests for TRUE and FALSE expression parsing.
+     */
+    @Test
+    public void trueFalseExpressions() {
+        // Test standalone TRUE
+        assertParse("""
+            true
+        """, "true");
+        
+        // Test standalone FALSE  
+        assertParse("""
+            false
+        """, "false");
+        
+        // Test uppercase TRUE
+        assertParse("""
+            TRUE
+        """, "true");
+        
+        // Test uppercase FALSE
+        assertParse("""
+            FALSE
+        """, "false");
+        
+        // Test TRUE with AND
+        assertParse("""
+            field = "value" AND true
+        """, "(field = \"value\" AND true)");
+        
+        // Test FALSE with OR
+        assertParse("""
+            field = "value" OR false
+        """, "(field = \"value\" OR false)");
+        
+        // Test FALSE with AND
+        assertParse("""
+            field = "value" AND false
+        """, "(field = \"value\" AND false)");
+        
+        // Test TRUE with OR
+        assertParse("""
+            field = "value" OR true
+        """, "(field = \"value\" OR true)");
+        
+        // Test NOT TRUE
+        assertParse("""
+            NOT true
+        """, "(NOT true)");
+        
+        // Test NOT FALSE
+        assertParse("""
+            NOT false
+        """, "(NOT false)");
+    }
+
     /************************************************************************
      * General tests.
      ************************************************************************/

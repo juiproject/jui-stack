@@ -75,6 +75,10 @@ public class BaseNode extends SimpleNode {
             return builder.term(term(), IExpressionBuilder.Operator.STARTS_WITH, value());
         if (this instanceof AstEndsWith)
             return builder.term(term(), IExpressionBuilder.Operator.ENDS_WITH, value());
+        if (this instanceof AstTrueExpression)
+            return builder.bool(true);
+        if (this instanceof AstFalseExpression)
+            return builder.bool(false);
 
         return null;
     }

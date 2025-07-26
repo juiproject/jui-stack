@@ -23,27 +23,19 @@ import com.effacy.jui.filter.builder.IExpressionBuilder.Operator;
  */
 public class ComparisonOptimizer<F> implements IExpressionOptimizer<F> {
     
-    private final ExpressionBuilder<F> builder;
-    
-    public ComparisonOptimizer(ExpressionBuilder<F> builder) {
-        this.builder = builder;
-    }
+    private final ExpressionBuilder<F> builder = new ExpressionBuilder<>();
 
     @Override
     public ExpressionBuilder.Expression<F> optimize(ExpressionBuilder.Expression<F> expression) {
-        if (expression == null) {
+        if (expression == null)
             return null;
-        }
-        
-        if (expression instanceof ExpressionBuilder<F>.ANDExpression) {
+        if (expression instanceof ExpressionBuilder<F>.ANDExpression)
             return optimizeAndComparisons((ExpressionBuilder<F>.ANDExpression) expression);
-        } else if (expression instanceof ExpressionBuilder<F>.ORExpression) {
+        if (expression instanceof ExpressionBuilder<F>.ORExpression)
             return optimizeOrComparisons((ExpressionBuilder<F>.ORExpression) expression);
-        } else if (expression instanceof ExpressionBuilder<F>.NOTExpression) {
+        if (expression instanceof ExpressionBuilder<F>.NOTExpression)
             return optimizeNotComparison((ExpressionBuilder<F>.NOTExpression) expression);
-        } else {
-            return expression;
-        }
+        return expression;
     }
     
     private ExpressionBuilder.Expression<F> optimizeAndComparisons(ExpressionBuilder<F>.ANDExpression andExpr) {
@@ -62,8 +54,9 @@ public class ComparisonOptimizer<F> implements IExpressionOptimizer<F> {
             } else {
                 // Multiple comparisons for same field - optimize
                 ExpressionBuilder.Expression<F> optimized = optimizeFieldComparisons(field, comparisons);
-                if (optimized == null) {
-                    return null; // Contradiction found - entire AND is false
+                if (optimized instanceof ExpressionBuilder<?>.BoolExpression && 
+                    !((ExpressionBuilder<F>.BoolExpression) optimized).getValue()) {
+                    return builder.bool(false); // Contradiction found - entire AND is false
                 }
                 optimizedTerms.add(optimized);
             }
@@ -79,13 +72,11 @@ public class ComparisonOptimizer<F> implements IExpressionOptimizer<F> {
             }
         }
         
-        if (optimizedTerms.isEmpty()) {
+        if (optimizedTerms.isEmpty())
             return null;
-        } else if (optimizedTerms.size() == 1) {
+        if (optimizedTerms.size() == 1)
             return optimizedTerms.get(0);
-        } else {
-            return builder.and(optimizedTerms);
-        }
+        return builder.and(optimizedTerms);
     }
     
     private ExpressionBuilder.Expression<F> optimizeOrComparisons(ExpressionBuilder<F>.ORExpression orExpr) {
@@ -100,13 +91,11 @@ public class ComparisonOptimizer<F> implements IExpressionOptimizer<F> {
             }
         }
         
-        if (optimizedTerms.isEmpty()) {
+        if (optimizedTerms.isEmpty())
             return null;
-        } else if (optimizedTerms.size() == 1) {
+        if (optimizedTerms.size() == 1)
             return optimizedTerms.get(0);
-        } else {
-            return builder.or(optimizedTerms);
-        }
+        return builder.or(optimizedTerms);
     }
     
     private ExpressionBuilder.Expression<F> optimizeNotComparison(ExpressionBuilder<F>.NOTExpression notExpr) {
@@ -129,6 +118,7 @@ public class ComparisonOptimizer<F> implements IExpressionOptimizer<F> {
         return children;
     }
     
+    @SuppressWarnings("unchecked")
     private ExpressionBuilder.Expression<F> getInnerExpression(ExpressionBuilder.Expression<F> notExpr) {
         final ExpressionBuilder.Expression<F>[] inner = new ExpressionBuilder.Expression[1];
         notExpr.traverse((depth, expr) -> {
@@ -167,13 +157,13 @@ public class ComparisonOptimizer<F> implements IExpressionOptimizer<F> {
                 // Check for equality contradictions: field = A AND field = B (where A != B)
                 if (comp1.operator == Operator.EQ && comp2.operator == Operator.EQ) {
                     if (!Objects.equals(comp1.value, comp2.value)) {
-                        return null; // Contradiction
+                        return builder.bool(false); // Contradiction
                     }
                 }
                 
                 // Check for impossible range conditions
                 if (isImpossibleCondition(comp1, comp2)) {
-                    return null; // Contradiction
+                    return builder.bool(false); // Contradiction
                 }
             }
         }
@@ -181,16 +171,14 @@ public class ComparisonOptimizer<F> implements IExpressionOptimizer<F> {
         // If no contradictions, look for redundancies
         List<ComparisonInfo<F>> nonRedundant = removeRedundantComparisons(comparisons);
         
-        if (nonRedundant.size() == 1) {
+        if (nonRedundant.size() == 1)
             return nonRedundant.get(0).expression;
-        } else {
-            // Create AND of remaining comparisons
-            List<ExpressionBuilder.Expression<F>> expressions = new ArrayList<>();
-            for (ComparisonInfo<F> comp : nonRedundant) {
-                expressions.add(comp.expression);
-            }
-            return builder.and(expressions);
+        // Create AND of remaining comparisons
+        List<ExpressionBuilder.Expression<F>> expressions = new ArrayList<>();
+        for (ComparisonInfo<F> comp : nonRedundant) {
+            expressions.add(comp.expression);
         }
+        return builder.and(expressions);
     }
     
     private boolean isImpossibleCondition(ComparisonInfo<F> comp1, ComparisonInfo<F> comp2) {

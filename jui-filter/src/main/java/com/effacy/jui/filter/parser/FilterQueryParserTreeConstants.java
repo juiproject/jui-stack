@@ -8,20 +8,22 @@ public interface FilterQueryParserTreeConstants
   public int JJTOREXPRESSION = 2;
   public int JJTANDEXPRESSION = 3;
   public int JJTNOTEXPRESSION = 4;
-  public int JJTEQUALS = 5;
-  public int JJTNOTEQUALS = 6;
-  public int JJTGREATERTHAN = 7;
-  public int JJTGREATERTHANOREQUAL = 8;
-  public int JJTLESSTHAN = 9;
-  public int JJTLESSTHANOREQUAL = 10;
-  public int JJTIN = 11;
-  public int JJTNOTIN = 12;
-  public int JJTCONTAINS = 13;
-  public int JJTSTARTSWITH = 14;
-  public int JJTENDSWITH = 15;
-  public int JJTFIELD = 16;
-  public int JJTVALUE = 17;
-  public int JJTLIST = 18;
+  public int JJTTRUEEXPRESSION = 5;
+  public int JJTFALSEEXPRESSION = 6;
+  public int JJTEQUALS = 7;
+  public int JJTNOTEQUALS = 8;
+  public int JJTGREATERTHAN = 9;
+  public int JJTGREATERTHANOREQUAL = 10;
+  public int JJTLESSTHAN = 11;
+  public int JJTLESSTHANOREQUAL = 12;
+  public int JJTIN = 13;
+  public int JJTNOTIN = 14;
+  public int JJTCONTAINS = 15;
+  public int JJTSTARTSWITH = 16;
+  public int JJTENDSWITH = 17;
+  public int JJTFIELD = 18;
+  public int JJTVALUE = 19;
+  public int JJTLIST = 20;
 
 
   public String[] jjtNodeName = {
@@ -30,6 +32,8 @@ public interface FilterQueryParserTreeConstants
     "OrExpression",
     "AndExpression",
     "NotExpression",
+    "TrueExpression",
+    "FalseExpression",
     "Equals",
     "NotEquals",
     "GreaterThan",
@@ -46,4 +50,4 @@ public interface FilterQueryParserTreeConstants
     "List",
   };
 }
-/* JavaCC - OriginalChecksum=ad5138c80d35755499cdce0a72753125 (do not edit this line) */
+/* JavaCC - OriginalChecksum=b50aa2cef35dfddc4ada76352172af5b (do not edit this line) */

@@ -17,25 +17,17 @@ import com.effacy.jui.filter.builder.ExpressionBuilder;
  */
 public class BooleanLogicOptimizer<F> implements IExpressionOptimizer<F> {
     
-    private final ExpressionBuilder<F> builder;
-    
-    public BooleanLogicOptimizer(ExpressionBuilder<F> builder) {
-        this.builder = builder;
-    }
+    private final ExpressionBuilder<F> builder = new ExpressionBuilder<>();
 
     @Override
     public ExpressionBuilder.Expression<F> optimize(ExpressionBuilder.Expression<F> expression) {
-        if (expression == null) {
+        if (expression == null)
             return null;
-        }
-        
-        if (expression instanceof ExpressionBuilder<F>.ANDExpression) {
+        if (expression instanceof ExpressionBuilder<F>.ANDExpression)
             return optimizeAnd((ExpressionBuilder<F>.ANDExpression) expression);
-        } else if (expression instanceof ExpressionBuilder<F>.ORExpression) {
+        if (expression instanceof ExpressionBuilder<F>.ORExpression)
             return optimizeOr((ExpressionBuilder<F>.ORExpression) expression);
-        } else {
-            return expression;
-        }
+        return expression;
     }
     
     private ExpressionBuilder.Expression<F> optimizeAnd(ExpressionBuilder<F>.ANDExpression andExpr) {
@@ -43,10 +35,15 @@ public class BooleanLogicOptimizer<F> implements IExpressionOptimizer<F> {
         List<ExpressionBuilder.Expression<F>> finalTerms = new ArrayList<>();
         List<ExpressionBuilder.Expression<F>> negatedTerms = new ArrayList<>();
         
+        // Check for all-boolean-expression optimization
+        if (areAllBooleanExpressions(terms))
+            return evaluateBooleanAnd(terms);
+        
         // First pass: collect optimized terms and track negations
         for (ExpressionBuilder.Expression<F> term : terms) {
             ExpressionBuilder.Expression<F> optimized = optimize(term);
-            if (optimized == null) continue;
+            if (optimized == null)
+                continue;
             
             if (optimized instanceof ExpressionBuilder<F>.NOTExpression) {
                 ExpressionBuilder.Expression<F> innerTerm = getInnerExpression(optimized);
@@ -57,14 +54,25 @@ public class BooleanLogicOptimizer<F> implements IExpressionOptimizer<F> {
             
             // Check for contradictions: A AND NOT A → false
             if (containsEqual(negatedTerms, optimized)) {
-                return null; // Contradiction - entire AND is false
+                return builder.bool(false); // Contradiction - entire AND is false
             }
             
             if (optimized instanceof ExpressionBuilder<F>.NOTExpression) {
                 ExpressionBuilder.Expression<F> innerTerm = getInnerExpression(optimized);
                 if (containsEqual(finalTerms, innerTerm)) {
-                    return null; // Contradiction - entire AND is false
+                    return builder.bool(false); // Contradiction - entire AND is false
                 }
+            }
+            
+            // Identity elimination: A AND true → A (skip true)
+            if (optimized instanceof ExpressionBuilder<F>.BoolExpression) {
+                ExpressionBuilder<F>.BoolExpression boolExpr = (ExpressionBuilder<F>.BoolExpression) optimized;
+                if (boolExpr.getValue()) {
+                    // Skip true in AND - it's the identity element
+                    continue;
+                } 
+                // false in AND makes entire expression false
+                return builder.bool(false);
             }
             
             // Idempotence: remove duplicates
@@ -76,13 +84,11 @@ public class BooleanLogicOptimizer<F> implements IExpressionOptimizer<F> {
         // Apply absorption: A AND (A OR B) → A
         finalTerms = applyAbsorptionToAnd(finalTerms);
         
-        if (finalTerms.isEmpty()) {
+        if (finalTerms.isEmpty())
             return null; // Empty AND
-        } else if (finalTerms.size() == 1) {
+        if (finalTerms.size() == 1)
             return finalTerms.get(0); // Single term
-        } else {
-            return builder.and(finalTerms);
-        }
+        return builder.and(finalTerms);
     }
     
     private ExpressionBuilder.Expression<F> optimizeOr(ExpressionBuilder<F>.ORExpression orExpr) {
@@ -90,10 +96,15 @@ public class BooleanLogicOptimizer<F> implements IExpressionOptimizer<F> {
         List<ExpressionBuilder.Expression<F>> finalTerms = new ArrayList<>();
         List<ExpressionBuilder.Expression<F>> negatedTerms = new ArrayList<>();
         
+        // Check for all-boolean-expression optimization
+        if (areAllBooleanExpressions(terms))
+            return evaluateBooleanOr(terms);
+        
         // First pass: collect optimized terms and track negations
         for (ExpressionBuilder.Expression<F> term : terms) {
             ExpressionBuilder.Expression<F> optimized = optimize(term);
-            if (optimized == null) continue;
+            if (optimized == null)
+                continue;
             
             if (optimized instanceof ExpressionBuilder<F>.NOTExpression) {
                 ExpressionBuilder.Expression<F> innerTerm = getInnerExpression(optimized);
@@ -104,13 +115,25 @@ public class BooleanLogicOptimizer<F> implements IExpressionOptimizer<F> {
             
             // Check for tautologies: A OR NOT A → true
             if (containsEqual(negatedTerms, optimized)) {
-                return orExpr; // Tautology - return original (represents true)
+                return builder.bool(true); // Tautology - entire OR is true
             }
             
             if (optimized instanceof ExpressionBuilder<F>.NOTExpression) {
                 ExpressionBuilder.Expression<F> innerTerm = getInnerExpression(optimized);
                 if (containsEqual(finalTerms, innerTerm)) {
-                    return orExpr; // Tautology - return original (represents true)
+                    return builder.bool(true); // Tautology - entire OR is true
+                }
+            }
+            
+            // Identity elimination: A OR false → A (skip false)
+            if (optimized instanceof ExpressionBuilder<F>.BoolExpression) {
+                ExpressionBuilder<F>.BoolExpression boolExpr = (ExpressionBuilder<F>.BoolExpression) optimized;
+                if (!boolExpr.getValue()) {
+                    // Skip false in OR - it's the identity element
+                    continue;
+                } else {
+                    // true in OR makes entire expression true
+                    return builder.bool(true);
                 }
             }
             
@@ -123,13 +146,11 @@ public class BooleanLogicOptimizer<F> implements IExpressionOptimizer<F> {
         // Apply absorption: A OR (A AND B) → A
         finalTerms = applyAbsorptionToOr(finalTerms);
         
-        if (finalTerms.isEmpty()) {
+        if (finalTerms.isEmpty())
             return null; // Empty OR
-        } else if (finalTerms.size() == 1) {
+        if (finalTerms.size() == 1)
             return finalTerms.get(0); // Single term
-        } else {
-            return builder.or(finalTerms);
-        }
+        return builder.or(finalTerms);
     }
     
     private List<ExpressionBuilder.Expression<F>> collectDirectChildren(ExpressionBuilder.Expression<F> expr) {
@@ -142,6 +163,7 @@ public class BooleanLogicOptimizer<F> implements IExpressionOptimizer<F> {
         return children;
     }
     
+    @SuppressWarnings("unchecked")
     private ExpressionBuilder.Expression<F> getInnerExpression(ExpressionBuilder.Expression<F> notExpr) {
         if (!(notExpr instanceof ExpressionBuilder<F>.NOTExpression)) {
             return notExpr;
@@ -162,15 +184,13 @@ public class BooleanLogicOptimizer<F> implements IExpressionOptimizer<F> {
      */
     private boolean containsEqual(List<ExpressionBuilder.Expression<F>> list, ExpressionBuilder.Expression<F> expr) {
         for (ExpressionBuilder.Expression<F> item : list) {
-            if (item.equals(expr)) {
+            if (item.equals(expr))
                 return true;
-            }
         }
         return false;
     }
     
-    private List<ExpressionBuilder.Expression<F>> applyAbsorptionToAnd(
-            List<ExpressionBuilder.Expression<F>> terms) {
+    private List<ExpressionBuilder.Expression<F>> applyAbsorptionToAnd(List<ExpressionBuilder.Expression<F>> terms) {
         List<ExpressionBuilder.Expression<F>> result = new ArrayList<>();
         
         for (ExpressionBuilder.Expression<F> term : terms) {
@@ -198,8 +218,7 @@ public class BooleanLogicOptimizer<F> implements IExpressionOptimizer<F> {
         return result;
     }
     
-    private List<ExpressionBuilder.Expression<F>> applyAbsorptionToOr(
-            List<ExpressionBuilder.Expression<F>> terms) {
+    private List<ExpressionBuilder.Expression<F>> applyAbsorptionToOr(List<ExpressionBuilder.Expression<F>> terms) {
         List<ExpressionBuilder.Expression<F>> result = new ArrayList<>();
         
         for (ExpressionBuilder.Expression<F> term : terms) {
@@ -219,11 +238,49 @@ public class BooleanLogicOptimizer<F> implements IExpressionOptimizer<F> {
                 }
             }
             
-            if (!shouldSkip) {
+            if (!shouldSkip)
                 result.add(term);
-            }
         }
         
         return result;
+    }
+    
+    /**
+     * Checks if all expressions in the list are boolean expressions (true/false literals).
+     */
+    private boolean areAllBooleanExpressions(List<ExpressionBuilder.Expression<F>> terms) {
+        for (ExpressionBuilder.Expression<F> term : terms) {
+            if (!(term instanceof ExpressionBuilder<F>.BoolExpression))
+                return false;
+        }
+        return true;
+    }
+    
+    /**
+     * Evaluates a pure boolean AND expression where all terms are boolean literals.
+     */
+    private ExpressionBuilder.Expression<F> evaluateBooleanAnd(List<ExpressionBuilder.Expression<F>> terms) {
+        // AND is true only if all terms are true
+        for (ExpressionBuilder.Expression<F> term : terms) {
+            ExpressionBuilder<F>.BoolExpression boolTerm = (ExpressionBuilder<F>.BoolExpression) term;
+            if (!boolTerm.getValue()) {
+                return builder.bool(false); // Any false makes the whole AND false
+            }
+        }
+        return builder.bool(true); // All terms are true
+    }
+    
+    /**
+     * Evaluates a pure boolean OR expression where all terms are boolean literals.
+     */
+    private ExpressionBuilder.Expression<F> evaluateBooleanOr(List<ExpressionBuilder.Expression<F>> terms) {
+        // OR is false only if all terms are false
+        for (ExpressionBuilder.Expression<F> term : terms) {
+            ExpressionBuilder<F>.BoolExpression boolTerm = (ExpressionBuilder<F>.BoolExpression) term;
+            if (boolTerm.getValue()) {
+                return builder.bool(true); // Any true makes the whole OR true
+            }
+        }
+        return builder.bool(false); // All terms are false
     }
 }

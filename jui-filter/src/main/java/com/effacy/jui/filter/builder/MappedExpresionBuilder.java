@@ -2,6 +2,8 @@ package com.effacy.jui.filter.builder;
 
 import java.util.List;
 
+import com.effacy.jui.filter.builder.Field.EnumType;
+
 /**
  * Used to allow an expression builder to be used with a builable of a different
  * field-type by providing a mapper for values of that type.
@@ -69,8 +71,9 @@ public class MappedExpresionBuilder<T,F1,F2> implements IExpressionBuilder<T,F1>
                 throw new ExpressionBuildException("unable to map field " + ((Enum<?>)field).name());
             throw new ExpressionBuildException("unable to map field " + field);
         }
+        if ((value != null) && (mapped instanceof Field))
+            value = ((Field) mapped).type().transform(value);
         return delegate.term(mapped, operator, value);
-         
     }
 
 }

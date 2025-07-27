@@ -131,6 +131,11 @@ public class FieldTest {
             Assertions.fail("expected to pass validation: " + e.getMessage());
         }
         try {
+            TestFilter.term(Fields.STATUS, Operator.IN, Status.STATUS1).validate();
+        } catch (ExpressionBuildException e) {
+            Assertions.fail("expected to pass validation: " + e.getMessage());
+        }
+        try {
             TestFilter.term(Fields.STATUS, Operator.IN, new Status[] { Status.STATUS1, Status.STATUS2 }).validate();
         } catch (ExpressionBuildException e) {
             Assertions.fail("expected to pass validation: " + e.getMessage());

@@ -2,10 +2,12 @@ package com.effacy.jui.filter.builder;
 
 import java.util.Optional;
 
+import com.effacy.jui.filter.builder.IExpressionBuilder.Literal;
 import com.effacy.jui.filter.builder.IExpressionBuilder.Operator;
 
 /**
- * Represents a types field for use in building expressions.
+ * Represents a type for fields for use in building expressions which permit
+ * various validation and transformation behaviours to be applied.
  * <p>
  * The field exposes one method for gaining access to a type handler. This can
  * be used to validate operator and value combinations where the field is being
@@ -60,6 +62,22 @@ public interface Field {
         }
 
         /**
+         * Used to transform from the given value to a value that is supported by the
+         * field. At a minimum this should support values that arise through parsing
+         * (see {@link FilterQueryParser}).
+         * <p>
+         * It is expected to properly handle arrays.
+         * 
+         * @param value
+         *              the value to convert.
+         * @return the converted value.
+         * @see MappedExpressionBuilder
+         */
+        public Object transform(Object value) throws ExpressionBuildException {
+            return value;
+        }
+
+        /**
          * Determines if the passed operator is allowed.
          * 
          * @param op
@@ -104,8 +122,18 @@ public interface Field {
             if (array && !op.is(Operator.IN, Operator.NOT_IN))
                 return Optional.of("operator not compatible with array");
             Class<?> type = null;
-            if (value != null)
-                type = !array ? value.getClass() : value.getClass().getComponentType();
+            if (value != null) {
+                if (array) {
+                    Object[] valueAsArray = (Object[]) value;
+                    for (int i = 0; i < valueAsArray.length; i++) {
+                        if (valueAsArray[i] != null) {
+                            type = valueAsArray[0].getClass();
+                            break;
+                        }
+                    }
+                } else
+                    type = value.getClass();
+            }
             if (validator != null) {
                 Optional<String> outcome = validator.validate(op, value, array, type);
                 if (outcome.isPresent())
@@ -126,7 +154,8 @@ public interface Field {
          *              if the value is an array.
          * @param type
          *              the class type for the value (will be {@code null} if the value
-         *              is {@code null}).
+         *              is {@code null} or the value is an empty array or an array of
+         *              {@code null} values).
          * @return an optional that contains an error message if invalid.
          */
         protected Optional<String> _validate(Operator op, Object value, boolean array, Class<?> type) {
@@ -204,8 +233,63 @@ public interface Field {
         public T[] values() {
             return type.getEnumConstants();
         }
+        public T valueOf(Literal literal) throws ExpressionBuildException {
+            if (literal == null)
+                return null;
+            String str = literal.value();
+            for (T v : values())
+            if (str.equalsIgnoreCase(v.name()))
+                return v;
+            throw new ExpressionBuildException();
+        }
+        public Object transform(Object value) throws ExpressionBuildException {
+            if (value == null)
+                return null;
+
+            // Check if the value is of the required type (an enum is this should be OK).
+            if (type.equals(value.getClass()))
+                return value;
+
+            // Check if the value is a literal, then map it.
+            if (value instanceof Literal)
+                return valueOf((Literal) value);
+
+            // Check if is not an array.
+            if (!(value instanceof Object[]))
+                throw new ExpressionBuildException();
+
+            // Is an array, so treat as such.
+            Object[] valueAsArray = (Object[]) value;
+            if (valueAsArray.length == 0)
+                return value;
+
+            //Check if the types are what is excpected.
+            boolean enumType = true;
+            for (Object v : valueAsArray) {
+                if (!type.equals(v.getClass())) {
+                    enumType = false;
+                    break;
+                }
+            }
+            if (enumType)
+                return value;
+
+            // Last chance is that the values are literals.
+            Object[] mappedValue = new Object[valueAsArray.length];
+            for (int i = 0; i < valueAsArray.length; i++) {
+                if (valueAsArray[i] instanceof Literal) {
+                    mappedValue[i] = valueOf((Literal) valueAsArray[i]);
+                } else
+                    throw new ExpressionBuildException();
+            }
+            return mappedValue;
+        }
         protected Optional<String> _validate(Operator op, Object value, boolean array, Class<?> type) {
-            if ((value == null) || this.type.equals(type))
+            // A null type means a null value, an empty array or an array of nulls, which
+            // are all technically valid.
+            if (type == null)
+                return Optional.empty();
+            if (this.type.equals(type))
                 return Optional.empty();
             return Optional.of("expected enum " + this.type.getSimpleName());
         }

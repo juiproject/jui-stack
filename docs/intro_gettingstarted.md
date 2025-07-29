@@ -81,8 +81,8 @@ The POM file follows (replace the version JUI with the latest):
     <version.effacy-jui>...</version.effacy-jui>
 
     <!-- Spring related -->
-    <version.spring>6.1.1</version.spring>
-    <version.spring-boot>3.2.0</version.spring-boot>
+    <version.spring>6.2.8</version.spring>
+    <version.spring-boot>3.5.3</version.spring-boot>
 
     <!-- Plugin versions -->
     <version.build-helper-maven-plugin>3.4.0</version.build-helper-maven-plugin>
@@ -1397,7 +1397,7 @@ Having worked through this getting started guide and the [lessons](lessons.md) y
 
 It is also worth looking through the [Recipies](recipies.md); these contain a fairly large number of code snippets for commonly used patterns and starters.
 
-## Appendices
+## Appendix
 
 The following assumes that you have (or will have) a local version of JUI installed in your Maven repository. This can be done by either building the project directly or when (when the project becomes public accessible) when you first build the `myapplication-jui` project (where JUI is referenced in the POM).
 

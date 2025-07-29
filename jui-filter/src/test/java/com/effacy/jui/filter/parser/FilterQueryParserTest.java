@@ -252,6 +252,102 @@ public class FilterQueryParserTest {
         }
     }
 
+    /**
+     * Tests for NULL value parsing.
+     */
+    @Test
+    public void nullValues() {
+        // Test NULL equality
+        assertParse("""
+            field = NULL
+        """, "field = null");
+        
+        // Test lowercase null
+        assertParse("""
+            field = null
+        """, "field = null");
+        
+        // Test NULL inequality
+        assertParse("""
+            field != NULL
+        """, "field != null");
+        
+        // Test NULL in list
+        assertParse("""
+            field IN [1, NULL, 3]
+        """, "field IN [1,null,3]");
+        
+        // Test NOT NULL
+        assertParse("""
+            NOT field = NULL
+        """, "(NOT field = null)");
+        
+        // Test NULL with boolean operators
+        assertParse("""
+            field = NULL AND other = "value"
+        """, "(field = null AND other = \"value\")");
+        
+        assertParse("""
+            field = NULL OR other = "value"
+        """, "(field = null OR other = \"value\")");
+    }
+
+    /**
+     * Tests for TRUE and FALSE expression parsing.
+     */
+    @Test
+    public void trueFalseExpressions() {
+        // Test standalone TRUE
+        assertParse("""
+            true
+        """, "true");
+        
+        // Test standalone FALSE  
+        assertParse("""
+            false
+        """, "false");
+        
+        // Test uppercase TRUE
+        assertParse("""
+            TRUE
+        """, "true");
+        
+        // Test uppercase FALSE
+        assertParse("""
+            FALSE
+        """, "false");
+        
+        // Test TRUE with AND
+        assertParse("""
+            field = "value" AND true
+        """, "(field = \"value\" AND true)");
+        
+        // Test FALSE with OR
+        assertParse("""
+            field = "value" OR false
+        """, "(field = \"value\" OR false)");
+        
+        // Test FALSE with AND
+        assertParse("""
+            field = "value" AND false
+        """, "(field = \"value\" AND false)");
+        
+        // Test TRUE with OR
+        assertParse("""
+            field = "value" OR true
+        """, "(field = \"value\" OR true)");
+        
+        // Test NOT TRUE
+        assertParse("""
+            NOT true
+        """, "(NOT true)");
+        
+        // Test NOT FALSE
+        assertParse("""
+            NOT false
+        """, "(NOT false)");
+    }
+
     /************************************************************************
      * General tests.
      ************************************************************************/
@@ -301,7 +397,7 @@ public class FilterQueryParserTest {
                 a IN [1, 2, 3]
             """);
             assertNotNull(exp);
-            exp.print();
+            // exp.print();
             String out = exp.build(new StringExpressionBuilder());
             assertEquals("a IN [1,2,3]", out);
         } catch (Exception e) {

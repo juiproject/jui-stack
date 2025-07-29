@@ -37,6 +37,11 @@ import com.effacy.jui.validation.model.IValidator.Message;
 public class ProcessorException extends Exception implements Iterable<ProcessorException.Error> {
 
     /**
+     * The standard system error message.
+     */
+    public static String SYSTEM_ERROR_MSG = "Sorry, an error occurred";
+
+    /**
      * Enumerates the various error types.
      */
     public enum ErrorType {
@@ -212,6 +217,9 @@ public class ProcessorException extends Exception implements Iterable<ProcessorE
      */
     private List<Error> errors = new ArrayList<> ();
 
+    /**
+     * See {@link #passthrough()}.
+     */
     private boolean passthrough;
 
     /**
@@ -222,17 +230,23 @@ public class ProcessorException extends Exception implements Iterable<ProcessorE
     }
 
     /**
-     * Construct by extracting messages from a {@link ValidationException}.
+     * Construct with an exception that is the cause. This is marked as a system
+     * error unless the exception is a {@link ValidationException}, in this case the
+     * error messages are mapped over.
      * 
-     * @param ex
-     *           the exception.
+     * @param e
+     *          the cause of the exception.
      */
-    public ProcessorException(ValidationException ex) {
-        super ();
+    public ProcessorException(Throwable e) {
+        super (e);
 
-        for (Message msg : ex) {
-            Error error = new Error (ErrorType.VALIDATION).path (msg.getPath ()).message (msg.getMessage ());
-            this.errors.add (error);
+        if (e instanceof ValidationException ex) {
+            for (Message msg : ex) {
+                Error error = new Error (ErrorType.VALIDATION).path (msg.getPath ()).message (msg.getMessage ());
+                this.errors.add (error);
+            }
+        } else {
+            this.errors.add( new Error (ErrorType.SYSTEM).message (SYSTEM_ERROR_MSG));
         }
     }
 

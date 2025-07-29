@@ -52,6 +52,7 @@ import com.effacy.jui.rpc.extdirect.metadata.IParameterMetadata;
 import com.effacy.jui.rpc.extdirect.metadata.IRecordMetadata;
 import com.effacy.jui.rpc.extdirect.metadata.IRouterMetadata;
 import com.effacy.jui.rpc.extdirect.metadata.MethodMetadata.TransactionMode;
+import com.effacy.jui.rpc.handler.exception.ProcessorException;
 import com.effacy.jui.rpc.extdirect.metadata.RouterMetadataUtils;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
@@ -655,6 +656,7 @@ public class Router implements IRouterMetadata {
                         if (!action.retryError (request, cause)) {
                             retryCount = 0;
                         } else {
+                            logInfo("Retry,count=" + retryCount + ",delay=" + retryDelay + ",cause=" + cause.getClass().getSimpleName() + ",request=" + request);
                             try {
                                 if (retryDelay > 0)
                                     Thread.sleep (retryDelay);
@@ -669,13 +671,6 @@ public class Router implements IRouterMetadata {
                 } while (retryCount-- > 0);
             } finally {
                 RouterLogger.performance (System.currentTimeMillis () - logPerformanceStart);
-                // if (LOG_PERFORMANCE.isInfoEnabled ()) {
-                // long executionTime = System.currentTimeMillis () -
-                // logPerformanceStart;
-                // LOG_PERFORMANCE.info (request.getRequest ().getSession
-                // ().getId () + "," + methodMetadata.getMethodName () + "," +
-                // executionTime);
-                // }
             }
 
             // This exception will contain the underlying exception
@@ -684,24 +679,22 @@ public class Router implements IRouterMetadata {
                 // All errors are logged at the warn level. In general the
                 // action should perform the logging so dropping down to warn
                 // will expose any messages that are being missed.
-                // if (LOG_REMOTE.isWarnEnabled ())
-                // LOG_REMOTE.warn ("Exception calling: " + request.toString (),
-                // cause);
+                logError ("Exception encountered while processing request: " + request, cause);
                 RouterLogger.exception (cause);
                 return jsonParser.remoteCallResponseToJson (action.processError (request, cause));
             } catch (InvalidCallRequestException e2) {
                 // The action could not handle the error, so we
                 // handle it directly.
-                LOG.error ("Error generated when calling [" + request + "]: ", cause);
+                logError ("Error generated when calling [" + request + "]: ", cause);
                 return processErrorToJson (request, cause);
             }
         } catch (InvalidCallRequestException e) {
             // If the method could not be mapped or the request is not valid.
-            LOG.error ("Error generated when calling [" + request + "]: ", e);
+            logError ("Error generated when calling [" + request + "]: ", e);
             return processErrorToJson (request, e);
         } catch (Throwable e) {
             // This should not happen.
-            LOG.error ("Uncaught exception processing handler: " + e.getMessage (), e);
+            logError ("Uncaught exception processing handler: " + e.getMessage (), e);
             return processErrorToJson (request, e);
         } finally {
             try {
@@ -1306,6 +1299,28 @@ public class Router implements IRouterMetadata {
      */
     public Optional<String> establishCsrfCookies(HttpServletRequest request, HttpServletResponse response) {
         return csrfEncoder.generate (request, response);
+    }
+
+    /**
+     * Logs an exception (arising from any retried).
+     * 
+     * @param message
+     *                any message.
+     * @param e
+     *                the underlying exception.
+     */
+    protected void logError(String message, Throwable e) {
+        LOG.error(message, e);
+    }
+
+    /**
+     * Log an information message (i.e. retries).
+     * 
+     * @param message
+     *                the message.
+     */
+    protected void logInfo(String message) {
+        LOG.info(message);
     }
 
     /**

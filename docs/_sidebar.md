@@ -1,6 +1,4 @@
-**First steps**
-
-- [Understanding JUI](intro_understanding.md)
+- [Introduction](intro_understanding.md)
 - [Getting started](intro_gettingstarted.md)
 
 **Learning JUI** 

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE module PUBLIC "-//JUI//1.0.0" "jui-module-1.0.0.dtd">
 <module>
-    <inherits name="com.effacy.jui.json.JSON"/>
-    <source path="." />
+  <inherits name="com.effacy.jui.platform.Platform"/>
+  <source path="builder" />
+  <source path="parser" />
 </module>

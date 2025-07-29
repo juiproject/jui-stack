@@ -17,7 +17,7 @@ public class ExpressionBuilderTest {
 
     @Test
     public void simple() {
-        ExpressionBuilder<String> seb = new ExpressionBuilder<>();
+        ExpressionBuilder<String> seb = new ExpressionBuilder<>(String.class);
 
         Expression<String> exp = seb.term("status", Operator.EQ, "elephant");
         exp = exp.and(seb.term("quantity", Operator.LT, 33.2));
@@ -30,7 +30,7 @@ public class ExpressionBuilderTest {
         Expression<Fields> exp = FieldsQueryBuilder.field1(Operator.GT, 22)
             .and(FieldsQueryBuilder.field2(Operator.EQ, "hubba"), FieldsQueryBuilder.field3(Operator.IN, new Status[] {Status.ACTIVE, Status.INACTIVE}));
     
-        assertEquals("(FIELD1 > 22 AND FIELD2 = \"hubba\" AND FIELD3 IN [ACTIVE,INACTIVE])", exp.build(StringExpressionBuilder.<Fields> create(f -> f.name())));
+        assertEquals("(FIELD1 > 22 AND FIELD2 = \"hubba\" AND FIELD3 IN [ACTIVE,INACTIVE])", exp.build(StringExpressionBuilder.<Fields> remap(f -> f.name())));
     }
 
     @Test
@@ -41,7 +41,7 @@ public class ExpressionBuilderTest {
             FieldsQueryBuilder.field3(Operator.IN, new Status[] {Status.ACTIVE, Status.INACTIVE})
         );
     
-        assertEquals("(FIELD1 > 22 AND FIELD2 = \"hubba\" AND FIELD3 IN [ACTIVE,INACTIVE])", exp.build(StringExpressionBuilder.<Fields> create(f -> f.name()))); 
+        assertEquals("(FIELD1 > 22 AND FIELD2 = \"hubba\" AND FIELD3 IN [ACTIVE,INACTIVE])", exp.build(StringExpressionBuilder.<Fields> remap(f -> f.name()))); 
     }
 
     @Test
@@ -51,11 +51,11 @@ public class ExpressionBuilderTest {
         """);
         Expression<Fields> exp = pexp.build(FieldsQueryBuilder.stringBuilder());
     
-        assertEquals("((FIELD1 > 22 AND FIELD2 = \"hubba\") AND FIELD3 IN [ACTIVE,INACTIVE])", exp.build(StringExpressionBuilder.<Fields> create(f -> f.name()))); 
+        assertEquals("((FIELD1 > 22 AND FIELD2 = \"hubba\") AND FIELD3 IN [ACTIVE,INACTIVE])", exp.build(StringExpressionBuilder.<Fields> remap(f -> f.name()))); 
     }
 
     @Test
-    public void fields_04() {
+    public void fields_04() throws Exception {
         Expression<Fields> exp = FieldsQueryBuilder.and (
             FieldsQueryBuilder.or (
                 FieldsQueryBuilder.field1(Operator.GT, 22),
@@ -64,7 +64,7 @@ public class ExpressionBuilderTest {
             FieldsQueryBuilder.field3(Operator.IN, new Status[] {Status.ACTIVE, Status.INACTIVE})
         );
     
-        assertEquals("((FIELD1 > 22 OR FIELD2 = \"hubba\") AND FIELD3 IN [ACTIVE,INACTIVE])", exp.build(StringExpressionBuilder.<Fields> create(f -> f.name()))); 
+        assertEquals("((FIELD1 > 22 OR FIELD2 = \"hubba\") AND FIELD3 IN [ACTIVE,INACTIVE])", exp.build(StringExpressionBuilder.<Fields> remap(f -> f.name()))); 
     }
 
     @Test
@@ -179,7 +179,7 @@ public class ExpressionBuilderTest {
             FIELD1, FIELD2, FIELD3;
         }
 
-        private static ExpressionBuilder<Fields> INSTANCE = new ExpressionBuilder<FieldsQueryBuilder.Fields>();
+        public static ExpressionBuilder<Fields> INSTANCE = new ExpressionBuilder<FieldsQueryBuilder.Fields>(FieldsQueryBuilder.Fields.class);
 
         public static IExpressionBuilder<Expression<Fields>,String> stringBuilder() {
             return INSTANCE.mapped(v -> Fields.valueOf(v));

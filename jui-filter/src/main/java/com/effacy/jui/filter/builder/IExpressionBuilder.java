@@ -2,6 +2,8 @@ package com.effacy.jui.filter.builder;
 
 import java.util.List;
 
+import com.effacy.jui.filter.parser.FilterQueryParser;
+
 /**
  * A mechanism that is able to generate an expression programtically as a
  * product of expressions through compositions of AND, OR and NOT as well as
@@ -17,6 +19,21 @@ public interface IExpressionBuilder<T,FIELD> {
      */
     public enum Operator {
         EQ,NEQ,GT,GTE,LT,LTE,IN,NOT_IN,CONTAINS,STARTS_WITH,ENDS_WITH;
+
+        /**
+         * Checks if this type is any of the passed type (there must be a match).
+         * 
+         * @param types
+         *              the types to test against.
+         * @return {@code true} if there is a match.
+         */
+        public boolean is(Operator... types) {
+            for (Operator type : types) {
+                if (this == type)
+                    return true;
+            }
+            return false;
+        }
     }
 
     /**
@@ -69,6 +86,15 @@ public interface IExpressionBuilder<T,FIELD> {
     public T not(T expression);
 
     /**
+     * Creates a boolean literal (BOOL) expression.
+     * 
+     * @param value
+     *              the boolean value (true or false).
+     * @return the resultant BOOL expression.
+     */
+    public T bool(boolean value);
+
+    /**
      * Registers a comparison term with the field, comparison operator and value.
      * <p>
      * Values should be mapped
@@ -80,6 +106,10 @@ public interface IExpressionBuilder<T,FIELD> {
      * @param value
      *                 the value being compared to.
      * @return the representative expression.
+     * @throws ExpressionBuildException
+     *                              if there is an incompatibility between the
+     *                              field, operator and value.
      */
-    public T term(FIELD field, Operator operator, Object value);
+    public T term(FIELD field, Operator operator, Object value) throws ExpressionBuildException;
+
 }

@@ -4,13 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import com.effacy.jui.filter.builder.ExpressionBuildException;
 import com.effacy.jui.filter.builder.IExpressionBuilder;
 import com.effacy.jui.filter.builder.IExpressionBuilder.Literal;
 
 public class BaseNode extends SimpleNode {
 
     public enum ValueType {
-        STRING, LITERAL, INTEGER, DECIMAL, BOOLEAN;
+        STRING, LITERAL, INTEGER, DECIMAL, BOOLEAN, NULL;
     }
 
     protected String image;
@@ -38,16 +39,7 @@ public class BaseNode extends SimpleNode {
             visitor.accept (node);
     }
 
-    @SuppressWarnings("unchecked")
-    protected <T> T find(Class<T> klass) {
-        for (Node child : children) {
-            if (klass.isAssignableFrom(child.getClass()))
-                return (T) child;
-        }
-        return null;
-    }
-
-    public <T> T build(IExpressionBuilder<T,String> builder) {
+    public <T> T build(IExpressionBuilder<T,String> builder) throws ExpressionBuildException {
         List<T> expressions = new ArrayList<>();
         if (children != null) {
             for (int i = 0; i < children.length; i++)
@@ -83,6 +75,10 @@ public class BaseNode extends SimpleNode {
             return builder.term(term(), IExpressionBuilder.Operator.STARTS_WITH, value());
         if (this instanceof AstEndsWith)
             return builder.term(term(), IExpressionBuilder.Operator.ENDS_WITH, value());
+        if (this instanceof AstTrueExpression)
+            return builder.bool(true);
+        if (this instanceof AstFalseExpression)
+            return builder.bool(false);
 
         return null;
     }
@@ -114,6 +110,8 @@ public class BaseNode extends SimpleNode {
         ValueType valueType = node.valueType;
         if (valueType == null)
             return null;
+        if (ValueType.NULL == valueType)
+            return null;
         if (ValueType.BOOLEAN == valueType)
             return "true".equals(node.image);
         if (ValueType.INTEGER == valueType)
@@ -125,6 +123,9 @@ public class BaseNode extends SimpleNode {
         return node.image;
     }
 
+    /**
+     * Print the node tree for debugging.
+     */
     protected void print(int depth) {
         if (this instanceof AstField)
             System.out.println(" ".repeat(Math.max(0, depth)) + getClass().getSimpleName() + "[" + this.image + "]");

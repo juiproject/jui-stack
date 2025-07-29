@@ -1,5 +1,8 @@
 package com.effacy.jui.filter.builder;
 
+/**
+ * Used to map one field value to another.
+ */
 @FunctionalInterface
 public interface FieldMapper<F1,F2> {
 

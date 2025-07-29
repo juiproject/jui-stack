@@ -31,3 +31,37 @@ on the module project.
 There is a unit test `FilterQueryParserTest` for testing the parser itself. Ensure this passes after making any grammar changes (and modify accordingly).
 
 For parsers, making changes to the grammar can wreck havoc pretty quickly so the tests are essential.
+
+## Grammar
+
+Here is a compact EBNF representation of the grammar:
+
+```bnf
+expression   ::= orExpr ;
+orExpr       ::= andExpr (("OR" | "or") andExpr)* ;
+andExpr      ::= notExpr (("AND" | "and") notExpr)* ;
+notExpr      ::= ("NOT" | "not" | "!" | "~") notExpr
+               | primary ;
+primary      ::= comparison
+               | "(" expression ")"
+               | "TRUE" | "true"
+               | "FALSE" | "false" ;
+comparison   ::= field compOp value
+               | field listOp list ;
+field        ::= IDENTIFIER ;
+compOp       ::= "=" | "==" | "IS" | "is"
+               | "!=" | "~=" | "<>"
+               | ">" | ">=" | "<" | "<="
+               | "CONTAINS" | "contains"
+               | "STARTS WITH" | "starts with"
+               | "ENDS WITH" | "ends with" ;
+listOp       ::= "IN" | "in" | "NOT IN" | "not in" ;
+value        ::= STRING | IDENTIFIER | INTEGER | DECIMAL
+               | "TRUE" | "true" | "FALSE" | "false"
+               | "NULL" | "null" ;
+list         ::= "[" value ("," value)* "]" ;
+IDENTIFIER   ::= letter (letter | digit | "_")* ;
+STRING       ::= '"' (any character except '"')* '"' ;
+INTEGER      ::= ["-"] digit+ ;
+DECIMAL      ::= ["-"] digit+ "." digit+ ;
+```

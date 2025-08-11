@@ -566,10 +566,10 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
             this.operator = operator;
             // If the operator is an IN or NOT_IN then we need to ensure that the value is
             // an array (it is OK to transform this to an array).
-            if (((operator == Operator.IN) || (operator == Operator.NOT_IN)) && !(value instanceof Object[])) {
+            if ((operator == Operator.IN) || (operator == Operator.NOT_IN)) {
                 if (value == null)
                     value = new Object[0];
-                else
+                else if (!value.getClass().isArray())
                     value = new Object[] { value };
             }
             this.value = value;

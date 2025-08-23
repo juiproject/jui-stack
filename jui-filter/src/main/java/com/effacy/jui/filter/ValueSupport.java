@@ -89,6 +89,12 @@ public final class ValueSupport {
         return result;
     }
 
+    public static Boolean asBoolean(Object value) throws ExpressionBuildException {
+        if (value instanceof Boolean)
+            return (Boolean) value;
+        return null;
+    }
+
     public static String asString(Object value) throws ExpressionBuildException {
         if (value == null)
             return null;

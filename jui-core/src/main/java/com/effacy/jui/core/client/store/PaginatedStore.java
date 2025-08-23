@@ -329,6 +329,10 @@ public abstract class PaginatedStore<V> extends StoreSelection<V> implements IPa
      *                 addition).
      */
     protected void _load(int page, int pageSize, boolean full) {
+        // Determine if we already have everything loaded.
+        if (!full && (totalAvailable > 0) && (size() >= totalAvailable))
+            return;
+
         // Determine if this is an addition.
         boolean addition = !full && (this.status != Status.UNLOADED) && (page == 0) && (this.page == 0) && (pageSize > this.pageSize);
         if (addition) {

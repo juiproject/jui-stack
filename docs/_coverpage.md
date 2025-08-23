@@ -6,5 +6,5 @@
 
 - A lightweight component-oriented UI platform designed specifically for Java developers
 
-[Documentation](#documentation)
+[Documentation](#welcome-to-jui-stack)
 [GitHub](https://github.com/juiproject/jui-stack/)

@@ -45,6 +45,42 @@ public class Wrap {
     }
 
     /**
+     * Convenience to build into a node directly but retaining the existing content.
+     * Can be used for updates.
+     * 
+     * @param el
+     *                the node to build into.
+     * @param builder
+     *                to build the content.
+     * @return the generated node provider.
+     */
+    public static INodeProvider appendInto(Element el, Consumer<ElementBuilder> builder) {
+        return Wrap.$ (el).$ (root -> {
+            if (builder != null)
+                builder.accept (root);
+        }).build ();
+    }
+
+    /**
+     * Convenience to build into a node directly but retaining the existing content.
+     * Can be used for updates.
+     * 
+     * @param el
+     *                the node to build into.
+     * @param builder
+     *                to build the content.
+     * @param extractor
+     *                  to extract elements from the newly built DOM.
+     * @return the generated node provider.
+     */
+    public static INodeProvider appendInto(Element el, Consumer<ElementBuilder> builder, Consumer<NodeContext> extractor) {
+        return Wrap.$ (el).$ (root -> {
+            if (builder != null)
+                builder.accept (root);
+        }).build (extractor);
+    }
+
+    /**
      * Convenience to build into a node directly. Can be used for updates.
      * 
      * @param el

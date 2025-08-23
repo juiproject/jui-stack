@@ -483,16 +483,6 @@ public class Component<C extends Component.Config> implements IEventListener, IC
      */
     protected boolean preRenderHide = false;
 
-    // /**
-    //  * The assigned width of the component.
-    //  */
-    // private Length assignedWidth = null;
-
-    // /**
-    //  * The assigned height of the component.
-    //  */
-    // private Length assignedHeight = null;
-
     /**
      * The last recorded height of the component.
      */
@@ -1249,47 +1239,6 @@ public class Component<C extends Component.Config> implements IEventListener, IC
     }
 
     /**
-     * {@inheritDoc}
-     * 
-     * @see com.effacy.jui.core.client.component.IComponent#setSize(com.effacy.jui.core.client.component.Length,
-     *      com.effacy.jui.core.client.component.Length)
-     */
-    // @Override
-    // public void setSize(Length width, Length height) {
-    //     // Store the values if not rendered.
-    //     if (rootEl == null) {
-    //         if (width != null)
-    //             this.preRenderWidth = width;
-    //         if (height != null)
-    //             this.preRenderHeight = height;
-    //         return;
-    //     }
-
-    //     // Check that this is OK.
-    //     if (onSetSize (width, height))
-    //         return;
-
-    //     // Check if the sizes have changed since last time.
-    //     boolean widthChanged = (width != null) && !width.equals (this.assignedWidth);
-    //     boolean heightChanged = (height != null) && !height.equals (this.assignedHeight);
-    //     if (!widthChanged && !heightChanged)
-    //         return;
-
-    //     // Apply the new Lengths.
-    //     if (widthChanged) {
-    //         assignWidth (width);
-    //         this.assignedWidth = width;
-    //     }
-    //     if (heightChanged) {
-    //         assignHeight (height);
-    //         this.assignedHeight = height;
-    //     }
-
-    //     // Notify the change.
-    //     reconfigure ();
-    // }
-
-    /**
      * Called when the component is having its size set.
      * 
      * @param width
@@ -1785,6 +1734,35 @@ public class Component<C extends Component.Config> implements IEventListener, IC
         INodeProvider provider = (extractor == null) ? Wrap.buildInto (el, builder) : Wrap.buildInto (el, builder, extractor);
         if (provider instanceof IUIEventHandler)
             registerEventHandler ((IUIEventHandler) provider, replacementKey, true);
+        if (provider instanceof NodeContext)
+            adopt ((NodeContext) provider);
+    }
+
+    /**
+     * See {@link #appendInto(Element, Consumer, Consumer)} but with no extractor.
+     */
+    protected void appendInto(Element el, Consumer<ElementBuilder> builder) {
+        appendInto(el, builder, null);
+    }
+
+    /**
+     * Builds into the given element but does not remove what is there already (see
+     * {@link #buildInto(Element, Consumer)}).
+     * 
+     * @param el
+     *                  the element to build into.
+     * @param builder
+     *                  the builder.
+     * @param extractor
+     *                  the extractor.
+     */
+    protected void appendInto(Element el, Consumer<ElementBuilder> builder, Consumer<NodeContext> extractor) {
+        if (DebugMode.RENDER.set())
+            Logger.trace ("[cpt]", "{append-into} [" + toString() + "]");
+        disposeChildren (el);
+        INodeProvider provider = (extractor == null) ? Wrap.appendInto (el, builder) : Wrap.appendInto (el, builder, extractor);
+        if (provider instanceof IUIEventHandler)
+            registerEventHandler ((IUIEventHandler) provider, null, true);
         if (provider instanceof NodeContext)
             adopt ((NodeContext) provider);
     }

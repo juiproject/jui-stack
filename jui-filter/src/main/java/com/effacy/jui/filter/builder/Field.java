@@ -215,6 +215,23 @@ public interface Field {
     }
 
     /**
+     * Basic {@link Integer}, {@link Long}, {@link Double} or {@link Float} type.
+     */
+    public static class BooleanType extends Type {
+        public BooleanType(Operator...operators) {
+            super(null, operators);
+        }
+        public BooleanType(ITypeValidator validator, Operator...operators) {
+            super(validator, operators);
+        }
+        protected Optional<String> _validate(Operator op, Object value, boolean array, Class<?> type) {
+            if ((value == null) || Boolean.class.equals(type))
+                return Optional.empty();
+            return Optional.of("expected a boolean");
+        }
+    }
+
+    /**
      * Basic {@link Enum} type.
      */
     public static class EnumType<T extends Enum<T>> extends Type {

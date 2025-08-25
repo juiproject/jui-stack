@@ -1,5 +1,6 @@
 package com.effacy.jui.filter.builder;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.effacy.jui.filter.parser.FilterQueryParser;
@@ -45,12 +46,22 @@ public interface IExpressionBuilder<T,FIELD> {
      * See {@link #and(List)}.
      */
     default public T and(@SuppressWarnings("unchecked") T...expressions) {
-        return and(List.of(expressions));
+        List<T> filtered = new ArrayList<>();
+        if (expressions != null) {
+            for (int i = 0; i < expressions.length; i++) {
+                if (expressions[i] != null)
+                    filtered.add(expressions[i]);
+            }
+        }
+        return and(filtered);
     }
 
     /**
      * Given a list of expressions, generates an expression that evaluates to the
      * AND of the expressions.
+     * <p>
+     * This method is {@code null}-safe (i.e. passed expressions can be
+     * {@code null}).
      * 
      * @param expressions
      *                    the expression to AND.
@@ -62,12 +73,22 @@ public interface IExpressionBuilder<T,FIELD> {
      * See {@link #or(List)}.
      */
     default public T or(@SuppressWarnings("unchecked") T...expressions) {
-        return or(List.of(expressions));
+        List<T> filtered = new ArrayList<>();
+        if (expressions != null) {
+            for (int i = 0; i < expressions.length; i++) {
+                if (expressions[i] != null)
+                    filtered.add(expressions[i]);
+            }
+        }
+        return or(filtered);
     }
 
     /**
      * Given a list of expressions, generates an expression that evaluates to the
      * OR of the expressions.
+     * <p>
+     * This method is {@code null}-safe (i.e. passed expressions can be
+     * {@code null}).
      * 
      * @param expressions
      *                    the expression to OR.

@@ -98,12 +98,16 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
     /**
      * This will serialise the passed expression (produced by this builder) to a
      * string.
+     * <p>
+     * A {@code null} expression returns a {@code null} string.
      * 
      * @param exp
      *            the expression to serialise.
      * @return the serialised expression.
      */
     public String serialise(Expression<F> exp) {
+        if (exp == null)
+            return null;
         if (fieldToStringMapper == null)
             throw new ExpressionBuildException("no field-to-string mapper defined");
         return exp.build(StringExpressionBuilder.<F> remap(fieldToStringMapper));
@@ -112,7 +116,8 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
     /**
      * Deserialised the passed string to an expression supported by this builder.
      * <p>
-     * The resulting expression will also be validated.
+     * The resulting expression will also be validated. Note that a {@code null}
+     * value will return a true expression.
      * 
      * @param str
      *               the string to parse.
@@ -127,7 +132,7 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
         if (stringToFieldMapper == null)
             throw new ExpressionBuildException("no string-to-field mapper defined");
         if (str == null)
-            return null;
+            return bool(true);
         ParsedExpression pexp = FilterQueryParser.parse(str);
         try {
             return pexp.build(mapped(v -> stringToFieldMapper.map(v))).validate();
@@ -349,25 +354,57 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
 
     /**
      * Creates a new expression that is the AND of the passed expressions.
+     * <p>
+     * This safely deals will {@code null} values. An empty expression defaults to
+     * true.
      */
     @Override
     public Expression<F> and(List<Expression<F>> expressions) {
-        return new ANDExpression(expressions);
+        if (expressions == null)
+            return bool(true);
+        List<Expression<F>> filtered = new ArrayList<>();
+        expressions.forEach(f -> {
+            if (f != null)
+                filtered.add(f); 
+        });
+        if (filtered.isEmpty())
+            return bool(true);
+        if (filtered.size() == 1)
+            return filtered.get(0);
+        return new ANDExpression(filtered);
     }
 
     /**
      * Creates a new expression that is the OR of the passed expressions.
+     * <p>
+     * This safely deals will {@code null} values. An empty expression defaults to
+     * false.
      */
     @Override
     public Expression<F> or(List<Expression<F>> expressions) {
+        if (expressions == null)
+            return bool(false);
+        List<Expression<F>> filtered = new ArrayList<>();
+        expressions.forEach(f -> {
+            if (f != null)
+                filtered.add(f); 
+        });
+        if (filtered.isEmpty())
+            return bool(false);
+        if (filtered.size() == 1)
+            return filtered.get(0);
         return new ORExpression(expressions);
     }
 
     /**
      * Creates a new expression that is the NOT of the passed expression.
+     * <p>
+     * A {@code null} expression defaults to true.
      */
     @Override
     public Expression<F> not(Expression<F> expression) {
+        if (expression == null)
+            return bool(true);
         return new NOTExpression(expression);
     }
 

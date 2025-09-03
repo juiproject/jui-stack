@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://juiproject.github.io/jui-stack/</loc>
+    <priority>1.0</priority>
+  </url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/app_codeserver</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/app_compilation</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/cpt_files</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/cpt_overview</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/cpt_patterns</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/cpt_selection</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/ess_components</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/ess_controls</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/ess_create</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/ess_events</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/ess_export</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/ess_galleries</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/ess_modals</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/ess_navigation</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/ess_states</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/ess_styles</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/ess_testing</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/home</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/intro_gettingstarted</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/intro_understanding</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/lessons</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/lessons_1</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/lessons_2</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/lessons_3</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/lessons_4</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/lessons_5</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/lessons_6</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/patterns_remoting</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/patterns_rendering</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/topic_focusblur</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/topic_remoting</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/topic_rendering</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://juiproject.github.io/jui-stack/#/tutorial</loc>
+  <priority>0.8</priority>
+</url>
+</urlset>

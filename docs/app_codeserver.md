@@ -361,16 +361,21 @@ To resolve:
 
 There are a couple of possible causes for this:
 
-1. The most likely is that the previous version is still being referenced. You can check for this by setting the `diagnose` option to `true` (i.e. `<diagnose>true</diagnose>`). If it is indeed the previous version you should see those JAR's being listed.
-2. The next most likely is that code compiled with the previous version remains in cache or on disk.
+1. The most likely is that the **previous version is still being referenced**. You can check for this by setting the `diagnose` option to `true` (i.e. `<diagnose>true</diagnose>`). If it is indeed the previous version you should see those JAR's being listed.
+2. The next most likely is that code compiled with the **previous version remains in cache** or on disk.
 
 To resolve try each of the following until the issue resolves itself:
 
-1. Ensure that you are not inadvertently referencing the previous version for the code server Maven plugin.
-2. Perform a full build and install of your project (ignoring tests is fine).
-3. Delete any old cache locations used by the codeserver.
+1. **Reload projects in IDE**
+If you are running from within an IDE the sometimes this can produce artefacts that interfere with Maven running on the command line (your IDE may have the ability to resolve POM dependencies, if older versions appear there then that is a good sign that the problem lies with the IDE not being fully refreshed with the POM changes). Make sure you have properly reloaded each project to reflect changes in POM's from changing the JUI version (i.e. running **Maven** > **Reload**, or the equivalent, for each module project). 
+2. **Double check versions**
+Ensure that you are not inadvertently referencing the previous version for the code server Maven plugin.
+3. **Rebuild**
+Perform a full Maven build and install of your project (ignoring tests is fine).
+4. **Remove caches**
+Delete any old cache locations used by the codeserver.
 
-For item (3) the codeserver displays the working and caching locations when it starts:
+For item (4) the codeserver displays the working and caching locations when it starts:
 
 ```bash
 ...

@@ -37,6 +37,8 @@ import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.builder.Text;
 import com.effacy.jui.core.client.dom.builder.Ul;
 import com.effacy.jui.core.client.dom.builder.Wrap;
+import com.effacy.jui.core.client.dom.css.CSS;
+import com.effacy.jui.core.client.dom.css.Rational;
 import com.effacy.jui.core.client.dom.jquery.JQuery;
 import com.effacy.jui.core.client.dom.jquery.JQueryElement;
 import com.effacy.jui.core.client.store.FilteredStore;
@@ -520,6 +522,7 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
      *              the value to pre-select.
      */
     public void _reset(List<V> values) {
+        CSS.OPACITY.unset(itemsEl);
         this.selection.clear ();
         if (values != null)
             this.selection.addAll (values);
@@ -572,7 +575,16 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
      * presentation as needed.
      */
     public void _refresh() {
+        // Logger.info(("_refresh: " + store.getStatus().name() + " " + store.getTotalAvailable() + " " + store.size()));
+        // When loading we mask the existing content until the load has finished.
+        if (store.getStatus() == Status.LOADING) {
+            CSS.OPACITY.apply(itemsEl, Rational.of(0.4));
+            return;
+        }
+        CSS.OPACITY.unset(itemsEl);
+
         int index = selection.isEmpty () ? 0 : Math.max (0, store.indexOf (selection.get(selection.size() - 1)));
+
         // Remove an spinner style which may have been added on the last build.
         itemsEl.classList.remove (styles ().list_spinner ());
 

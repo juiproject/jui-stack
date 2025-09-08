@@ -91,6 +91,11 @@ public interface IPaginatedStore<V> extends IStore<V> {
      * <p>
      * If this is the first load then will automatically load the first page of
      * results.
+     * <p>
+     * In terms of state if in {@link Status#UNLOADED} then it remains in that state
+     * otherwise it will be marked as {@link Status#LOADING}. Any existing contents
+     * will be cleared and a store-changed event will be fired prior to the
+     * initiation of the remote load.
      */
     public void reload();
 

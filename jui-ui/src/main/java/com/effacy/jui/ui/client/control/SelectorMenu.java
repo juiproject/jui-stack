@@ -54,8 +54,9 @@ import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.Element;
+import elemental2.dom.HTMLDivElement;
 import elemental2.dom.HTMLInputElement;
-import elemental2.dom.ScrollIntoViewOptions;
+import elemental2.dom.HTMLLIElement;
 
 /**
  * A standard selector used by {@link SelectionControl}.
@@ -407,7 +408,7 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
                 else if (i > els.length - 1)
                     i = 0;
                 els[i].classList.add (styles ().active ());
-                _scrollIntoView (els[i]);
+                _scrollIntoView ((HTMLLIElement) els[i]);
                 return;
             }
         }
@@ -439,7 +440,7 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
             } else {
                 els[i].classList.add (styles ().active ());
                 if (scrollIntoView)
-                    _scrollIntoView (els[i]);
+                    _scrollIntoView ((HTMLLIElement) els[i]);
             }
         }
         return true;
@@ -451,10 +452,19 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
      * @param el
      *           the element (being a selectable item).
      */
-    protected void _scrollIntoView(Element el) {
-        ScrollIntoViewOptions options = ScrollIntoViewOptions.create ();
-        options.setBlock ("nearest");
-        el.scrollIntoView (options);
+    protected void _scrollIntoView(HTMLLIElement el) {
+        HTMLDivElement scrollerEl = (HTMLDivElement) el.parentElement.parentElement;
+        
+        int itemTop = el.offsetTop;
+        int itemBottom = itemTop + el.offsetHeight;
+        double scrollerTop = scrollerEl.scrollTop;
+        double scrollerBottom = scrollerTop + scrollerEl.clientHeight;
+        
+        if (itemTop < scrollerTop) {
+            scrollerEl.scrollTop = itemTop;
+        } else if (itemBottom > scrollerBottom) {
+            scrollerEl.scrollTop = itemBottom - scrollerEl.clientHeight;
+        }
     }
 
     /**

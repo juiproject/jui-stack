@@ -15,6 +15,8 @@
  ******************************************************************************/
 package com.effacy.jui.test;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -504,6 +506,27 @@ public class Test<T> {
      */
     public <V> Test<T> is(Function<T, V> f, V expected) {
         Assertions.assertEquals (expected, f.apply (value));
+        return this;
+    }
+
+    /**
+     * Extracts a double balue and tests if it matches the expected value to the
+     * given resolution in decimal places.
+     * 
+     * @param f
+     *                 the extractor (to obtain the test value from the wrapped
+     *                 object).
+     * @param expected
+     *                 the expected value.
+     * @param dp
+     *                 the number of decimal places to test to (numbers are rounded
+     *                 up).
+     * @return this test instance.
+     */
+    public Test<T> is(Function<T, Double> f, Double expected, int dp) {
+        BigDecimal expectedBd = BigDecimal.valueOf(expected).setScale(dp, RoundingMode.HALF_UP);
+        BigDecimal fBd = BigDecimal.valueOf(f.apply(value)).setScale(dp, RoundingMode.HALF_UP);
+        Assertions.assertEquals (expectedBd, fBd);
         return this;
     }
 

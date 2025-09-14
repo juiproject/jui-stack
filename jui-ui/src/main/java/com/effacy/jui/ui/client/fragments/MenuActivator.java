@@ -47,13 +47,51 @@ public class MenuActivator {
 
     public static class AMenuActivatorFragment<T extends AMenuActivatorFragment<T>> extends BaseFragmentWithChildren<T> {
 
+        /**
+         * See {@link #clickToActivate()}.
+         */
         private boolean clickToActivate;
 
+        /**
+         * See {@link #aboveThreshold(int)}.
+         */
+        private int aboveThreshold = 100;
+
+        /**
+         * Internal. Holds the activator.
+         */
         private ActivationHandler handler;
 
+        /**
+         * The default is that the menu opens on mouse-over. However, it can be
+         * configured to open on a click.
+         * 
+         * @return this fragment instance.
+         */
         @SuppressWarnings("unchecked")
         public T clickToActivate() {
             this.clickToActivate = true;
+            return (T)this;
+        }
+
+        /**
+         * When the menu activator is with 100px of the bottom of the enclosing scroller
+         * then menu will be displayed above the activator. This allows to to adjust
+         * that threshold, but also allows you to disable it by setting a value that is
+         * zero (or less).
+         * <p>
+         * Note that when displaying above the menu is offset above the bottom to clear
+         * the height of the activator. This is configured in CSS with the variable
+         * {@code --juiMenuActivator-aboveOffset}.
+         * 
+         * @param aboveThreshold
+         *                       the activation threshold in px to situate the menu
+         *                       above the activator.
+         * @return this fragment instance.
+         */
+        @SuppressWarnings("unchecked")
+        public T aboveThreshold(int aboveThreshold) {
+            this.aboveThreshold = aboveThreshold;
             return (T)this;
         }
 
@@ -62,7 +100,10 @@ public class MenuActivator {
             root.style ("juiMenuActivator");
             if (clickToActivate) {
                 root.apply (n -> {
-                    handler = new ActivationHandler ((Element) n, (Element) n, "open");
+                    if (aboveThreshold > 0)
+                        handler = new ActivationHandler ((Element) n, (Element) n, "open", "above", aboveThreshold);
+                    else
+                        handler = new ActivationHandler ((Element) n, (Element) n, "open");
                 });
                 root.onclick(e -> {
                     handler.toggle ();

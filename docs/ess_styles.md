@@ -60,7 +60,7 @@ Of course, with global CSS, one needs to be careful when nameing and referencing
 
 ## Injected CSS
 
-*This approach permits the use of multiple CSS files which can be focussed on specific sections or components. These CSS files must be injected programmatically and must reside in the applications module package. This is the recommended approach to structuring CSS for components that are not being shared across projects (i.e. non-library components).*
+*This approach permits the use of multiple CSS files which can be focussed on specific sections or components. These CSS files must be injected programmatically and must reside in the applications module package. This is convenient for prototyping but has the drawback that loading occurs on-demand which may result in "flashing" when the HTML is generated prior to the styles being loaded.*
 
 This is a variant on the global case except that the CSS is injected by JUI. The main advatanges are that the CSS can be maintained more closely within the JUI source tree and that changes to the CSS during development are processed immediately through the [code server](app_codeserver.md) and not through the application server (depending on your approach this may otherwise require a restart of the application server). Other than that the principles are identical to the global case.
 
@@ -109,9 +109,19 @@ In summary injected CSS is a very straight forward approach to handling CSS acro
 
 ## Localised CSS
 
-The final method is the most robust but is also the most complicated; this is ideally suited to use with re-usable components and has the distinct advantage of name hashing that reduces the likelihood of style pollution (as noted above).
+The final method is the most robust but is also the most complicated and is ideally suited to use with re-usable components and has the distinct advantage of name hashing that reduces the likelihood of style pollution (as noted above) and a relatively straightforward means of overriding. Having said that, this approach can be "inlined" into a component allowing the style sheet to be declared in the component class as a multi-line string. This provides a nice balance between formality and convenience.
 
-### The CSS interface
+### Structure
+
+Localised CSS consists of the following:
+
+1. A [CSS interface](#css-interface) that declares the styles in use (though this is not a requirement per-se).
+2. A [styles instantiator](#creating-an-instance-of-the-styles) which will create an instance of the styles using *rebinding* using stylesheets provided by reference or inlined.
+3. [Using the styles](#using-the-styles) by making them available to your component (or fragment).
+
+Generally these are delcared in the component (or fragment) that they pertain to. See [Patterns](#patterns) for examples.
+
+#### CSS interface
 
 To begin we need to declare our CSS styles in an interface, which extends `CSSResource`. Most of the time we will be using this technique for the styles associated with a specific component and in this case we extend `IComponentCSS`. The rest of this documentation will make the assumption that this is the case.
 
@@ -133,7 +143,9 @@ The name of the interface is not relevant however, by convention, we tend to dec
 
 ?> You may have noticed that we have tended to use underscores within style names rather than dashes (i.e. `my_css_class` as opposed to `my-css-class`) which goes against convention. The reason being that if we were to migrate our global or injected styles to localised one we would need to have corresponding method name in the associated styles interface; dashes are not permitted in this context.
 
-### Creating an instance of the styles
+You will generally declare all styles that you want to use in this interface. However, that is not strictly required. By declaring them you provide a type of strictness for CSS styles and how they are used in your code. Without declaring them you provide styles simply as strings. This is outlined in more detail in [Mixing styles (strictness)](#mixing-styles-strictness).
+
+#### Creating an instance of the styles
 
 We now make use of (a variant of) the GWT CSS resources mechanism (see to [Css Styling](https://www.gwtproject.org/doc/latest/DevGuideUiCss.html) for details). This employs a feature of the GWT compiler called *rebinding* which can create boiler-plate code, prior to the compilation, using a separate class processor in a fashion similar to [Java Annotation Processing](https://docs.oracle.com/javase/8/docs/api/javax/annotation/processing/Processor.html).
 
@@ -166,6 +178,8 @@ We describe the various elements as follows:
 3. The `styles()` abstract method will be implemented during rebinding and this is where our styles are created. What happens is that the rebinding processor inspects the `@StyleResource` annotation for the sources CSS files to use. These are composed into one big CSS resource with the latter references overriding the earlier ones. The declared CSS classes are matched with those declared on the styles interface (and the match needs to be one-to-one). The names are then hashed (obfuscated) to as to prevent the problem of colliding CSS names (a problem discussed under [Global CSS](#global-css)) and the hashed names are returned by the assciated method in the implemented interface returned by `styles()`.
 4. The `instance()` method creates the singleton instance referenced in (2) above. Note the use of `GWT.create(...)` which is where an instance of the rebound class is created.
 
+?>So far described the styles sheets are encoded in separate `css` files. However, with multi-line strings these can be fully inlined into the annotation. This is detailed in [Inlining the stylesheet](#inlining-the-stylesheet).
+
 Another convenient aspect of the above is that we can create multuple variants of the `ILocalCSS` for different stylings. We can do this just by creating another `XXXCSS` class. The following is also taken from `Button`:
 
 ```java
@@ -191,71 +205,7 @@ public static abstract class LinkCSS implements ILocalCSS {
 
 This time we refer to the CSS files `Button_Link.css` and `Button_Link_Override.css` rather than `Button.css` and `Button_Override.css`.  The `Button` component can be supplied which styles to use during construction (there is a little more to it than that as we employ a particular pattern for style changes to components, one that allows more than just changing CSS, but the principle is the same - see `Button.Config.Style`).
 
-### Inlining the stylesheet
-
-You are not restricted to providing file-based stylesheets, you do have the option to inline them. This is quite good for shorter stylesheets or when you are prototyping. To inline you need to declare the styles using the `stylesheet` property of `@CssResource`:
-
-```java
-@CssResource(stylesheet = """
-    .component {
-        position: relative;
-        display: inline-flex;
-        ...
-    } 
-    .component .outer {
-        margin: 0;
-        width: 100%;
-        ...
-    }
-    ...
-""")
-public static abstract class LinkCSS implements ILocalCSS {
-
-    private static LinkCSS STYLES;
-
-    public static ILocalCSS instance() {
-        if (STYLES == null) {
-            STYLES = (LinkCSS) GWT.create (LinkCSS.class);
-            STYLES.ensureInjected ();
-        }
-        return STYLES;
-    }
-}
-```
-
-You can also combine the inlined stylesheet with file-based ones:
-
-```java
-@CssResource(value = IComponentCSS.COMPONENT_CSS, stylesheet = """
-    .component {
-        position: relative;
-        display: inline-flex;
-        ...
-    } 
-    .component .outer {
-        margin: 0;
-        width: 100%;
-        ...
-    }
-    ...
-""")
-public static abstract class LinkCSS implements ILocalCSS {
-
-    private static LinkCSS STYLES;
-
-    public static ILocalCSS instance() {
-        if (STYLES == null) {
-            STYLES = (LinkCSS) GWT.create (LinkCSS.class);
-            STYLES.ensureInjected ();
-        }
-        return STYLES;
-    }
-}
-```
-
-The one caveat with inlining is that you cannot override stylesheets (see [Stylesheet overrides](#stylesheet-overrides)). However, this is only a limitation with libraries.
-
-### Using the styles
+#### Using the styles
 
 Now when it comes to using these styles we simply access the style via the static method:
 
@@ -319,8 +269,75 @@ protected INodeProvider buildNode (Element el) {
 
 This means you can mix obfuscated styles with non-ofuscated ones. Here you can gain the benefit of scoping (by an obfuscated one) as well a having a localised style sheet while not having to have every style represented in the CSS interface.
 
+?>Be wary that when you don't declare the styles explicitly there will be styles that are declared implicitly by way of inheriting from `IComponentCSS` (or any other common style class). For example, `IComponentCSS` declares `component` and `disabled` (among others). These styles **cannot** be referenced directly and have to be resolved via the declared methods (since they will be obfuscated).
+
 This is not really a recommended approach (especially for component libraries) but is certainly a useful feature when converting from a global or injected CSS to a localised one.
 
+### Inlining the stylesheet
+
+*See [Patterns: Local styles (inlined stylesheet)](#local-styles-inlined-stylesheet) for an example.*
+
+You are not restricted to providing file-based stylesheets, you do have the option to inline them. This is quite good for shorter stylesheets or when you are prototyping. To inline you need to declare the styles using the `stylesheet` property of `@CssResource`:
+
+```java
+@CssResource(stylesheet = """
+    .component {
+        position: relative;
+        display: inline-flex;
+        ...
+    } 
+    .component .outer {
+        margin: 0;
+        width: 100%;
+        ...
+    }
+    ...
+""")
+public static abstract class LinkCSS implements ILocalCSS {
+
+    private static LinkCSS STYLES;
+
+    public static ILocalCSS instance() {
+        if (STYLES == null) {
+            STYLES = (LinkCSS) GWT.create (LinkCSS.class);
+            STYLES.ensureInjected ();
+        }
+        return STYLES;
+    }
+}
+```
+
+You can also combine the inlined stylesheet with file-based ones:
+
+```java
+@CssResource(value = IComponentCSS.COMPONENT_CSS, stylesheet = """
+    .component {
+        position: relative;
+        display: inline-flex;
+        ...
+    } 
+    .component .outer {
+        margin: 0;
+        width: 100%;
+        ...
+    }
+    ...
+""")
+public static abstract class LinkCSS implements ILocalCSS {
+
+    private static LinkCSS STYLES;
+
+    public static ILocalCSS instance() {
+        if (STYLES == null) {
+            STYLES = (LinkCSS) GWT.create (LinkCSS.class);
+            STYLES.ensureInjected ();
+        }
+        return STYLES;
+    }
+}
+```
+
+The one caveat with inlining is that you cannot override stylesheets (see [Stylesheet overrides](#stylesheet-overrides)). However, this is only a limitation with libraries.
 
 ## Inline styles
 
@@ -750,29 +767,38 @@ Since injected stylesheets are injected later that local ones you sometimes (not
 The following pattern can be used in a `SimpleComponent` to seed building out local styles for the component.
 
 ```java
-@Override
-protected ILocalCSS styles() {
-    return LocalCSS.instance ();
-}
+public class MyComponent extends SimpleComponent {
 
-public static interface ILocalCSS extends IComponentCSS {
-    // Add relevant styles.
-}
+    ...
 
-@CssResource({  
-    IComponentCSS.COMPONENT_CSS,
-    "../MyComponent.css"
-})
-public static abstract class LocalCSS implements ILocalCSS {
+    /************************************************************************
+     * CSS styles
+     ************************************************************************/
 
-    private static LocalCSS STYLES;
+    @Override
+    protected ILocalCSS styles() {
+        return LocalCSS.instance ();
+    }
 
-    public static ILocalCSS instance() {
-        if (STYLES == null) {
-            STYLES = (LocalCSS) GWT.create (LocalCSS.class);
-            STYLES.ensureInjected ();
+    public static interface ILocalCSS extends IComponentCSS {
+        // Add relevant styles.
+    }
+
+    @CssResource({  
+        IComponentCSS.COMPONENT_CSS,
+        "../MyComponent.css"
+    })
+    public static abstract class LocalCSS implements ILocalCSS {
+
+        private static LocalCSS STYLES;
+
+        public static ILocalCSS instance() {
+            if (STYLES == null) {
+                STYLES = (LocalCSS) GWT.create (LocalCSS.class);
+                STYLES.ensureInjected ();
+            }
+            return STYLES;
         }
-        return STYLES;
     }
 }
 ```
@@ -809,3 +835,48 @@ If you want to migrate from injected styles to [local styles](#local-styles) thi
 3. For each declared style create an entry in the `ILocalCSS` (i.e. for `mystyle` create `String mystyle();` in `ILocalCSS`).
 4. Replace applications of the style with their `ILocalCSS` equivalanet (i.e. for `.style ("mystyle")` replace with `.style (styles ().mystyle ())`).
 5. Remove the `CSSInjector` statement and remove the old stylesheet from the `public` directory.
+
+### Local styles (inlined stylesheet)
+
+For a version of the above that uses an inlined stylesheet:
+
+```java
+public class MyComponent extends SimpleComponent {
+
+    ...
+
+    /************************************************************************
+     * CSS styles
+     ************************************************************************/
+
+    @Override
+    protected ILocalCSS styles() {
+        return LocalCSS.instance ();
+    }
+
+    public static interface ILocalCSS extends IComponentCSS {
+        // Add relevant styles.
+    }
+
+    @CssResource(value = IComponentCSS.COMPONENT_CSS, stylesheet = """
+        .component {
+            ...
+        }
+        ...
+    """)
+    public static abstract class LocalCSS implements ILocalCSS {
+
+        private static LocalCSS STYLES;
+
+        public static ILocalCSS instance() {
+            if (STYLES == null) {
+                STYLES = (LocalCSS) GWT.create (LocalCSS.class);
+                STYLES.ensureInjected ();
+            }
+            return STYLES;
+        }
+    }
+}
+```
+
+This includes the default `IComponentCSS.COMPONENT_CSS` styles (declaration only, so you don't need to worry about them).

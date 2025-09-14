@@ -158,6 +158,11 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
         private boolean expandOnFocusRetain;
 
         /**
+         * See {@link #expandOnContent(boolean)}.
+         */
+        private boolean expandOnContent;
+
+        /**
          * See {@link #keyPressHandler(Function)}.
          */
         private Function<String, Boolean> keyPressHandler;
@@ -336,6 +341,26 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
         }
 
         /**
+         * Convenience to call {@link #expandOnContent(boolean)} passing {@code true}.
+         */
+        public Config expandOnContent() {
+            return expandOnContent(true);
+        }
+
+        /**
+         * Expands the height of the text area to match the content (to reveal all the
+         * content rather than scrolling).
+         * 
+         * @param expandOnContent
+         *                        {@code true} to expand when the content changes.
+         * @return this configuration instance.
+         */
+        public Config expandOnContent(boolean expandOnContent) {
+            this.expandOnContent = expandOnContent;
+            return this;
+        }
+
+        /**
          * Registers a key press handler. This (if present) will receive the various key
          * presses and return whether to accept that key press or not. It is a way of
          * filtering out key presses (or simply to respond to specific keys, like the
@@ -448,8 +473,18 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
      */
     protected HTMLElement counterEl;
 
+    /**
+     * See {@link #footer(Consumer)}.
+     */
     protected Consumer<ElementBuilder> footer;
 
+    /**
+     * Assigns a builder for building out content below the textarea.
+     * 
+     * @param footer
+     *               the builder.
+     * @return this control.
+     */
     public TextAreaControl footer(Consumer<ElementBuilder> footer) {
         this.footer = footer;
         return this;
@@ -474,6 +509,7 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
             if (height == null)
                 height = Length.px (0);
             CSS.MIN_HEIGHT.apply(inputEl, height);
+            sizeAfterAssignment = 0;
         }
         return this;
     }
@@ -504,6 +540,8 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
                 height(config().expandOnFocus);
         }
         _updateCounter();
+        if (config().expandOnContent)
+            TimerSupport.defer(() -> _resize(true));
     }
 
     /**
@@ -522,6 +560,8 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
                         if (!filterKeyPress (e.getKeyCode (), inputEl.value))
                             e.stopEvent ();
                     }, UIEventType.ONKEYPRESS);
+                    if (config().expandOnContent)
+                        ta.on (e -> _resize(false), UIEventType.ONINPUT);
                     ta.on (e -> modified (), UIEventType.ONKEYUP);
                     ta.on (e -> {
                         TimerSupport.defer(() -> {
@@ -555,6 +595,30 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
             inputEl = (HTMLTextAreaElement) manageFocusEl (tree.first ("input"));
             counterEl = (HTMLElement) manageFocusEl (tree.first ("counter"));
         });
+    }
+
+    /**
+     * Used to capture the size of the textarea after an assignment in value has
+     * been made. This is used when {@link Config#expandOnContent} is enabled and
+     * constitutes the smallest value permissible for the height of the textarea.
+     */
+    private int sizeAfterAssignment = 0;
+
+    /**
+     * Re-sizes the text area if needed.
+     * 
+     * @param assigned
+     *                 {@code true} if the resize is being applied after an
+     *                 assignment of value.
+     */
+    protected void _resize(boolean assigned) {
+        if (assigned)
+            sizeAfterAssignment = inputEl.clientHeight;
+        int minHeight = 16; // Math.max(16, 16 * config().rows);
+        if (sizeAfterAssignment < minHeight)
+            sizeAfterAssignment = minHeight;
+        if (inputEl.scrollHeight > sizeAfterAssignment)
+            CSS.HEIGHT.apply(inputEl, Length.px(inputEl.scrollHeight));
     }
 
     @Override

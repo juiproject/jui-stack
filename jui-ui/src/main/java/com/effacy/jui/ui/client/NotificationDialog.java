@@ -125,6 +125,11 @@ public class NotificationDialog extends ModalDialog<NotificationDialogContent> {
         private String title;
 
         /**
+         * The width.
+         */
+        private Length width;
+
+        /**
          * See {@link #renderer(Consumer)}.
          */
         private Consumer<ElementBuilder> renderer;
@@ -171,6 +176,18 @@ public class NotificationDialog extends ModalDialog<NotificationDialogContent> {
          */
         public Builder renderer(Consumer<ElementBuilder> renderer) {
             this.renderer = renderer;
+            return this;
+        }
+
+        /**
+         * Assign a specific width to the dialog. The deafault is 400px.
+         * 
+         * @param width
+         *              the width.
+         * @return this builder instance.
+         */
+        public Builder width(Length width) {
+            this.width = width;
             return this;
         }
 
@@ -242,7 +259,7 @@ public class NotificationDialog extends ModalDialog<NotificationDialogContent> {
          * Opens the notification dialog.
          */
         public void open() {
-            new NotificationDialog (title, icon, configurer, renderer, (type, cb) -> {
+            new NotificationDialog (title, width, icon, configurer, renderer, (type, cb) -> {
                 if (handler != null) {
                     handler.accept (type, () -> {
                         cb.complete();
@@ -549,8 +566,8 @@ public class NotificationDialog extends ModalDialog<NotificationDialogContent> {
      */
     private BiConsumer<OutcomeType, ICompletionCallback> handler;
 
-    protected NotificationDialog(String title, Icon icon, Consumer<ModalDialog.Config<NotificationDialogContent>> configurer, Consumer<ElementBuilder> renderer, BiConsumer<OutcomeType, ICompletionCallback> handler, String... notices) {
-        super (createConfig (title, config -> {
+    protected NotificationDialog(String title, Length width, Icon icon, Consumer<ModalDialog.Config<NotificationDialogContent>> configurer, Consumer<ElementBuilder> renderer, BiConsumer<OutcomeType, ICompletionCallback> handler, String... notices) {
+        super (createConfig (title, width, config -> {
             if (configurer != null) {
                 configurer.accept(config);
             } else {
@@ -576,9 +593,9 @@ public class NotificationDialog extends ModalDialog<NotificationDialogContent> {
      * Convenience to create the suitable configuration given the configuration
      * data.
      */
-    private static ModalDialog.Config<NotificationDialogContent> createConfig(String title, Consumer<ModalDialog.Config<NotificationDialogContent>> configurer) {
+    private static ModalDialog.Config<NotificationDialogContent> createConfig(String title, Length width, Consumer<ModalDialog.Config<NotificationDialogContent>> configurer) {
         ModalDialog.Config<NotificationDialogContent> config = new ModalDialog.Config<NotificationDialogContent> ()
-            .width (Length.px (400))
+            .width ((width == null) ? Length.px(400) : width)
             .title (title)
             .padding (Length.px (20));
         if (configurer != null)

@@ -77,6 +77,23 @@ public abstract class ContainerBuilder<T extends ContainerBuilder<T>> extends No
     }
 
     /**
+     * Inserts a {@link Text} node with contents processed as {@link Markup}.
+     * <p>
+     * This does not return the {@link Text} instance but treats as a property on
+     * the contianer element (allowing it to be chained).
+     * 
+     * @param contents
+     *                 the contents.
+     * @return this builder instance.
+     */
+    @SuppressWarnings("unchecked")
+    public T markup(String contents) {
+        MarkupBuilder builder = new MarkupBuilder (contents);
+        insert (builder);
+        return (T) this;
+    }
+
+    /**
      * Inserts a {@link Text} node with constant contents.
      * <p>
      * This does not return the {@link Text} instance but treats as a property on

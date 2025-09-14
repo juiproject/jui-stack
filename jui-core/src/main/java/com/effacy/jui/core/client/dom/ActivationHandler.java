@@ -75,6 +75,16 @@ public class ActivationHandler implements IDisposable {
         private String style;
 
         /**
+         * See constructor.
+         */
+        private String above;
+
+        /**
+         * See constructor.
+         */
+        private int aboveThreshold;
+
+        /**
          * Construct with element and style to apply / remove.
          * 
          * @param el
@@ -88,9 +98,31 @@ public class ActivationHandler implements IDisposable {
         }
 
         /**
+         * Construct with element and style to apply / remove.
+         * 
+         * @param el
+         *                       the element to apply / remove the style.
+         * @param style
+         *                       the style to apply / remove.
+         * @param above
+         *                       an additional style to apply if the element is within
+         *                       the specified threshold of the bottom.
+         * @param aboveThreshold
+         *                       the threshold to trigger the above.
+         */
+        public ClassApplication(Element el, String style, String above, int aboveThreshold) {
+            this.el = el;
+            this.style = style;
+            this.above = above;
+            this.aboveThreshold = aboveThreshold;
+        }
+
+        /**
          * Apply the embodied style to the element.
          */
         public void apply() {
+            if ((above != null) && DomSupport.withinBottomOfScroller(el, aboveThreshold))
+                el.classList.add(above);
             el.classList.add (style);
         }
 
@@ -98,6 +130,8 @@ public class ActivationHandler implements IDisposable {
          * Remove the embodied style from the element.
          */
         public void clear() {
+            if (above != null)
+                el.classList.remove (above);
             el.classList.remove (style);
         }
     }
@@ -165,6 +199,16 @@ public class ActivationHandler implements IDisposable {
     }
 
     /**
+     * See {@link #ActivationHandler(Element, Element, String)} and
+     * {@link #style(Element, String, String, int)}.
+     */
+    public ActivationHandler(Element activatorEl, Element panelControlEl, String panelOpenClass, String above, int aboveThreshold) {
+        style (panelControlEl, panelOpenClass, above, aboveThreshold);
+        exclude (panelControlEl);
+        cancel (activatorEl);
+    }
+
+    /**
      * Adds a listener to the activation handler.
      * <p>
      * Whenever the activator opens or closes the listener will be invoked with a
@@ -195,6 +239,30 @@ public class ActivationHandler implements IDisposable {
         if ((el == null) || (style == null))
             return this;
         styles.add (new ClassApplication (el, style));
+        return this;
+    }
+
+    /**
+     * Provides an element and a style to apply to the element when the activation
+     * is opened. When closed the style will be removed.
+     * 
+     * @param el
+     *                       the element.
+     * @param style
+     *                       the style.
+     * @param above
+     *                       the additional style to apply if the element is within
+     *                       the specified threshold of the bottom of the containing
+     *                       scroller (this should position the selector above the
+     *                       component being activated).
+     * @param aboveThreshold
+     *                       the threashold trigger to activate the above style.
+     * @return this handler.
+     */
+    public ActivationHandler style(Element el, String style, String above, int aboveThreshold) {
+        if ((el == null) || (style == null))
+            return this;
+        styles.add (new ClassApplication (el, style, above, aboveThreshold));
         return this;
     }
 

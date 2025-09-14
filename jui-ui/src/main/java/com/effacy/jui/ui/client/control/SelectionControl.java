@@ -1209,7 +1209,7 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
         // If we are not forcing display positionality then we test if we are close to
         // the bottom and if so position the selector above.
         if (config().selectorVerticalPosition == SelectorPosition.DEFAULT) {
-            if (SelectorSupport.withinBottomOfScroller(getRoot(), config().selectorVerticalThreshold))
+            if (DomSupport.withinBottomOfScroller(getRoot(), config().selectorVerticalThreshold))
                 selectorLocatorEl.classList.add(styles().selector_top());
             else
                 selectorLocatorEl.classList.remove(styles().selector_top());

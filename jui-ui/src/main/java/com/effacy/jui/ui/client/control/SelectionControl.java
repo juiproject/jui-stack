@@ -50,6 +50,7 @@ import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.platform.util.client.TimerSupport;
 import com.effacy.jui.ui.client.control.ISelectorMenu.ISelectorMenuConfig;
+import com.effacy.jui.ui.client.control.SelectionControl.Config.SelectorPosition;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.google.gwt.core.client.GWT;
 
@@ -146,6 +147,10 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
          */
         protected Style style = (DEFAULT_STYLE != null) ? DEFAULT_STYLE : Style.STANDARD;
 
+        enum SelectorPosition {
+            DEFAULT, TOP, BOTTOM;
+        }
+
         /**
          * See {@link #placeholder(String)}.
          */
@@ -184,7 +189,12 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
         /**
          * See {@link #selectorTop(boolean)}.
          */
-        private boolean selectorTop;
+        private SelectorPosition selectorVerticalPosition = SelectorPosition.DEFAULT;
+
+        /**
+         * See {@link #selectorVerticalThreshold(int)}
+         */
+        private int selectorVerticalThreshold = 100;
 
         /**
          * See {@link #store(IStore)}.
@@ -465,13 +475,16 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
 
         /**
          * Determines if the selector should display above.
+         * <p>
+         * See comments on {@link #selectorBottom(boolean)} with regard to the default
+         * behaviour.
          * 
          * @param selectorTop
-         *                    {@code true} to display above.
+         *                    {@code true} to display above
          * @return this configuration instance.
          */
         public Config<V> selectorTop(boolean selectorTop) {
-            this.selectorTop = selectorTop;
+            this.selectorVerticalPosition = selectorTop ? SelectorPosition.TOP : SelectorPosition.DEFAULT;
             return this;
         }
 
@@ -482,6 +495,50 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
          */
         public Config<V> selectorTop() {
             return selectorTop (true);
+        }
+
+        /**
+         * Determines if the selector should display below.
+         * <p>
+         * This forces the display at the bottom regardless of where the control appears
+         * on the page. The default displays below but when the control appears near the
+         * bottom of the page (rather, the first scrollable parent) then it flips to
+         * above.
+         * 
+         * @param selectorBottom
+         *                       {@code true} to display below.
+         * @return this configuration instance.
+         */
+        public Config<V> selectorBottom(boolean selectorBottom) {
+            this.selectorVerticalPosition = selectorBottom ? SelectorPosition.BOTTOM : SelectorPosition.DEFAULT;
+            return this;
+        }
+
+        /**
+         * See {@link #selectorBottom(boolean)}. Convenience to pass {@code true}.
+         * 
+         * @return this configuration instance.
+         */
+        public Config<V> selectorBottom() {
+            return selectorBottom (true);
+        }
+
+        /**
+         * Sets the vertical threshold distance to the bottom of the scroll area before
+         * the selector flips to display above the control rather than below.
+         * <p>
+         * This is the default behaviour (and is assigned as the default when this
+         * method is called). You can force display above or below via
+         * {@link #selectorBottom(boolean)} or {@link #selectorTop(boolean)}.
+         * 
+         * @param selectorVerticalThreshold
+         *                                  the threshold in pixels (default is 100).
+         * @return this configuration instance.
+         */
+        public Config<V> selectorVerticalThreshold(int selectorVerticalThreshold) {
+            this.selectorVerticalThreshold = selectorVerticalThreshold;
+            this.selectorVerticalPosition = SelectorPosition.DEFAULT;
+            return this;
         }
 
         /**
@@ -1149,7 +1206,19 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
      * Shows (and resets) the selector.
      */
     public void showSelector() {
+        // If we are not forcing display positionality then we test if we are close to
+        // the bottom and if so position the selector above.
+        if (config().selectorVerticalPosition == SelectorPosition.DEFAULT) {
+            if (DomSupport.withinBottomOfScroller(getRoot(), config().selectorVerticalThreshold))
+                selectorLocatorEl.classList.add(styles().selector_top());
+            else
+                selectorLocatorEl.classList.remove(styles().selector_top());
+        }
+        
+        // Open with style.
         getRoot ().classList.add (styles ().open ());
+
+        // Prime the selector wth the valu list.
         if (value == null) {
             selector.reset (null);
         } else {
@@ -1237,7 +1306,7 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
                     selector.attr ("test-ref", "selector");
                 selector.id ("selector").by ("selector");
                 selector.apply (attach (SelectionControl.this.selector));
-                if (data.selectorTop)
+                if (data.selectorVerticalPosition == SelectorPosition.TOP)
                     selector.style (styles ().selector_top ());
                 if (data.selectorLeft)
                     selector.style (styles ().selector_left ());

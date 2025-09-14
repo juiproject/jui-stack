@@ -124,6 +124,8 @@ public class CSS {
 
     public static final ColorProperty BACKGROUND_COLOR = new ColorProperty ("backgroundColor");
 
+    public static final RationalProperty OPACITY = new RationalProperty ("opacity");
+
     /************************************************************************
      * Property implementation classes
      ************************************************************************/
@@ -162,6 +164,11 @@ public class CSS {
             return el;
         }
 
+        public Element unset(Element el) {
+            unset (JQuery.$ (el));
+            return el;
+        }
+
         /**
          * Applies the CSS to a {@link TemplateBuilder} element.
          */
@@ -178,6 +185,18 @@ public class CSS {
                 el.css (text (), (String) null);
             else
                 el.css (text (), value.value ());
+            return el;
+        }
+
+        /**
+         * Assign "unset" to the property.
+         * 
+         * @param el
+         *           the element to apply to.
+         * @return the passed element.
+         */
+        public JQueryElement unset(JQueryElement el) {
+            el.css (text (), "unset");
             return el;
         }
 
@@ -235,6 +254,21 @@ public class CSS {
         private String property;
 
         public DecimalProperty(String property) {
+            this.property = property;
+        }
+
+        @Override
+        public String text() {
+            return property;
+        }
+
+    }
+
+    public static class RationalProperty extends CSSProperty<Rational> {
+
+        private String property;
+
+        public RationalProperty(String property) {
             this.property = property;
         }
 

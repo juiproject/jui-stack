@@ -37,6 +37,8 @@ import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.builder.Text;
 import com.effacy.jui.core.client.dom.builder.Ul;
 import com.effacy.jui.core.client.dom.builder.Wrap;
+import com.effacy.jui.core.client.dom.css.CSS;
+import com.effacy.jui.core.client.dom.css.Rational;
 import com.effacy.jui.core.client.dom.jquery.JQuery;
 import com.effacy.jui.core.client.dom.jquery.JQueryElement;
 import com.effacy.jui.core.client.store.FilteredStore;
@@ -54,8 +56,9 @@ import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.Element;
+import elemental2.dom.HTMLDivElement;
 import elemental2.dom.HTMLInputElement;
-import elemental2.dom.ScrollIntoViewOptions;
+import elemental2.dom.HTMLLIElement;
 
 /**
  * A standard selector used by {@link SelectionControl}.
@@ -407,7 +410,7 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
                 else if (i > els.length - 1)
                     i = 0;
                 els[i].classList.add (styles ().active ());
-                _scrollIntoView (els[i]);
+                _scrollIntoView ((HTMLLIElement) els[i]);
                 return;
             }
         }
@@ -439,7 +442,7 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
             } else {
                 els[i].classList.add (styles ().active ());
                 if (scrollIntoView)
-                    _scrollIntoView (els[i]);
+                    _scrollIntoView ((HTMLLIElement) els[i]);
             }
         }
         return true;
@@ -451,10 +454,19 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
      * @param el
      *           the element (being a selectable item).
      */
-    protected void _scrollIntoView(Element el) {
-        ScrollIntoViewOptions options = ScrollIntoViewOptions.create ();
-        options.setBlock ("nearest");
-        el.scrollIntoView (options);
+    protected void _scrollIntoView(HTMLLIElement el) {
+        HTMLDivElement scrollerEl = (HTMLDivElement) el.parentElement.parentElement;
+        
+        int itemTop = el.offsetTop;
+        int itemBottom = itemTop + el.offsetHeight;
+        double scrollerTop = scrollerEl.scrollTop;
+        double scrollerBottom = scrollerTop + scrollerEl.clientHeight;
+        
+        if (itemTop < scrollerTop) {
+            scrollerEl.scrollTop = itemTop;
+        } else if (itemBottom > scrollerBottom) {
+            scrollerEl.scrollTop = itemBottom - scrollerEl.clientHeight;
+        }
     }
 
     /**
@@ -510,6 +522,7 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
      *              the value to pre-select.
      */
     public void _reset(List<V> values) {
+        CSS.OPACITY.unset(itemsEl);
         this.selection.clear ();
         if (values != null)
             this.selection.addAll (values);
@@ -562,7 +575,16 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
      * presentation as needed.
      */
     public void _refresh() {
+        // Logger.info(("_refresh: " + store.getStatus().name() + " " + store.getTotalAvailable() + " " + store.size()));
+        // When loading we mask the existing content until the load has finished.
+        if (store.getStatus() == Status.LOADING) {
+            CSS.OPACITY.apply(itemsEl, Rational.of(0.4));
+            return;
+        }
+        CSS.OPACITY.unset(itemsEl);
+
         int index = selection.isEmpty () ? 0 : Math.max (0, store.indexOf (selection.get(selection.size() - 1)));
+
         // Remove an spinner style which may have been added on the last build.
         itemsEl.classList.remove (styles ().list_spinner ());
 

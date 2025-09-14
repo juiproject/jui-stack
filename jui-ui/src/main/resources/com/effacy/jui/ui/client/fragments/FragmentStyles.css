@@ -163,6 +163,7 @@
 .juiMenuActivator {
     --juiMenuActivator-radius: 30px;
     --juiMenuActivator-padding: 6px 11px;
+    --juiMenuActivator-aboveOffset: 2em;
 }
 
 .juiMenuActivator {
@@ -171,6 +172,7 @@
     border-radius: var(--juiMenuActivator-radius);
     transition: background-color 0.1s ease-in;
     display: inline-block;
+    cursor: pointer;
 }
 
 .juiMenuActivator > em {
@@ -204,6 +206,11 @@
     animation: juiMenuActivator-fade 0.4s;
 }
 
+.juiMenuActivator.open.above > div {
+    top: auto;
+    bottom: var(--juiMenuActivator-aboveOffset);
+}
+
 @keyframes juiMenuActivator-fade {
     0% {
         opacity: 0;
@@ -220,7 +227,7 @@
 .juiMenu {
     --juiMenu-outlined-bg: var(--jui-color-aux-white);
     --juiMenu-outlined-border: var(--jui-line-light);
-    --juiMenu-outlined-border-radius: var(--jui-border-radius);
+    --juiMenu-outlined-border-radius: 0.5rem;
     --juiMenu-outlined-shadow-color: var(--jui-color-neutral30);
     --juiMenu-outlined-shadow-size: 10px;
 }
@@ -270,7 +277,7 @@
 }
 
 .juiMenuItem:hover {
-    background-color: var(--jui-color-neutral20);
+    background-color: var(--jui-color-neutral10);
     border-radius: var(--jui-border-radius);
 }
 
@@ -284,6 +291,11 @@
 
 .juiMenuItem.disabled:hover {
     background-color: transparent !important;
+}
+
+.juiMenuItem em {
+    width: 1.2em;
+    text-align: center;
 }
 
 /*************************************************

@@ -19,7 +19,9 @@ This is a reference to some commonly used code that could be useful when develop
 4. [State](#state)
 5. [JUI components](#jui-components)
 6. [Remoting](#remoting)
-7. [Examples](#examples)
+7. [Stores](#stores)
+     1. [Infinite scrolling](#infinite-scrolling)
+8. [Examples](#examples)
 
 ## Components
 
@@ -2721,6 +2723,95 @@ new WebApplicationServiceHandler<ItemResultSet>()
     })
     .remoteExecute(new ItemQuery(0, 20));
 ```
+
+## Stores
+
+### Infinite scrolling
+
+Infinite scrolling is a common method of presenting data in tabular or gallery views, allowing a user to continuously scroll through records until reaching the end of the dataset. This differs from the paged model, where users must actively select and navigate between discrete pages of data.
+
+In the context of a data store, infinite scrolling is implemented through a `loadNext` operation. This instructs the store to retrieve the next page of results and append them to the existing tabular or gallery view. The call is triggered when the user scrolls near the bottom of the current view, creating the effect of seamless, continuous scrolling through the dataset.
+
+There are three main challenges associated with implementing this model:
+
+1. **Initial load** - After retrieving the first page of data, the content may not be sufficient to fill the entire view. In such cases, an immediate loadNext() must be triggered to ensure the view is populated.
+2. **Scroll detection** - The system must accurately determine when the user is approaching the end of the scrollable view so that the next loadNext() can be triggered at the right moment.
+3. **Rendering strategy** - Once new records are retrieved, the application must decide whether to re-render the entire view or to incrementally render only the newly appended records, balancing performance and responsiveness.
+
+Each challenge is addressed below and assumes that there is an element `storeContentEl` that contains the contents of the store (and is what is scrolled).
+
+#### Initial load
+
+When content is loaded into the store a load listener should respond and render the contents into `storeContentEl`. At this point we perform a test to see if the contents fill out the view. If not, then we invoke a `loadNext()` (and continue to do so until all store contents have been loaded or we pass the end of the view).
+
+```java
+store.handleAfterLoad(str -> {
+    // Build store contents / new records into storeContentEl.
+    ...
+    // Test if we have filled out the available view.
+    if ((store.getTotalAvailable() > store.size()) && (store.getStatus() != IStore.Status.LOADING)) {
+        if (storeContentEl.clientHeight < storeContentEl.parentElement.clientHeight)
+            store.loadNext();
+    }
+});
+```
+
+#### Scroll detection
+
+The following pattern can be used to detect when one is near the end of the scrollable area. The assumption is the `root` is scrollable (though can be any suitable element that has a constrained or fixed height). Store content is written into this element.
+
+A scroll event handler is attached to the element that monitors its location near the end of the view area and triggers a `loadNext()` on the store when within a suitable threshold. The restriction on loading simply prevent unneccesary loads being invoked.
+
+```java
+renderer(root -> {
+    root.css("overflow: auto;");
+    root.use(n -> storeContentEl = (Element) n);
+    root.on((e,n) -> {
+        Element el = (Element) n;
+        if ((el.scrollHeight > 0) && ((el.scrollHeight - el.clientHeight - el.scrollTop) <= 10)) {
+            if ((store.getStatus() != IStore.Status.LOADING))
+                store.loadNext();
+        }
+    }, UIEventType.ONSCROLL);
+});
+```
+
+#### Rendering strategy
+
+The simplest approach is to re-render the store contents into `storeContentEl`:
+
+```java
+buildInto(storeContentEl, r -> {
+    store.forEach(item -> {
+        // Render item
+        ...
+    });
+});
+```
+
+If you want an more of an additive approach we can test the page size against the initial page size (which reflects the advancement).
+
+```java
+if (store.getPageSize() > store.getInitialPageSize()) {
+    // Amount is what has been added.
+    int amount = ((store.getPageSize() - 1) % store.getInitialPageSize()) + 1
+    appendInto(galleryEl, r -> {
+        store.asList().subList(store.size() - amount, store.size()).forEach(item -> {
+            // Render item
+            ...
+        });
+    });
+} else {
+    buildInto(galleryEl, r -> {
+        store.forEach(item -> {
+            // Render item
+            ...
+        });
+    });
+}
+```
+
+The use of `buildInto(...)` will allow for event handlers to be attached (and will dispose of any prior handlers).
 
 ## Examples
 

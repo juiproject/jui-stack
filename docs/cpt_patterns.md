@@ -12,6 +12,10 @@ This is a reference to some commonly used code that could be useful when develop
      5. [Fragments](#fragments)
      6. [Controls](#controls)
 2. [Modal dialogs](#modal-dialogs)
+     1. [Inline modals](#inline-modals)
+     2. [Modal enabling](#modal-enabling-a-component)
+     3. [Modal with resolver](#modal-with-resolver)
+     3. [Modal with state](#modal-with-state)
 3. [Form patterns](#form-patterns)
      1. [Create form](#create-form)
      2. [Update form](#update-form)
@@ -1313,13 +1317,13 @@ public static class MyComponent extends SimpleComponent implements IProcessable<
 Activates the dialog passing configuration data through to the component. This can be combined with [Processing dialog](#processing-dialog).
 
 ```java
-public static class MyComponent extends SimpleComponent implements IEditable<ConfigType> {
+public static class MyComponent extends SimpleComponent implements IEditable<ConfigData> {
 
-    private static IDialogOpener<ConfigType, Void> DIALOG;
+    private static IDialogOpener<ConfigData, Void> DIALOG;
 
-    public static void open(ConfigType config) {
+    public static void open(ConfigData config) {
         if (DIALOG == null)
-            DIALOG = ModalDialogCreator.<ConfigType, Void, MyComponent>dialog (new MyComponent (), cfg -> {
+            DIALOG = ModalDialogCreator.<ConfigData, Void, MyComponent>dialog (new MyComponent (), cfg -> {
                 cfg.style (ModalStyle.UNIFORM)
                     .title ("Create something")
                     .type (Type.CENTER)
@@ -1332,53 +1336,160 @@ public static class MyComponent extends SimpleComponent implements IEditable<Con
         ...
 
         @Override
-        public void edit(ConfigType config) {
+        public void edit(ConfigData config) {
             ...
         }
     }
 }
 ```
 
-Note that if the component extends `ControlForm<ConfigType,?>` then `edit(ConfigType)` is provided by the base class and will be used to populate the form contents.
+Note that if the component extends `ControlForm<ConfigData,?>` then `edit(ConfigData)` is provided by the base class and will be used to populate the form contents.
 
-#### Configurable dialog using a record
-
-It is often the case that a dialog will need component-specific configuration (i.e. beyond that provided by an existing type). Here you can use a `record` as the configuration object.
+It is common to declare `ConfigData` as a record:
 
 ```java
-public static class MyComponent extends SimpleComponent implements IEditable<MyComponent.MyComponentConfig> {
+public static class MyComponent extends SimpleComponent implements IEditable<ConfigData> {
 
-    public static record MyComponentConfig(...) {
-        public static MyComponentConfig of(...) {
-            return new MyComponentConfig(...);
+    public static record ConfigData(...) {
+        public static ConfigData of(...) {
+            return new ConfigData(...);
         }
-        ...
     }
 
-    private static IDialogOpener<MyComponentConfig, Void> DIALOG;
+    ...
+}
+```
 
-    public static void open(MyComponentConfig config) {
-        ...
+One then opens the dialog as (or similar):
+
+```java
+MyComponent.open(MyComponent.ConfigData.of(...));
+```
+
+The `of(...)` method actually represents a family of methods that take varying arguments for different configuration arrangements.
+
+### Modal with resolver
+
+It is quite common to pop-up a modal, have it retrieve some data then present that data. In this context it makes sense to use an `IResolver`:
+
+```java
+public class MyComponent extends SimpleComponent implements IEditable<MyResult> {
+
+    /************************************************************************
+     * Dialog support.
+     ************************************************************************/
+
+    private static IDialogOpener<IResolver<MyResult>, Void> DIALOG;
+
+    public static void open(IResolver<MyResult> resolver) {
+        if (DIALOG == null)
+            DIALOG = ModalDialogCreator.<IResolver<MyResult>, Void, MyComponent>dialog (new MyComponent (), cfg -> {
+                cfg.style (ModalStyle.UNIFORM)
+                    .title ("Preview")
+                    .type (Type.CENTER)
+                    .width (Length.px(500));
+            }, null, b -> b.label ("Close"));
+        DIALOG.open (resolver, null);
     }
 
-    public MyComponent() {   
-        ...
+    /************************************************************************
+     * Main class.
+     ************************************************************************/
 
-        @Override
-        public void edit(MyComponentConfig config) {
-            ...
+    private MyResult result;
+
+    private boolean failed;
+
+    public MyComponent() {
+        renderer(root -> {
+            if (result != null) {
+                // Display content.
+                ...
+            } else if (failed) {
+                // Display error.
+                ...
+            } else {
+                // Display loading.
+                ...
+            }
+        });
+    }
+
+    @Override
+    public void editLoading() {
+        this.result = null;
+        this.failed = false;
+        rerender();
+    }
+
+    @Override
+    public void editFailed() {
+        this.failed = true;
+    }
+
+    @Override
+    public void edit(AssetClassLookupResult result) {
+        this.result = result;
+        this.failed = false;
+        rerender();
+    }
+    
+}
+```
+
+### Modal with state
+
+As an alternative to using a [resolver](#modal-with-resolver) we can make use of a state:
+
+```java
+public class MyComponent extends StateComponent<LocalState> implements IEditable<Long> {
+    
+    ...
+
+    public MyComponent() {
+        super(new LocalState());
+        renderer(root -> {
+            if (state().isOK()) {
+                // Display data.
+            } else if (state().isLoading()) {
+                // Loading.
+            } else {
+                // Error.s
+            }
+        });
+    }
+
+    @Override
+    public void edit(Long id) {
+        state().load(id);
+    }
+
+    /************************************************************************
+     * State.
+     ************************************************************************/
+
+    static class LocalState extends LifecycleStateVariable<LocalState> { 
+
+        protected MyResult result;
+
+        protected void load(long id) {
+            loading();
+            // Load the data; this is an example using RPC.
+            new MyServiceHandler<MyResult> ()
+            .onSuccessful (v -> {
+                this.result = v;
+                modify();
+            })
+            .onFailure ((v, s) -> {
+                error(v, w -> w.getMessage());
+            })
+            .remoteExecute (MyLookup.byId (id));
         }
     }
 }
 ```
 
-Which can then be invoked by:
-
-```java
-MyComponent.open(MyComponentConfig.of(...));
-```
-
-The use of the static `of(...)` methods allows for various configuration arrangements to be supplied in a constrained manner.
+This has the advantage of making available details on the error as well as providing a standardised lifecycle.
 
 ## Form patterns
 

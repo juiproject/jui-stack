@@ -763,7 +763,6 @@ public class DomSupport {
             return false;
         double pos1 = el.getBoundingClientRect().bottom;
         double pos2 = p.getBoundingClientRect().bottom;
-        Logger.info("P: " + pos1 + " " + pos2);
         return (pos2 - pos1) < distance;
     }
 

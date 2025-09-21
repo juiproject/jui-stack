@@ -43,6 +43,9 @@ public class Menu {
      * Implementation
      ************************************************************************/
 
+    /**
+     * Different (but standard) variations of style for the menu.
+     */
     public enum Variant {
         OUTLINED;
     }
@@ -51,12 +54,27 @@ public class Menu {
 
     public static class AMenuFragment<T extends AMenuFragment<T>> extends APaperFragment<T> {
 
+        /**
+         * See {@link #variant(Variant)}.
+         */
         protected Variant variant = Variant.OUTLINED;
 
+        /**
+         * See {@link #width(Length)}.
+         */
         protected Length width;
 
+        /**
+         * See {@link #height(Length)}.
+         */
         protected Length height;
 
+        /**
+         * Handler for when there is a click on the menu.
+         * <p>
+         * This is used directly by {@link MenuActivator} to close when an item is
+         * clicked on.
+         */
         protected Invoker menuItemClicked;
 
         /**
@@ -101,6 +119,8 @@ public class Menu {
 
         @Override
         public void build(ContainerBuilder<?> parent) {
+            if ((conditional != null) && !conditional.get())
+                return;
             Ul.$ (parent).$ (ul -> {
                 adorn (ul);
                 ul.style ("juiMenu", "juiMenu-" + variant.name ().toLowerCase ());

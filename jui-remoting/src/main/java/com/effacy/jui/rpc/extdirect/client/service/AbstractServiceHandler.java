@@ -504,14 +504,13 @@ public abstract class AbstractServiceHandler<V,Q extends AbstractServiceHandler<
      * @param title
      *                the title of the message (if relevant).
      * @param content
-     *                the error message itself (this may contain HTML markup).
+     *                the error message itself (this may contain HTML markup but
+     *                otherwise will have been safely escaped).
      * @param cb
      *                (optional) a callback once the message has been confirmed (if
      *                relevant, but if present it must be invoked).
      */
     protected abstract void notifyError(String title, String content, ICompletionCallback cb);
-
-
 
     /**
      * Displays a notification message (i.e. at the top of the page).

@@ -56,7 +56,7 @@ public class Fragment<T extends Fragment<T>> implements IDomInsertable {
     /**
      * See {@link #iff(boolean)}.
      */
-    private Supplier<Boolean> conditional;
+    protected Supplier<Boolean> conditional;
 
     /**
      * Can be used to conditionally display the fragment.

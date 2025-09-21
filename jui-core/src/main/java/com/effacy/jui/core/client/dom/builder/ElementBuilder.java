@@ -461,6 +461,21 @@ public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
     }
 
     /**
+     * Assigns inner HTML to the element.
+     * <p>
+     * Use with caution as this can be used as a site of injection. The preference
+     * is to construct HTML using builders.
+     * 
+     * @param innerHTML
+     *                  the inner HTML to assign.
+     * @return this element instance.
+     */
+    public ElementBuilder innerHTML(String innerHTML) {
+        this.innerHTML = innerHTML;
+        return this;
+    }
+
+    /**
      * The name of the element tag.
      */
     private String tag;
@@ -484,6 +499,11 @@ public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
      * Events to sink.
      */
     private List<UIEventType> events;
+
+    /**
+     * See {@link #innerHTML(String)}.
+     */
+    private String innerHTML;
 
     /**
      * {@inheritDoc}
@@ -543,6 +563,8 @@ public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
             for (UIEventType event : events)
                 event.attach (element);
         }
+        if (!StringSupport.empty(this.innerHTML))
+            element.innerHTML = this.innerHTML;
     }
 
 }

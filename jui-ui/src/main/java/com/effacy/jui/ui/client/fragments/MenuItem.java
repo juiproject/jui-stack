@@ -17,6 +17,7 @@ package com.effacy.jui.ui.client.fragments;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import com.effacy.jui.core.client.Invoker;
 import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
@@ -25,6 +26,8 @@ import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
 import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.platform.util.client.StringSupport;
+
+import elemental2.dom.Node;
 
 /**
  * Defines a menu item that appears under a {@link Menu}.
@@ -56,6 +59,9 @@ public class MenuItem {
          */
         private Variant variant = Variant.NORMAL;
 
+        /**
+         * See {@link #icon(String)}.
+         */
         private String icon;
 
         /**
@@ -76,7 +82,7 @@ public class MenuItem {
         /**
          * Various on-click event handlers.
          */
-        private List<Invoker> onclicks;
+        private List<Consumer<Node>> onclicks;
 
         /**
          * Defines the variant to render.
@@ -167,6 +173,25 @@ public class MenuItem {
          * @return this fragment.
          */ 
         public MenuItemFragment onclick(Invoker onclick) {
+            if (onclick == null)
+                return this;
+            if (onclicks == null)
+                onclicks = new ArrayList<> ();
+            onclicks.add (e -> onclick.invoke());
+            return this;
+        }
+
+        /**
+         * Applies an on-click handler. Multiple assignments are allowed (and these are
+         * additive).
+         * 
+         * @param onclick
+         *                the handler to add (this is passed the root node of the item).
+         * @return this fragment.
+         */ 
+        public MenuItemFragment onclick(Consumer<Node> onclick) {
+            if (onclick == null)
+                return this;
             if (onclicks == null)
                 onclicks = new ArrayList<> ();
             onclicks.add (onclick);
@@ -175,6 +200,8 @@ public class MenuItem {
 
         @Override
         public void build(ContainerBuilder<?> parent) {
+            if ((conditional != null) && !conditional.get())
+                return;
             Div.$ (parent).$ (item -> {
                 item.style ("juiMenuItem", "juiMenuItem-" + variant.name ().toLowerCase ());
                 if (disabled)
@@ -187,7 +214,7 @@ public class MenuItem {
                     Span.$ (item).text (label);
                 if ((onclicks != null) && !onclicks.isEmpty () && (!disabled || disabledButClickable)) {
                     item.style ("clickable");
-                    item.onclick (e -> onclicks.forEach (onclick ->  onclick.invoke ()));
+                    item.onclick ((e,n) -> onclicks.forEach (onclick ->  onclick.accept(n)));
                 }
             });
         }

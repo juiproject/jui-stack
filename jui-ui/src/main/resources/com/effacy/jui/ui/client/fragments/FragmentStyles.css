@@ -164,6 +164,9 @@
     --juiMenuActivator-radius: 30px;
     --juiMenuActivator-padding: 6px 11px;
     --juiMenuActivator-aboveOffset: 2em;
+    --juiMenuActivator-belowOffset: unset;
+    --juiMenuActivator-hoverBg: var(--jui-color-neutral10);
+    --juiMenuActivator-hoverColor: var(--jui-color-neutral80);
 }
 
 .juiMenuActivator {
@@ -189,11 +192,11 @@
 }
 
 .juiMenuActivator:hover {
-    background-color: var(--jui-color-neutral10);
+    background-color: var(--juiMenuActivator-hoverBg);
 }
 
 .juiMenuActivator:hover > em {
-    color: var(--jui-color-neutral80);
+    color: var(--juiMenuActivator-hoverColor);
 }
 
 .juiMenuActivator:hover > div.hoverable {
@@ -204,6 +207,7 @@
 .juiMenuActivator.open > div {
     display: block;
     animation: juiMenuActivator-fade 0.4s;
+    top: var(--juiMenuActivator-belowOffset);
 }
 
 .juiMenuActivator.open.above > div {

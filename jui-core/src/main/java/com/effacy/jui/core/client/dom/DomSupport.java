@@ -755,8 +755,13 @@ public class DomSupport {
             return false;
         Element p = el;
         while (p != null) {
-            if (_overflowStyle(p))
-                break;
+            if (_overflowStyle(p)) {
+                // We have found an element. We need to test the parent for overflow as well (if
+                // that is overflow then that will prevent this from scrolling).
+                if ((p.parentElement != null) && !_overflowStyle(p.parentElement))
+                    break;
+                // Here means the parent is also overflow, so we continue.
+            }
             p = p.parentElement;
         }
         if (p == null)
@@ -770,7 +775,6 @@ public class DomSupport {
         style = $wnd.getComputedStyle(el);
         overflowY = style.overflowY || style.overflow;
         return /(auto|scroll|overlay)/.test(overflowY);
-        //return overflowY;
     }-*/;
 
     /************************************************************************

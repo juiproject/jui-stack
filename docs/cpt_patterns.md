@@ -13,9 +13,15 @@ This is a reference to some commonly used code that could be useful when develop
      6. [Controls](#controls)
 2. [Modal dialogs](#modal-dialogs)
      1. [Inline modals](#inline-modals)
-     2. [Modal enabling](#modal-enabling-a-component)
+     2. [Modal-enabling](#modal-enabling-a-component)
+         1. [Simple dialog](#simple-dialog)
+         2. [Processing dialog](#processing-dialog)
+         3. [Configurable dialog](#configurable-dialog)
+         4. [Secondary configuration](#secondary-configuration)
      3. [Modal with resolver](#modal-with-resolver)
-     3. [Modal with state](#modal-with-state)
+     4. [Modal with state](#modal-with-state)
+     5. [Modal with open awareness](#modal-with-open-awareness)
+     6. [Modal with internal action](#modal-with-internal-action)
 3. [Form patterns](#form-patterns)
      1. [Create form](#create-form)
      2. [Update form](#update-form)
@@ -1242,7 +1248,7 @@ ModalDialogCreator.build (ControlFormCreator.<Void,Void> build (cfg -> ControlFo
 }).open ();
 ```
 
-### Modal enabling a component
+### Modal-enabling a component
 
 Here we consider a component that can be used directly or as a model. The latter is invoked by a static `open(...)` method.
 
@@ -1368,6 +1374,45 @@ MyComponent.open(MyComponent.ConfigData.of(...));
 
 The `of(...)` method actually represents a family of methods that take varying arguments for different configuration arrangements.
 
+#### Secondary configuration
+
+The means of configuration described above (primary configuration) is often tied to the contents the diaglog is to display. Sometimes you want to configure the dialog in a manner secondary to the primary (i.e. the primary is used with `IEditable` but you want to set some scope).
+
+The recommended approach is to access the contents directly in the `open` support method:
+
+```java
+public static class MyComponent extends SimpleComponent implements IEditable<MyEditable> {
+
+    private static IDialogOpener<MyEditable, Void> DIALOG;
+
+    public static void open(MyContext context, MyEditable editable) {
+        if (DIALOG == null)
+            DIALOG = ModalDialogCreator.<MyEditable, Void, MyComponent>dialog (new MyComponent (), cfg -> {
+                cfg.style (ModalStyle.UNIFORM)
+                    .title ("Update something")
+                    .type (Type.CENTER)
+                    .width (Length.px(500));
+            }, b -> b.label ("cancel"), b -> b.label ("Update something"));
+        // Secondary configuration.
+        ((MyComponent) DIALOG.dialog().contents()).context(context);
+        DIALOG.open (editable, null);
+    }
+
+    public MyComponent() {   
+        ...
+
+        public void context(MyContext context) {
+            ...
+        }
+
+        @Override
+        public void edit(MyEditable editable) {
+            ...
+        }
+    }
+}
+```
+
 ### Modal with resolver
 
 It is quite common to pop-up a modal, have it retrieve some data then present that data. In this context it makes sense to use an `IResolver`:
@@ -1490,6 +1535,100 @@ public class MyComponent extends StateComponent<LocalState> implements IEditable
 ```
 
 This has the advantage of making available details on the error as well as providing a standardised lifecycle.
+
+### Modal with open awareness
+
+There are cases where you want the modal contents to perform some action on open but you don't want to pass it any initialisation or configuration data. Modals respect when their contents implement `IOpenAware` invoking the `onOpen()` method when opened.
+
+```java
+public class MyComponent extends SimpleComponent implements IOpenAware {
+
+    /************************************************************************
+     * Dialog support.
+     ************************************************************************/
+
+    private static IDialogOpener<Void, Void> DIALOG;
+
+    public static void open() {
+        if (DIALOG == null)
+            DIALOG = ModalDialogCreator.<Void, Void, MyComponent>dialog (new MyComponent (), cfg -> {
+                cfg.style (ModalStyle.UNIFORM)
+                    .title ("Preview")
+                    .type (Type.CENTER)
+                    .width (Length.px(500));
+            }, b -> b.label ("cancel"), b -> b.label ("Update"));
+        DIALOG.open (null, null);
+    }
+
+    /************************************************************************
+     * Main class.
+     ************************************************************************/
+    
+    ...
+
+    @Override
+    public void onOpen() {
+        // This is invoked when the modal is opened.
+        // Perform any loading and rendering needed on open.
+        ...
+    }
+}
+```
+
+### Modal with internal action
+
+Sometimes you want the modal contents to initiate the required action (e.g. selecting from a range of options) without needed to have the user select a separate action button. Modals respect contents that fire `IValueChangeListener.onValueChanged()` events.
+
+```java
+public class MyComponent extends SimpleComponent implements IOpenAware {
+
+    public enum Option {
+        OPTION1, OPTION2;
+    }
+
+    /************************************************************************
+     * Dialog support.
+     ************************************************************************/
+
+    private static IDialogOpener<Void, Option> DIALOG;
+
+    public static void open(Consumer<Optional<Option>> cb) {
+        if (DIALOG == null)
+            DIALOG = ModalDialogCreator.<Void, Option, MyComponent>dialog (new MyComponent (), cfg -> {
+                cfg.style (ModalStyle.UNIFORM)
+                    .title ("Preview")
+                    .type (Type.CENTER)
+                    .width (Length.px(500));
+            }, b -> b.label ("cancel"), null);
+        DIALOG.open (null, cb);
+    }
+
+    /************************************************************************
+     * Main class.
+     ************************************************************************/
+    
+    ...
+
+    public MyComponent() {
+        renderer(root -> {
+            A.$(root).text("selection option 1")
+                .onclick(e -> {
+                    MyComponent.this.fireEvent(IValueChangeListener.class).onValueChanged(Option.OPTION1);
+                });
+            A.$(root).text("selection option 2")
+                .onclick(e -> {
+                    MyComponent.this.fireEvent(IValueChangeListener.class).onValueChanged(Option.OPTION2);
+                });
+        });
+    }
+}
+```
+
+The modal adds a listener and when the event is detected it passes the value back through the callback then closes the dialog (the same behaviour applied here as it does to the `IProcessable` case, namely the returned valued cannot be `null`). Note the `null` passed for the action button, this prevents the action form displaying.
+
+If you don't want the dialog to close, then fire an `IUpdateListener.update(...)` event. The modal will pass back the value (if not `null`) but will not close the dialog.
+
+If you want to close the dialog programmatically, modals will respond to the `ICloseListener.onCloseRequested()` event from the contents and will close the dialog.
 
 ## Form patterns
 

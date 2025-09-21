@@ -28,6 +28,7 @@ import com.effacy.jui.core.client.IResetable;
 import com.effacy.jui.core.client.IResolver;
 import com.effacy.jui.core.client.IUpdateListener;
 import com.effacy.jui.core.client.component.ComponentCreator;
+import com.effacy.jui.core.client.component.ICloseListener;
 import com.effacy.jui.core.client.component.IComponent;
 import com.effacy.jui.core.client.component.IValueChangeListener;
 import com.effacy.jui.core.client.dom.builder.ExistingElementBuilder;
@@ -185,7 +186,12 @@ public class ModalDialogCreator {
      * directly however that will be invoke any callback. The preferred method
      * (then) is to emit a {@link IValueChangeListener#onValueChanged(Object)}
      * event. This will be picked up by the dialog and passed through to the
-     * callback (even if it is {@code null}). The dialog will be closed.
+     * callback (even if it is {@code null}). The dialog will be closed (use
+     * {@link IUpdateListener#onUpdate(Object)} to publish a value update without
+     * closing).
+     * <p>
+     * If you want the dialog to close programmatically from the contents then fire
+     * {@link ICloseListener#onCloseRequested()}.
      * 
      * @param <V1>
      *                     the pass in value type.
@@ -335,6 +341,9 @@ public class ModalDialogCreator {
                     });
                 }
             }), modal -> {
+                modal.contents ().addListener (ICloseListener.create(() -> {
+                    modal.close();
+                }));
                 modal.contents ().addListener (IValueChangeListener.create (v -> {
                     if (cb != null)
                         cb.accept (Optional.ofNullable ((V2) v));

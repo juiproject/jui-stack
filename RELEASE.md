@@ -10,7 +10,7 @@ We adhere to a relatively simple version scheme where each version adheres to th
 
 The use of `SP` or `RC` are for the specific cases of a *service patch* (i.e. patch release off the *main* version) or a *release candidate* (in preparation for a main release).
 
-An example version is `0.2.1.M` being the *main* release of `0.2.1` with `0.2.1.SP1` being the first *service patch* of `0.2.1`.
+An example version is `0.2.1` being the *main* release in the lineage of the `release` branch with `0.2.1.SP1` being the first *service patch* off `0.2.1` (branched off the `release` branch from `0.2.1`).
 
 During development the version declared in the POM is the generic *snapshot* `LOCAL-SNAPSHOT`, so is devoid of any specify target version.
 

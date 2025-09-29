@@ -160,7 +160,7 @@ public class MyComponentCreator {
 ```
 ### Styling
 
-#### Existing components
+#### Adornments
 
 If you are using an existing component that is configuration based then you can use the `adorn(...)` or `css(...)` methods on the base `Config` class:
 
@@ -182,33 +182,16 @@ new MyComponent.Config()
     .build();
 ```
 
-#### Internalised
+You can also assign CSS variables with `css(...)` (i.e. `css("--my-ccs-variable: #f1f1f1;")`).
 
-The following creates a component that uses **configuration**, uses the **build method** and declares **internalised styles**:
+#### Localised
+
+The following adds [localised styles](ess_styles.md#localised-css) to a component:
 
 ```java
-public class MyComponent extends Component<MyComponent.Config> {
+public class MyComponent extends SimpleComponent {
 
-    public static class Config extends Component.Config {
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public MyComponent build(LayoutData... data) {
-            return (MyComponent) super.build (new MyComponent (this), data);
-        }
-    }
-
-    public MyComponent(Config config) {
-        super (config);
-    }
-
-
-    @Override
-    protected INodeProvider buildNode(Element el) {
-        return Wrap.$ (el).$ (root -> {
-            // Build DOM structure.
-        }).build ();
-    }
+    ...
     
     /********************************************************************
      * CSS
@@ -228,10 +211,14 @@ public class MyComponent extends Component<MyComponent.Config> {
     /**
      * Component CSS (standard pattern).
      */
-    @CssResource({  
+    @CssResource(value = {  
         IComponentCSS.COMPONENT_CSS,
         ".../MyComponent.css"
-    })
+    }, stylesheet = """
+        .component {
+        }
+        ...
+    """)
     public static abstract class LocalCSS implements ILocalCSS {
 
         private static LocalCSS STYLES;
@@ -246,6 +233,8 @@ public class MyComponent extends Component<MyComponent.Config> {
     }
 }
 ```
+
+Note that `stylesheet` is optional (if used you can avoid using a custom stylesheet resource, or if not used then place your styles in a stylesheet resource).
 
 #### Config styles
 

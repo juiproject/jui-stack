@@ -16,6 +16,34 @@ public class FilterQueryParserTest {
      * Form and content tests.
      ************************************************************************/
 
+    @Test
+    public void chararray() {
+        assertParse("""
+            status in [ "active" ]
+        """, "status IN [\"active\"]");
+        assertParse("""
+            status in [ "active", "inactive" ]
+        """, "status IN [\"active\",\"inactive\"]");
+
+        assertParse("""
+            status in [ "act:ive" ]
+        """, "status IN [\"act:ive\"]");
+
+        assertParse("""
+            status in [ 'active' ]
+        """, "status IN [\"active\"]");
+        assertParse("""
+            status in [ 'active', 'inactive' ]
+        """, "status IN [\"active\",\"inactive\"]");
+
+        assertParse("""
+            status in [ 'act"i"ve' ]
+        """, "status IN [\"act\"i\"ve\"]");
+        assertParse("""
+            status in [ "act'i've" ]
+        """, "status IN [\"act'i've\"]");
+    }
+
     /**
      * Tests for case sensitivity.
      */

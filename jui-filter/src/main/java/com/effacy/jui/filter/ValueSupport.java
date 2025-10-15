@@ -151,7 +151,10 @@ public final class ValueSupport {
     /**
      * See {@link #asValue(Object, Function)} but for an array. Any unmapped values
      * (where {@link #asValue(Object, Function)} returns a {@code null}) are ignored
-     * and not included in the array.
+     * and not included in the result.
+     * <p>
+     * Note that the result is not an array (not supported for generics) but rather
+     * a list (which supports generics).
      * 
      * @param <T>
      *               the type being mapped to.
@@ -160,10 +163,9 @@ public final class ValueSupport {
      * @param mapper
      *               to map the value (if not supplied then the object is assumed to
      *               be of the expected type).
-     * @return the mapped array or values (or {@code null}).
+     * @return the mapped list of values (or {@code null}).
      */
-    @SuppressWarnings("unchecked")
-    public static <T> T[] asValueArray(Object value, Function<Object,T> mapper) throws ExpressionBuildException {
+    public static <T> List<T> asValueArray(Object value, Function<Object,T> mapper) throws ExpressionBuildException {
         if (value == null)
             return null;
         if (!value.getClass().isArray())
@@ -175,16 +177,18 @@ public final class ValueSupport {
             if (val != null)
                 result.add(val);
         }
-        return (T[]) result.toArray(new Object[0]);
+        return result;
     }
 
     /**
      * As with {@link #asValueArray(Object, Function)} but if not an array then
      * coerces into an array of a single entry.
+     * <p>
+     * Note that the result is not an array (not supported for generics) but rather
+     * a list (which supports generics).
      */
-    @SuppressWarnings("unchecked")
-    public static <T> T[] asValueArrayCoerce(Object value, Function<Object,T> mapper) throws ExpressionBuildException {
-        T[] values = asValueArray(value, mapper);
+    public static <T> List<T> asValueArrayCoerce(Object value, Function<Object,T> mapper) throws ExpressionBuildException {
+        List<T> values = asValueArray(value, mapper);
         if (values != null)
             return values;
         T val = asValue(values, mapper);
@@ -192,7 +196,7 @@ public final class ValueSupport {
             return null;
         List<T> result = new ArrayList<>();
         result.add(val);
-        return (T[]) result.toArray(new Object[0]);
+        return result;
     }
 
     /**

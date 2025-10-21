@@ -326,11 +326,12 @@
     --juiButton-bg-hover: var(--jui-btn-bg-hover);
     --juiButton-padding-tb: 0.45em;
     --juiButton-padding-lr: 0.75em;
+    --juiButton-align: center;
 }
 
 .juiButton {
     justify-content: center;
-    align-items: end;
+    align-items: var(--juiButton-align);
     padding: var(--juiButton-padding-tb) var(--juiButton-padding-lr);
     letter-spacing: 0.02em;
     font-weight: var(--juiButton-text-weight);

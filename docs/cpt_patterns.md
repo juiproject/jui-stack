@@ -27,6 +27,8 @@ This is a reference to some commonly used code that could be useful when develop
      2. [Update form](#update-form)
      3. [Update extends create](#update-extends-create)
 4. [State](#state)
+     1. [Value state](#value-state)
+     2. [Inlined state](#inlined-state)
 5. [JUI components](#jui-components)
 6. [Remoting](#remoting)
 7. [Stores](#stores)
@@ -2184,7 +2186,7 @@ The form construction code then resides in the create base class.
 
 ## State
 
-### Notifier
+### Value state
 
 In lieu of passing a state-variable around, the *notifier pattern* provides for a centralised `StateVariable` that can be accessed from anywhere.
 
@@ -2235,6 +2237,32 @@ public class NameComponent extends StateComponent<NameNotifier> {
 }
 
 ```
+
+### Inlined state
+
+A state component will rerender completely on change of state, however, you may only want a portion to rerender. This can be achived by inlining a state:
+
+```java
+public class MyComponent extends SimpleComponent {
+
+    private MyState state = new MyState();
+
+    public MyComponent() {
+        renderer(root -> {
+            Div.$(root).$(inner -> {
+                Div.$(inner).style("panel1").$(...);
+                StateComponentBuilder.$(inner, (s,el) -> {
+                    el.style("panel2");
+                    ...
+                });
+                Div.$(inner).style("panel3").$(...);
+            });
+        });
+    }
+}
+```
+
+Here the state component is styles as `panel2` so can be viewed as simply part of the DOM of the parent component as so can make use of styles declared from the parent. It will also respond to state changes as a state component is expected to without affecting the surrounding DOM.
 
 ## JUI components
 

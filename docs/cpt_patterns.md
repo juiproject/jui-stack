@@ -2264,6 +2264,49 @@ public class MyComponent extends SimpleComponent {
 
 Here the state component is styles as `panel2` so can be viewed as simply part of the DOM of the parent component as so can make use of styles declared from the parent. It will also respond to state changes as a state component is expected to without affecting the surrounding DOM.
 
+### Scroll preservation
+
+During re-render, if there is a rending of an interim state (such a loading indicator) then any prior scroll position, that may want to be preserved, will likely be lost. In this case, scroll state can be preserved with `ScrollPreserver`.
+
+```java
+public class MyComponent extends SimpleComponent {
+
+    private MyState state = new MyState();
+
+    private ScrollPreserver scroll;
+
+    public MyComponent() {
+        renderer(root -> {
+            Div.$(root).$(inner -> {
+                Div.$(inner).style("panel1").$(...);
+                StateComponentBuilder.$(inner, (s,el) -> {
+                    el.style("panel2");
+                    el.by("root");
+                    if (state.isLoading()) {
+                        ...
+                    } else {
+                        ...
+                    }
+                }, (s,dom) -> {
+                    if (scroll == null)
+                        scroll = new ScrollPreserver(dom.first("root"));
+                    else
+                        scroll.restore();
+                });
+                Div.$(inner).style("panel3").$(...);
+            });
+        });
+    }
+
+    protected void action(...) {
+        scroll.preserve();
+        ...
+        // For example: force a state change and subsequent re-render of intermin state.
+        state().reload();
+    }
+}
+```
+
 ## JUI components
 
 These are the standard components that come with JUI. Most are fairly straight forward but others (such as tables) require more complex configuration.

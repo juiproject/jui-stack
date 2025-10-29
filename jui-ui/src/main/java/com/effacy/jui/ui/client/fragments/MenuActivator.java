@@ -58,6 +58,11 @@ public class MenuActivator {
         private int aboveThreshold = 100;
 
         /**
+         * See {@link #aboveForced(boolean)}.
+         */
+        private boolean aboveForced = false;
+
+        /**
          * Internal. Holds the activator.
          */
         private ActivationHandler handler;
@@ -71,6 +76,30 @@ public class MenuActivator {
         @SuppressWarnings("unchecked")
         public T clickToActivate() {
             this.clickToActivate = true;
+            return (T)this;
+        }
+
+        /**
+         * Convenience to call {@link #aboveForced(boolean)} passing {@code true}.
+         * 
+         * @return this fragment instance.
+         */
+        public T aboveForced() {
+            return aboveForced(true);
+        }
+
+        /**
+         * Forces the menu to appear above the activator.
+         * <p>
+         * This will override any value assigned to {@link #aboveThreshold(int)}.
+         * 
+         * @param aboveForced
+         *                    {@code true} to force display above.
+         * @return this fragment instance.
+         */
+        @SuppressWarnings("unchecked")
+        public T aboveForced(boolean aboveForced) {
+            this.aboveForced = aboveForced;
             return (T)this;
         }
 
@@ -98,9 +127,11 @@ public class MenuActivator {
         @Override
         protected void buildInto(ElementBuilder root) {
             root.style ("juiMenuActivator");
+            if (aboveForced)
+                root.style ("above");
             if (clickToActivate) {
                 root.apply (n -> {
-                    if (aboveThreshold > 0)
+                    if (!aboveForced && (aboveThreshold > 0))
                         handler = new ActivationHandler ((Element) n, (Element) n, "open", "above", aboveThreshold);
                     else
                         handler = new ActivationHandler ((Element) n, (Element) n, "open");

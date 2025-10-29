@@ -24,7 +24,6 @@ import com.effacy.jui.core.client.dom.jquery.JQueryElement;
 import com.effacy.jui.platform.css.client.CssDeclaration;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.css.client.CssResource.UseStyle;
-import com.effacy.jui.platform.util.client.Logger;
 import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.DomGlobal;
@@ -74,6 +73,15 @@ public class DomSupport {
         }
     }
     
+    /**
+     * Given a node finds the first child node that matches the test.
+     * 
+     * @param node
+     *             the node that holds the children to test for.
+     * @param test
+     *             the test condition.
+     * @return the first matching node (or {@code null}).
+     */
     public static Node find(Node node, Predicate<Node> test) {
         if (node == null)
             return null;
@@ -85,6 +93,24 @@ public class DomSupport {
         return null;
     }
 
+    /**
+     * Given a node, extracts the given ancestor.
+     * <p>
+     * If the passed parent is zero or less then the node will be cast and returned
+     * (which may give an error if the node is not an element).
+     * 
+     * @param n
+     *               the node to extract parent from.
+     * @param parent
+     *               the number of parents up (so 1 means the immediate parent, 2
+     *               the grandparent, 3 the great-grandparent, etc).
+     * @return the parent element.
+     */
+    protected Element parentElement(Node n, int parent) {
+        if (parent <= 0)
+            return (Element) n;
+        return parentElement(n.parentElement, parent - 1);
+    }
 
     /************************************************************************
      * DOM element creation.

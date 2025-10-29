@@ -107,6 +107,10 @@ public class ValidationException extends Exception implements Iterable<Message> 
         forEach(msg -> {
             if (sb.length() != 0)
                 sb.append("; ");
+            if (msg.getPath() != null) {
+                sb.append(msg.getPath());
+                sb.append("->");
+            }
             sb.append(msg.getMessage());
         });
         return sb.toString();

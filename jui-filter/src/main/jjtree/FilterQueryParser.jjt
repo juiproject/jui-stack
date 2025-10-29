@@ -86,7 +86,7 @@ TOKEN : { < RBRACKET : "]" > }
 TOKEN : { < COMMA : "," > }
 
 // Literals
-TOKEN : { < STRING : "\"" (~["\""])* "\"" > }
+TOKEN : { < STRING : "\"" (~["\""])* "\"" | "'" (~["'"])* "'" > }
 TOKEN : { < TRUE : "TRUE" | "true" > }
 TOKEN : { < FALSE : "FALSE" | "false" > }
 TOKEN : { < NULL : "NULL" | "null" > }

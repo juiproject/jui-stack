@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -188,6 +189,23 @@ public abstract class Control<V, C extends Control.Config<V,C>> extends Componen
         @SuppressWarnings("unchecked")
         public C modifiedHandler(IControlModifiedHandler<V> modifiedHandler) {
             this.modifiedHandler = modifiedHandler;
+            return (C) this;
+        }
+
+        /**
+         * Simplified variant of {@link #modifiedHandler(IControlModifiedHandler)} that
+         * just takes the value.
+         * 
+         * @param modifiedHandler
+         *                        the handler.
+         * @return this configuration instance.
+         */
+        @SuppressWarnings("unchecked")
+        public C modifiedHandler(Consumer<V> modifiedHandler) {
+            modifiedHandler((ctl,val,prior) -> {
+                if (modifiedHandler != null)
+                    modifiedHandler.accept(val);
+            });
             return (C) this;
         }
 

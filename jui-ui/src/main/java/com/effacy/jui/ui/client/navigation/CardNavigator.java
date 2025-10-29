@@ -17,7 +17,9 @@ package com.effacy.jui.ui.client.navigation;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -192,6 +194,11 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             private String notice;
 
             /**
+             * See {@link #attr(String, Object)}.
+             */
+            private Map<String,Object> metadata = new HashMap<>();
+
+            /**
              * Empty card.
              */
             CardConfiguration() {
@@ -209,6 +216,31 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             public CardConfiguration(String reference, IComponent component) {
                 super(component);
                 this.reference = reference.split("/");
+            }
+
+            /**
+             * Assigns metadata to the card configuration.
+             * 
+             * @param name
+             *              the metadata field.
+             * @param value
+             *              the value.
+             * @return this configuration instance.
+             */
+            public CardConfiguration attr(String name, Object value) {
+                metadata.put(name, value);
+                return this;
+            }
+
+            /**
+             * Obtains a metadata value.
+             * 
+             * @param name
+             *             the metadata field.
+             * @return the associated value (may be {@code null})
+             */
+            public Object attr(String name) {
+                return metadata.get(name);
             }
 
             /**
@@ -301,11 +333,38 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
 
             /**
              * Obtains a suitable label to display.
-             * 
+             *
              * @return the label.
              */
             public String label() {
                 return (label == null) ? reference[reference.length - 1] : label.get();
+            }
+
+            /**
+             * See {@link #icon(String)}.
+             *
+             * @return the icon supplier.
+             */
+            public Supplier<String> icon() {
+                return icon;
+            }
+
+            /**
+             * See {@link #description(String)}.
+             *
+             * @return the description.
+             */
+            public String description() {
+                return description;
+            }
+
+            /**
+             * See {@link #notice(String)}.
+             *
+             * @return the notice.
+             */
+            public String notice() {
+                return notice;
             }
 
             /**
@@ -350,6 +409,8 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
                     return _compareTo(o, depth + 1);
                 return this.reference[depth].compareTo(o.reference[depth]);
             }
+
+
         }
 
         /**
@@ -474,14 +535,6 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         }
 
         /**
-         * Convenience to call {@link #titleOnlyInBreadcrumb(boolean)} passing
-         * {@code true}.
-         */
-        public Config titleOnlyInBreadcrumb() {
-            return titleOnlyInBreadcrumb (true);
-        }
-
-        /**
          * The title normally displays at the top of the main page and then in the
          * breadcrumb trail. This restricts the use of the title only in the latter
          * (this is genarally used when a custom navigator is supplied).
@@ -562,6 +615,60 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         }
 
         /**
+         * See {@link #style(Style)}.
+         *
+         * @return the style.
+         */
+        public Style style() {
+            return style;
+        }
+
+        /**
+         * See {@link #title(String)}.
+         *
+         * @return the title.
+         */
+        public String title() {
+            return title;
+        }
+
+        /**
+         * See {@link #titleOnlyInBreadcrumb(boolean)}.
+         *
+         * @return the flag value.
+         */
+        public boolean titleOnlyInBreadcrumb() {
+            return titleOnlyInBreadcrumb;
+        }
+
+        /**
+         * See {@link #effect(Effect)}.
+         *
+         * @return the effect.
+         */
+        public Effect effect() {
+            return effect;
+        }
+
+        /**
+         * See {@link #card(String, IComponent, Consumer)}.
+         *
+         * @return the cards.
+         */
+        public List<CardConfiguration> cards() {
+            return cards;
+        }
+
+        /**
+         * See {@link #navigationHandler(Function)}.
+         *
+         * @return the navigation handler.
+         */
+        public IOnNavigationHandler navigationHandler() {
+            return navigationHandler;
+        }
+
+        /**
          * Used by {@link #card(List)} to maintain a separately sorted list of cards for
          * resolving depth.
          */
@@ -570,7 +677,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         /**
          * Locates the card that matches the given reference sequence (where there is
          * more than one reference then the card is necessarily segmented).
-         * 
+         *
          * @param ref
          *            the reference sequence to match against.
          * @return the matching card.
@@ -611,6 +718,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             Collections.reverse(path);
             return path;
         }
+
     }
 
     /**
@@ -802,16 +910,19 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
     protected void buildBreadcrumb(ElementBuilder header, NavigationContext context, List<CardConfiguration> path) {
         CardConfiguration card = path.get(path.size() - 1);
         String cardLabel = context.getMetadata (CardNavigator.ATTR_CARDLABEL, card.label());
+        boolean displayTitle = !StringSupport.empty (config().title);
         Div.$ (header).style(styles().crumb ()).$ (crumb -> {
-            Span.$ (crumb).style (styles ().clickable ()).$ (
-                Em.$ ().style(FontAwesome.arrowLeft ())
-            ).onclick (e -> {
-                if (config().navigationHandler != null) {
-                    if (config().navigationHandler.handle(NavigationSupport.build(path.get(path.size()-1).reference), "/"))
-                        return;
-                }
-                navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false));
-            }).text (config().title);
+            if (displayTitle) {
+                Span.$ (crumb).style (styles ().clickable ()).$ (
+                    Em.$ ().style(FontAwesome.arrowLeft ())
+                ).onclick (e -> {
+                    if (config().navigationHandler != null) {
+                        if (config().navigationHandler.handle(NavigationSupport.build(path.get(path.size()-1).reference), "/"))
+                            return;
+                    }
+                    navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false));
+                }).text (config().title);
+            }
             ListSupport.forEach (path, (ctx, c) -> {
                 if (ctx.last()) {
                     if (config().style.includeActiveInCrumb()) {
@@ -823,7 +934,8 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
                         });
                     }
                 } else {
-                    Em.$ (crumb).style (FontAwesome.chevronRight ());
+                    if (displayTitle || !ctx.first())
+                        Em.$ (crumb).style (FontAwesome.chevronRight ());
                     Span.$ (crumb).style (styles ().clickable ()).onclick (e -> {
                         if (config().navigationHandler != null) {
                             if (config().navigationHandler.handle(NavigationSupport.build(path.get(path.size()-1).reference), NavigationSupport.build(c.reference)))
@@ -925,12 +1037,12 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
      /**
       * Holds the label to the last element in the breadcrumb trail.
       */
-    private Element breadcrumbLabelEl; 
+    protected Element breadcrumbLabelEl; 
 
     /**
      * Holds the label for the current page.
      */
-    private Element headerLabelEl; 
+    protected Element headerLabelEl; 
 
     /**
      * For the current navigation path update the label of the target page.

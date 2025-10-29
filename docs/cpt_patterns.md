@@ -27,6 +27,8 @@ This is a reference to some commonly used code that could be useful when develop
      2. [Update form](#update-form)
      3. [Update extends create](#update-extends-create)
 4. [State](#state)
+     1. [Value state](#value-state)
+     2. [Inlined state](#inlined-state)
 5. [JUI components](#jui-components)
 6. [Remoting](#remoting)
 7. [Stores](#stores)
@@ -160,7 +162,7 @@ public class MyComponentCreator {
 ```
 ### Styling
 
-#### Existing components
+#### Adornments
 
 If you are using an existing component that is configuration based then you can use the `adorn(...)` or `css(...)` methods on the base `Config` class:
 
@@ -182,33 +184,16 @@ new MyComponent.Config()
     .build();
 ```
 
-#### Internalised
+You can also assign CSS variables with `css(...)` (i.e. `css("--my-ccs-variable: #f1f1f1;")`).
 
-The following creates a component that uses **configuration**, uses the **build method** and declares **internalised styles**:
+#### Localised
+
+The following adds [localised styles](ess_styles.md#localised-css) to a component:
 
 ```java
-public class MyComponent extends Component<MyComponent.Config> {
+public class MyComponent extends SimpleComponent {
 
-    public static class Config extends Component.Config {
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public MyComponent build(LayoutData... data) {
-            return (MyComponent) super.build (new MyComponent (this), data);
-        }
-    }
-
-    public MyComponent(Config config) {
-        super (config);
-    }
-
-
-    @Override
-    protected INodeProvider buildNode(Element el) {
-        return Wrap.$ (el).$ (root -> {
-            // Build DOM structure.
-        }).build ();
-    }
+    ...
     
     /********************************************************************
      * CSS
@@ -228,10 +213,14 @@ public class MyComponent extends Component<MyComponent.Config> {
     /**
      * Component CSS (standard pattern).
      */
-    @CssResource({  
+    @CssResource(value = {  
         IComponentCSS.COMPONENT_CSS,
         ".../MyComponent.css"
-    })
+    }, stylesheet = """
+        .component {
+        }
+        ...
+    """)
     public static abstract class LocalCSS implements ILocalCSS {
 
         private static LocalCSS STYLES;
@@ -246,6 +235,8 @@ public class MyComponent extends Component<MyComponent.Config> {
     }
 }
 ```
+
+Note that `stylesheet` is optional (if used you can avoid using a custom stylesheet resource, or if not used then place your styles in a stylesheet resource).
 
 #### Config styles
 
@@ -2195,7 +2186,7 @@ The form construction code then resides in the create base class.
 
 ## State
 
-### Notifier
+### Value state
 
 In lieu of passing a state-variable around, the *notifier pattern* provides for a centralised `StateVariable` that can be accessed from anywhere.
 
@@ -2245,6 +2236,75 @@ public class NameComponent extends StateComponent<NameNotifier> {
 
 }
 
+```
+
+### Inlined state
+
+A state component will rerender completely on change of state, however, you may only want a portion to rerender. This can be achived by inlining a state:
+
+```java
+public class MyComponent extends SimpleComponent {
+
+    private MyState state = new MyState();
+
+    public MyComponent() {
+        renderer(root -> {
+            Div.$(root).$(inner -> {
+                Div.$(inner).style("panel1").$(...);
+                StateComponentBuilder.$(inner, (s,el) -> {
+                    el.style("panel2");
+                    ...
+                });
+                Div.$(inner).style("panel3").$(...);
+            });
+        });
+    }
+}
+```
+
+Here the state component is styles as `panel2` so can be viewed as simply part of the DOM of the parent component as so can make use of styles declared from the parent. It will also respond to state changes as a state component is expected to without affecting the surrounding DOM.
+
+### Scroll preservation
+
+During re-render, if there is a rending of an interim state (such a loading indicator) then any prior scroll position, that may want to be preserved, will likely be lost. In this case, scroll state can be preserved with `ScrollPreserver`.
+
+```java
+public class MyComponent extends SimpleComponent {
+
+    private MyState state = new MyState();
+
+    private ScrollPreserver scroll;
+
+    public MyComponent() {
+        renderer(root -> {
+            Div.$(root).$(inner -> {
+                Div.$(inner).style("panel1").$(...);
+                StateComponentBuilder.$(inner, (s,el) -> {
+                    el.style("panel2");
+                    el.by("root");
+                    if (state.isLoading()) {
+                        ...
+                    } else {
+                        ...
+                    }
+                }, (s,dom) -> {
+                    if (scroll == null)
+                        scroll = new ScrollPreserver(dom.first("root"));
+                    else
+                        scroll.restore();
+                });
+                Div.$(inner).style("panel3").$(...);
+            });
+        });
+    }
+
+    protected void action(...) {
+        scroll.preserve();
+        ...
+        // For example: force a state change and subsequent re-render of intermin state.
+        state().reload();
+    }
+}
 ```
 
 ## JUI components

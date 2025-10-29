@@ -16,6 +16,8 @@
 package com.effacy.jui.core.client.store;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 import com.effacy.jui.core.client.observable.IObservable;
 
@@ -156,6 +158,23 @@ public interface IStore<V> extends Iterable<V>, IObservable {
      * @return the list.
      */
     public List<V> asList();
+
+    /**
+     * Finds the first instance of the record that matches the passed predicate.
+     * 
+     * @param test
+     *             the predicate to use as the matching criteria.
+     * @return the result (first match if there is one).
+     */
+    default public Optional<V> find(Predicate<V> test) {
+        if (test != null) {
+            for (var item : asList()) {
+                if ((item != null) && test.test(item))
+                    return Optional.of(item);
+            }
+        }
+        return Optional.empty();
+    }
 
     /**
      * Convenience to cast a store.

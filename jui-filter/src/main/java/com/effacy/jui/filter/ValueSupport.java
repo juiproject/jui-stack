@@ -1,6 +1,9 @@
 package com.effacy.jui.filter;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 
 import com.effacy.jui.filter.builder.ExpressionBuildException;
 import com.effacy.jui.filter.builder.IExpressionBuilder;
@@ -143,6 +146,83 @@ public final class ValueSupport {
         for (int i = 0; i < array.length; i++)
             result[i] = asEnum(klass, array[i]);
         return result;
+    }
+
+    /**
+     * See {@link #asValue(Object, Function)} but for an array. Any unmapped values
+     * (where {@link #asValue(Object, Function)} returns a {@code null}) are ignored
+     * and not included in the result.
+     * <p>
+     * Note that the result is not an array (not supported for generics) but rather
+     * a list (which supports generics).
+     * 
+     * @param <T>
+     *               the type being mapped to.
+     * @param value
+     *               the value being mapped.
+     * @param mapper
+     *               to map the value (if not supplied then the object is assumed to
+     *               be of the expected type).
+     * @return the mapped list of values (or {@code null}).
+     */
+    public static <T> List<T> asValueArray(Object value, Function<Object,T> mapper) throws ExpressionBuildException {
+        if (value == null)
+            return null;
+        if (!value.getClass().isArray())
+            return null;
+        Object[] array = (Object[]) value;
+        List<T> result = new ArrayList<>();
+        for (int i = 0; i < array.length; i++) {
+            T val = asValue(array[i], mapper);
+            if (val != null)
+                result.add(val);
+        }
+        return result;
+    }
+
+    /**
+     * As with {@link #asValueArray(Object, Function)} but if not an array then
+     * coerces into an array of a single entry.
+     * <p>
+     * Note that the result is not an array (not supported for generics) but rather
+     * a list (which supports generics).
+     */
+    public static <T> List<T> asValueArrayCoerce(Object value, Function<Object,T> mapper) throws ExpressionBuildException {
+        List<T> values = asValueArray(value, mapper);
+        if (values != null)
+            return values;
+        T val = asValue(values, mapper);
+        if (val == null)
+            return null;
+        List<T> result = new ArrayList<>();
+        result.add(val);
+        return result;
+    }
+
+    /**
+     * Takes a general object (of an expected but un-specified type) and maps to an
+     * instance of the parameter type.
+     * 
+     * @param <T>
+     *               the type being mapped to.
+     * @param value
+     *               the value being mapped.
+     * @param mapper
+     *               to map the value (if not supplied then the object is assumed to
+     *               be of the expected type).
+     * @return the mapped value (or {@code null}).
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T asValue(Object value, Function<Object,T> mapper) throws ExpressionBuildException {
+        if (value == null)
+            return null;
+        try {
+            if (mapper == null)
+                return (T) value;
+            return mapper.apply(value);
+        } catch (Throwable e) {
+            throw new ExpressionBuildException(e);
+        }
     }
 
 }

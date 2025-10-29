@@ -221,6 +221,7 @@
     <profile>
       <id>codeserver</id>
       <build>
+        <defaultGoal>initialize</defaultGoal>
         <plugins>
           <plugin>
             <groupId>com.effacy.jui</groupId>

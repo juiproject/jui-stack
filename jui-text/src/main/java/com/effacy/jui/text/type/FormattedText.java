@@ -22,9 +22,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.effacy.jui.json.annotation.JsonSerializable;
-import com.effacy.jui.platform.core.JuiIncompatible;
+import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
-import com.google.gwt.core.shared.GwtIncompatible;
 
 /**
  * Captures text that is formatted in a rich content sense (i.e custom blocks of
@@ -40,37 +39,31 @@ public class FormattedText implements Iterable<FormattedBlock> {
     /**
      * See {@link #markdown(Function, String...)} but with no line processor.
      */
-    @JuiIncompatible
-    @GwtIncompatible
     public static FormattedText markdown(String... content) {
         return markdown (null, content);
     }
 
-    @JuiIncompatible
-    @GwtIncompatible
+    /**
+     * Parses markdown content into a FormattedText object.
+     *
+     * @param lineProcessor
+     *                      optional function to process each line before parsing
+     * @param content
+     *                      the markdown content blocks to parse
+     * @return the formatted text.
+     */
     public static FormattedText markdown(Function<String,String> lineProcessor, String... content) {
-        FormattedText text = new FormattedText();
-        for (String part : content) {
-            if (part == null)
-                continue;
-            for (String str : part.split (System.lineSeparator ())) {
-                if (lineProcessor != null)
-                    str = lineProcessor.apply (str);
-                if (str == null)
-                    continue;
-                FormattedBlock blk = new FormattedBlock (BlockType.PARA);
-                text.getBlocks ().add (blk);
-                if (str.startsWith ("* ")) {
-                    blk.getLines ().add (FormattedLine.markdown (str.substring (2)));
-                    blk.setIndent (1);
-                    blk.setType (BlockType.NLIST);
-                } else
-                    blk.getLines ().add (FormattedLine.markdown (str));
-            }
-        }
-        return text;
+        return com.effacy.jui.text.type.markdown.MarkdownParser.parse(lineProcessor, content);
     }
 
+    /**
+     * Creates formatted text where each content string passed is treated as a
+     * separate paragraph.
+     * 
+     * @param content
+     *                the content (paragraphs).
+     * @return the formatted text.
+     */
     public static FormattedText string(String... content) {
         FormattedText text = new FormattedText();
         for (String part : content) {
@@ -108,6 +101,65 @@ public class FormattedText implements Iterable<FormattedBlock> {
             }
         }
         return sb.toString ();
+    }
+
+    /**
+     * Generates a debug string version and allows a consumer to process it. This
+     * can be placed inline for debugging with minial code impact.
+     * <p>
+     * See {@link #debug()}.
+     * 
+     * @return this formatted text.
+     */
+    public FormattedText debug(Consumer<String> str) {
+        if (str != null)
+            str.accept(debug());
+        return this;
+    }
+
+    /**
+     * Generates a string version of the formatted text explicitly to debug the
+     * structure. This includes visual markers for structure.
+     *
+     * @return the debug string.
+     */
+    public String debug() {
+        if ((blocks == null) || blocks.isEmpty())
+            return "[EMPTY FormattedText]";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("FormattedText[blocks=").append(blocks.size()).append("]\n");
+
+        for (int i = 0; i < blocks.size(); i++) {
+            FormattedBlock block = blocks.get(i);
+            sb.append("  [").append(i).append("] Block[type=").append(block.getType());
+
+            if (block.getIndent() > 0)
+                sb.append(", indent=").append(block.getIndent());
+
+            sb.append(", lines=").append(block.getLines().size()).append("]\n");
+
+            for (int j = 0; j < block.getLines().size(); j++) {
+                FormattedLine line = block.getLines().get(j);
+                sb.append("      [").append(j).append("] \"").append(line.getText()).append("\"");
+
+                if ((line.getFormatting() != null) && !line.getFormatting().isEmpty()) {
+                    sb.append(" {");
+                    for (int k = 0; k < line.getFormatting().size(); k++) {
+                        if (k > 0)
+                            sb.append(", ");
+                        FormattedLine.Format fmt = line.getFormatting().get(k);
+                        sb.append(fmt.getFormats().toString())
+                          .append("@").append(fmt.getIndex())
+                          .append("+").append(fmt.getLength());
+                    }
+                    sb.append("}");
+                }
+                sb.append("\n");
+            }
+        }
+
+        return sb.toString();
     }
 
     /************************************************************************

@@ -62,26 +62,34 @@
 }
 
 .juiFragFText > .indent1 {
-    margin-left: 2em;
+    margin-left: 1.5em;
 }
 
 .juiFragFText > .indent2 {
-    margin-left: 3.75em;
+    margin-left: 3.25em;
 }
 
 .juiFragFText > .indent3 {
-    margin-left: 5.25em;
+    margin-left: 4.75em;
+}
+
+.juiFragFText > .list_bullet {
+    padding-left: 1.5em;
 }
 
 .juiFragFText > .list_bullet::before {
     position: absolute;
-    left: -1.5em;
+    left: 0;
     content: '\2022';
+}
+
+.juiFragFText > .list_tick {
+    padding-left: 1.5em;
 }
 
 .juiFragFText > .list_tick::before {
     position: absolute;
-    left: -1.5em;
+    left: 0;
     content: '\2713';
 }
 

@@ -64,6 +64,7 @@ import com.effacy.jui.core.client.navigation.NavigationSupport;
 import com.effacy.jui.core.client.util.TriConsumer;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.ListSupport;
+import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.Promise;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.ui.client.icon.FontAwesome;
@@ -490,6 +491,11 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         private String title;
 
         /**
+         * See {@link #title(String, String)}.
+         */
+        private String titleIcon;
+
+        /**
          * See {@link #titleOnlyInBreadcrumb(boolean)}.
          */
         private boolean titleOnlyInBreadcrumb;
@@ -531,6 +537,22 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
          */
         public Config title(String title) {
             this.title = title;
+            return this;
+        }
+
+        /**
+         * Assigns a display title for the card navigation. This appears as the
+         * top-level label.
+         * 
+         * @param title
+         *                  the title.
+         * @param titleIcon
+         *                  the CSS for the back icon to use.
+         * @return this configuration instance.
+         */
+        public Config title(String title, String titleIcon) {
+            this.title = title;
+            this.titleIcon = titleIcon;
             return this;
         }
 
@@ -909,12 +931,12 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
 
     protected void buildBreadcrumb(ElementBuilder header, NavigationContext context, List<CardConfiguration> path) {
         CardConfiguration card = path.get(path.size() - 1);
-        String cardLabel = context.getMetadata (CardNavigator.ATTR_CARDLABEL, card.label());
-        boolean displayTitle = !StringSupport.empty (config().title);
-        Div.$ (header).style(styles().crumb ()).$ (crumb -> {
+        String cardLabel = context.getMetadata(CardNavigator.ATTR_CARDLABEL, card.label());
+        boolean displayTitle = !StringSupport.empty(config().title);
+        Div.$ (header).style(styles().crumb ()).$(crumb -> {
             if (displayTitle) {
                 Span.$ (crumb).style (styles ().clickable ()).$ (
-                    Em.$ ().style(FontAwesome.arrowLeft ())
+                    Em.$ ().style(!StringSupport.empty(config().titleIcon) ? config().titleIcon : FontAwesome.arrowLeft ())
                 ).onclick (e -> {
                     if (config().navigationHandler != null) {
                         if (config().navigationHandler.handle(NavigationSupport.build(path.get(path.size()-1).reference), "/"))
@@ -926,7 +948,8 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             ListSupport.forEach (path, (ctx, c) -> {
                 if (ctx.last()) {
                     if (config().style.includeActiveInCrumb()) {
-                        Em.$ (crumb).style (FontAwesome.chevronRight ());
+                        if (displayTitle || !ctx.first())
+                            Em.$ (crumb).style (FontAwesome.chevronRight ());
                         Span.$ (crumb).use (n -> breadcrumbLabelEl = (Element) n).$ (span -> {
                             Text.$ (span, cardLabel);
                             if (!StringSupport.empty(card.notice))

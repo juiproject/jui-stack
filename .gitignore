@@ -7,4 +7,5 @@
 target/
 target-ide/
 tmp/
-jui-maven-plugin/dependency-reduced-pom.xml
+dependency-reduced-pom.xml
+bin/

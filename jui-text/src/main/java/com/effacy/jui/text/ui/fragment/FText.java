@@ -76,10 +76,10 @@ public class FText extends Fragment<FText> {
         text.getBlocks ().forEach (blk -> {
             if (blk.typeIs (BlockType.PARA, BlockType.NLIST)) {
                 P.$ (parent).$ (p -> {
+                    if (blk.typeIs (BlockType.NLIST))
+                        p.style ("list_bullet");
                     if (blk.getIndent() > 0) {
                         p.style ("indent" + blk.getIndent ());
-                        if (blk.typeIs (BlockType.NLIST))
-                            p.style ("list_bullet");
                     }
                     Itr.forEach (blk.getLines (), (c,line) -> {
                         if (!c.first ())

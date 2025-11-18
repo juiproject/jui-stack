@@ -23,6 +23,12 @@ import elemental2.dom.DomGlobal;
 import elemental2.dom.Node;
 import elemental2.dom.Text;
 
+/**
+ * A very simple mechanism for displaying marked up content.
+ * <p>
+ * For more complex formatting consider using {@code FormattedText} and
+ * {@code MarkdownParser}.
+ */
 public class MarkupBuilder extends NodeBuilder<MarkupBuilder> {
 
     /**

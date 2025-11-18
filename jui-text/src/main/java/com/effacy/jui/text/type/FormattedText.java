@@ -22,7 +22,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.effacy.jui.json.annotation.JsonSerializable;
-import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 
 /**

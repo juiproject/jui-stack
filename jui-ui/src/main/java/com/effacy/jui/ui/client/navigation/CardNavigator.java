@@ -496,6 +496,11 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         private String titleIcon;
 
         /**
+         * See {@link #title(String, String, String)}.
+         */
+        private String titleIconHover;
+
+        /**
          * See {@link #titleOnlyInBreadcrumb(boolean)}.
          */
         private boolean titleOnlyInBreadcrumb;
@@ -553,6 +558,25 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         public Config title(String title, String titleIcon) {
             this.title = title;
             this.titleIcon = titleIcon;
+            return this;
+        }
+
+        /**
+         * Assigns a display title for the card navigation. This appears as the
+         * top-level label.
+         * 
+         * @param title
+         *                  the title.
+         * @param titleIcon
+         *                  the CSS for the back icon to use.
+         * @param titleIconHover
+         *                  the CSS for the back icon to use when hovered.
+         * @return this configuration instance.
+         */
+        public Config title(String title, String titleIcon, String titleIconHover) {
+            this.title = title;
+            this.titleIcon = titleIcon;
+            this.titleIconHover = titleIconHover;
             return this;
         }
 
@@ -935,9 +959,19 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         boolean displayTitle = !StringSupport.empty(config().title);
         Div.$ (header).style(styles().crumb ()).$(crumb -> {
             if (displayTitle) {
-                Span.$ (crumb).style (styles ().clickable ()).$ (
-                    Em.$ ().style(!StringSupport.empty(config().titleIcon) ? config().titleIcon : FontAwesome.arrowLeft ())
-                ).onclick (e -> {
+                Span.$ (crumb).style (styles ().clickable ()).$ (item -> {
+                    // If there is no custom icon then use the default back arrow. If there is then
+                    // use that if there is no hover icon. If there is a hover icon then use two
+                    // elements (one for each) and the hover state styles to switch between them.
+                    if (StringSupport.empty(config().titleIcon)) {
+                        Em.$ (item).style (FontAwesome.arrowLeft ());
+                    } else if (StringSupport.empty(config().titleIconHover)) {
+                        Em.$ (item).style (config().titleIcon);
+                    } else {
+                        Em.$ (item).style (config().titleIcon, styles().hoverOn());
+                        Em.$ (item).style (config().titleIconHover, styles().hoverOff());
+                    }
+                }).onclick (e -> {
                     if (config().navigationHandler != null) {
                         if (config().navigationHandler.handle(NavigationSupport.build(path.get(path.size()-1).reference), "/"))
                             return;
@@ -1198,6 +1232,10 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         public String custom();
 
         public String clickable();
+
+        public String hoverOn();
+
+        public String hoverOff();
 
         public String notice();
     }

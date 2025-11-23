@@ -62,6 +62,22 @@
     cursor: pointer;
 }
 
+.component  > .wrap > .header .crumb span.clickable:not(:hover) .hoverOn {
+    display: inline-block;
+}
+
+.component  > .wrap > .header .crumb span.clickable:not(:hover) .hoverOff {
+    display: none;
+}
+
+.component  > .wrap > .header .crumb span.clickable:hover .hoverOn {
+    display: none;
+}
+
+.component  > .wrap > .header .crumb span.clickable:hover .hoverOff {
+    display: inline-block;
+}
+
 .component > .wrap > .header .crumb .notice {
     background-color: var(--jui-cardnavigator-notice-bg);
     color: var(--jui-cardnavigator-notice);

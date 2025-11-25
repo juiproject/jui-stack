@@ -47,6 +47,37 @@ public class NoticeBuilder {
      * that has uniform formatting is represented as a {@link Run}.
      */
     public static class Block {
+
+        /**
+         * Builds a block using the provided builder.
+         * 
+         * @param builder
+         *                to configure the block.
+         * @return the built block.
+         */
+        public static Block build(Consumer<Block> builder) {
+            Block block = new Block();
+            if (builder != null)
+                builder.accept(block);
+            return block;
+        }
+
+        /**
+         * Combines the content of multiple blocks.
+         * 
+         * @param blocks
+         *              the blocks to combine.
+         * @return the combined content.
+         */
+        public static String content(List<Block> blocks) {
+            StringBuilder sb = new StringBuilder();
+            for (Block block : blocks) {
+                if (sb.length() > 0)
+                    sb.append("\n");
+                sb.append(Run.content(block.runs));
+            }
+            return sb.toString();
+        }
         
         /**
          * The runs that constitute the contents of the block.
@@ -95,6 +126,36 @@ public class NoticeBuilder {
         }
 
         /**
+         * Adds runs to the block.
+         * 
+         * @param runs
+         *             the runs to add.
+         * @return this block instance.
+         */
+        public Block add(Run... runs) {
+            for (Run run : runs) {
+                if (run != null)
+                    this.runs.add (run);
+            }
+            return this;
+        }
+
+        /**
+         * Adds runs to the block.
+         * 
+         * @param runs
+         *            the runs to add.
+         * @return this block instance.
+         */
+        public Block add(List<Run> runs) {
+            for (Run run : runs) {
+                if (run != null)
+                    this.runs.add (run);
+            }
+            return this;
+        }
+
+        /**
          * Adds formatted text to the block (a run).
          * 
          * @param content
@@ -127,7 +188,7 @@ public class NoticeBuilder {
          * @return this block instance.
          */
         public Block bold(String content) {
-            runs.add (new Run(content, null, Formatting.BOLD));
+            runs.add (new Run(content, Formatting.BOLD));
             return this;
         }
 
@@ -139,7 +200,7 @@ public class NoticeBuilder {
          * @return this block instance.
          */
         public Block italic(String content) {
-            runs.add (new Run(content, null, Formatting.ITALIC));
+            runs.add (new Run(content, Formatting.ITALIC));
             return this;
         }
 
@@ -161,7 +222,21 @@ public class NoticeBuilder {
     /**
      * Represents a run of text to which a consistent set of formatting is applied.
      */
-    static class Run {
+    public static class Run {
+
+        /**
+         * Combines the content of multiple runs.
+         * 
+         * @param runs
+         *             the runs to combine.
+         * @return the combined content.
+         */
+        public static String content(List<Run> runs) {
+            StringBuilder sb = new StringBuilder();
+            for (Run run : runs) 
+                sb.append (run.content());
+            return sb.toString();
+        }
         
         /**
          * Formatting to apply.
@@ -183,6 +258,18 @@ public class NoticeBuilder {
          * 
          * @param content
          *                   the content of the run (required).
+         * @param formatting
+         *                   the additional formatting to apply (if any).
+         */
+        public Run(String content, Formatting... formatting) {
+            this(content, null, formatting);
+        }
+
+        /**
+         * Construct a run.
+         * 
+         * @param content
+         *                   the content of the run (required).
          * @param href
          *                   (optional) an invoker that is invoked when the text is
          *                   clicked on (this is effected by wrapping in an A tag and
@@ -190,7 +277,7 @@ public class NoticeBuilder {
          * @param formatting
          *                   the additional formatting to apply (if any).
          */
-        Run(String content, Invoker href, Formatting... formatting) {
+        public Run(String content, Invoker href, Formatting... formatting) {
             this.content = (content == null) ? "" : content;
             this.href = href;
             if (formatting.length > 0) {
@@ -200,6 +287,15 @@ public class NoticeBuilder {
                         this.formatting.add (format);
                 }
             }
+        }
+
+        /**
+         * The un-formatted content of the run.
+         * 
+         * @return the content.
+         */
+        public String content() {
+            return content;
         }
 
         /**
@@ -251,6 +347,51 @@ public class NoticeBuilder {
         if(builder != null)
             builder.accept(block);
         return this;
+    }
+
+    /**
+     * Adds multiple blocks.
+     * 
+     * @param blocks
+     *               the blocks to add.
+     * @return this notice builder.
+     */
+    public NoticeBuilder add(Block... blocks) {
+        for (Block b : blocks) {
+            if (b != null)
+                this.blocks.add(b);
+        }
+        return this;
+    }
+
+    /**
+     * Adds multiple blocks.
+     * 
+     * @param blocks
+     *               the blocks to add.
+     * @return this notice builder.
+     */
+    public NoticeBuilder add(List<Block> blocks) {
+        if (blocks != null)
+            this.blocks.addAll(blocks);
+        return this;
+    }
+
+    /**
+     * The un-formatted content of the notice.
+     * <p>
+     * Block are separated by new-lines.
+     * 
+     * @return the content.
+     */
+    public String content() {
+        StringBuilder sb = new StringBuilder();
+        for (Block block : blocks) {
+            if (sb.length() > 0)
+                sb.append("\n");
+            sb.append(Run.content(block.runs));
+        }
+        return sb.toString();
     }
 
     /**

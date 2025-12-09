@@ -151,6 +151,14 @@ public class FormattedText implements Iterable<FormattedBlock> {
                         sb.append(fmt.getFormats().toString())
                           .append("@").append(fmt.getIndex())
                           .append("+").append(fmt.getLength());
+                        if (fmt.getMeta() != null && !fmt.getMeta().isEmpty()) {
+                            sb.append("[");
+                            fmt.getMeta().forEach((key, value) -> {
+                                sb.append(key).append("=").append(value).append(" ");
+                            });
+                            sb.setLength(sb.length() - 1);
+                            sb.append("]");
+                        }
                     }
                     sb.append("}");
                 }

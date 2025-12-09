@@ -15,14 +15,23 @@
  ******************************************************************************/
 package com.effacy.jui.text.ui.fragment;
 
+import java.util.List;
+
 import com.effacy.jui.core.client.dom.builder.Br;
 import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Fragment;
+import com.effacy.jui.core.client.dom.builder.H1;
+import com.effacy.jui.core.client.dom.builder.H2;
+import com.effacy.jui.core.client.dom.builder.H3;
+import com.effacy.jui.core.client.dom.builder.H4;
+import com.effacy.jui.core.client.dom.builder.H5;
+import com.effacy.jui.core.client.dom.builder.H6;
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
 import com.effacy.jui.core.client.dom.builder.P;
 import com.effacy.jui.platform.util.client.Itr;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
+import com.effacy.jui.text.type.FormattedLine;
 import com.effacy.jui.text.type.FormattedText;
 
 /**
@@ -53,9 +62,49 @@ public class FText extends Fragment<FText> {
 
     private boolean embed;
 
+    private boolean skipStyle;
+
+    private int topHeadingLevel = 1;
+
     public FText(FormattedText text, boolean embed) {
         this.text = text;
         this.embed = embed;
+    }
+
+    /**
+     * Skips applying the default fragment style.
+     * 
+     * @return this fragment.
+     */
+    public FText skipStyle() {
+        return skipStyle (true);
+    }
+
+    /**
+     * Skips applying the default fragment style.
+     * 
+     * @param skipStyle
+     *                  {@code true} to skip the style.
+     * @return this fragment.
+     */
+    public FText skipStyle(boolean skipStyle) {
+        this.skipStyle = skipStyle;
+        return this;
+    }
+
+    /**
+     * Assigns the top heading level.
+     * <p>
+     * This is the heading level that the first heading will be rendered as.
+     * Subsequent headings are adjusted accordingly.
+     * 
+     * @param level
+     *              the level.
+     * @return this fragment.
+     */
+    public FText topHeadingLevel(int level) {
+        this.topHeadingLevel = Math.max(1, level);
+        return this;
     }
 
     @Override
@@ -68,7 +117,8 @@ public class FText extends Fragment<FText> {
 
     @Override
     protected void buildInto(ElementBuilder root) {
-        root.style ("juiFragFText");
+        if (!skipStyle)
+            root.style ("juiFragFText");
         _build (root);
     }
 
@@ -78,16 +128,41 @@ public class FText extends Fragment<FText> {
                 P.$ (parent).$ (p -> {
                     if (blk.typeIs (BlockType.NLIST))
                         p.style ("list_bullet");
-                    if (blk.getIndent() > 0) {
+                    if (blk.getIndent() > 0)
                         p.style ("indent" + blk.getIndent ());
-                    }
-                    Itr.forEach (blk.getLines (), (c,line) -> {
-                        if (!c.first ())
-                            Br.$ (p);
-                        FLine.$ (p, line);
-                    });
+                    insert(p, blk.getLines ());
                 });
+            } else if (blk.typeIs (BlockType.H1)) {
+                h(parent, topHeadingLevel).$(p -> insert(p, blk.getLines()));
+            } else if (blk.typeIs (BlockType.H2)) {
+                h(parent, topHeadingLevel + 1).$(p -> insert(p, blk.getLines()));
+            } else if (blk.typeIs (BlockType.H3)) {
+                h(parent, topHeadingLevel + 2).$(p -> insert(p, blk.getLines()));
             }
+        });
+    }
+
+    protected ContainerBuilder<?> h(ContainerBuilder<?> p, int level) {
+        if (level <= 1)
+            return H1.$ (p);
+        if (level == 2)
+            return H2.$ (p);
+        if (level == 3)
+            return H3.$ (p);
+        if (level == 4)
+            return H4.$ (p);
+        if (level == 5)
+            return H5.$ (p);
+        if (level == 6)
+            return H6.$ (p);
+        return H6.$ (p);
+    }
+
+    protected void insert(ContainerBuilder<?> p, List<FormattedLine> lines) {
+        Itr.forEach (lines, (c,line) -> {
+            if (!c.first ())
+                Br.$ (p);
+            FLine.$ (p, line);
         });
     }
 }

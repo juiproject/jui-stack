@@ -1033,4 +1033,244 @@ This is *some* supporting **guidance**:
 
         System.out.println("Complex formatting debug:\n" + debug);
     }
+
+    @Test
+    public void testSimpleLink() {
+        FormattedText result = MarkdownParser.parse("Click [here](https://example.com) for more.");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("Click here for more.", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals(6, format.getIndex());
+        assertEquals(4, format.getLength());
+        assertTrue(format.getFormats().contains(FormatType.A));
+        assertEquals("https://example.com", format.getMeta().get("link"));
+    }
+
+    @Test
+    public void testLinkAtStart() {
+        FormattedText result = MarkdownParser.parse("[Google](https://google.com) is a search engine.");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("Google is a search engine.", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals(0, format.getIndex());
+        assertEquals(6, format.getLength());
+        assertTrue(format.getFormats().contains(FormatType.A));
+        assertEquals("https://google.com", format.getMeta().get("link"));
+    }
+
+    @Test
+    public void testLinkAtEnd() {
+        FormattedText result = MarkdownParser.parse("Visit [our site](https://example.org)");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("Visit our site", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals(6, format.getIndex());
+        assertEquals(8, format.getLength());
+        assertTrue(format.getFormats().contains(FormatType.A));
+        assertEquals("https://example.org", format.getMeta().get("link"));
+    }
+
+    @Test
+    public void testMultipleLinks() {
+        FormattedText result = MarkdownParser.parse("See [link1](http://one.com) and [link2](http://two.com).");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("See link1 and link2.", line.getText());
+        assertEquals(2, line.getFormatting().size());
+
+        FormattedLine.Format format1 = line.getFormatting().get(0);
+        assertEquals(4, format1.getIndex());
+        assertEquals(5, format1.getLength());
+        assertTrue(format1.getFormats().contains(FormatType.A));
+        assertEquals("http://one.com", format1.getMeta().get("link"));
+
+        FormattedLine.Format format2 = line.getFormatting().get(1);
+        assertEquals(14, format2.getIndex());
+        assertEquals(5, format2.getLength());
+        assertTrue(format2.getFormats().contains(FormatType.A));
+        assertEquals("http://two.com", format2.getMeta().get("link"));
+    }
+
+    @Test
+    public void testLinkWithBoldText() {
+        FormattedText result = MarkdownParser.parse("This is **bold** and [a link](http://example.com).");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("This is bold and a link.", line.getText());
+        assertEquals(2, line.getFormatting().size());
+
+        FormattedLine.Format bold = line.getFormatting().get(0);
+        assertEquals(8, bold.getIndex());
+        assertEquals(4, bold.getLength());
+        assertTrue(bold.getFormats().contains(FormatType.BLD));
+
+        FormattedLine.Format link = line.getFormatting().get(1);
+        assertEquals(17, link.getIndex());
+        assertEquals(6, link.getLength());
+        assertTrue(link.getFormats().contains(FormatType.A));
+        assertEquals("http://example.com", link.getMeta().get("link"));
+    }
+
+    @Test
+    public void testLinkBeforeBoldText() {
+        FormattedText result = MarkdownParser.parse("[link](http://example.com) and **bold**.");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("link and bold.", line.getText());
+        assertEquals(2, line.getFormatting().size());
+
+        FormattedLine.Format link = line.getFormatting().get(0);
+        assertEquals(0, link.getIndex());
+        assertEquals(4, link.getLength());
+        assertTrue(link.getFormats().contains(FormatType.A));
+        assertEquals("http://example.com", link.getMeta().get("link"));
+
+        FormattedLine.Format bold = line.getFormatting().get(1);
+        assertEquals(9, bold.getIndex());
+        assertEquals(4, bold.getLength());
+        assertTrue(bold.getFormats().contains(FormatType.BLD));
+    }
+
+    @Test
+    public void testLinkInListItem() {
+        FormattedText result = MarkdownParser.parse("- Check [this](http://example.com) out");
+
+        assertEquals(1, result.getBlocks().size());
+        FormattedBlock block = result.getBlocks().get(0);
+        assertEquals(BlockType.NLIST, block.getType());
+
+        FormattedLine line = block.getLines().get(0);
+        assertEquals("Check this out", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals(6, format.getIndex());
+        assertEquals(4, format.getLength());
+        assertTrue(format.getFormats().contains(FormatType.A));
+        assertEquals("http://example.com", format.getMeta().get("link"));
+    }
+
+    @Test
+    public void testLinkInHeading() {
+        FormattedText result = MarkdownParser.parse("# Check [the docs](http://docs.com)");
+
+        assertEquals(1, result.getBlocks().size());
+        FormattedBlock block = result.getBlocks().get(0);
+        assertEquals(BlockType.H1, block.getType());
+
+        FormattedLine line = block.getLines().get(0);
+        assertEquals("Check the docs", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals(6, format.getIndex());
+        assertEquals(8, format.getLength());
+        assertTrue(format.getFormats().contains(FormatType.A));
+        assertEquals("http://docs.com", format.getMeta().get("link"));
+    }
+
+    @Test
+    public void testIncompleteLinkNotParsed() {
+        // Missing closing parenthesis
+        FormattedText result = MarkdownParser.parse("This is [incomplete](http://example.com text");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("This is [incomplete](http://example.com text", line.getText());
+        assertTrue(line.getFormatting().isEmpty());
+    }
+
+    @Test
+    public void testBracketsWithoutLinkNotParsed() {
+        // Brackets not followed by parentheses
+        FormattedText result = MarkdownParser.parse("This is [not a link] here.");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("This is [not a link] here.", line.getText());
+        assertTrue(line.getFormatting().isEmpty());
+    }
+
+    @Test
+    public void testLinkWithEmptyLabel() {
+        FormattedText result = MarkdownParser.parse("Click [](http://example.com) here.");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("Click  here.", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals(6, format.getIndex());
+        assertEquals(0, format.getLength());
+        assertTrue(format.getFormats().contains(FormatType.A));
+        assertEquals("http://example.com", format.getMeta().get("link"));
+    }
+
+    @Test
+    public void testLinkWithEmptyUrl() {
+        FormattedText result = MarkdownParser.parse("Click [label]() here.");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("Click label here.", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals(6, format.getIndex());
+        assertEquals(5, format.getLength());
+        assertTrue(format.getFormats().contains(FormatType.A));
+        assertEquals("", format.getMeta().get("link"));
+    }
+
+    @Test
+    public void testLinkWithSpecialCharactersInUrl() {
+        FormattedText result = MarkdownParser.parse("See [docs](http://example.com/path?query=value&other=1#anchor).");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("See docs.", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals("http://example.com/path?query=value&other=1#anchor", format.getMeta().get("link"));
+    }
+
+    @Test
+    public void testConsecutiveLinks() {
+        FormattedText result = MarkdownParser.parse("[one](http://one.com)[two](http://two.com)");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("onetwo", line.getText());
+        assertEquals(2, line.getFormatting().size());
+
+        FormattedLine.Format format1 = line.getFormatting().get(0);
+        assertEquals(0, format1.getIndex());
+        assertEquals(3, format1.getLength());
+        assertEquals("http://one.com", format1.getMeta().get("link"));
+
+        FormattedLine.Format format2 = line.getFormatting().get(1);
+        assertEquals(3, format2.getIndex());
+        assertEquals(3, format2.getLength());
+        assertEquals("http://two.com", format2.getMeta().get("link"));
+    }
+
+    @Test
+    public void testLinkOnlyLine() {
+        FormattedText result = MarkdownParser.parse("[Click me](http://example.com)");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("Click me", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals(0, format.getIndex());
+        assertEquals(8, format.getLength());
+        assertTrue(format.getFormats().contains(FormatType.A));
+        assertEquals("http://example.com", format.getMeta().get("link"));
+    }
 }

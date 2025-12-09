@@ -279,9 +279,15 @@ public class FormattedLine {
          */
         private FormatType[] formating;
 
-        TextSegment(String text, FormatType[] formatting) {
+        /**
+         * See {@link #link()}.
+         */
+        private String link;
+
+        TextSegment(String text, FormatType[] formatting, String link) {
             this.text = text;
             this.formating = (formatting == null) ? new FormatType[0] : formatting;
+            this.link = link;
         }
 
         /**
@@ -299,6 +305,15 @@ public class FormattedLine {
          */
         public FormatType[] formatting() {
             return formating;
+        }
+
+        /**
+         * The link (if any).
+         * 
+         * @return the link.
+         */
+        public String link() {
+            return link;
         }
 
         /**
@@ -447,19 +462,20 @@ public class FormattedLine {
         // normalise ();
         List<TextSegment> result = new ArrayList<>();
         if ((formatting == null) || formatting.isEmpty ()) {
-            result.add (new TextSegment (text, null));
+            result.add (new TextSegment (text, null, null));
         } else {
             int idx = 0;
             for (Format fmt : formatting) {
+                String link = (fmt.getMeta() != null) ? fmt.getMeta().get("link") : null;
                 if (fmt.index > idx) {
-                    result.add (new TextSegment (text.substring(idx, fmt.index), null));
+                    result.add (new TextSegment (text.substring(idx, fmt.index), null, link));
                     idx = fmt.index;
                 }
-                result.add (new TextSegment (text.substring (idx, fmt.index + fmt.length), fmt.formats));
+                result.add (new TextSegment (text.substring (idx, fmt.index + fmt.length), fmt.formats, link));
                 idx = fmt.index + fmt.length;
             }
             if (idx < text.length())
-            result.add (new TextSegment (text.substring(idx), null));
+                result.add (new TextSegment (text.substring(idx), null, null));
         }
         return result;
     }

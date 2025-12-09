@@ -50,6 +50,7 @@ public class MarkdownParser {
      * - Italic: *text* or _text_
      * - Strikethrough: ~~text~~
      * - Code: `text`
+     * - Links: [label](url)
      * - Newlines in paragraphs
      * - Double newlines create new paragraphs
      *
@@ -86,6 +87,7 @@ public class MarkdownParser {
      * - Italic: *text* or _text_
      * - Strikethrough: ~~text~~
      * - Code: `text`
+     * - Links: [label](url)
      * - Newlines in paragraphs
      * - Double newlines create new paragraphs
      *
@@ -282,6 +284,9 @@ public class MarkdownParser {
     private static FormattedLine parseLine(String line) {
         FormattedLine formattedLine = new FormattedLine();
 
+        // First, find and process links [label](url)
+        List<LinkInfo> links = findLinks(line);
+
         // Track format markers and their positions
         List<FormatMarker> markers = new ArrayList<>();
 
@@ -294,6 +299,9 @@ public class MarkdownParser {
         // For italic, we need to be careful not to match bold markers
         findItalicMarkers(line, markers);
 
+        // Remove markers that fall within link regions (they would interfere)
+        removeMarkersWithinLinks(markers, links);
+
         // Sort markers by position
         markers.sort((a, b) -> a.position - b.position);
 
@@ -301,35 +309,61 @@ public class MarkdownParser {
         StringBuilder plainText = new StringBuilder();
         int textPos = 0;
         int i = 0;
+        int linkIdx = 0;
 
-        while (i < markers.size()) {
-            FormatMarker start = markers.get(i);
+        while ((i < markers.size()) || (linkIdx < links.size())) {
+            // Determine which comes first: a format marker or a link
+            FormatMarker start = (i < markers.size()) ? markers.get(i) : null;
+            LinkInfo link = (linkIdx < links.size()) ? links.get(linkIdx) : null;
 
-            // Find matching end marker
-            FormatMarker end = findMatchingEnd(markers, i);
+            boolean processLink = false;
+            if ((start == null) && (link != null)) {
+                processLink = true;
+            } else if ((start != null) && (link != null)) {
+                processLink = link.startPos < start.position;
+            }
 
-            if (end != null) {
-                // Add text before this formatted region
-                if (start.position > textPos)
-                    plainText.append(line, textPos, start.position);
-
-                // Add formatted text
-                int contentStart = start.position + start.marker.length();
-                int contentEnd = end.position;
-                String content = line.substring(contentStart, contentEnd);
+            if (processLink) {
+                // Process link
+                if (link.startPos > textPos)
+                    plainText.append(line, textPos, link.startPos);
 
                 int formatStartPos = plainText.length();
-                plainText.append(content);
+                plainText.append(link.label);
 
-                formattedLine.getFormatting().add(
-                    new FormattedLine.Format(formatStartPos, content.length(), start.type)
-                );
+                FormattedLine.Format format = new FormattedLine.Format(formatStartPos, link.label.length(), FormatType.A);
+                format.getMeta().put("link", link.url);
+                formattedLine.getFormatting().add(format);
 
-                textPos = end.position + end.marker.length();
-                i = markers.indexOf(end) + 1;
-            } else {
-                // No matching end, treat as literal text
-                i++;
+                textPos = link.endPos;
+                linkIdx++;
+            } else if (start != null) {
+                // Find matching end marker
+                FormatMarker end = findMatchingEnd(markers, i);
+
+                if (end != null) {
+                    // Add text before this formatted region
+                    if (start.position > textPos)
+                        plainText.append(line, textPos, start.position);
+
+                    // Add formatted text
+                    int contentStart = start.position + start.marker.length();
+                    int contentEnd = end.position;
+                    String content = line.substring(contentStart, contentEnd);
+
+                    int formatStartPos = plainText.length();
+                    plainText.append(content);
+
+                    formattedLine.getFormatting().add(
+                        new FormattedLine.Format(formatStartPos, content.length(), start.type)
+                    );
+
+                    textPos = end.position + end.marker.length();
+                    i = markers.indexOf(end) + 1;
+                } else {
+                    // No matching end, treat as literal text
+                    i++;
+                }
             }
         }
 
@@ -340,6 +374,65 @@ public class MarkdownParser {
         formattedLine.setText(plainText.toString());
         return formattedLine;
     }
+
+    /**
+     * Finds all markdown links [label](url) in the text.
+     *
+     * @param line
+     *             the line to search
+     * @return list of link information
+     */
+    private static List<LinkInfo> findLinks(String line) {
+        List<LinkInfo> links = new ArrayList<>();
+        int pos = 0;
+
+        while (pos < line.length()) {
+            int labelStart = line.indexOf('[', pos);
+            if (labelStart == -1)
+                break;
+
+            int labelEnd = line.indexOf(']', labelStart + 1);
+            if (labelEnd == -1)
+                break;
+
+            // Check for immediately following (url)
+            if (((labelEnd + 1) < line.length()) && (line.charAt(labelEnd + 1) == '(')) {
+                int urlStart = labelEnd + 2;
+                int urlEnd = line.indexOf(')', urlStart);
+                if (urlEnd != -1) {
+                    String label = line.substring(labelStart + 1, labelEnd);
+                    String url = line.substring(urlStart, urlEnd);
+                    links.add(new LinkInfo(labelStart, urlEnd + 1, label, url));
+                    pos = urlEnd + 1;
+                    continue;
+                }
+            }
+
+            pos = labelStart + 1;
+        }
+
+        return links;
+    }
+
+    /**
+     * Removes format markers that fall within link regions.
+     */
+    private static void removeMarkersWithinLinks(List<FormatMarker> markers, List<LinkInfo> links) {
+        if (links.isEmpty())
+            return;
+        markers.removeIf(marker -> {
+            for (LinkInfo link : links) {
+                if ((marker.position >= link.startPos) && (marker.position < link.endPos))
+                    return true;
+            }
+            return false;
+        });
+    }
+
+    /**
+     * Information about a markdown link.
+     */
+    private record LinkInfo(int startPos, int endPos, String label, String url) {}
 
     /**
      * Finds markdown markers in the text.

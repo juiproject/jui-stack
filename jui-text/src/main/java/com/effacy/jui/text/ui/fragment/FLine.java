@@ -63,7 +63,13 @@ public class FLine extends Fragment<FLine> {
                     Text.$ (parent, segment.text ());
                 } else {
                     if (segment.contains(FormatType.A)) {
-                        A.$ (parent).text (segment.text ());
+                        String href = segment.link();
+                        if (href == null)
+                            A.$ (parent).text (segment.text ());
+                        else if (href.startsWith("http"))
+                            A.$ (parent, href).text (segment.text ()).attr("target", "_blank");
+                        else
+                            A.$ (parent, href).text (segment.text ());
                     } else if (segment.contains (FormatType.CODE)) {
                         Span.$ (parent).text (segment.text ()).style ("fmt_code");
                     } else {

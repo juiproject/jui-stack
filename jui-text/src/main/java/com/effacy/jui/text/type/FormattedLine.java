@@ -35,6 +35,16 @@ import com.google.gwt.core.shared.GwtIncompatible;
 public class FormattedLine {
 
     /**
+     * Meta-data key for link information.
+     */
+    public static final String META_LINK = "link";
+
+    /**
+     * Meta-data key for variable information.
+     */
+    public static final String META_VARIABLE = "variable";
+
+    /**
      * Various format types that can be applied in the line.
      */
     public enum FormatType {
@@ -284,10 +294,25 @@ public class FormattedLine {
          */
         private String link;
 
+        /**
+         * See {@link #variable()}.
+         */
+        private boolean variable;
+
+        /**
+         * See {@link #meta()}.
+         */
+        private Map<String,String> meta;
+
         TextSegment(String text, FormatType[] formatting, String link) {
+            this(text, formatting, link, false);
+        }
+
+        TextSegment(String text, FormatType[] formatting, String link, boolean variable) {
             this.text = text;
             this.formating = (formatting == null) ? new FormatType[0] : formatting;
             this.link = link;
+            this.variable = variable;
         }
 
         /**
@@ -309,11 +334,42 @@ public class FormattedLine {
 
         /**
          * The link (if any).
-         * 
+         *
          * @return the link.
          */
         public String link() {
             return link;
+        }
+
+        /**
+         * Determines if this segment represents a variable. When {@code true}, the
+         * {@link #text()} method returns the variable name (not display text) which
+         * should be resolved at render time.
+         *
+         * @return {@code true} if this is a variable segment.
+         */
+        public boolean variable() {
+            return variable;
+        }
+
+        /**
+         * Meta-data associated with the segment.
+         * 
+         * @return any metadata.
+         */
+        public Map<String,String> meta() {
+            if (meta == null)
+                meta = new HashMap<> ();
+            return meta;
+        }
+
+        /**
+         * Determines if the segment has meta-data.
+         * 
+         * @return {@code true} if it does.
+         */
+        public boolean hasMeta() {
+            return (meta != null) && !meta.isEmpty();
         }
 
         /**
@@ -432,7 +488,10 @@ public class FormattedLine {
     }
 
     /**
-     * @param formatting the formatting to set
+     * Assigns formatting.
+     * 
+     * @param formatting
+     *                   the formatting to assign.
      */
     public void setFormatting(List<Format> formatting) {
         this.formatting = formatting;
@@ -466,12 +525,25 @@ public class FormattedLine {
         } else {
             int idx = 0;
             for (Format fmt : formatting) {
-                String link = (fmt.getMeta() != null) ? fmt.getMeta().get("link") : null;
-                if (fmt.index > idx) {
-                    result.add (new TextSegment (text.substring(idx, fmt.index), null, link));
-                    idx = fmt.index;
+                String link = (fmt.getMeta() != null) ? fmt.getMeta().get(META_LINK) : null;
+                String variable = (fmt.getMeta() != null) ? fmt.getMeta().get(META_VARIABLE) : null;
+                if (fmt.index > idx)
+                    result.add (new TextSegment (text.substring(idx, fmt.index), null, null));
+                TextSegment segment;
+                if ((variable != null) && !variable.isEmpty()) {
+                    // Variable segment: text is the variable name, not the underlying text.
+                    segment = new TextSegment (variable, fmt.formats, link, true);
+                } else {
+                    segment = new TextSegment (text.substring (fmt.index, fmt.index + fmt.length), fmt.formats, link);
                 }
-                result.add (new TextSegment (text.substring (idx, fmt.index + fmt.length), fmt.formats, link));
+                // Copy metadata (excluding link and variable).
+                if (fmt.getMeta() != null) {
+                    for (Map.Entry<String,String> entry : fmt.getMeta().entrySet()) {
+                        if (!META_LINK.equals(entry.getKey()) && !META_VARIABLE.equals(entry.getKey()))
+                            segment.meta().put(entry.getKey(), entry.getValue());
+                    }
+                }
+                result.add(segment);
                 idx = fmt.index + fmt.length;
             }
             if (idx < text.length())
@@ -553,6 +625,59 @@ public class FormattedLine {
     }
 
     /**
+     * Appends a link at the current position. The link text is appended and formatted
+     * with the {@link FormatType#A} format type along with any additional formats.
+     *
+     * @param text
+     *                the link text to display (if {@code null} or empty, nothing is added).
+     * @param link
+     *                the URL to link to (if {@code null} or empty, text is appended without link).
+     * @param formats
+     *                optional additional formatting to apply (A format is always included).
+     * @return this line.
+     */
+    public FormattedLine link(String text, String link, FormatType... formats) {
+        if ((text == null) || text.isEmpty())
+            return this;
+        if ((link == null) || link.isEmpty())
+            return append(text, formats);
+        text = text.replace('\u00a0', ' ');
+        text = text.replaceAll("[\\u0000-\\u001F\\u007F-\\u009F\\u061C\\u200E\\u200F\\u202A-\\u202E\\u2066-\\u2069]", "");
+        FormatType[] allFormats = new FormatType[formats.length + 1];
+        allFormats[0] = FormatType.A;
+        System.arraycopy(formats, 0, allFormats, 1, formats.length);
+        Format format = new Format(this.text.length(), text.length(), allFormats);
+        format.getMeta().put(META_LINK, link);
+        getFormatting().add(format);
+        this.text += text;
+        return this;
+    }
+
+    /**
+     * Appends a variable placeholder at the current position. The variable will be
+     * resolved at render time when {@link #sequence()} is called.
+     * <p>
+     * Variables are represented as zero-length format regions with the variable name
+     * stored in metadata. When sequenced, variable segments will have
+     * {@link TextSegment#variable()} return {@code true} and {@link TextSegment#text()}
+     * return the variable name.
+     *
+     * @param name
+     *                the variable name (if {@code null} or empty, nothing is added).
+     * @param formats
+     *                optional formatting to apply to the variable when rendered.
+     * @return this line.
+     */
+    public FormattedLine variable(String name, FormatType... formats) {
+        if ((name == null) || name.isEmpty())
+            return this;
+        Format format = new Format(this.text.length(), 0, formats);
+        format.getMeta().put(META_VARIABLE, name);
+        getFormatting().add(format);
+        return this;
+    }
+
+    /**
      * Appends a region of text with formatting. Note that no attempt is made to
      * merge adjacent formatted blocks. However, this is additive so regions will
      * not overlap and will be increasing.
@@ -562,7 +687,7 @@ public class FormattedLine {
      * is changed.
      * <p>
      * During assignment any non-breaking spaces will be replaced by normal spaces.
-     * 
+     *
      * @param text
      *                the text to append.
      * @param formats

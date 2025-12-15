@@ -95,40 +95,40 @@ public class Components extends Panel {
         add (new MyButton1 ("My first button"));
 
         // A simple button component with configuration.
-        add (new MyButton2.Config () //
-                .label ("My second button") //
-                .handler (btn -> DomGlobal.window.alert ("The second button has been clicked")) //
-                .build ());
+        add(new MyButton2.Config()
+                .label("My second button")
+                .handler(btn -> DomGlobal.window.alert("The second button has been clicked"))
+                .build());
         
         // A simple button component with configuration and runtime update of its label.
-        add (new MyButton3.Config () //
-                .label ("Number of times this button has been pressed: 0") //
-                .handler (btn -> btn.updateLabel ("Number of times this button has been pressed: " + (++counter3))) //
+        add (new MyButton3.Config ()
+                .label ("Number of times this button has been pressed: 0")
+                .handler (btn -> btn.updateLabel ("Number of times this button has been pressed: " + (++counter3)))
                 .build ());
 
         // A simple button with (local) styles.
-        add (new MyButton4.Config () //
-                .label ("My styled button") //
-                .handler (btn -> DomGlobal.window.alert ("The styled button has been clicked")) //
+        add (new MyButton4.Config ()
+                .label ("My styled button")
+                .handler (btn -> DomGlobal.window.alert ("The styled button has been clicked"))
                 .build ());
 
         // A simple button with (global) styles.
-        add (new MyButton5.Config () //
-                .label ("My globally styled button") //
-                .handler (btn -> DomGlobal.window.alert ("The globally styled button has been clicked")) //
+        add (new MyButton5.Config ()
+                .label ("My globally styled button")
+                .handler (btn -> DomGlobal.window.alert ("The globally styled button has been clicked"))
                 .build ());
-        add (new MyButton6.Config () //
-                .label ("Number of times this new button has been pressed: 0") //
-                .handler (btn -> btn.updateLabel ("Number of times this new button has been pressed: " + (++counter6))) //
+        add (new MyButton6.Config ()
+                .label ("Number of times this new button has been pressed: 0")
+                .handler (btn -> btn.updateLabel ("Number of times this new button has been pressed: " + (++counter6)))
                 .build ());
-        add (new MyButton7.Config () //
-                .label ("Button using a UI event handler") //
+        add (new MyButton7.Config ()
+                .label ("Button using a UI event handler")
                 .build ());
-        add (new MyButton8.Config () //
-                .label ("Button using a template renderer 1") //
+        add (new MyButton8.Config ()
+                .label ("Button using a template renderer 1")
                 .build ());
-        add (new MyButton8.Config () //
-                .label ("Button using a template renderer 2") //
+        add (new MyButton8.Config ()
+                .label ("Button using a template renderer 2")
                 .build ());
         add (new MyButton9 ("Compact button", e -> DomGlobal.window.alert ("The compact button has been clicked")));
 
@@ -139,7 +139,7 @@ public class Components extends Panel {
 
         @Override
         public IUIEventHandler render(Element el) {
-            return DomBuilder.el (el, root -> { //
+            return DomBuilder.el (el, root -> {
                 root.button (btn-> {
                     btn.text ("Template button");
                     btn.on (e-> onClick (), UIEventType.ONCLICK);
@@ -827,7 +827,7 @@ public class Components extends Panel {
             return DomBuilder.div (outer -> {
                 P.$ (outer).text ("This is a button component in another component:");
                 Div.$ (outer).css (CSS.PADDING_LEFT, Length.em (1)).$ (inner -> {
-                    ButtonCreator.$ (inner, cfg -> {
+                    button = ButtonCreator.$ (inner, cfg -> {
                         cfg.label (config ().label);
                         cfg.testId ("btn99");
                         cfg.handler (cb -> {

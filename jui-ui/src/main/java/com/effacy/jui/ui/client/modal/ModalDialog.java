@@ -266,6 +266,16 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
         private Invoker closeAction;
 
         /**
+         * See {@link #dialogCss(String)}.
+         */
+        private String dialogCss;
+
+        /**
+         * See {@link #contentsCss(String)}.
+         */
+        private String contentsCss;
+
+        /**
          * {@inheritDoc}
          *
          * @see com.effacy.jui.core.client.modal.Modal.Config#testId(String)
@@ -329,6 +339,30 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
         @SuppressWarnings("unchecked")
         public Config<C> height(Length height) {
             return (Config<C>) super.height (height);
+        }
+
+        /**
+         * Assign CSS to the dialog element.
+         * 
+         * @param dialogCss
+         *                  the dialog CSS.
+         * @return this configuration instance.
+         */
+        public Config<C> dialogCss(String dialogCss) {
+            this.dialogCss = dialogCss;
+            return this;
+        }
+
+        /**
+         * Assign CSS to the content area.
+         * 
+         * @param contentsCss
+         *                    the content CSS.
+         * @return this configuration instance.
+         */
+        public Config<C> contentsCss(String contentsCss) {
+            this.contentsCss = contentsCss;
+            return this;
         }
 
         /**
@@ -1271,6 +1305,8 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
                                 dialog.style (styles ().dialog ());
                                 if (config.minHeight != null)
                                     dialog.css (CSS.MIN_HEIGHT, config.minHeight);
+                                if (!StringSupport.empty(((ModalDialog.Config<?>) config).dialogCss))
+                                    dialog.css(((ModalDialog.Config<?>) config).dialogCss);
                                 Div.$ (dialog).$ (header -> {
                                     header.style (styles ().header ());
                                     H1.$(header).$ (h1-> {
@@ -1305,6 +1341,8 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
                                         // Register attachment point to the contents element.
                                         contents.apply (attach (contents ()));
                                         contents.style (styles ().contents ());
+                                        if (!StringSupport.empty(((ModalDialog.Config<?>) config).contentsCss))
+                                            contents.css(((ModalDialog.Config<?>) config).contentsCss);
                                     });
                                 });
                                 Div.$ (dialog).$ (footer -> {

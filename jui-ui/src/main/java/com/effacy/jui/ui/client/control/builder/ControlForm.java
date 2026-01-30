@@ -1048,16 +1048,35 @@ public class ControlForm<SRC,DST> extends Component<ControlForm.Config> implemen
     @Override
     protected INodeProvider buildNode(Element el) {
         return Wrap.$ (el).$ (root -> {
-            if (config ().padding != null)
-                root.css (CSS.PADDING, config ().padding);
-            if (config ().maxWidth != null)
-                root.css (CSS.MAX_WIDTH, config ().maxWidth);
-            Div.$ (root).style (styles ().errors ()).by ("errors");
-            form.insertInto (root);
+            renderForm(root);
         }).build (dom -> {
             errorMessageEl = dom.first ("errors");
-            JQuery.$ (errorMessageEl).hide ();
+            if (errorMessageEl == null)
+                JQuery.$ (errorMessageEl).hide ();
         });
+    }
+
+    /**
+     * Called by {@link #buildNode(Element)} to build out the form into the given
+     * element.
+     * <p>
+     * It is expected that a node with the reference {@code "errors"} is created to
+     * host any error messages.
+     * <p>
+     * If you want to adorn the form in the component then you can override this
+     * method to create the adornment then call this with the element you want the
+     * form built into.
+     * 
+     * @param root
+     *             the root element to build into.
+     */
+    protected void renderForm(ElementBuilder root) {
+        if (config ().padding != null)
+            root.css (CSS.PADDING, config ().padding);
+        if (config ().maxWidth != null)
+            root.css (CSS.MAX_WIDTH, config ().maxWidth);
+        Div.$ (root).style (styles ().errors ()).by ("errors");
+        form.insertInto (root);
     }
 
     @Override

@@ -695,6 +695,13 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
              */
             protected boolean iconOnRight;
 
+            /**
+             * Sets the label.
+             * 
+             * @param label
+             *              the label.
+             * @return this action configuration.
+             */
             public Action label(String label) {
                 this.label = label;
                 return this;
@@ -706,6 +713,10 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
              * This will always have the prefix "btn_" applied. If it is not set then the
              * label will be used; it will be converted to lowercase and have spaces
              * replaced by underscores.
+             * 
+             * @param testId
+             *               the test ID.
+             * @return this action configuration.
              */
             public Action testId(String testId) {
                 this.testId = testId;
@@ -740,11 +751,25 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
                 return this;
             }
 
+            /**
+             * Sets the action reference.
+             * 
+             * @param reference
+             *                  the reference.
+             * @return this action configuration.
+             */
             public Action reference(Object reference) {
                 this.reference = reference;
                 return this;
             }
 
+            /**
+             * Sets the action handler.
+             * 
+             * @param handler
+             *                the handler.
+             * @return this action configuration.
+             */
             public Action handler(IDialogActionHandler<C> handler) {
                 this.handler = handler;
                 return this;
@@ -808,8 +833,25 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
                 return this;
             }
 
+            public Action danger() {
+                this.buttonStyle = Button.Config.Style.NORMAL_DANGER;
+                return this;
+            }
+
             public Action outlined() {
                 this.buttonStyle = Button.Config.Style.OUTLINED;
+                return this;
+            }
+
+            /**
+             * Sets the button style.
+             * 
+             * @param style
+             *              the style.
+             * @return this action configuration.
+             */
+            public Action style(Button.Config.Style style) {
+                this.buttonStyle = style;
                 return this;
             }
         }

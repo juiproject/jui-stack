@@ -110,3 +110,24 @@ new ApplicationServiceHandler<XXXResult> ()
 Listeners can be added with `listen(Consumer<StateVariable<V>>)` (if added to a `StateComponent` the component will add a listener automatically).
 
 When the state variable changes value (or changes its supplementary state) all listeners will be notified of the change.
+
+## States and navigation
+
+When a stateful component extends `StateComponent` and implements `INavigationAware` (or `INavigationAwareChild`) then we are able to prevent re-rendering when the component is not activated from a navigation standpoint.
+
+This is controlled by `NavigationBehaviour` which is assigned through the constructor. The default is `BLOCK_AND_NOTIFY`.
+
+Now it may be that such a component is navigation aware but is used in a dual-use context: where it is subject to navigation and when not. In the latter the native behaviour will block re-rendering as it will seem that the component has never been navigated to.
+
+A general strategy is to pass through an `embedded` state:
+
+```java
+public class MyComponent extends StateComponent<...> implements INavigationAware {
+
+    public MyComponent(boolean embedded) {
+        super(..., embedded ? NavigationBehaviour.NONE : null);
+        ...
+    }
+
+}
+```

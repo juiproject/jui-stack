@@ -11,6 +11,7 @@ This is a reference to some commonly used code that could be useful when develop
      4. [Events](#events)
      5. [Fragments](#fragments)
      6. [Controls](#controls)
+     7. [DOM elements](#dom-elements)
 2. [Modal dialogs](#modal-dialogs)
      1. [Inline modals](#inline-modals)
      2. [Modal-enabling](#modal-enabling-a-component)
@@ -1193,6 +1194,35 @@ public class XXXControlCreator {
         return ctl;
     }
 }
+```
+
+### DOM elements
+
+#### Input (checkbox)
+
+Responding to changes in checked state:
+
+```java
+Input.$ (applicable, "checkbox")
+    ...
+    .onchange (e -> {
+        if (((HTMLInputElement) e.getTarget()).checked) {
+            // Do something when checked.
+        } else {
+            // Do something when unchecked.
+        }
+    });
+```
+
+Connecting input with label:
+
+```java
+Div.$().css("display: flex: gap: 1em; align-items: center;").$(
+    Input.$("checkbox")
+        ...
+        .id(/* unique reference */),
+    Label.$().attr("for", /* unique reference */).text(...)
+);
 ```
 
 ## Modal dialogs

@@ -54,6 +54,8 @@ EditorSupport._offset = function (container,n,offset) {
 }
 
 EditorSupport.positionCursorAtStart = function(el) {
+    if (!el || !document.body.contains(el))
+        return;
     var r = new Range();
     r.setStart (el, 0);
     document.getSelection ().removeAllRanges ();
@@ -61,6 +63,8 @@ EditorSupport.positionCursorAtStart = function(el) {
 }
 
 EditorSupport.positionCursorAtEnd = function(el) {
+    if (!el || !document.body.contains(el))
+        return;
     var r = new Range();
     r.setStart (el, el.childNodes.length);
     document.getSelection ().removeAllRanges ();

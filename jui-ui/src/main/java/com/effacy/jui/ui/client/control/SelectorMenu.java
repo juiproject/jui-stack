@@ -581,6 +581,9 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
             CSS.OPACITY.apply(itemsEl, Rational.of(0.4));
             return;
         }
+        if (itemsEl == null)
+            return;
+        
         CSS.OPACITY.unset(itemsEl);
 
         int index = selection.isEmpty () ? 0 : Math.max (0, store.indexOf (selection.get(selection.size() - 1)));

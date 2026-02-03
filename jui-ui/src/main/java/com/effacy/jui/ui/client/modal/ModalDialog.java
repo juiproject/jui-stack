@@ -82,6 +82,20 @@ import jsinterop.base.Js;
  */
 public class ModalDialog<V extends IComponent> extends Modal<V> {
 
+    /**
+     * Used to register a dialog against.
+     */
+    public interface IDialogRegister {
+
+        /**
+         * Register the dialog.
+         * 
+         * @param dialog
+         *               the dialog.
+         */
+        public void register(ModalDialog<?> dialog);
+    }
+
     /************************************************************************
      * Configuration and listeners.
      ************************************************************************/
@@ -885,7 +899,10 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
     }
 
     /**
-     * Construct with the default configuration.
+     * Construct with the default configuration and contents.
+     * <p>
+     * If the contents implement {@link IDialogRegister} then it will be registered
+     * with this dialog..
      * 
      * @param contents
      *                 the contents of the modal.
@@ -911,7 +928,10 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
     }
 
     /**
-     * Construct a modal.
+     * Construct a modal with contents.
+     * <p>
+     * If the contents implement {@link IDialogRegister} then it will be registered
+     * with this dialog..
      * <p>
      * See notes on {@link #ModalDialog(Config)}.
      * 
@@ -922,7 +942,8 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
      */
     public ModalDialog(ModalDialog.Config<V> config, V contents) {
         super (config, contents);
-
+        if (contents instanceof IDialogRegister)
+            ((IDialogRegister) contents).register (this);
     }
 
     /**
@@ -944,7 +965,7 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
      * {@link #onBeforeRender()}.
      */
     protected void populateActions() {
-        for (final Config<V>.Action action : config ().getActions ()) {
+        for (Config<V>.Action action : config ().getActions ()) {
             IButton btn;
             String testId = action.testId;
             if (StringSupport.empty (testId))
@@ -1038,6 +1059,41 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
                     btn.hide ();
             }
         }
+    }
+
+    /**
+     * Updates the label of the action of the given reference.
+     * 
+     * @param reference
+     *                  the reference.
+     * @param label
+     *                  the new label.
+     */
+    public void updateLabel(Object reference, String label) {
+        IButton btn = actions.get (reference);
+        if (btn != null)
+            btn.updateLabel (label);
+    }
+
+    /**
+     * Registers an action handler for the given reference. This will replace any
+     * existing handler.
+     * <p>
+     * This is used to overrde the default handling as defined by configuration (for
+     * example, a model creator).
+     * 
+     * @param reference
+     *                  the reference.
+     * @param handler
+     *                  the handler.
+     */
+    public void actionHandler(Object reference, IDialogActionHandler<V> handler) {
+        if ((reference == null) || (handler == null))
+            return;
+        config().getActions().forEach(action -> {
+            if ((action.reference != null) && action.reference.equals(reference))
+                action.handler = handler;
+        });
     }
 
     /**

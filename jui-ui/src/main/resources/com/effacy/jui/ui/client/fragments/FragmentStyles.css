@@ -510,6 +510,152 @@
 }
 
 /*************************************************
+* ToggleBtn styles.
+*/
+.juiToggleBtn {
+    --juiToggleBtn-width: 2.2em;
+    --juiToggleBtn-bg: #f1f1f1;
+    --juiToggleBtn-border: #ccc;
+    --juiToggleBtn-active-bg: var(--jui-color-primary30);
+    --juiToggleBtn-active-border: var(--jui-color-primary50);
+    --juiToggleBtn-knob-bg: #fff;
+    --juiToggleBtn-label-gap: 0.5em;
+    --juiToggleBtn-padding: 1px;
+    --juiToggleBtn-label-size: 0.95em;
+    --juiToggleBtn-label-color: #666;
+    --juiToggleBtn-label-weight: 500;
+}
+
+.juiToggleBtn.variant-standard {
+    --juiToggleBtn-active-bg: var(--jui-color-primary30);
+    --juiToggleBtn-active-border: var(--jui-color-primary50);
+}
+
+.juiToggleBtn {
+    display: flex;
+    gap: var(--juiToggleBtn-label-gap);
+    flex-direction: row;
+    align-items: center;
+    cursor: pointer;
+}
+
+.juiToggleBtn div.juiToggleBtn_toggle {
+    width: var(--juiToggleBtn-width);
+    border: 1px solid var(--juiToggleBtn-border);
+    border-radius: 1em;
+    background: var(--juiToggleBtn-bg);
+    display: flex;
+    align-items: center;
+    padding: var(--juiToggleBtn-padding);
+    flex-direction: row;
+    cursor: pointer;
+}
+
+.juiToggleBtn div.juiToggleBtn_toggle .juiToggleBtn_knob {
+    border: 1px solid var(--juiToggleBtn-border);
+    border-radius: 100%;
+    background: var(--juiToggleBtn-knob-bg);
+    height: 1em;
+    width: 1em;
+}
+
+.juiToggleBtn div.juiToggleBtn_toggle .juiToggleBtn_spacer {
+    flex-grow: 1;
+}
+
+.juiToggleBtn.juiToggleBtn_active div.juiToggleBtn_toggle {
+    flex-direction: row-reverse;
+    background: var(--juiToggleBtn-active-bg);
+    border-color: var(--juiToggleBtn-active-border);
+}
+
+.juiToggleBtn.juiToggleBtn_active div.juiToggleBtn_toggle .juiToggleBtn_knob {
+    border-color: var(--juiToggleBtn-active-border);
+}
+
+.juiToggleBtn .juiToggleBtn_label {
+    font-size: var(--juiToggleBtn-label-size);
+    color: var(--juiToggleBtn-label-color);
+    font-weight: var(--juiToggleBtn-label-weight);
+}
+
+/*************************************************
+* ProgressBar styles.
+*/
+.juiProgressBar {
+    --juiProgressBar-bar-border-color: var(--jui-color-success70);
+    --juiProgressBar-bar-border-size: 1px;
+    --juiProgressBar-bar-border-radius: 10px;
+    --juiProgressBar-bar-bg: #fff;
+    --juiProgressBar-bar-fg: var(--jui-color-success10);
+    --juiProgressBar-bar-height: 100%;
+    --juiProgressBar-commentary-color: var(--jui-color-neutral50);
+    --juiProgressBar-commentary-size: 1em;
+    --juiProgressBar-commentary-weight: 500;
+    --juiProgressBar-indicator-color: var(--jui-color-neutral50);
+    --juiProgressBar-indicator-size: 1em;
+    --juiProgressBar-indicator-weight: 400;
+}
+
+.juiProgressBar.variant-vertical {
+    flex-direction: column-reverse;
+    --juiProgressBar-bar-height: 5px;
+    --juiProgressBar-bar-border-radius: 3px;
+}
+
+.juiProgressBar.variant-vertical-mono {
+    flex-direction: column-reverse;
+    --juiProgressBar-bar-border-size: 0;
+    --juiProgressBar-bar-height: 7px;
+    --juiProgressBar-bar-border-radius: 3px;
+    --juiProgressBar-bar-bg: #eeeeee;
+    --juiProgressBar-bar-fg: var(--jui-color-success70);
+    --juiProgressBar-indicator-color: var(--jui-color-success80);
+    --juiProgressBar-indicator-size: 1.2em;
+    --juiProgressBar-indicator-weight: 600;
+}
+
+.juiProgressBar {
+    display: flex;
+    gap: 0.5em;
+    margin-top: 1em;
+}
+
+.juiProgressBar .juiProgressBar_bar {
+    flex-grow: 1;
+    border: var(--juiProgressBar-bar-border-size) solid var(--juiProgressBar-bar-border-color);
+    border-radius: var(--juiProgressBar-bar-border-radius);
+    overflow: hidden;
+    background: var(--juiProgressBar-bar-bg);
+}
+
+.juiProgressBar .juiProgressBar_bar > div {
+    height: var(--juiProgressBar-bar-height);
+    background: var(--juiProgressBar-bar-fg);
+}
+
+.juiProgressBar .juiProgressBar_info {
+    display: flex;
+    gap: 1em;
+    align-items: center;
+}
+
+.juiProgressBar .juiProgressBar_info .juiProgressBar_indicator {
+    color: var(--juiProgressBar-indicator-color);
+    font-size: var(--juiProgressBar-indicator-size);
+    font-weight: var(--juiProgressBar-indicator-weight);
+    width: 3em;
+    flex-grow: 1;
+}
+
+.juiProgressBar .juiProgressBar_info .juiProgressBar_commentary {
+    color: var(--juiProgressBar-commentary-color);
+    font-size: var(--juiProgressBar-commentary-size);
+    font-weight: var(--juiProgressBar-commentary-weight);
+    text-wrap-mode: nowrap;
+}
+
+/*************************************************
 * Avatar styles.
 */
 .juiAvatar {

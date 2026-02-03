@@ -287,6 +287,9 @@ public class MarkdownParser {
         // First, find and process links [label](url)
         List<LinkInfo> links = findLinks(line);
 
+        // Find variables {{name}} or {{name;key=value}}
+        List<VariableInfo> variables = findVariables(line);
+
         // Track format markers and their positions
         List<FormatMarker> markers = new ArrayList<>();
 
@@ -302,6 +305,12 @@ public class MarkdownParser {
         // Remove markers that fall within link regions (they would interfere)
         removeMarkersWithinLinks(markers, links);
 
+        // Remove variables that fall within link regions (variables inside links are literal)
+        removeVariablesWithinLinks(variables, links);
+
+        // Remove markers that fall within variable regions
+        removeMarkersWithinVariables(markers, variables);
+
         // Sort markers by position
         markers.sort((a, b) -> a.position - b.position);
 
@@ -310,20 +319,36 @@ public class MarkdownParser {
         int textPos = 0;
         int i = 0;
         int linkIdx = 0;
+        int varIdx = 0;
 
-        while ((i < markers.size()) || (linkIdx < links.size())) {
-            // Determine which comes first: a format marker or a link
+        while ((i < markers.size()) || (linkIdx < links.size()) || (varIdx < variables.size())) {
+            // Determine which comes first: a format marker, a link, or a variable
             FormatMarker start = (i < markers.size()) ? markers.get(i) : null;
             LinkInfo link = (linkIdx < links.size()) ? links.get(linkIdx) : null;
+            VariableInfo variable = (varIdx < variables.size()) ? variables.get(varIdx) : null;
 
-            boolean processLink = false;
-            if ((start == null) && (link != null)) {
-                processLink = true;
-            } else if ((start != null) && (link != null)) {
-                processLink = link.startPos < start.position;
-            }
+            // Find the earliest position
+            int startPos = (start != null) ? start.position : Integer.MAX_VALUE;
+            int linkPos = (link != null) ? link.startPos : Integer.MAX_VALUE;
+            int varPos = (variable != null) ? variable.startPos : Integer.MAX_VALUE;
 
-            if (processLink) {
+            if ((varPos <= startPos) && (varPos <= linkPos) && (variable != null)) {
+                // Process variable
+                if (variable.startPos > textPos)
+                    plainText.append(line, textPos, variable.startPos);
+
+                // Create a zero-length format for the variable at the current position
+                int formatStartPos = plainText.length();
+                FormattedLine.Format format = new FormattedLine.Format(formatStartPos, 0);
+                format.getMeta().put(FormattedLine.META_VARIABLE, variable.name);
+                // Add any additional metadata
+                if (variable.meta != null)
+                    format.getMeta().putAll(variable.meta);
+                formattedLine.getFormatting().add(format);
+
+                textPos = variable.endPos;
+                varIdx++;
+            } else if ((linkPos <= startPos) && (link != null)) {
                 // Process link
                 if (link.startPos > textPos)
                     plainText.append(line, textPos, link.startPos);
@@ -430,6 +455,37 @@ public class MarkdownParser {
     }
 
     /**
+     * Removes format markers that fall within variable regions.
+     */
+    private static void removeMarkersWithinVariables(List<FormatMarker> markers, List<VariableInfo> variables) {
+        if (variables.isEmpty())
+            return;
+        markers.removeIf(marker -> {
+            for (VariableInfo var : variables) {
+                if ((marker.position >= var.startPos) && (marker.position < var.endPos))
+                    return true;
+            }
+            return false;
+        });
+    }
+
+    /**
+     * Removes variables that fall within link regions.
+     * Variables inside link labels are treated as literal text.
+     */
+    private static void removeVariablesWithinLinks(List<VariableInfo> variables, List<LinkInfo> links) {
+        if (links.isEmpty())
+            return;
+        variables.removeIf(variable -> {
+            for (LinkInfo link : links) {
+                if ((variable.startPos >= link.startPos) && (variable.endPos <= link.endPos))
+                    return true;
+            }
+            return false;
+        });
+    }
+
+    /**
      * Information about a markdown link.
      */
     private record LinkInfo(int startPos, int endPos, String label, String url) {}
@@ -487,4 +543,157 @@ public class MarkdownParser {
      * Represents a markdown format marker in the text.
      */
     private record FormatMarker(int position, String marker, FormatType type) {}
+
+    /**
+     * Information about a variable reference.
+     *
+     * @param startPos
+     *                 the start position of the variable in the original text
+     *                 (including the opening braces)
+     * @param endPos
+     *                 the end position of the variable in the original text
+     *                 (after the closing braces)
+     * @param name
+     *                 the variable name
+     * @param meta
+     *                 metadata key-value pairs (may be empty, never null)
+     */
+    private record VariableInfo(int startPos, int endPos, String name, java.util.Map<String, String> meta) {}
+
+    /**
+     * Finds all variable references {{name}} or {{name;key=value;...}} in the
+     * text.
+     * <p>
+     * Variable name can consist of letters, numbers, dashes, underscores, periods,
+     * dollar signs and colons only.
+     * <p>
+     * Metadata field names can only consist of letters, numbers and periods.
+     * <p>
+     * Metadata values can contain any standard character but no newlines or closing
+     * braces.
+     *
+     * @param line
+     *             the line to search
+     * @return list of variable information
+     */
+    private static List<VariableInfo> findVariables(String line) {
+        List<VariableInfo> variables = new ArrayList<>();
+        int pos = 0;
+
+        while (pos < line.length() - 3) {
+            // Look for {{
+            int start = line.indexOf("{{", pos);
+            if (start == -1)
+                break;
+
+            // Look for }}
+            int end = line.indexOf("}}", start + 2);
+            if (end == -1)
+                break;
+
+            // Extract the content between {{ and }}
+            String content = line.substring(start + 2, end);
+
+            // Parse variable name and optional metadata
+            VariableInfo varInfo = parseVariableContent(start, end + 2, content);
+            if (varInfo != null)
+                variables.add(varInfo);
+
+            pos = end + 2;
+        }
+
+        return variables;
+    }
+
+    /**
+     * Parses the content between {{ and }} into a VariableInfo.
+     *
+     * @param startPos
+     *                 position of the opening {{
+     * @param endPos
+     *                 position after the closing }}
+     * @param content
+     *                 the content between the braces
+     * @return the variable info, or null if invalid
+     */
+    private static VariableInfo parseVariableContent(int startPos, int endPos, String content) {
+        if ((content == null) || content.isEmpty())
+            return null;
+
+        java.util.Map<String, String> meta = new java.util.LinkedHashMap<>();
+
+        // Split by semicolon to separate variable name from metadata
+        String[] parts = content.split(";");
+        String name = parts[0].trim();
+
+        // Validate variable name: letters, numbers, dashes, underscores, periods,
+        // dollar signs and colons
+        if (!isValidVariableName(name))
+            return null;
+
+        // Parse metadata if present
+        for (int i = 1; i < parts.length; i++) {
+            String part = parts[i].trim();
+            int eqPos = part.indexOf('=');
+            if (eqPos > 0) {
+                String key = part.substring(0, eqPos).trim();
+                String value = part.substring(eqPos + 1);
+
+                // Validate metadata field name: letters, numbers and periods only
+                if (isValidMetaFieldName(key) && isValidMetaValue(value))
+                    meta.put(key, value);
+            }
+        }
+
+        return new VariableInfo(startPos, endPos, name, meta);
+    }
+
+    /**
+     * Validates a variable name.
+     * <p>
+     * Valid characters: letters, numbers, dashes, underscores, periods, dollar
+     * signs and colons.
+     */
+    private static boolean isValidVariableName(String name) {
+        if ((name == null) || name.isEmpty())
+            return false;
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (!Character.isLetterOrDigit(c) && (c != '-') && (c != '_') && (c != '.') && (c != '$') && (c != ':'))
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * Validates a metadata field name.
+     * <p>
+     * Valid characters: letters, numbers and periods only.
+     */
+    private static boolean isValidMetaFieldName(String name) {
+        if ((name == null) || name.isEmpty())
+            return false;
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (!Character.isLetterOrDigit(c) && (c != '.'))
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * Validates a metadata value.
+     * <p>
+     * Cannot contain newlines or closing braces.
+     */
+    private static boolean isValidMetaValue(String value) {
+        if (value == null)
+            return false;
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if ((c == '\n') || (c == '\r') || (c == '}'))
+                return false;
+        }
+        return true;
+    }
 }

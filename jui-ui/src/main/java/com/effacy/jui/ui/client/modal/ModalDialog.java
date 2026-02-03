@@ -82,6 +82,20 @@ import jsinterop.base.Js;
  */
 public class ModalDialog<V extends IComponent> extends Modal<V> {
 
+    /**
+     * Used to register a dialog against.
+     */
+    public interface IDialogRegister {
+
+        /**
+         * Register the dialog.
+         * 
+         * @param dialog
+         *               the dialog.
+         */
+        public void register(ModalDialog<?> dialog);
+    }
+
     /************************************************************************
      * Configuration and listeners.
      ************************************************************************/
@@ -266,6 +280,16 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
         private Invoker closeAction;
 
         /**
+         * See {@link #dialogCss(String)}.
+         */
+        private String dialogCss;
+
+        /**
+         * See {@link #contentsCss(String)}.
+         */
+        private String contentsCss;
+
+        /**
          * {@inheritDoc}
          *
          * @see com.effacy.jui.core.client.modal.Modal.Config#testId(String)
@@ -329,6 +353,30 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
         @SuppressWarnings("unchecked")
         public Config<C> height(Length height) {
             return (Config<C>) super.height (height);
+        }
+
+        /**
+         * Assign CSS to the dialog element.
+         * 
+         * @param dialogCss
+         *                  the dialog CSS.
+         * @return this configuration instance.
+         */
+        public Config<C> dialogCss(String dialogCss) {
+            this.dialogCss = dialogCss;
+            return this;
+        }
+
+        /**
+         * Assign CSS to the content area.
+         * 
+         * @param contentsCss
+         *                    the content CSS.
+         * @return this configuration instance.
+         */
+        public Config<C> contentsCss(String contentsCss) {
+            this.contentsCss = contentsCss;
+            return this;
         }
 
         /**
@@ -661,6 +709,13 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
              */
             protected boolean iconOnRight;
 
+            /**
+             * Sets the label.
+             * 
+             * @param label
+             *              the label.
+             * @return this action configuration.
+             */
             public Action label(String label) {
                 this.label = label;
                 return this;
@@ -672,6 +727,10 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
              * This will always have the prefix "btn_" applied. If it is not set then the
              * label will be used; it will be converted to lowercase and have spaces
              * replaced by underscores.
+             * 
+             * @param testId
+             *               the test ID.
+             * @return this action configuration.
              */
             public Action testId(String testId) {
                 this.testId = testId;
@@ -706,11 +765,25 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
                 return this;
             }
 
+            /**
+             * Sets the action reference.
+             * 
+             * @param reference
+             *                  the reference.
+             * @return this action configuration.
+             */
             public Action reference(Object reference) {
                 this.reference = reference;
                 return this;
             }
 
+            /**
+             * Sets the action handler.
+             * 
+             * @param handler
+             *                the handler.
+             * @return this action configuration.
+             */
             public Action handler(IDialogActionHandler<C> handler) {
                 this.handler = handler;
                 return this;
@@ -774,8 +847,25 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
                 return this;
             }
 
+            public Action danger() {
+                this.buttonStyle = Button.Config.Style.NORMAL_DANGER;
+                return this;
+            }
+
             public Action outlined() {
                 this.buttonStyle = Button.Config.Style.OUTLINED;
+                return this;
+            }
+
+            /**
+             * Sets the button style.
+             * 
+             * @param style
+             *              the style.
+             * @return this action configuration.
+             */
+            public Action style(Button.Config.Style style) {
+                this.buttonStyle = style;
                 return this;
             }
         }
@@ -809,7 +899,10 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
     }
 
     /**
-     * Construct with the default configuration.
+     * Construct with the default configuration and contents.
+     * <p>
+     * If the contents implement {@link IDialogRegister} then it will be registered
+     * with this dialog..
      * 
      * @param contents
      *                 the contents of the modal.
@@ -835,7 +928,10 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
     }
 
     /**
-     * Construct a modal.
+     * Construct a modal with contents.
+     * <p>
+     * If the contents implement {@link IDialogRegister} then it will be registered
+     * with this dialog..
      * <p>
      * See notes on {@link #ModalDialog(Config)}.
      * 
@@ -846,7 +942,8 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
      */
     public ModalDialog(ModalDialog.Config<V> config, V contents) {
         super (config, contents);
-
+        if (contents instanceof IDialogRegister)
+            ((IDialogRegister) contents).register (this);
     }
 
     /**
@@ -868,7 +965,7 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
      * {@link #onBeforeRender()}.
      */
     protected void populateActions() {
-        for (final Config<V>.Action action : config ().getActions ()) {
+        for (Config<V>.Action action : config ().getActions ()) {
             IButton btn;
             String testId = action.testId;
             if (StringSupport.empty (testId))
@@ -962,6 +1059,41 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
                     btn.hide ();
             }
         }
+    }
+
+    /**
+     * Updates the label of the action of the given reference.
+     * 
+     * @param reference
+     *                  the reference.
+     * @param label
+     *                  the new label.
+     */
+    public void updateLabel(Object reference, String label) {
+        IButton btn = actions.get (reference);
+        if (btn != null)
+            btn.updateLabel (label);
+    }
+
+    /**
+     * Registers an action handler for the given reference. This will replace any
+     * existing handler.
+     * <p>
+     * This is used to overrde the default handling as defined by configuration (for
+     * example, a model creator).
+     * 
+     * @param reference
+     *                  the reference.
+     * @param handler
+     *                  the handler.
+     */
+    public void actionHandler(Object reference, IDialogActionHandler<V> handler) {
+        if ((reference == null) || (handler == null))
+            return;
+        config().getActions().forEach(action -> {
+            if ((action.reference != null) && action.reference.equals(reference))
+                action.handler = handler;
+        });
     }
 
     /**
@@ -1271,6 +1403,8 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
                                 dialog.style (styles ().dialog ());
                                 if (config.minHeight != null)
                                     dialog.css (CSS.MIN_HEIGHT, config.minHeight);
+                                if (!StringSupport.empty(((ModalDialog.Config<?>) config).dialogCss))
+                                    dialog.css(((ModalDialog.Config<?>) config).dialogCss);
                                 Div.$ (dialog).$ (header -> {
                                     header.style (styles ().header ());
                                     H1.$(header).$ (h1-> {
@@ -1305,6 +1439,8 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
                                         // Register attachment point to the contents element.
                                         contents.apply (attach (contents ()));
                                         contents.style (styles ().contents ());
+                                        if (!StringSupport.empty(((ModalDialog.Config<?>) config).contentsCss))
+                                            contents.css(((ModalDialog.Config<?>) config).contentsCss);
                                     });
                                 });
                                 Div.$ (dialog).$ (footer -> {

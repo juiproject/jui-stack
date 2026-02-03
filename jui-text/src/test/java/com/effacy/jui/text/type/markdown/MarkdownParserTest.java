@@ -1273,4 +1273,313 @@ This is *some* supporting **guidance**:
         assertTrue(format.getFormats().contains(FormatType.A));
         assertEquals("http://example.com", format.getMeta().get("link"));
     }
+
+    /************************************************************************
+     * Variable parsing tests
+     ************************************************************************/
+
+    @Test
+    public void testSimpleVariable() {
+        FormattedText result = MarkdownParser.parse("Hello {{name}}!");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("Hello !", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals(6, format.getIndex());
+        assertEquals(0, format.getLength());
+        assertEquals("name", format.getMeta().get(FormattedLine.META_VARIABLE));
+    }
+
+    @Test
+    public void testVariableAtStart() {
+        FormattedText result = MarkdownParser.parse("{{greeting}} World!");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals(" World!", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals(0, format.getIndex());
+        assertEquals(0, format.getLength());
+        assertEquals("greeting", format.getMeta().get(FormattedLine.META_VARIABLE));
+    }
+
+    @Test
+    public void testVariableAtEnd() {
+        FormattedText result = MarkdownParser.parse("Hello {{name}}");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("Hello ", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals(6, format.getIndex());
+        assertEquals(0, format.getLength());
+        assertEquals("name", format.getMeta().get(FormattedLine.META_VARIABLE));
+    }
+
+    @Test
+    public void testMultipleVariables() {
+        FormattedText result = MarkdownParser.parse("Dear {{title}} {{name}},");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("Dear  ,", line.getText());
+        assertEquals(2, line.getFormatting().size());
+
+        FormattedLine.Format format1 = line.getFormatting().get(0);
+        assertEquals(5, format1.getIndex());
+        assertEquals(0, format1.getLength());
+        assertEquals("title", format1.getMeta().get(FormattedLine.META_VARIABLE));
+
+        FormattedLine.Format format2 = line.getFormatting().get(1);
+        assertEquals(6, format2.getIndex());
+        assertEquals(0, format2.getLength());
+        assertEquals("name", format2.getMeta().get(FormattedLine.META_VARIABLE));
+    }
+
+    @Test
+    public void testVariableWithMetadata() {
+        FormattedText result = MarkdownParser.parse("Value: {{amount;format=currency;precision=2}}");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("Value: ", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals(7, format.getIndex());
+        assertEquals(0, format.getLength());
+        assertEquals("amount", format.getMeta().get(FormattedLine.META_VARIABLE));
+        assertEquals("currency", format.getMeta().get("format"));
+        assertEquals("2", format.getMeta().get("precision"));
+    }
+
+    @Test
+    public void testVariableNameWithSpecialChars() {
+        // Test variable name with dashes, underscores, periods, dollar signs, and colons
+        FormattedText result = MarkdownParser.parse("{{user-name_field.value$type:id}}");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals("user-name_field.value$type:id", format.getMeta().get(FormattedLine.META_VARIABLE));
+    }
+
+    @Test
+    public void testVariableWithBoldText() {
+        FormattedText result = MarkdownParser.parse("This is **bold** and {{variable}} text.");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("This is bold and  text.", line.getText());
+        assertEquals(2, line.getFormatting().size());
+
+        // Bold formatting
+        FormattedLine.Format bold = line.getFormatting().get(0);
+        assertEquals(8, bold.getIndex());
+        assertEquals(4, bold.getLength());
+        assertTrue(bold.getFormats().contains(FormatType.BLD));
+
+        // Variable
+        FormattedLine.Format variable = line.getFormatting().get(1);
+        assertEquals(17, variable.getIndex());
+        assertEquals(0, variable.getLength());
+        assertEquals("variable", variable.getMeta().get(FormattedLine.META_VARIABLE));
+    }
+
+    @Test
+    public void testVariableWithLink() {
+        FormattedText result = MarkdownParser.parse("Hello {{name}}, visit [our site](http://example.com).");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("Hello , visit our site.", line.getText());
+        assertEquals(2, line.getFormatting().size());
+
+        // Variable
+        FormattedLine.Format variable = line.getFormatting().get(0);
+        assertEquals(6, variable.getIndex());
+        assertEquals(0, variable.getLength());
+        assertEquals("name", variable.getMeta().get(FormattedLine.META_VARIABLE));
+
+        // Link
+        FormattedLine.Format link = line.getFormatting().get(1);
+        assertEquals(14, link.getIndex());
+        assertEquals(8, link.getLength());
+        assertTrue(link.getFormats().contains(FormatType.A));
+        assertEquals("http://example.com", link.getMeta().get("link"));
+    }
+
+    @Test
+    public void testInvalidVariableNameIgnored() {
+        // Variable names cannot contain spaces
+        FormattedText result = MarkdownParser.parse("Hello {{invalid name}}!");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        // Invalid variable should be left as literal text
+        assertEquals("Hello {{invalid name}}!", line.getText());
+        assertTrue(line.getFormatting().isEmpty());
+    }
+
+    @Test
+    public void testEmptyVariableIgnored() {
+        FormattedText result = MarkdownParser.parse("Hello {{}}!");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        // Empty variable should be left as literal text
+        assertEquals("Hello {{}}!", line.getText());
+        assertTrue(line.getFormatting().isEmpty());
+    }
+
+    @Test
+    public void testUnclosedVariableIgnored() {
+        FormattedText result = MarkdownParser.parse("Hello {{name!");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        // Unclosed variable should be left as literal text
+        assertEquals("Hello {{name!", line.getText());
+        assertTrue(line.getFormatting().isEmpty());
+    }
+
+    @Test
+    public void testVariableInListItem() {
+        FormattedText result = MarkdownParser.parse("- Item for {{user}}");
+
+        assertEquals(1, result.getBlocks().size());
+        FormattedBlock block = result.getBlocks().get(0);
+        assertEquals(BlockType.NLIST, block.getType());
+
+        FormattedLine line = block.getLines().get(0);
+        assertEquals("Item for ", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals("user", format.getMeta().get(FormattedLine.META_VARIABLE));
+    }
+
+    @Test
+    public void testVariableInHeading() {
+        FormattedText result = MarkdownParser.parse("# Welcome {{user}}");
+
+        assertEquals(1, result.getBlocks().size());
+        FormattedBlock block = result.getBlocks().get(0);
+        assertEquals(BlockType.H1, block.getType());
+
+        FormattedLine line = block.getLines().get(0);
+        assertEquals("Welcome ", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals("user", format.getMeta().get(FormattedLine.META_VARIABLE));
+    }
+
+    @Test
+    public void testVariableMetadataWithPeriodInFieldName() {
+        FormattedText result = MarkdownParser.parse("{{value;field.name=test}}");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals("value", format.getMeta().get(FormattedLine.META_VARIABLE));
+        assertEquals("test", format.getMeta().get("field.name"));
+    }
+
+    @Test
+    public void testVariableMetadataWithSpecialCharsInValue() {
+        FormattedText result = MarkdownParser.parse("{{date;format=yyyy-MM-dd HH:mm:ss}}");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals("date", format.getMeta().get(FormattedLine.META_VARIABLE));
+        assertEquals("yyyy-MM-dd HH:mm:ss", format.getMeta().get("format"));
+    }
+
+    @Test
+    public void testVariableSequenceReturnsVariable() {
+        FormattedText result = MarkdownParser.parse("Hello {{name}}!");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        var segments = line.sequence();
+
+        assertEquals(3, segments.size());
+
+        // "Hello "
+        assertEquals("Hello ", segments.get(0).text());
+        assertFalse(segments.get(0).variable());
+
+        // Variable marker - text() returns the variable name for variable segments
+        // Note: META_VARIABLE is excluded from meta() - use text() for the variable name
+        assertEquals("name", segments.get(1).text());
+        assertTrue(segments.get(1).variable());
+
+        // "!"
+        assertEquals("!", segments.get(2).text());
+        assertFalse(segments.get(2).variable());
+    }
+
+    @Test
+    public void testVariableWithInvalidChars() {
+        // Variable names cannot contain special characters like @, #, etc.
+        FormattedText result = MarkdownParser.parse("{{invalid@name}}");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        // Should be treated as literal text since @ is not a valid variable character
+        assertEquals("{{invalid@name}}", line.getText());
+        assertTrue(line.getFormatting().isEmpty());
+    }
+
+    @Test
+    public void testConsecutiveVariables() {
+        FormattedText result = MarkdownParser.parse("{{first}}{{second}}");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("", line.getText());
+        assertEquals(2, line.getFormatting().size());
+
+        FormattedLine.Format format1 = line.getFormatting().get(0);
+        assertEquals(0, format1.getIndex());
+        assertEquals("first", format1.getMeta().get(FormattedLine.META_VARIABLE));
+
+        FormattedLine.Format format2 = line.getFormatting().get(1);
+        assertEquals(0, format2.getIndex());
+        assertEquals("second", format2.getMeta().get(FormattedLine.META_VARIABLE));
+    }
+
+    @Test
+    public void testVariableOnlyLine() {
+        FormattedText result = MarkdownParser.parse("{{username}}");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        assertEquals("", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        FormattedLine.Format format = line.getFormatting().get(0);
+        assertEquals(0, format.getIndex());
+        assertEquals(0, format.getLength());
+        assertEquals("username", format.getMeta().get(FormattedLine.META_VARIABLE));
+    }
+
+    @Test
+    public void testVariableInsideLink() {
+        FormattedText result = MarkdownParser.parse("Hello, visit [our site named {{site-name}}](http://example.com).");
+
+        FormattedLine line = result.getBlocks().get(0).getLines().get(0);
+        // The link label includes the variable syntax literally since variables inside links
+        // are not processed (the link region excludes variable parsing).
+        assertEquals("Hello, visit our site named {{site-name}}.", line.getText());
+        assertEquals(1, line.getFormatting().size());
+
+        // Should have a link format containing the literal {{site-name}} in the label.
+        FormattedLine.Format link = line.getFormatting().get(0);
+        assertEquals(13, link.getIndex());
+        assertEquals(28, link.getLength()); // "our site named {{site-name}}"
+        assertTrue(link.getFormats().contains(FormatType.A));
+        assertEquals("http://example.com", link.getMeta().get("link"));
+    }
 }

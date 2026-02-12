@@ -432,13 +432,18 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             public boolean includeActiveInCrumb();
 
             /**
+             * To show the header when at the top (root) of the card hierarchy.
+             */
+            public boolean showHeaderAtTop();
+
+            /**
              * Convenience to create a styles instance from the given data.
              * 
              * @param styles
              *               the styles.
              * @return the style instance.
              */
-            public static Style create(ILocalCSS styles, boolean includeActiveInCrumb) {
+            public static Style create(ILocalCSS styles, boolean includeActiveInCrumb, boolean showHeaderAtTop) {
                 return new Style () {
 
                     @Override
@@ -450,6 +455,11 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
                     public boolean includeActiveInCrumb() {
                         return includeActiveInCrumb;
                     }
+
+                    @Override
+                    public boolean showHeaderAtTop() {
+                        return showHeaderAtTop;
+                    }
                 };
             }
 
@@ -460,7 +470,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
              * of the current page. The current page appears below the breadcrumb and in a
              * larger font with a clearly differentiated back action.
              */
-            public static final Style STANDARD = create (StandardCSS.instance (), false);
+            public static final Style STANDARD = create (StandardCSS.instance (), false, true);
 
             /**
              * Extended visual style.
@@ -469,7 +479,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
              * with the current page (i.e. the trail is full). The current page still
              * appears under the trail as per {@link #STANDARD}.
              */
-            public static final Style EXTENDED = create (ExtendedCSS.instance (), true);
+            public static final Style EXTENDED = create (ExtendedCSS.instance (), true, true);
 
             /**
              * Compact visual style.
@@ -477,7 +487,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
              * Here there is only a breadcrumb with the current page appearing at the end.
              * This is differentiated from the trail by being in a larger font.
              */
-            public static final Style COMPACT = create (CompactCSS.instance (), true);
+            public static final Style COMPACT = create (CompactCSS.instance (), true, false);
         }
 
         /**
@@ -888,7 +898,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             // Handle the special case of the top element.
             if (TOP == child) {
                 getRoot().classList.remove(styles().body());
-                if (config().titleOnlyInBreadcrumb) {
+                if (!config().style.showHeaderAtTop() || config().titleOnlyInBreadcrumb) {
                     JQuery.$ (headerEl).hide ();
                 } else {
                     buildInto(headerEl, header -> {

@@ -8,6 +8,10 @@
     --jui-cardnavigator-maxwidth: 200px;
 }
 
+.component .hide {
+    display: none;
+}
+
 .component > .wrap {
     height: 100%;
     display: flex;

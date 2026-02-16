@@ -897,6 +897,8 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         protected Promise<ActivateOutcome> onChildActivated(NavigationContext context, Object child) {
             // Handle the special case of the top element.
             if (TOP == child) {
+                if (getRoot() == null)
+                    return Promise.create (ActivateOutcome.ACTIVATED);
                 getRoot().classList.remove(styles().body());
                 if (!config().style.showHeaderAtTop() || config().titleOnlyInBreadcrumb) {
                     JQuery.$ (headerEl).hide ();

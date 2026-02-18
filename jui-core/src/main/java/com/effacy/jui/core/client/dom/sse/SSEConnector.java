@@ -1,4 +1,4 @@
-package com.effacy.jui.core.client.dom.com;
+package com.effacy.jui.core.client.dom.sse;
 
 import java.util.function.Consumer;
 

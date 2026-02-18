@@ -1582,4 +1582,164 @@ This is *some* supporting **guidance**:
         assertTrue(link.getFormats().contains(FormatType.A));
         assertEquals("http://example.com", link.getMeta().get("link"));
     }
+
+    /************************************************************************
+     * Table tests
+     ************************************************************************/
+
+    @Test
+    public void testSimpleTable() {
+        FormattedText result = MarkdownParser.parse(
+            "| Name | Age |\n" +
+            "|------|-----|\n" +
+            "| Alice | 30 |\n" +
+            "| Bob | 25 |"
+        );
+
+        assertEquals(1, result.getBlocks().size());
+        FormattedBlock table = result.getBlocks().get(0);
+        assertEquals(BlockType.TABLE, table.getType());
+        assertEquals("2", table.meta("columns"));
+        assertEquals("1", table.meta("headers"));
+        assertEquals("L,L", table.meta("align"));
+
+        // 3 rows: 1 header + 2 body.
+        assertEquals(3, table.getBlocks().size());
+
+        // Header row.
+        FormattedBlock headerRow = table.getBlocks().get(0);
+        assertEquals(BlockType.TROW, headerRow.getType());
+        assertEquals(2, headerRow.getBlocks().size());
+        assertEquals(BlockType.TCELL, headerRow.getBlocks().get(0).getType());
+        assertEquals("Name", headerRow.getBlocks().get(0).getLines().get(0).getText());
+        assertEquals("Age", headerRow.getBlocks().get(1).getLines().get(0).getText());
+
+        // First body row.
+        FormattedBlock row1 = table.getBlocks().get(1);
+        assertEquals(BlockType.TROW, row1.getType());
+        assertEquals("Alice", row1.getBlocks().get(0).getLines().get(0).getText());
+        assertEquals("30", row1.getBlocks().get(1).getLines().get(0).getText());
+
+        // Second body row.
+        FormattedBlock row2 = table.getBlocks().get(2);
+        assertEquals("Bob", row2.getBlocks().get(0).getLines().get(0).getText());
+        assertEquals("25", row2.getBlocks().get(1).getLines().get(0).getText());
+    }
+
+    @Test
+    public void testTableAlignment() {
+        FormattedText result = MarkdownParser.parse(
+            "| Left | Center | Right |\n" +
+            "|:-----|:------:|------:|\n" +
+            "| a | b | c |"
+        );
+
+        FormattedBlock table = result.getBlocks().get(0);
+        assertEquals(BlockType.TABLE, table.getType());
+        assertEquals("3", table.meta("columns"));
+        assertEquals("L,C,R", table.meta("align"));
+    }
+
+    @Test
+    public void testTableWithInlineFormatting() {
+        FormattedText result = MarkdownParser.parse(
+            "| Header |\n" +
+            "|--------|\n" +
+            "| **bold** and *italic* |"
+        );
+
+        FormattedBlock table = result.getBlocks().get(0);
+        FormattedBlock bodyRow = table.getBlocks().get(1);
+        FormattedBlock cell = bodyRow.getBlocks().get(0);
+
+        FormattedLine line = cell.getLines().get(0);
+        assertEquals("bold and italic", line.getText());
+        assertEquals(2, line.getFormatting().size());
+
+        // Bold.
+        FormattedLine.Format boldFmt = line.getFormatting().get(0);
+        assertEquals(0, boldFmt.getIndex());
+        assertEquals(4, boldFmt.getLength());
+        assertTrue(boldFmt.getFormats().contains(FormatType.BLD));
+
+        // Italic.
+        FormattedLine.Format italicFmt = line.getFormatting().get(1);
+        assertEquals(9, italicFmt.getIndex());
+        assertEquals(6, italicFmt.getLength());
+        assertTrue(italicFmt.getFormats().contains(FormatType.ITL));
+    }
+
+    @Test
+    public void testTableWithEmptyCells() {
+        FormattedText result = MarkdownParser.parse(
+            "| A | B | C |\n" +
+            "|---|---|---|\n" +
+            "| x |   | z |"
+        );
+
+        FormattedBlock table = result.getBlocks().get(0);
+        FormattedBlock bodyRow = table.getBlocks().get(1);
+
+        // Middle cell should have no lines (empty content).
+        FormattedBlock emptyCell = bodyRow.getBlocks().get(1);
+        assertEquals(BlockType.TCELL, emptyCell.getType());
+        assertTrue(emptyCell.getLines().isEmpty());
+    }
+
+    @Test
+    public void testTableFewerCellsThanColumns() {
+        FormattedText result = MarkdownParser.parse(
+            "| A | B | C |\n" +
+            "|---|---|---|\n" +
+            "| x |"
+        );
+
+        FormattedBlock table = result.getBlocks().get(0);
+        assertEquals("3", table.meta("columns"));
+
+        FormattedBlock bodyRow = table.getBlocks().get(1);
+        assertEquals(3, bodyRow.getBlocks().size());
+
+        // First cell has content.
+        assertEquals("x", bodyRow.getBlocks().get(0).getLines().get(0).getText());
+
+        // Missing cells should be empty.
+        assertTrue(bodyRow.getBlocks().get(1).getLines().isEmpty());
+        assertTrue(bodyRow.getBlocks().get(2).getLines().isEmpty());
+    }
+
+    @Test
+    public void testTableWithSurroundingContent() {
+        FormattedText result = MarkdownParser.parse(
+            "Some text before.\n\n" +
+            "| Col1 | Col2 |\n" +
+            "|------|------|\n" +
+            "| a | b |\n\n" +
+            "Some text after."
+        );
+
+        assertEquals(3, result.getBlocks().size());
+        assertEquals(BlockType.PARA, result.getBlocks().get(0).getType());
+        assertEquals(BlockType.TABLE, result.getBlocks().get(1).getType());
+        assertEquals(BlockType.PARA, result.getBlocks().get(2).getType());
+    }
+
+    @Test
+    public void testTableWithLink() {
+        FormattedText result = MarkdownParser.parse(
+            "| Link |\n" +
+            "|------|\n" +
+            "| [click](http://example.com) |"
+        );
+
+        FormattedBlock table = result.getBlocks().get(0);
+        FormattedBlock bodyRow = table.getBlocks().get(1);
+        FormattedBlock cell = bodyRow.getBlocks().get(0);
+
+        FormattedLine line = cell.getLines().get(0);
+        assertEquals("click", line.getText());
+        assertEquals(1, line.getFormatting().size());
+        assertTrue(line.getFormatting().get(0).getFormats().contains(FormatType.A));
+        assertEquals("http://example.com", line.getFormatting().get(0).getMeta().get("link"));
+    }
 }

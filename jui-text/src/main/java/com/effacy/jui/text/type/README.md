@@ -118,6 +118,45 @@ for (TextSegment segment : line.sequence()) {
 }
 ```
 
+### Tables
+
+Tables are parsed from markdown and represented as a hierarchy of blocks: TABLE → TROW → TCELL. The TABLE block carries metadata for column count, header row count, and per-column alignment.
+
+From markdown:
+
+```java
+FormattedText content = FormattedText.markdown("""
+| Name  | Age |
+|-------|----:|
+| Alice | 30  |
+| Bob   | 25  |
+""");
+```
+
+Traversing the table structure:
+
+```java
+FormattedBlock table = content.getBlocks().get(0);
+int columns = Integer.parseInt(table.meta("columns"));
+String[] align = table.meta("align").split(","); // "L", "C", or "R" per column
+
+for (FormattedBlock row : table.getBlocks()) {
+    for (FormattedBlock cell : row.getBlocks()) {
+        for (FormattedLine line : cell.getLines()) {
+            // Process cell content with inline formatting...
+        }
+    }
+}
+```
+
+Table metadata on the TABLE block:
+
+| Key | Description |
+|-----|-------------|
+| `columns` | Number of columns (e.g. "3") |
+| `headers` | Number of header rows (always "1") |
+| `align` | Comma-separated alignment per column: `L` (left), `C` (centre), `R` (right) |
+
 ### Creating plain text paragraphs
 
 For simple unformatted content:
@@ -198,15 +237,30 @@ FormattedText content = FormattedText.markdown(
 
 ### Block types
 
-| Type | Description |
-|------|-------------|
-| `PARA` | Paragraph (default block type) |
-| `H1` | Heading level 1 |
-| `H2` | Heading level 2 |
-| `H3` | Heading level 3 |
-| `NLIST` | List item (numbered or unordered) |
-| `EQN` | Equation |
-| `DIA` | Diagram |
+| Type | Constraint | Description |
+|------|------------|-------------|
+| `PARA` | LINES | Paragraph (default block type) |
+| `H1` | LINES | Heading level 1 |
+| `H2` | LINES | Heading level 2 |
+| `H3` | LINES | Heading level 3 |
+| `NLIST` | LINES | List item (numbered or unordered) |
+| `EQN` | CONTENT_AND_LINES | Equation (content holds source, lines for caption) |
+| `DIA` | CONTENT_AND_LINES | Diagram (content holds source, lines for caption) |
+| `TABLE` | BLOCKS | Table (child blocks are TROW rows) |
+| `TROW` | BLOCKS | Table row (child blocks are TCELL cells) |
+| `TCELL` | LINES_OR_BLOCKS | Table cell (lines for simple content, blocks for rich content) |
+
+### Block type constraints
+
+Each block type declares a `BlockTypeConstraint` that describes what content it may hold:
+
+| Constraint | Description |
+|------------|-------------|
+| `LINES` | Lines only |
+| `BLOCKS` | Child blocks only |
+| `LINES_OR_BLOCKS` | Either lines or blocks but not both |
+| `CONTENT` | Raw content string only |
+| `CONTENT_AND_LINES` | Content string and/or lines |
 
 ### Inline format types
 
@@ -253,21 +307,25 @@ FormattedText content = FormattedText.markdown(
 
 ## Design
 
-The package implements a hierarchical composition pattern with three main levels and a base-level for applying formatting as an overlay:
+The package implements a hierarchical composition pattern. The primary levels are text → block → line → format, with blocks optionally nesting child blocks for compound structures like tables:
 
 ```
 FormattedText (document container)
   └── FormattedBlock[] (structural elements)
-       └── FormattedLine[] (content lines)
-            └── Format[] (inline formatting regions)
+       ├── FormattedLine[] (content lines)
+       │    └── Format[] (inline formatting regions)
+       ├── FormattedBlock[] (child blocks, e.g. TABLE → TROW → TCELL)
+       └── String content (raw content, e.g. equation source)
 ```
+
+Each block type declares a `BlockTypeConstraint` that describes which of lines, blocks, and content it supports. This constraint guides validation and user interfaces.
 
 Details follow:
 
 1. **FormattedText**
    The root container that holds a collection of `FormattedBlock` objects. It implements `Iterable<FormattedBlock>` for easy traversal and provides factory methods for creating content from markdown or plain strings. The class is JSON-serialisable.
 2. **FormattedBlock**
-   Represents a block-level structural element such as a paragraph, heading, or list item. Each block has a type (`BlockType`), a list of `FormattedLine` objects, an optional indentation level (0-5), and optional metadata. Blocks support operations for splitting, merging, and transforming.
+   Represents a block-level structural element such as a paragraph, heading, list item, or table. Each block has a type (`BlockType`), an optional list of `FormattedLine` objects, an optional list of child `FormattedBlock` objects, an optional raw content string, an optional indentation level (0-5), and optional metadata. Which of these properties are populated is governed by the block type's `BlockTypeConstraint`. Blocks support operations for splitting, merging, and transforming.
 3. **FormattedLine**
    Represents a single line of text with inline formatting applied to specific character ranges. Formatting is stored as non-overlapping regions (`Format` objects) in increasing order by index. The `TextSegment` inner class provides a convenient way to access contiguous blocks of text with homogeneous formatting.
 4. **Format**
@@ -285,5 +343,7 @@ Details follow:
    Block indentation is clamped to 0-5 levels
 5. **Null safety**
    Collections return empty rather than null; operations handle null gracefully
-6. **Lazy initialisation**
+6. **Content constraint adherence**
+   Each block type declares which content properties (lines, child blocks, raw content) it supports via `BlockTypeConstraint`; producers should respect these constraints
+7. **Lazy initialisation**
    Collections are initialised on-demand to minimise memory footprint for empty content

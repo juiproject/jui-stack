@@ -1,10 +1,33 @@
 # Markdown parser
 
-This package provides a markdown parser that converts markdown text into `FormattedText` objects. The parser supports common markdown syntax including headings, lists, inline formatting, links, and variables.
+This package provides a markdown parser that converts markdown text into `FormattedText` objects or emits structural events to an `IMarkdownEventHandler`. The parser supports common markdown syntax including headings, lists, tables, inline formatting, links, and variables.
+
+## Architecture
+
+The parser is built around an event-driven model:
+
+```
+                           ┌─ FormattedTextMarkdownHandler ─→ FormattedText
+MarkdownEventParser ──────►├─ DomBuilderMarkdownHandler    ─→ JUI DOM builders
+                           └─ Elemental2MarkdownHandler    ─→ Elemental2 DOM
+```
+
+`MarkdownEventParser` is the core parser that emits structural events (block start/end, line start/end, text, formatted text, links, variables) to any `IMarkdownEventHandler` implementation. This separation allows different output representations from the same parsing logic.
+
+`MarkdownParser` is a convenience facade that delegates to `MarkdownEventParser` and provides both model-building and event-handler entry points.
+
+### Classes
+
+| Class | Role |
+|-------|------|
+| `IMarkdownEventHandler` | Event interface — receives parsing events |
+| `MarkdownEventParser` | Core parser — emits events to a handler |
+| `FormattedTextMarkdownHandler` | Handler that builds a `FormattedText` model |
+| `MarkdownParser` | Convenience facade for common use cases |
 
 ## Usage
 
-### Basic parsing
+### Building a FormattedText model
 
 ```java
 FormattedText content = MarkdownParser.parse("""
@@ -17,8 +40,6 @@ FormattedText content = MarkdownParser.parse("""
 """);
 ```
 
-### Multiple content blocks
-
 Multiple strings can be passed, each separated as a new paragraph:
 
 ```java
@@ -28,6 +49,35 @@ FormattedText content = MarkdownParser.parse(
     "Second paragraph with a [link](https://example.com)."
 );
 ```
+
+### Using an event handler
+
+Pass an `IMarkdownEventHandler` to receive events directly without building an intermediate model. This is useful for rendering into DOM or other targets:
+
+```java
+IMarkdownEventHandler handler = new MyCustomHandler();
+MarkdownParser.parse(handler, "# Title\n\nSome **bold** text.");
+```
+
+Or use `MarkdownEventParser` directly:
+
+```java
+MarkdownEventParser.parse(handler, "# Title\n\nSome **bold** text.");
+```
+
+### Partial mode (streaming)
+
+When content arrives incrementally (e.g. from a streaming LLM response), partial mode treats unclosed format markers on the last line as formatting rather than literal text:
+
+```java
+// Model-building:
+FormattedText content = MarkdownParser.parse(true, incompleteContent);
+
+// Event-handler:
+MarkdownParser.parse(handler, true, incompleteContent);
+```
+
+The caller typically accumulates the raw stream, clears the output, and re-parses the full buffer on each chunk.
 
 ### Line pre-processing
 
@@ -54,9 +104,33 @@ FormattedText content = MarkdownParser.parse(
 | `* text` | NLIST | Unordered list item |
 | `+ text` | NLIST | Unordered list item |
 | `1. text` | NLIST | Ordered list item |
+| `\| ... \| ... \|` | TABLE | Table (see below) |
 | (plain text) | PARA | Paragraph |
 
 Double newlines create paragraph breaks. Single newlines within a paragraph create line breaks within the same block.
+
+#### Tables
+
+Standard markdown tables are supported. A table requires a header row followed by a separator row, then zero or more body rows:
+
+```
+| Name  | Age |
+|-------|----:|
+| Alice | 30  |
+| Bob   | 25  |
+```
+
+The separator row determines column alignment using colons:
+
+| Separator | Alignment |
+|-----------|-----------|
+| `---` or `:---` | Left (default) |
+| `:---:` | Centre |
+| `---:` | Right |
+
+Cell contents support full inline formatting (bold, italic, code, links, etc.) but not block-level content such as nested paragraphs or lists.
+
+The parsed result is a TABLE block containing TROW child blocks, each containing TCELL child blocks. The TABLE block carries metadata: `columns` (column count), `headers` (header row count, always "1"), and `align` (comma-separated L/C/R per column). If a row has fewer cells than the column count, empty cells are padded. Extra cells beyond the column count are ignored.
 
 ### Inline formatting
 
@@ -131,11 +205,60 @@ FormattedText content = MarkdownParser.parse(
 // Single link format, no variable format
 ```
 
+## Event model
+
+The `IMarkdownEventHandler` interface receives a balanced, hierarchical stream of events:
+
+```
+startBlock(PARA)
+  startLine()
+    text("Hello ")
+    formatted("bold", BLD)
+    text(" world")
+  endLine()
+endBlock(PARA)
+```
+
+For tables the hierarchy nests deeper:
+
+```
+startBlock(TABLE)
+  meta("columns", "2")
+  meta("headers", "1")
+  meta("align", "L,R")
+  startBlock(TROW)
+    startBlock(TCELL)
+      startLine()
+        text("Name")
+      endLine()
+    endBlock(TCELL)
+  endBlock(TROW)
+endBlock(TABLE)
+```
+
+### Event methods
+
+| Method | When emitted |
+|--------|-------------|
+| `startBlock(BlockType)` | Block opens |
+| `endBlock(BlockType)` | Block closes (paired with `startBlock`) |
+| `meta(String, String)` | Block metadata (between `startBlock` and first child) |
+| `startLine()` | Line opens within a block |
+| `endLine()` | Line closes (paired with `startLine`) |
+| `text(String)` | Plain text segment within a line |
+| `formatted(String, FormatType)` | Formatted text segment (one format type per call) |
+| `link(String, String)` | Hyperlink (label, URL) |
+| `variable(String, Map)` | Variable placeholder (name, metadata) |
+
+### Implementing a handler
+
+The `FormattedTextMarkdownHandler` serves as the reference implementation. A minimal handler needs only to track the block/line nesting and process the inline content events. The `meta` event delivers block-level metadata (table alignment, list indent) between `startBlock` and the first child element.
+
 ## Design
 
 The parser processes content in two phases:
 
-1. **Block-level parsing**: Identifies structural elements (headings, lists, paragraphs) by examining line prefixes
+1. **Block-level parsing**: Identifies structural elements (headings, tables, lists, paragraphs) by examining line prefixes and structure
 2. **Inline parsing**: Processes formatting markers, links, and variables within each line
 
 ### Processing order
@@ -155,5 +278,6 @@ The parser produces a `FormattedText` object containing:
 - `FormattedBlock` objects for each structural element
 - `FormattedLine` objects within each block
 - `Format` objects describing formatting regions within each line
+- For tables: nested `FormattedBlock` hierarchy (TABLE -> TROW -> TCELL), where each TCELL contains `FormattedLine` objects with inline formatting
 
 Variables are represented as zero-length `Format` objects with metadata containing the variable name and any additional key-value pairs.

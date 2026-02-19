@@ -154,6 +154,10 @@ public class NavigationHandler<I extends INavigationItem> implements INavigation
      */
     @Override
     public void navigate(NavigationContext context, List<String> path) {
+        // Ensure we have a context.
+        if (context == null)
+            context = new NavigationContext();
+
         if (DebugMode.any (DebugMode.DETAIL, DebugMode.FORWARD_PROP, DebugMode.ENTRY))
             Logger.trace ("[NAVIGATE] START (requested)", NavigationSupport.build (path) + " [" + print (context) + "]");
 

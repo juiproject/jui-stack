@@ -88,7 +88,7 @@ public class FLine extends Fragment<FLine> {
         super.parentStyleHook = CSS_STYLE;
     }
 
-    protected static Map<FormattedLine.FormatType,String> STYLES = new HashMap<>();
+    public static Map<FormattedLine.FormatType,String> STYLES = new HashMap<>();
     static {
         STYLES.put (FormattedLine.FormatType.BLD, "bold");
         STYLES.put (FormattedLine.FormatType.CODE, "code");

@@ -31,6 +31,41 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 public class FormattedBlock {
 
     /**
+     * Describes content constraints for blocks. This can be used for validation and
+     * for guiding user interfaces.
+     */
+    public enum BlockTypeConstraint {
+
+        /**
+         * Lines only.
+         */
+        LINES,
+        
+        /**
+         * Blocks only.
+         */
+        BLOCKS,
+
+        /**
+         * Either lines or blocks but not both.
+         * <p>
+         * This can be softly enforced by allowing for both but only processing line
+         * where there are lines, otherwise processing blocks.
+         */
+        LINES_OR_BLOCKS,
+        
+        /**
+         * Content only (i.e. no lines or blocks).
+         */
+        CONTENT,
+        
+        /**
+         * Lines and blocks but no content.
+         */
+        CONTENT_AND_LINES;
+    }
+
+    /**
      * Various types of block.
      */
     public enum BlockType {
@@ -38,44 +73,88 @@ public class FormattedBlock {
         /**
          * Paragraph.
          */
-        PARA,
+        PARA(BlockTypeConstraint.LINES),
         
         /**
          * Header level 1.
          */
-        H1,
+        H1(BlockTypeConstraint.LINES),
         
         /**
          * Header level 2.
          */
-        H2,
+        H2(BlockTypeConstraint.LINES),
         
         /**
          * Header level 3.
          */
-        H3,
+        H3(BlockTypeConstraint.LINES),
         
         /**
          * Numbered list.
          */
-        NLIST,
+        NLIST(BlockTypeConstraint.LINES),
         
         /**
          * Equation.
          */
-        EQN,
+        EQN(BlockTypeConstraint.CONTENT_AND_LINES),
         
         /**
          * Diagram.
          */
-        DIA;
+        DIA(BlockTypeConstraint.CONTENT_AND_LINES),
 
+        /**
+         * Table.
+         */
+        TABLE(BlockTypeConstraint.BLOCKS),
+        
+        /**
+         * Table row (only for tables).
+         */
+        TROW(BlockTypeConstraint.BLOCKS),
+        
+        /**
+         * Table cell (only for table rows).
+         */
+        TCELL(BlockTypeConstraint.LINES_OR_BLOCKS);
+
+        /**
+         * See {@link #constraint()}.
+         */
+        private BlockTypeConstraint constraint;
+
+        /**
+         * Private constructor.
+         */
+        private BlockType(BlockTypeConstraint constraint) {
+            this.constraint = constraint;
+        }
+
+        /**
+         * Determines if this is one of the given types.
+         * 
+         * @param types
+         *              the types to test against.
+         * @return {@code true} if this is one of the given types.
+         */
         public boolean is(BlockType... types) {
             for (BlockType type : types) {
                 if (type == this)
                     return true;
             }
             return false;
+        }
+
+        /**
+         * The constraints on the content of this block type. This is used for
+         * validation and for guiding user interfaces.
+         * 
+         * @return the content constraints.
+         */
+        public BlockTypeConstraint constraint() {
+            return constraint;
         }
     }
 
@@ -115,6 +194,15 @@ public class FormattedBlock {
     @JsonInclude(Include.NON_NULL)
     private List<FormattedLine> lines;
 
+    /**
+     * See {@link #getBlocks()}.
+     */
+    private List<FormattedBlock> blocks;
+
+    /**
+     * See {@link #getContent()}.
+     */
+    private String content;
     
     /**
      * See {@link #getMeta()}.
@@ -163,6 +251,43 @@ public class FormattedBlock {
         this.lines = lines;
     }
 
+    /**
+     * The child blocks of this block. This is used for blocks that have a
+     * hierarchical structure such as tables (where the child blocks are rows and
+     * the rows have cells as child blocks).
+     * 
+     * @return the child blocks.
+     */
+    public List<FormattedBlock> getBlocks() {
+        if (blocks == null)
+            blocks = new ArrayList<>();
+        return blocks;
+    }
+
+    /**
+     * Serialisation setter for {@link #getBlocks()}.
+     */
+    public void setBlocks(List<FormattedBlock> blocks) {
+        this.blocks = blocks;
+    }
+
+    /**
+     * The content of the block as a single string. This is used for blocks that
+     * have no formatting such as equations and diagrams (lines can be used for
+     * captions).
+     * 
+     * @return the content.
+     */
+    public String getContent() {
+        return content;
+    }
+
+    /**
+     * Serialisation setter for {@link #getContent()}.
+     */
+    public void setContent(String content) {
+        this.content = content;
+    }   
 
     /**
      * Level of indentation for the block.
@@ -199,7 +324,35 @@ public class FormattedBlock {
     }
 
     /************************************************************************
-     * Derived properties.
+     * General properties.
+     ************************************************************************/
+
+    /**
+     * The total length of the block (being the sum of the length of the lines or
+     * the length of the child blocks, or the length of the content).
+     * 
+     * @return the length.
+     */
+    public int length() {
+        int length = 0;
+        if ((lines != null) && !lines.isEmpty()) {
+            for (int i = 0; i < getLines ().size (); i++) {
+                if (i > 0)
+                    length++;
+                length += getLines ().get (i).length ();
+            }
+        }
+        if ((blocks != null) && !blocks.isEmpty()) {
+            for (FormattedBlock child : getBlocks())
+                length += child.length ();
+        }
+        if (content != null)
+            length += content.length();
+        return length;
+    }
+
+    /************************************************************************
+     * Line properties and operations.
      ************************************************************************/
 
      /**
@@ -216,21 +369,6 @@ public class FormattedBlock {
         }
         return false;
      }
-
-    /**
-     * The total length of the block (being the sum of the length of the lines).
-     * 
-     * @return the length.
-     */
-    public int length() {
-        int length = 0;
-        for (int i = 0; i < getLines ().size (); i++) {
-            if (i > 0)
-                length++;
-            length += getLines ().get (i).length ();
-        }
-        return length;
-    }
 
     /**
      * Obtains the last line in the collection of lines for this block. If there are

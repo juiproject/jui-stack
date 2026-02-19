@@ -1,6 +1,7 @@
 package com.effacy.jui.filter.builder;
 
 import java.lang.reflect.Array;
+import java.util.Date;
 import java.util.List;
 
 import com.effacy.jui.filter.parser.FilterQueryParser;
@@ -110,6 +111,8 @@ public class StringExpressionBuilder implements IExpressionBuilder<String,String
             return((Enum<?>) value).name();
         if (value instanceof Literal)
             return ((Literal) value).value();
+        if (value instanceof Date)
+            return "\"" + formatDate((Date) value) + "\"";
         if (value.getClass().isArray()) {
             StringBuffer sb = new StringBuffer();
             sb.append('[');
@@ -186,6 +189,38 @@ public class StringExpressionBuilder implements IExpressionBuilder<String,String
         }
         result.append(')');
         return result.toString();
+    }
+
+    /**
+     * Formats a {@link Date} as an ISO 8601 string. If the time component is
+     * midnight (00:00:00) only the date portion is emitted ({@code yyyy-MM-dd}),
+     * otherwise the full date-time is emitted ({@code yyyy-MM-ddTHH:mm:ss}).
+     * <p>
+     * GWT-compatible: uses only deprecated {@link Date} accessors.
+     */
+    @SuppressWarnings("deprecation")
+    private static String formatDate(Date date) {
+        int year = date.getYear() + 1900;
+        int month = date.getMonth() + 1;
+        int day = date.getDate();
+        int hour = date.getHours();
+        int minute = date.getMinutes();
+        int second = date.getSeconds();
+        String s = pad4(year) + "-" + pad2(month) + "-" + pad2(day);
+        if ((hour != 0) || (minute != 0) || (second != 0))
+            s += "T" + pad2(hour) + ":" + pad2(minute) + ":" + pad2(second);
+        return s;
+    }
+
+    private static String pad2(int v) {
+        return (v < 10) ? ("0" + v) : Integer.toString(v);
+    }
+
+    private static String pad4(int v) {
+        if (v < 10) return "000" + v;
+        if (v < 100) return "00" + v;
+        if (v < 1000) return "0" + v;
+        return Integer.toString(v);
     }
 
 }

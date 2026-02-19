@@ -2,6 +2,7 @@ package com.effacy.jui.filter.builder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -606,6 +607,8 @@ public class ExpressionBuilder<F> implements IExpressionBuilder<ExpressionBuilde
             if ((operator == Operator.IN) || (operator == Operator.NOT_IN)) {
                 if (value == null)
                     value = new Object[0];
+                else if (value instanceof Collection)
+                    value = ((Collection<?>) value).toArray();
                 else if (!value.getClass().isArray())
                     value = new Object[] { value };
             }

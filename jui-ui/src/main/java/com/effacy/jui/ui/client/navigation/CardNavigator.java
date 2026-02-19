@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -64,7 +65,6 @@ import com.effacy.jui.core.client.navigation.NavigationSupport;
 import com.effacy.jui.core.client.util.TriConsumer;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.ListSupport;
-import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.Promise;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.ui.client.icon.FontAwesome;
@@ -167,7 +167,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
          * Card configuration (this is a navigation item so delegates events through to
          * the component).
          */
-        public static class CardConfiguration extends RegistrationItem implements Comparable<CardConfiguration> {
+        public static class CardConfiguration extends RegistrationItem implements Comparable<CardConfiguration> {            
 
             /**
              * See constructor.
@@ -198,6 +198,16 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
              * See {@link #attr(String, Object)}.
              */
             private Map<String,Object> metadata = new HashMap<>();
+
+            /**
+             * See {@link #ref(String)}.
+             */
+            private String ref;
+
+            /**
+             * Tracks if is disabled.
+             */
+            private boolean disabled = false;
 
             /**
              * Empty card.
@@ -366,6 +376,20 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
              */
             public String notice() {
                 return notice;
+            }
+
+            /**
+             * An optional reference that can be used to identify the card for card-based
+             * actions (i.e. enabling, disabling, etc).
+             * 
+             * @param ref
+             *            the reference (this is not used for navigation but can be used for
+             *            card-based actions).
+             * @return this configuration instance.
+             */
+            public CardConfiguration ref(String ref) {
+                this.ref = ref;
+                return this;
             }
 
             /**
@@ -775,6 +799,22 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             return path;
         }
 
+        /**
+         * Finds a card by the given reference (see
+         * {@link CardConfiguration#ref(String)}).
+         * 
+         * @param ref
+         *            the reference to match.
+         * @return the matching card (if any).
+         */
+        public Optional<CardConfiguration> cardByRef(String ref) {
+            for (CardConfiguration card : cards) {
+                if (ref.equals(card.ref))
+                    return Optional.of(card);
+            }
+            return Optional.empty();
+        }
+
     }
 
     /**
@@ -864,6 +904,50 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
      */
     protected void renderer(Consumer<ExistingElementBuilder> builder, Consumer<NodeContext> onbuild) {
         navigator (ComponentCreator.build (builder, onbuild));
+    }
+
+    /************************************************************************
+     * Management
+     ************************************************************************/
+
+    /**
+     * Maps of card reference to the card element (this is used for
+     * enabling/disabling cards based on ref).
+     */
+    private Map<String,Element> cardElements = new HashMap<>();
+
+    /**
+     * Enables the passed cards (by reference, see
+     * {@link CardConfiguration#ref(String)}).
+     * 
+     * @param refs
+     *             the references of the cards to enable.
+     */
+    public void enable(String...refs) {
+        for (String ref : refs) {
+            config().cardByRef(ref).ifPresent(c -> {
+                c.disabled = false; 
+                if (cardElements.containsKey(ref))
+                    JQuery.$(cardElements.get(ref)).show();
+            });
+        }
+    }
+
+    /**
+     * Disables the passed cards (by reference, see
+     * {@link CardConfiguration#ref(String)}).
+     * 
+     * @param refs
+     *             the references of the cards to disable.
+     */
+    public void disable(String...refs) {
+        for (String ref : refs) {
+            config().cardByRef(ref).ifPresent(c -> {
+                c.disabled = true;
+                if (cardElements.containsKey(ref))
+                    JQuery.$(cardElements.get(ref)).hide();
+            });
+        }
     }
 
     /************************************************************************
@@ -1213,7 +1297,11 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         Div.$(target).onclick(e -> {
             // Go direct to the router so that we bypass prepending the current active card.
             navigationRouter.navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false), card.reference);
-        }).$ (
+        }).use(n -> {
+            cardElements.put(card.ref, (Element) n);
+            if (card.disabled)
+                JQuery.$((Element) n).hide();
+        }).$(
             H3.$().text (card.label ()),
             P.$ ().iff (!StringSupport.empty (card.description)).text(card.description)
         );

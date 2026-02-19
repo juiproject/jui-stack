@@ -126,6 +126,8 @@ public class MenuActivator {
 
         @Override
         protected void buildInto(ElementBuilder root) {
+            if ((conditional != null) && !conditional.get())
+                return;
             root.style ("juiMenuActivator");
             if (aboveForced)
                 root.style ("above");

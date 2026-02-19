@@ -42,6 +42,42 @@ public class ExpressionSerialisationTest {
         }
     }
     
+    /**
+     * An array value for IN should serialise correctly.
+     */
+    @Test
+    public void values_in_array() throws Exception {
+        var exp = TestFilter.term(Fields.VERSION, Operator.IN, new Long[] { 10L, 20L });
+        Assertions.assertEquals("VERSION IN [10,20]", TestFilter.serialise(exp));
+    }
+
+    /**
+     * A collection value for IN should serialise correctly (not double-wrapped).
+     */
+    @Test
+    public void values_in_collection() throws Exception {
+        var exp = TestFilter.term(Fields.VERSION, Operator.IN, List.of(10L, 20L));
+        Assertions.assertEquals("VERSION IN [10,20]", TestFilter.serialise(exp));
+    }
+
+    /**
+     * An array value for NOT_IN should serialise correctly.
+     */
+    @Test
+    public void values_notIn_array() throws Exception {
+        var exp = TestFilter.term(Fields.VERSION, Operator.NOT_IN, new Long[] { 10L });
+        Assertions.assertEquals("VERSION NOT IN [10]", TestFilter.serialise(exp));
+    }
+
+    /**
+     * A collection value for NOT_IN should serialise correctly (not double-wrapped).
+     */
+    @Test
+    public void values_notIn_collection() throws Exception {
+        var exp = TestFilter.term(Fields.VERSION, Operator.NOT_IN, List.of(10L));
+        Assertions.assertEquals("VERSION NOT IN [10]", TestFilter.serialise(exp));
+    }
+
     /************************************************************************
      * Test filter
      ************************************************************************/

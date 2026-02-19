@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -64,7 +65,6 @@ import com.effacy.jui.core.client.navigation.NavigationSupport;
 import com.effacy.jui.core.client.util.TriConsumer;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.ListSupport;
-import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.Promise;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.ui.client.icon.FontAwesome;
@@ -167,7 +167,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
          * Card configuration (this is a navigation item so delegates events through to
          * the component).
          */
-        public static class CardConfiguration extends RegistrationItem implements Comparable<CardConfiguration> {
+        public static class CardConfiguration extends RegistrationItem implements Comparable<CardConfiguration> {            
 
             /**
              * See constructor.
@@ -198,6 +198,16 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
              * See {@link #attr(String, Object)}.
              */
             private Map<String,Object> metadata = new HashMap<>();
+
+            /**
+             * See {@link #ref(String)}.
+             */
+            private String ref;
+
+            /**
+             * Tracks if is disabled.
+             */
+            private boolean disabled = false;
 
             /**
              * Empty card.
@@ -369,6 +379,20 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             }
 
             /**
+             * An optional reference that can be used to identify the card for card-based
+             * actions (i.e. enabling, disabling, etc).
+             * 
+             * @param ref
+             *            the reference (this is not used for navigation but can be used for
+             *            card-based actions).
+             * @return this configuration instance.
+             */
+            public CardConfiguration ref(String ref) {
+                this.ref = ref;
+                return this;
+            }
+
+            /**
              * Determines if this is a prefix of the passed card (a match is deemed a prefix).
              * 
              * @param card
@@ -432,13 +456,18 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             public boolean includeActiveInCrumb();
 
             /**
+             * To show the header when at the top (root) of the card hierarchy.
+             */
+            public boolean showHeaderAtTop();
+
+            /**
              * Convenience to create a styles instance from the given data.
              * 
              * @param styles
              *               the styles.
              * @return the style instance.
              */
-            public static Style create(ILocalCSS styles, boolean includeActiveInCrumb) {
+            public static Style create(ILocalCSS styles, boolean includeActiveInCrumb, boolean showHeaderAtTop) {
                 return new Style () {
 
                     @Override
@@ -450,6 +479,11 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
                     public boolean includeActiveInCrumb() {
                         return includeActiveInCrumb;
                     }
+
+                    @Override
+                    public boolean showHeaderAtTop() {
+                        return showHeaderAtTop;
+                    }
                 };
             }
 
@@ -460,7 +494,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
              * of the current page. The current page appears below the breadcrumb and in a
              * larger font with a clearly differentiated back action.
              */
-            public static final Style STANDARD = create (StandardCSS.instance (), false);
+            public static final Style STANDARD = create (StandardCSS.instance (), false, true);
 
             /**
              * Extended visual style.
@@ -469,7 +503,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
              * with the current page (i.e. the trail is full). The current page still
              * appears under the trail as per {@link #STANDARD}.
              */
-            public static final Style EXTENDED = create (ExtendedCSS.instance (), true);
+            public static final Style EXTENDED = create (ExtendedCSS.instance (), true, true);
 
             /**
              * Compact visual style.
@@ -477,7 +511,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
              * Here there is only a breadcrumb with the current page appearing at the end.
              * This is differentiated from the trail by being in a larger font.
              */
-            public static final Style COMPACT = create (CompactCSS.instance (), true);
+            public static final Style COMPACT = create (CompactCSS.instance (), true, false);
         }
 
         /**
@@ -765,6 +799,22 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             return path;
         }
 
+        /**
+         * Finds a card by the given reference (see
+         * {@link CardConfiguration#ref(String)}).
+         * 
+         * @param ref
+         *            the reference to match.
+         * @return the matching card (if any).
+         */
+        public Optional<CardConfiguration> cardByRef(String ref) {
+            for (CardConfiguration card : cards) {
+                if (ref.equals(card.ref))
+                    return Optional.of(card);
+            }
+            return Optional.empty();
+        }
+
     }
 
     /**
@@ -857,6 +907,50 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
     }
 
     /************************************************************************
+     * Management
+     ************************************************************************/
+
+    /**
+     * Maps of card reference to the card element (this is used for
+     * enabling/disabling cards based on ref).
+     */
+    private Map<String,Element> cardElements = new HashMap<>();
+
+    /**
+     * Enables the passed cards (by reference, see
+     * {@link CardConfiguration#ref(String)}).
+     * 
+     * @param refs
+     *             the references of the cards to enable.
+     */
+    public void enable(String...refs) {
+        for (String ref : refs) {
+            config().cardByRef(ref).ifPresent(c -> {
+                c.disabled = false; 
+                if (cardElements.containsKey(ref))
+                    JQuery.$(cardElements.get(ref)).show();
+            });
+        }
+    }
+
+    /**
+     * Disables the passed cards (by reference, see
+     * {@link CardConfiguration#ref(String)}).
+     * 
+     * @param refs
+     *             the references of the cards to disable.
+     */
+    public void disable(String...refs) {
+        for (String ref : refs) {
+            config().cardByRef(ref).ifPresent(c -> {
+                c.disabled = true;
+                if (cardElements.containsKey(ref))
+                    JQuery.$(cardElements.get(ref)).hide();
+            });
+        }
+    }
+
+    /************************************************************************
      * Navigation
      ************************************************************************/
 
@@ -874,7 +968,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             List<String> childPath = NavigationSupport.copy (path);
             if ((path != null) && !path.isEmpty()) {
                 activeCard = config().card(path);
-                if (activeCard == null)
+                if ((activeCard == null) || activeCard.disabled)
                     return;
                 childPath = childPath.subList(activeCard.reference.length, childPath.size());
             }
@@ -887,8 +981,10 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         protected Promise<ActivateOutcome> onChildActivated(NavigationContext context, Object child) {
             // Handle the special case of the top element.
             if (TOP == child) {
+                if (getRoot() == null)
+                    return Promise.create (ActivateOutcome.ACTIVATED);
                 getRoot().classList.remove(styles().body());
-                if (config().titleOnlyInBreadcrumb) {
+                if (!config().style.showHeaderAtTop() || config().titleOnlyInBreadcrumb) {
                     JQuery.$ (headerEl).hide ();
                 } else {
                     buildInto(headerEl, header -> {
@@ -1201,7 +1297,11 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         Div.$(target).onclick(e -> {
             // Go direct to the router so that we bypass prepending the current active card.
             navigationRouter.navigate (new NavigationContext (NavigationContext.Source.INTERNAL, false), card.reference);
-        }).$ (
+        }).use(n -> {
+            cardElements.put(card.ref, (Element) n);
+            if (card.disabled)
+                JQuery.$((Element) n).hide();
+        }).$(
             H3.$().text (card.label ()),
             P.$ ().iff (!StringSupport.empty (card.description)).text(card.description)
         );

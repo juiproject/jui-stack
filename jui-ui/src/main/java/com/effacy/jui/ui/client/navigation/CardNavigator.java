@@ -968,7 +968,7 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             List<String> childPath = NavigationSupport.copy (path);
             if ((path != null) && !path.isEmpty()) {
                 activeCard = config().card(path);
-                if (activeCard == null)
+                if ((activeCard == null) || activeCard.disabled)
                     return;
                 childPath = childPath.subList(activeCard.reference.length, childPath.size());
             }

@@ -79,7 +79,7 @@ public class BlockFactory {
             return Optional.of (new EquationBlock (editor, blk));
         });
         FACTORIES.add ((editor,blk) -> {
-            if (FormattedBlock.BlockType.NLIST != blk.getType())
+            if ((FormattedBlock.BlockType.NLIST != blk.getType()) && (FormattedBlock.BlockType.OLIST != blk.getType()))
                 return Optional.empty ();
             return Optional.of (new NumberedListBlock (editor, blk));
         });

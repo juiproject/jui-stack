@@ -91,9 +91,14 @@ public class FormattedBlock {
         H3(BlockTypeConstraint.LINES),
         
         /**
-         * Numbered list.
+         * Unordered (bullet) list.
          */
         NLIST(BlockTypeConstraint.LINES),
+
+        /**
+         * Ordered (numbered) list.
+         */
+        OLIST(BlockTypeConstraint.LINES),
         
         /**
          * Equation.
@@ -625,7 +630,7 @@ public class FormattedBlock {
         blk.type = type;
 
         // Strip out any formatting for headings, etc.
-        if (!blk.typeIs (BlockType.PARA, BlockType.NLIST))
+        if (!blk.typeIs (BlockType.PARA, BlockType.NLIST, BlockType.OLIST))
             blk.getLines ().forEach (line -> line.stripFormatting ());
         return blk;
     }

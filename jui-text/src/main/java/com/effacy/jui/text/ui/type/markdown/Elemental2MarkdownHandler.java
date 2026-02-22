@@ -18,6 +18,7 @@ package com.effacy.jui.text.ui.type.markdown;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
+import java.util.function.Function;
 
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
@@ -105,8 +106,9 @@ public class Elemental2MarkdownHandler implements IMarkdownEventHandler {
     private boolean semanticLists;
 
     /**
-     * Stack of {@code <ul>} elements representing the current list nesting
-     * depth. Only used when {@link #semanticLists} is enabled.
+     * Stack of list wrapper ({@code <ul>} or {@code <ol>}) elements
+     * representing the current list nesting depth. Only used when
+     * {@link #semanticLists} is enabled.
      */
     private Deque<Element> ulStack = new ArrayDeque<>();
 
@@ -114,6 +116,12 @@ public class Elemental2MarkdownHandler implements IMarkdownEventHandler {
      * Current list nesting depth (0-based). {@code -1} when not inside a list.
      */
     private int listDepth = -1;
+
+    /**
+     * Whether the current list context is ordered ({@code <ol>}) or unordered
+     * ({@code <ul>}). Only meaningful when {@link #ulStack} is non-empty.
+     */
+    private boolean listOrdered;
 
     /**
      * The most recently created {@code <li>} element. Used as the parent for
@@ -132,6 +140,17 @@ public class Elemental2MarkdownHandler implements IMarkdownEventHandler {
      * The indent level for the pending list item (from meta).
      */
     private int pendingIndent;
+
+    /**
+     * Whether the pending list item is ordered.
+     */
+    private boolean pendingOrdered;
+
+    /**
+     * Optional URL mapper applied to link URLs before rendering. When set, the
+     * mapper receives the original URL and returns a (possibly revised) URL.
+     */
+    private Function<String, String> urlMapper;
 
     /**
      * Construct with the root element to build into.
@@ -186,11 +205,32 @@ public class Elemental2MarkdownHandler implements IMarkdownEventHandler {
         return this;
     }
 
+    /**
+     * Registers a URL mapper that is applied to link URLs before rendering.
+     * The mapper receives the original URL and returns a (possibly revised)
+     * URL which is then processed normally.
+     *
+     * @param urlMapper
+     *                  the mapper function.
+     * @return this handler for chaining.
+     */
+    public Elemental2MarkdownHandler urlMapper(Function<String, String> urlMapper) {
+        this.urlMapper = urlMapper;
+        return this;
+    }
+
     @Override
     public void startBlock(BlockType type) {
-        // Close any active list context when a non-list block starts.
-        if (semanticLists && (type != BlockType.NLIST))
-            closeListContext();
+        // Close any active list context when a non-list block starts, or
+        // when the list type changes (unordered → ordered or vice versa).
+        if (semanticLists) {
+            boolean isList = (type == BlockType.NLIST) || (type == BlockType.OLIST);
+            if (!isList) {
+                closeListContext();
+            } else if (!ulStack.isEmpty() && (listOrdered != (type == BlockType.OLIST))) {
+                closeListContext();
+            }
+        }
 
         Element el;
         switch (type) {
@@ -198,13 +238,15 @@ public class Elemental2MarkdownHandler implements IMarkdownEventHandler {
                 el = createElement("p");
                 break;
             case NLIST:
+            case OLIST:
                 if (semanticLists) {
                     // Create a detached <li> — it will be attached to the
-                    // correct <ul> in resolveListItem() once the indent is
-                    // known (from meta).
+                    // correct <ol>/<ul> in resolveListItem() once the indent
+                    // is known (from meta).
                     el = createElement("li");
                     pendingLi = el;
                     pendingIndent = 0;
+                    pendingOrdered = (type == BlockType.OLIST);
                     stack.push(el);
                     firstLineInBlock = true;
                     return;
@@ -342,8 +384,10 @@ public class Elemental2MarkdownHandler implements IMarkdownEventHandler {
     public void link(String label, String url) {
         HTMLAnchorElement a = (HTMLAnchorElement) createElement("a");
         if ((url != null) && !url.isEmpty()) {
+            if (urlMapper != null)
+                url = urlMapper.apply(url);
             a.href = url;
-            if (url.startsWith("http"))
+            if (!url.startsWith("#"))
                 a.target = "_blank";
         }
         if ((label != null) && !label.isEmpty())
@@ -396,19 +440,21 @@ public class Elemental2MarkdownHandler implements IMarkdownEventHandler {
      * the indent level. Creates or removes {@code <ul>} nesting as needed.
      */
     private void resolveListItem() {
+        String listTag = pendingOrdered ? "ol" : "ul";
         if (ulStack.isEmpty()) {
-            // First item — create the root <ul> and append to parent context.
-            Element ul = createElement("ul");
+            // First item — create the root <ol>/<ul> and append to parent.
+            Element ul = createElement(listTag);
             Element li = stack.pop();
             currentTarget().appendChild(ul);
             stack.push(li);
             ulStack.push(ul);
             listDepth = 0;
+            listOrdered = pendingOrdered;
         }
 
-        // Increase nesting: create nested <ul> inside the last <li>.
+        // Increase nesting: create nested <ol>/<ul> inside the last <li>.
         while (listDepth < pendingIndent) {
-            Element ul = createElement("ul");
+            Element ul = createElement(listTag);
             if (lastLi != null)
                 lastLi.appendChild(ul);
             else
@@ -435,6 +481,7 @@ public class Elemental2MarkdownHandler implements IMarkdownEventHandler {
     private void closeListContext() {
         ulStack.clear();
         listDepth = -1;
+        listOrdered = false;
         lastLi = null;
         pendingLi = null;
     }

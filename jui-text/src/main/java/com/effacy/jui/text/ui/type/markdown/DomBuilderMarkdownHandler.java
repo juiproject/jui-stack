@@ -121,8 +121,9 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
     private boolean semanticLists;
 
     /**
-     * Stack of {@code <ul>} builders representing the current list nesting
-     * depth. Only used when {@link #semanticLists} is enabled.
+     * Stack of list wrapper ({@code <ul>} or {@code <ol>}) builders
+     * representing the current list nesting depth. Only used when
+     * {@link #semanticLists} is enabled.
      */
     private Deque<ElementBuilder> ulStack = new ArrayDeque<>();
 
@@ -132,14 +133,20 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
     private int listDepth = -1;
 
     /**
+     * Whether the current list context is ordered ({@code <ol>}) or unordered
+     * ({@code <ul>}). Only meaningful when {@link #ulStack} is non-empty.
+     */
+    private boolean listOrdered;
+
+    /**
      * The most recently created {@code <li>} builder. Used as the parent for
-     * nested {@code <ul>} elements when indent increases.
+     * nested list elements when indent increases.
      */
     private ElementBuilder lastLi;
 
     /**
      * A {@code <li>} builder that has been created but not yet inserted into a
-     * {@code <ul>}. Set in {@link #startBlock} for NLIST and resolved in
+     * list wrapper. Set in {@link #startBlock} for NLIST/OLIST and resolved in
      * {@link #startLine} once the indent is known.
      */
     private ElementBuilder pendingLi;
@@ -148,6 +155,11 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
      * The indent level for the pending list item (from meta).
      */
     private int pendingIndent;
+
+    /**
+     * Whether the pending list item is ordered.
+     */
+    private boolean pendingOrdered;
 
     /**
      * Construct with the root container to build into.
@@ -204,9 +216,16 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
 
     @Override
     public void startBlock(BlockType type) {
-        // Close any active list context when a non-list block starts.
-        if (semanticLists && (type != BlockType.NLIST))
-            closeListContext();
+        // Close any active list context when a non-list block starts, or
+        // when the list type changes (unordered → ordered or vice versa).
+        if (semanticLists) {
+            boolean isList = (type == BlockType.NLIST) || (type == BlockType.OLIST);
+            if (!isList) {
+                closeListContext();
+            } else if (!ulStack.isEmpty() && (listOrdered != (type == BlockType.OLIST))) {
+                closeListContext();
+            }
+        }
 
         IDomInsertableContainer<?> target = currentTarget();
         ElementBuilder el;
@@ -215,13 +234,15 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
                 el = P.$(target);
                 break;
             case NLIST:
+            case OLIST:
                 if (semanticLists) {
                     // Create a detached <li> — it will be inserted into the
-                    // correct <ul> in resolveListItem() once the indent is
-                    // known (from meta).
+                    // correct <ol>/<ul> in resolveListItem() once the indent
+                    // is known (from meta).
                     ElementBuilder li = Custom.$("li");
                     pendingLi = li;
                     pendingIndent = 0;
+                    pendingOrdered = (type == BlockType.OLIST);
                     stack.push(li);
                     firstLineInBlock = true;
                     return;
@@ -408,23 +429,25 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
      ************************************************************************/
 
     /**
-     * Attaches the pending {@code <li>} to the correct {@code <ul>} based on
-     * the indent level. Creates or removes {@code <ul>} nesting as needed.
+     * Attaches the pending {@code <li>} to the correct list wrapper based on
+     * the indent level. Creates or removes nesting as needed.
      */
     private void resolveListItem() {
+        String listTag = pendingOrdered ? "ol" : "ul";
         if (ulStack.isEmpty()) {
-            // First item — create the root <ul> and insert into parent context.
-            ElementBuilder ul = Custom.$("ul");
+            // First item — create the root <ol>/<ul> and insert into parent.
+            ElementBuilder ul = Custom.$(listTag);
             IDomInsertableContainer<?> li = stack.pop();
             currentTarget().insert(ul);
             stack.push(li);
             ulStack.push(ul);
             listDepth = 0;
+            listOrdered = pendingOrdered;
         }
 
-        // Increase nesting: create nested <ul> inside the last <li>.
+        // Increase nesting: create nested <ol>/<ul> inside the last <li>.
         while (listDepth < pendingIndent) {
-            ElementBuilder ul = Custom.$("ul");
+            ElementBuilder ul = Custom.$(listTag);
             if (lastLi != null)
                 lastLi.insert(ul);
             else
@@ -451,6 +474,7 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
     private void closeListContext() {
         ulStack.clear();
         listDepth = -1;
+        listOrdered = false;
         lastLi = null;
         pendingLi = null;
     }

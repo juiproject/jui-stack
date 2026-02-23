@@ -225,6 +225,71 @@ public class MarkdownEventParserTest {
     }
 
     @Test
+    public void testOrderedListEvents() {
+        RecordingHandler handler = parse("1. A\n2. B");
+        handler.assertEvents(
+            "startBlock(OLIST)",
+            "startLine()",
+            "text(A)",
+            "endLine()",
+            "endBlock(OLIST)",
+            "startBlock(OLIST)",
+            "startLine()",
+            "text(B)",
+            "endLine()",
+            "endBlock(OLIST)"
+        );
+    }
+
+    @Test
+    public void testOrderedListWithIntroLine() {
+        // An introductory non-list line followed by ordered items (single
+        // newlines) splits into a PARA for the intro and OLIST items for
+        // the list, matching standard markdown behaviour.
+        RecordingHandler handler = parse(
+            "To construct a proper Hegelian triad for your thesis defense:\n" +
+            "1.  Begin with the abstract universal as your thesis statement.\n" +
+            "2.  Identify the negation that reveals the internal contradiction of the thesis.\n" +
+            "3.  Optionally, synthesize the aufhebung. Note that premature synthesis without genuine negation is automatically rejected.\n\n" +
+            "**Further reading:** [The Phenomenology of Spirit](/hegel/phenom_spirit) | [Science of Logic](/hegel/science_logic)"
+        );
+        handler.assertEvents(
+            // Intro line as PARA.
+            "startBlock(PARA)",
+            "startLine()",
+            "text(To construct a proper Hegelian triad for your thesis defense:)",
+            "endLine()",
+            "endBlock(PARA)",
+            // Ordered list items.
+            "startBlock(OLIST)",
+            "startLine()",
+            "text(Begin with the abstract universal as your thesis statement.)",
+            "endLine()",
+            "endBlock(OLIST)",
+            "startBlock(OLIST)",
+            "startLine()",
+            "text(Identify the negation that reveals the internal contradiction of the thesis.)",
+            "endLine()",
+            "endBlock(OLIST)",
+            "startBlock(OLIST)",
+            "startLine()",
+            "text(Optionally, synthesize the aufhebung. Note that premature synthesis without genuine negation is automatically rejected.)",
+            "endLine()",
+            "endBlock(OLIST)",
+            // Second paragraph — bold + links.
+            "startBlock(PARA)",
+            "startLine()",
+            "formatted(Further reading:, BLD)",
+            "text( )",
+            "link(The Phenomenology of Spirit, /hegel/phenom_spirit)",
+            "text( | )",
+            "link(Science of Logic, /hegel/science_logic)",
+            "endLine()",
+            "endBlock(PARA)"
+        );
+    }
+
+    @Test
     public void testTableEvents() {
         RecordingHandler handler = parse(
             "| H1 | H2 |\n" +

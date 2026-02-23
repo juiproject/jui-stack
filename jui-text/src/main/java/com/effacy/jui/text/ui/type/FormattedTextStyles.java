@@ -20,6 +20,7 @@ public class FormattedTextStyles {
     static {
         BLOCK_STYLES.put (BlockType.PARA, new String[] { "block" });
         BLOCK_STYLES.put (BlockType.NLIST, new String[] { "block", "list_bullet" });
+        BLOCK_STYLES.put (BlockType.OLIST, new String[] { "block", "list_number" });
         BLOCK_STYLES.put (BlockType.H1, new String[] { "block" });
         BLOCK_STYLES.put (BlockType.H2, new String[] { "block" });
         BLOCK_STYLES.put (BlockType.H3, new String[] { "block" });
@@ -151,6 +152,10 @@ public class FormattedTextStyles {
     position: absolute;
     left: 1em;
     content: '\\2022';
+}
+
+.standard > .list_number {
+    padding-left: 1.5em;
 }
 
 .standard > .list_tick {

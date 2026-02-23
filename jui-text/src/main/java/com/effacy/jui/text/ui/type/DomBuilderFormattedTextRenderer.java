@@ -95,8 +95,9 @@ public class DomBuilderFormattedTextRenderer {
     private boolean semanticLists;
 
     /**
-     * Stack of {@code <ul>} builders representing the current list nesting
-     * depth. Only used when {@link #semanticLists} is enabled.
+     * Stack of list wrapper ({@code <ul>} or {@code <ol>}) builders
+     * representing the current list nesting depth. Only used when
+     * {@link #semanticLists} is enabled.
      */
     private Deque<ElementBuilder> ulStack = new ArrayDeque<>();
 
@@ -106,8 +107,14 @@ public class DomBuilderFormattedTextRenderer {
     private int listDepth = -1;
 
     /**
+     * Whether the current list context is ordered ({@code <ol>}) or unordered
+     * ({@code <ul>}). Only meaningful when {@link #ulStack} is non-empty.
+     */
+    private boolean listOrdered;
+
+    /**
      * The most recently created {@code <li>} builder. Used as the parent for
-     * nested {@code <ul>} elements when indent increases.
+     * nested list elements when indent increases.
      */
     private ElementBuilder lastLi;
 
@@ -185,9 +192,16 @@ public class DomBuilderFormattedTextRenderer {
     private void renderBlock(FormattedBlock block) {
         BlockType type = block.getType();
 
-        // Close any active list context when a non-list block starts.
-        if (semanticLists && (type != BlockType.NLIST))
-            closeListContext();
+        // Close any active list context when a non-list block starts, or
+        // when the list type changes (unordered → ordered or vice versa).
+        if (semanticLists) {
+            boolean isList = (type == BlockType.NLIST) || (type == BlockType.OLIST);
+            if (!isList) {
+                closeListContext();
+            } else if (!ulStack.isEmpty() && (listOrdered != (type == BlockType.OLIST))) {
+                closeListContext();
+            }
+        }
 
         ElementBuilder el;
         switch (type) {
@@ -213,6 +227,7 @@ public class DomBuilderFormattedTextRenderer {
                 renderLines(block, el);
                 break;
             case NLIST:
+            case OLIST:
                 if (semanticLists) {
                     renderSemanticListItem(block);
                 } else {
@@ -285,16 +300,19 @@ public class DomBuilderFormattedTextRenderer {
 
     private void renderSemanticListItem(FormattedBlock block) {
         int indent = block.getIndent();
+        boolean ordered = (block.getType() == BlockType.OLIST);
+        String listTag = ordered ? "ol" : "ul";
 
         if (ulStack.isEmpty()) {
-            ElementBuilder ul = Custom.$(root, "ul");
+            ElementBuilder ul = Custom.$(root, listTag);
             ulStack.push(ul);
             listDepth = 0;
+            listOrdered = ordered;
         }
 
-        // Increase nesting: create nested <ul> inside the last <li>.
+        // Increase nesting: create nested <ol>/<ul> inside the last <li>.
         while (listDepth < indent) {
-            ElementBuilder ul = Custom.$("ul");
+            ElementBuilder ul = Custom.$(listTag);
             if (lastLi != null)
                 lastLi.insert(ul);
             else
@@ -473,6 +491,7 @@ public class DomBuilderFormattedTextRenderer {
     private void closeListContext() {
         ulStack.clear();
         listDepth = -1;
+        listOrdered = false;
         lastLi = null;
     }
 }

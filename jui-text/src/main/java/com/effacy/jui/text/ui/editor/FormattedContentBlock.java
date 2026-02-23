@@ -344,7 +344,7 @@ public abstract class FormattedContentBlock extends Block implements IFormattedC
 
     @Override
     public boolean canMerge(Block source) {
-        return source.type ().is (BlockType.PARA, BlockType.H1, BlockType.H2, BlockType.H3, BlockType.NLIST);
+        return source.type ().is (BlockType.PARA, BlockType.H1, BlockType.H2, BlockType.H3, BlockType.NLIST, BlockType.OLIST);
     }
 
     /**

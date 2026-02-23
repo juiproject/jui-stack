@@ -169,15 +169,32 @@ public class MarkdownEventParser {
             } else if (isListBlock(lines)) {
                 emitList(handler, lines, partialBlock);
             } else {
-                handler.startBlock(BlockType.PARA);
-                for (int l = 0; l < lines.length; l++) {
-                    boolean partialLine = partialBlock && (l == lines.length - 1);
-                    handler.startLine();
-                    if (!lines[l].isEmpty())
-                        emitLineContent(handler, lines[l], partialLine);
-                    handler.endLine();
+                // Check for a list starting mid-paragraph (e.g. intro text
+                // followed by list items without a blank line separator).
+                int listStart = findListTransition(lines);
+                if (listStart > 0) {
+                    handler.startBlock(BlockType.PARA);
+                    for (int l = 0; l < listStart; l++) {
+                        handler.startLine();
+                        if (!lines[l].isEmpty())
+                            emitLineContent(handler, lines[l], false);
+                        handler.endLine();
+                    }
+                    handler.endBlock(BlockType.PARA);
+                    String[] listLines = new String[lines.length - listStart];
+                    System.arraycopy(lines, listStart, listLines, 0, listLines.length);
+                    emitList(handler, listLines, partialBlock);
+                } else {
+                    handler.startBlock(BlockType.PARA);
+                    for (int l = 0; l < lines.length; l++) {
+                        boolean partialLine = partialBlock && (l == lines.length - 1);
+                        handler.startLine();
+                        if (!lines[l].isEmpty())
+                            emitLineContent(handler, lines[l], partialLine);
+                        handler.endLine();
+                    }
+                    handler.endBlock(BlockType.PARA);
                 }
-                handler.endBlock(BlockType.PARA);
             }
         }
     }
@@ -212,6 +229,34 @@ public class MarkdownEventParser {
     /************************************************************************
      * List.
      ************************************************************************/
+
+    /**
+     * Finds the index of the first line that starts a list tail — i.e. a list
+     * item where all subsequent non-empty lines are also list items. Returns
+     * {@code -1} if no such transition exists. Starts scanning at index 1 so
+     * that a block whose first line is already a list item (handled by
+     * {@link #isListBlock}) is not matched here.
+     */
+    private static int findListTransition(String[] lines) {
+        for (int i = 1; i < lines.length; i++) {
+            if (lines[i].trim().isEmpty())
+                continue;
+            if (!isListItem(lines[i]))
+                continue;
+            boolean allList = true;
+            for (int j = i + 1; j < lines.length; j++) {
+                if (lines[j].trim().isEmpty())
+                    continue;
+                if (!isListItem(lines[j])) {
+                    allList = false;
+                    break;
+                }
+            }
+            if (allList)
+                return i;
+        }
+        return -1;
+    }
 
     private static boolean isListBlock(String[] lines) {
         if ((lines == null) || (lines.length == 0))
@@ -255,21 +300,25 @@ public class MarkdownEventParser {
             boolean partialLine = partial && (l == lines.length - 1);
             String trimmed = lines[l].trim();
             String content = "";
+            boolean ordered = false;
 
             char first = trimmed.charAt(0);
             if ((first == '-') || (first == '*') || (first == '+')) {
                 content = trimmed.substring(trimmed.indexOf(' ') + 1);
             } else {
                 int dotIndex = trimmed.indexOf('.');
-                if (dotIndex > 0)
+                if (dotIndex > 0) {
                     content = trimmed.substring(dotIndex + 1).trim();
+                    ordered = true;
+                }
             }
 
-            handler.startBlock(BlockType.NLIST);
+            BlockType type = ordered ? BlockType.OLIST : BlockType.NLIST;
+            handler.startBlock(type);
             handler.startLine();
             emitLineContent(handler, content, partialLine);
             handler.endLine();
-            handler.endBlock(BlockType.NLIST);
+            handler.endBlock(type);
         }
     }
 

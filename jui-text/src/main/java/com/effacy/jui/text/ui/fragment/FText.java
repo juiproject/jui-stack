@@ -124,10 +124,12 @@ public class FText extends Fragment<FText> {
 
     private void _build(ContainerBuilder<?> parent) {
         text.getBlocks ().forEach (blk -> {
-            if (blk.typeIs (BlockType.PARA, BlockType.NLIST)) {
+            if (blk.typeIs (BlockType.PARA, BlockType.NLIST, BlockType.OLIST)) {
                 P.$ (parent).$ (p -> {
                     if (blk.typeIs (BlockType.NLIST))
                         p.style ("list_bullet");
+                    if (blk.typeIs (BlockType.OLIST))
+                        p.style ("list_number");
                     if (blk.getIndent() > 0)
                         p.style ("indent" + blk.getIndent ());
                     insert(p, blk.getLines ());

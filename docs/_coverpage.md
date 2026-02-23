@@ -1,6 +1,6 @@
 ![logo](images/logo.png)
 
-# Java UI (JUI) <small>0.2.4</small>
+# Java UI (JUI) <small>0.2.5</small>
 
 > A platform for building Web-based UI's in Java
 

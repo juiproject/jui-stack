@@ -545,13 +545,13 @@ public class MarkdownParserTest {
         // Each list item is now a separate block
         assertEquals(3, result.getBlocks().size());
 
-        assertEquals(BlockType.NLIST, result.getBlocks().get(0).getType());
+        assertEquals(BlockType.OLIST, result.getBlocks().get(0).getType());
         assertEquals("First item", result.getBlocks().get(0).getLines().get(0).getText());
 
-        assertEquals(BlockType.NLIST, result.getBlocks().get(1).getType());
+        assertEquals(BlockType.OLIST, result.getBlocks().get(1).getType());
         assertEquals("Second item", result.getBlocks().get(1).getLines().get(0).getText());
 
-        assertEquals(BlockType.NLIST, result.getBlocks().get(2).getType());
+        assertEquals(BlockType.OLIST, result.getBlocks().get(2).getType());
         assertEquals("Third item", result.getBlocks().get(2).getLines().get(0).getText());
     }
 
@@ -662,13 +662,13 @@ public class MarkdownParserTest {
         // Each list item is now a separate block
         assertEquals(3, result.getBlocks().size());
 
-        assertEquals(BlockType.NLIST, result.getBlocks().get(0).getType());
+        assertEquals(BlockType.OLIST, result.getBlocks().get(0).getType());
         assertEquals("First", result.getBlocks().get(0).getLines().get(0).getText());
 
-        assertEquals(BlockType.NLIST, result.getBlocks().get(1).getType());
+        assertEquals(BlockType.OLIST, result.getBlocks().get(1).getType());
         assertEquals("Fifth", result.getBlocks().get(1).getLines().get(0).getText());
 
-        assertEquals(BlockType.NLIST, result.getBlocks().get(2).getType());
+        assertEquals(BlockType.OLIST, result.getBlocks().get(2).getType());
         assertEquals("Tenth", result.getBlocks().get(2).getLines().get(0).getText());
     }
 

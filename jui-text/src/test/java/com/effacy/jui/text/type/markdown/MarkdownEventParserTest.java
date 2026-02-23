@@ -290,6 +290,77 @@ public class MarkdownEventParserTest {
     }
 
     @Test
+    public void testOrderedListWithTrailingContinuation() {
+        // Single newline after the last list item — the trailing text is
+        // part of the second list item (no blank line to break the block).
+        RecordingHandler handler = parse(
+            "To prepare a proper cup of tea:\n" +
+            "1.  Boil fresh water and warm the **teapot** by rinsing it (this step is often skipped but matters).\n" +
+            "2.  Steep for **five** minutes.\n" +
+            "Removing the leaves too early produces a weak and disappointing brew.\n"
+        );
+        handler.assertEvents(
+            "startBlock(PARA)",
+            "startLine()",
+            "text(To prepare a proper cup of tea:)",
+            "endLine()",
+            "endBlock(PARA)",
+            "startBlock(OLIST)",
+            "startLine()",
+            "text(Boil fresh water and warm the )",
+            "formatted(teapot, BLD)",
+            "text( by rinsing it (this step is often skipped but matters).)",
+            "endLine()",
+            "endBlock(OLIST)",
+            "startBlock(OLIST)",
+            "startLine()",
+            "text(Steep for )",
+            "formatted(five, BLD)",
+            "text( minutes. Removing the leaves too early produces a weak and disappointing brew.)",
+            "endLine()",
+            "endBlock(OLIST)"
+        );
+    }
+
+    @Test
+    public void testOrderedListWithTrailingParagraph() {
+        // Double newline after the last list item — the trailing text
+        // becomes a separate paragraph.
+        RecordingHandler handler = parse(
+            "To prepare a proper cup of tea:\n" +
+            "1.  Boil fresh water and warm the **teapot** by rinsing it (this step is often skipped but matters).\n" +
+            "2.  Steep for **five** minutes.\n\n" +
+            "Removing the leaves too early produces a weak and disappointing brew.\n"
+        );
+        handler.assertEvents(
+            "startBlock(PARA)",
+            "startLine()",
+            "text(To prepare a proper cup of tea:)",
+            "endLine()",
+            "endBlock(PARA)",
+            "startBlock(OLIST)",
+            "startLine()",
+            "text(Boil fresh water and warm the )",
+            "formatted(teapot, BLD)",
+            "text( by rinsing it (this step is often skipped but matters).)",
+            "endLine()",
+            "endBlock(OLIST)",
+            "startBlock(OLIST)",
+            "startLine()",
+            "text(Steep for )",
+            "formatted(five, BLD)",
+            "text( minutes.)",
+            "endLine()",
+            "endBlock(OLIST)",
+            "startBlock(PARA)",
+            "startLine()",
+            "text(Removing the leaves too early produces a weak and disappointing brew.)",
+            "endLine()",
+            "endBlock(PARA)"
+        );
+    }
+
+    @Test
     public void testTableEvents() {
         RecordingHandler handler = parse(
             "| H1 | H2 |\n" +

@@ -181,8 +181,30 @@ public class MarkdownEventParser {
                         handler.endLine();
                     }
                     handler.endBlock(BlockType.PARA);
-                    String[] listLines = new String[lines.length - listStart];
+
+                    // Find where the contiguous list items end.
+                    int listEnd = lines.length;
+                    for (int l = listStart; l < lines.length; l++) {
+                        if (lines[l].trim().isEmpty())
+                            continue;
+                        if (!isListItem(lines[l])) {
+                            listEnd = l;
+                            break;
+                        }
+                    }
+
+                    // Copy list lines; append any trailing non-list continuation
+                    // to the last list item (single-newline continuation).
+                    String[] listLines = new String[listEnd - listStart];
                     System.arraycopy(lines, listStart, listLines, 0, listLines.length);
+                    if (listEnd < lines.length) {
+                        StringBuilder continuation = new StringBuilder(listLines[listLines.length - 1]);
+                        for (int l = listEnd; l < lines.length; l++) {
+                            if (!lines[l].trim().isEmpty())
+                                continuation.append(" ").append(lines[l].trim());
+                        }
+                        listLines[listLines.length - 1] = continuation.toString();
+                    }
                     emitList(handler, listLines, partialBlock);
                 } else {
                     handler.startBlock(BlockType.PARA);
@@ -231,10 +253,13 @@ public class MarkdownEventParser {
      ************************************************************************/
 
     /**
-     * Finds the index of the first line that starts a list tail — i.e. a list
-     * item where all subsequent non-empty lines are also list items. Returns
-     * {@code -1} if no such transition exists. Starts scanning at index 1 so
-     * that a block whose first line is already a list item (handled by
+     * Finds the index of the first line that starts a contiguous list block
+     * within a paragraph. The list items must form an uninterrupted run —
+     * trailing non-list lines after the last list item are acceptable (they
+     * will be merged into the last item by the caller), but non-list lines
+     * interleaved among list items disqualify the match. Returns {@code -1}
+     * if no transition exists. Starts scanning at index 1 so that a block
+     * whose first line is already a list item (handled by
      * {@link #isListBlock}) is not matched here.
      */
     private static int findListTransition(String[] lines) {
@@ -243,16 +268,21 @@ public class MarkdownEventParser {
                 continue;
             if (!isListItem(lines[i]))
                 continue;
-            boolean allList = true;
+            boolean contiguous = true;
+            boolean seenNonList = false;
             for (int j = i + 1; j < lines.length; j++) {
                 if (lines[j].trim().isEmpty())
                     continue;
-                if (!isListItem(lines[j])) {
-                    allList = false;
-                    break;
+                if (isListItem(lines[j])) {
+                    if (seenNonList) {
+                        contiguous = false;
+                        break;
+                    }
+                } else {
+                    seenNonList = true;
                 }
             }
-            if (allList)
+            if (contiguous)
                 return i;
         }
         return -1;

@@ -591,25 +591,22 @@ public class MyComponent extends Component<Button.Config> {
 This example declares a number of standard styles within the class. These can be created outside of the class (for customisation of existing components) along the following lines.
 
 ```java
-public class MyComponentStyles {
+@CssResource({  
+    IComponentCSS.COMPONENT_CSS,
+    ...
+})
+public abstract class MyComponentStyles implements MyComponent.ILocalCSS {
 
-    public static final MyComponent.Style CUSTOM1 = MyComponent.Style.create (Custom1CSS.instance ());
+    public static final MyComponent.Style CUSTOM1 = MyComponent.Style.create (MyComponentStyles.instance ());
 
-    @CssResource({  
-        IComponentCSS.COMPONENT_CSS,
-        ...
-    })
-    public static abstract class Custom1CSS implements ILocalCSS {
+    private static MyComponent.ILocalCSS STYLES;
 
-        private static Custom1CSS STYLES;
-
-        public static ILocalCSS instance() {
-            if (STYLES == null) {
-                STYLES = (Custom1CSS) GWT.create (Custom1CSS.class);
-                STYLES.ensureInjected ();
-            }
-            return STYLES;
+    public static SelectionGroupControl.ILocalCSS instance() {
+        if (STYLES == null) {
+            STYLES = (MyComponentStyles) GWT.create (MyComponentStyles.class);
+            STYLES.ensureInjected ();
         }
+        return STYLES;
     }
 }
 ```

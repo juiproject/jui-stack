@@ -240,6 +240,15 @@ public class Editor extends SimpleComponent {
             syncSelectionFromDom();
             applyTransaction(Commands.toggleBlockType(state, BlockType.OLIST));
         }));
+
+        // Separator.
+        toolbarSeparator(toolbar);
+
+        // Table insertion.
+        toolbarButton(toolbar, "\u229E", "Insert Table", () -> {
+            syncSelectionFromDom();
+            applyTransaction(Commands.insertTable(state, 2, 3));
+        });
     }
 
     /**
@@ -318,6 +327,9 @@ public class Editor extends SimpleComponent {
      * Creates a DOM element for a single block.
      */
     private Element renderBlock(FormattedBlock block, int index) {
+        if (block.getType() == BlockType.TABLE)
+            return renderTable(block, index);
+
         Element el = createBlockElement(block.getType());
         el.setAttribute("data-block-index", String.valueOf(index));
         el.classList.add(styles().block());
@@ -346,6 +358,99 @@ public class Editor extends SimpleComponent {
             }
         }
         return el;
+    }
+
+    /**
+     * Renders a TABLE block as a non-editable wrapper containing a
+     * {@code <table>} element and hover controls for adding rows/columns.
+     */
+    private Element renderTable(FormattedBlock table, int index) {
+        Element wrapper = DomGlobal.document.createElement("div");
+        wrapper.classList.add(styles().tableWrapper());
+        wrapper.setAttribute("contenteditable", "false");
+        wrapper.setAttribute("data-block-index", String.valueOf(index));
+
+        // Read metadata.
+        int headers = 0;
+        String headersStr = table.meta("headers");
+        if (headersStr != null) {
+            try {
+                headers = Integer.parseInt(headersStr);
+            } catch (NumberFormatException e) {
+                // Ignore.
+            }
+        }
+        String alignStr = table.meta("align");
+        String[] align = (alignStr != null) ? alignStr.split(",") : null;
+
+        // Build <table>.
+        Element tableEl = DomGlobal.document.createElement("table");
+        tableEl.classList.add(styles().table());
+        int rowIndex = 0;
+        for (FormattedBlock row : table.getBlocks()) {
+            if (row.getType() != BlockType.TROW)
+                continue;
+            Element tr = DomGlobal.document.createElement("tr");
+            int cellIndex = 0;
+            for (FormattedBlock cell : row.getBlocks()) {
+                if (cell.getType() != BlockType.TCELL)
+                    continue;
+                boolean isHeader = (rowIndex < headers);
+                Element td = DomGlobal.document.createElement(isHeader ? "th" : "td");
+                td.classList.add(styles().tableCell());
+                if ((align != null) && (cellIndex < align.length)) {
+                    if ("C".equals(align[cellIndex].trim()))
+                        ((elemental2.dom.HTMLElement) td).style.set("text-align", "center");
+                    else if ("R".equals(align[cellIndex].trim()))
+                        ((elemental2.dom.HTMLElement) td).style.set("text-align", "right");
+                }
+                // Render cell content.
+                List<FormattedLine> lines = cell.getLines();
+                if ((lines == null) || lines.isEmpty()) {
+                    td.innerHTML = "&nbsp;";
+                } else {
+                    boolean hasContent = false;
+                    for (int i = 0; i < lines.size(); i++) {
+                        if (lines.get(i).length() > 0)
+                            hasContent = true;
+                        if (i > 0)
+                            td.appendChild(DomGlobal.document.createElement("br"));
+                        renderLine(td, lines.get(i));
+                    }
+                    if (!hasContent)
+                        td.innerHTML = "&nbsp;";
+                }
+                tr.appendChild(td);
+                cellIndex++;
+            }
+            tableEl.appendChild(tr);
+            rowIndex++;
+        }
+        wrapper.appendChild(tableEl);
+
+        // Add column control (right edge).
+        Element addCol = DomGlobal.document.createElement("div");
+        addCol.classList.add(styles().tableAddCol());
+        addCol.textContent = "+";
+        addCol.addEventListener("mousedown", evt -> {
+            evt.preventDefault();
+            evt.stopPropagation();
+            applyTransaction(Commands.addTableColumn(state, index));
+        });
+        wrapper.appendChild(addCol);
+
+        // Add row control (bottom edge).
+        Element addRow = DomGlobal.document.createElement("div");
+        addRow.classList.add(styles().tableAddRow());
+        addRow.textContent = "+";
+        addRow.addEventListener("mousedown", evt -> {
+            evt.preventDefault();
+            evt.stopPropagation();
+            applyTransaction(Commands.addTableRow(state, index));
+        });
+        wrapper.appendChild(addRow);
+
+        return wrapper;
     }
 
     /**
@@ -779,6 +884,16 @@ public class Editor extends SimpleComponent {
         String listBullet();
 
         String listNumber();
+
+        String tableWrapper();
+
+        String table();
+
+        String tableCell();
+
+        String tableAddCol();
+
+        String tableAddRow();
     }
 
     @CssResource(value = {
@@ -901,6 +1016,72 @@ public class Editor extends SimpleComponent {
             border-radius: 4px;
             font-size: 85%;
             padding: 0.2em 0.4em;
+        }
+        .tableWrapper {
+            position: relative;
+            margin: 0.5em 0;
+            padding-right: 24px;
+            padding-bottom: 24px;
+            user-select: none;
+        }
+        .table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .tableCell {
+            border: 1px solid #ddd;
+            padding: 6px 10px;
+            min-width: 40px;
+            min-height: 1.4em;
+            vertical-align: top;
+        }
+        .tableAddCol {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 24px;
+            width: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.15s;
+            background: #f0f0f0;
+            border-radius: 0 4px 4px 0;
+            color: #666;
+            font-size: 1.1em;
+        }
+        .tableWrapper:hover .tableAddCol {
+            opacity: 1;
+        }
+        .tableAddCol:hover {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        .tableAddRow {
+            position: absolute;
+            left: 0;
+            right: 24px;
+            bottom: 0;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.15s;
+            background: #f0f0f0;
+            border-radius: 0 0 4px 4px;
+            color: #666;
+            font-size: 1.1em;
+        }
+        .tableWrapper:hover .tableAddRow {
+            opacity: 1;
+        }
+        .tableAddRow:hover {
+            background: #dbeafe;
+            color: #1d4ed8;
         }
     """)
     public static abstract class LocalCSS implements ILocalCSS {

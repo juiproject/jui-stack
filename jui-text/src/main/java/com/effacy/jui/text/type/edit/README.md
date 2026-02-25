@@ -1,12 +1,16 @@
 # Package
 
-Transaction-based state management for the rich text editor. Contains the editing pipeline — steps (atomic document mutations), transactions (grouped steps applied atomically), position mapping, selection tracking, undo/redo history, and high-level editing commands. The `step/` subpackage holds the 12 concrete step implementations.
+Transaction-based state management for the rich text editor. Contains the editing pipeline — steps (atomic document mutations), transactions (grouped steps applied atomically), position mapping, selection tracking, undo/redo history, and high-level editing commands.
+
+The [`step`](./step/) subpackage holds the 12 concrete step implementations.
+
+# Design
 
 ## Overview
 
 This package implements a ProseMirror-inspired transaction system for mutating `FormattedText` documents. All document changes flow through immutable transactions composed of atomic steps, giving deterministic undo/redo and consistent position tracking.
 
-## Architecture overview
+## Architecture
 
 ```
 Commands  ──builds──▶  Transaction  ──contains──▶  Step(s)

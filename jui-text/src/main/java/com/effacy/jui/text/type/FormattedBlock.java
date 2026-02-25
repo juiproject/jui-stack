@@ -737,6 +737,11 @@ public class FormattedBlock {
         FormattedBlock blk = new FormattedBlock (type);
         blk.indent = indent;
         getLines ().forEach (line -> blk.add (line));
+        if (blocks != null)
+            blocks.forEach (child -> blk.getBlocks ().add (child.clone ()));
+        if (meta != null)
+            blk.getMeta ().putAll (meta);
+        blk.content = content;
         return blk;
     }
 

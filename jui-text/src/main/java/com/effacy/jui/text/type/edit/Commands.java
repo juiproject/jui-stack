@@ -1591,4 +1591,163 @@ public final class Commands {
         }
         return pos;
     }
+
+    /************************************************************************
+     * Table commands.
+     ************************************************************************/
+
+    /**
+     * Builds an empty table cell block with a single empty line.
+     */
+    private static FormattedBlock emptyCell() {
+        FormattedBlock cell = new FormattedBlock(BlockType.TCELL);
+        cell.line("");
+        return cell;
+    }
+
+    /**
+     * Builds a table row with the given number of empty cells.
+     */
+    private static FormattedBlock emptyRow(int cols) {
+        FormattedBlock row = new FormattedBlock(BlockType.TROW);
+        for (int i = 0; i < cols; i++)
+            row.getBlocks().add(emptyCell());
+        return row;
+    }
+
+    /**
+     * Inserts a new table at the cursor position. The table has the given
+     * number of rows and columns with empty cells. An empty paragraph is
+     * inserted after the table so the cursor can be placed below it.
+     *
+     * @param state
+     *              the current editor state.
+     * @param rows
+     *              the number of rows.
+     * @param cols
+     *              the number of columns.
+     * @return the transaction, or {@code null} if the arguments are invalid.
+     */
+    public static Transaction insertTable(EditorState state, int rows, int cols) {
+        if ((rows <= 0) || (cols <= 0))
+            return null;
+        Selection sel = state.selection();
+        int blockIdx = sel.isCursor() ? sel.anchorBlock() : sel.fromBlock();
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+
+        // Build the table structure.
+        FormattedBlock table = new FormattedBlock(BlockType.TABLE);
+        table.meta("columns", String.valueOf(cols));
+        for (int r = 0; r < rows; r++)
+            table.getBlocks().add(emptyRow(cols));
+
+        Transaction tr = Transaction.create();
+
+        // If range selection, delete it first.
+        if (!sel.isCursor())
+            addDeleteRangeSteps(tr, state);
+
+        // Insert the table after the current block.
+        tr.step(new InsertBlockStep(blockIdx + 1, table));
+
+        // Insert an empty paragraph after the table for cursor placement.
+        FormattedBlock trailingPara = new FormattedBlock(BlockType.PARA);
+        trailingPara.line("");
+        tr.step(new InsertBlockStep(blockIdx + 2, trailingPara));
+
+        // Place cursor on the trailing paragraph.
+        tr.setSelection(Selection.cursor(blockIdx + 2, 0));
+        return tr;
+    }
+
+    /**
+     * Adds a new row to the table at the given block index. The new row is
+     * appended at the bottom with the same number of columns.
+     *
+     * @param state
+     *              the current editor state.
+     * @param tableBlockIndex
+     *                        the index of the TABLE block.
+     * @return the transaction, or {@code null} if the block is not a table.
+     */
+    public static Transaction addTableRow(EditorState state, int tableBlockIndex) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((tableBlockIndex < 0) || (tableBlockIndex >= blocks.size()))
+            return null;
+        FormattedBlock table = blocks.get(tableBlockIndex);
+        if (table.getType() != BlockType.TABLE)
+            return null;
+
+        // Determine column count from metadata or first row.
+        int cols = 3;
+        String colsMeta = table.meta("columns");
+        if (colsMeta != null) {
+            try {
+                cols = Integer.parseInt(colsMeta);
+            } catch (NumberFormatException e) {
+                // Fall back to counting cells in first row.
+                if (!table.getBlocks().isEmpty())
+                    cols = table.getBlocks().get(0).getBlocks().size();
+            }
+        }
+
+        FormattedBlock clone = table.clone();
+        clone.getBlocks().add(emptyRow(cols));
+
+        Transaction tr = Transaction.create();
+        tr.step(new ReplaceBlockStep(tableBlockIndex, clone));
+        tr.setSelection(state.selection());
+        return tr;
+    }
+
+    /**
+     * Adds a new column to the table at the given block index. A new empty
+     * cell is appended to each row.
+     *
+     * @param state
+     *              the current editor state.
+     * @param tableBlockIndex
+     *                        the index of the TABLE block.
+     * @return the transaction, or {@code null} if the block is not a table.
+     */
+    public static Transaction addTableColumn(EditorState state, int tableBlockIndex) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((tableBlockIndex < 0) || (tableBlockIndex >= blocks.size()))
+            return null;
+        FormattedBlock table = blocks.get(tableBlockIndex);
+        if (table.getType() != BlockType.TABLE)
+            return null;
+
+        FormattedBlock clone = table.clone();
+
+        // Add one cell to each row.
+        for (FormattedBlock row : clone.getBlocks()) {
+            if (row.getType() == BlockType.TROW)
+                row.getBlocks().add(emptyCell());
+        }
+
+        // Update columns metadata.
+        int cols = 3;
+        String colsMeta = clone.meta("columns");
+        if (colsMeta != null) {
+            try {
+                cols = Integer.parseInt(colsMeta);
+            } catch (NumberFormatException e) {
+                // Ignore.
+            }
+        }
+        clone.meta("columns", String.valueOf(cols + 1));
+
+        // Extend alignment metadata if present.
+        String align = clone.meta("align");
+        if (align != null)
+            clone.meta("align", align + ",L");
+
+        Transaction tr = Transaction.create();
+        tr.step(new ReplaceBlockStep(tableBlockIndex, clone));
+        tr.setSelection(state.selection());
+        return tr;
+    }
 }

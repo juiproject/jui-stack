@@ -76,6 +76,16 @@ public class Editor extends SimpleComponent {
      */
     private boolean rendering;
 
+    /**
+     * Toolbar button elements keyed by format type, for active-state tracking.
+     */
+    private Map<FormatType, Element> formatButtons = new HashMap<>();
+
+    /**
+     * Toolbar button elements keyed by block type, for active-state tracking.
+     */
+    private Map<BlockType, Element> blockTypeButtons = new HashMap<>();
+
     /************************************************************************
      * Construction.
      ************************************************************************/
@@ -164,79 +174,81 @@ public class Editor extends SimpleComponent {
      */
     private void buildToolbar(Element toolbar) {
         // Format toggles.
-        toolbarButton(toolbar, "B", "Bold (Ctrl+B)", () -> {
+        formatButtons.put(FormatType.BLD, toolbarButton(toolbar, "B", "Bold (Ctrl+B)", () -> {
             syncSelectionFromDom();
             applyTransaction(Commands.toggleFormat(state, FormatType.BLD));
-        });
-        toolbarButton(toolbar, "I", "Italic (Ctrl+I)", () -> {
+        }));
+        formatButtons.put(FormatType.ITL, toolbarButton(toolbar, "I", "Italic (Ctrl+I)", () -> {
             syncSelectionFromDom();
             applyTransaction(Commands.toggleFormat(state, FormatType.ITL));
-        });
-        toolbarButton(toolbar, "U", "Underline (Ctrl+U)", () -> {
+        }));
+        formatButtons.put(FormatType.UL, toolbarButton(toolbar, "U", "Underline (Ctrl+U)", () -> {
             syncSelectionFromDom();
             applyTransaction(Commands.toggleFormat(state, FormatType.UL));
-        });
-        toolbarButton(toolbar, "S", "Strikethrough", () -> {
+        }));
+        formatButtons.put(FormatType.STR, toolbarButton(toolbar, "S", "Strikethrough", () -> {
             syncSelectionFromDom();
             applyTransaction(Commands.toggleFormat(state, FormatType.STR));
-        });
-        toolbarButton(toolbar, "x\u2082", "Subscript", () -> {
+        }));
+        formatButtons.put(FormatType.SUB, toolbarButton(toolbar, "x\u2082", "Subscript", () -> {
             syncSelectionFromDom();
             applyTransaction(Commands.toggleFormat(state, FormatType.SUB));
-        });
-        toolbarButton(toolbar, "x\u00B2", "Superscript", () -> {
+        }));
+        formatButtons.put(FormatType.SUP, toolbarButton(toolbar, "x\u00B2", "Superscript", () -> {
             syncSelectionFromDom();
             applyTransaction(Commands.toggleFormat(state, FormatType.SUP));
-        });
-        toolbarButton(toolbar, "<>", "Code", () -> {
+        }));
+        formatButtons.put(FormatType.CODE, toolbarButton(toolbar, "<>", "Code", () -> {
             syncSelectionFromDom();
             applyTransaction(Commands.toggleFormat(state, FormatType.CODE));
-        });
-        toolbarButton(toolbar, "H", "Highlight", () -> {
+        }));
+        formatButtons.put(FormatType.HL, toolbarButton(toolbar, "H", "Highlight", () -> {
             syncSelectionFromDom();
             applyTransaction(Commands.toggleFormat(state, FormatType.HL));
-        });
+        }));
 
         // Separator.
         toolbarSeparator(toolbar);
 
         // Block type controls.
-        toolbarButton(toolbar, "H1", "Heading 1", () -> {
+        blockTypeButtons.put(BlockType.H1, toolbarButton(toolbar, "H1", "Heading 1", () -> {
             syncSelectionFromDom();
             applyTransaction(Commands.setBlockType(state, BlockType.H1));
-        });
-        toolbarButton(toolbar, "H2", "Heading 2", () -> {
+        }));
+        blockTypeButtons.put(BlockType.H2, toolbarButton(toolbar, "H2", "Heading 2", () -> {
             syncSelectionFromDom();
             applyTransaction(Commands.setBlockType(state, BlockType.H2));
-        });
-        toolbarButton(toolbar, "H3", "Heading 3", () -> {
+        }));
+        blockTypeButtons.put(BlockType.H3, toolbarButton(toolbar, "H3", "Heading 3", () -> {
             syncSelectionFromDom();
             applyTransaction(Commands.setBlockType(state, BlockType.H3));
-        });
-        toolbarButton(toolbar, "\u00B6", "Paragraph", () -> {
+        }));
+        blockTypeButtons.put(BlockType.PARA, toolbarButton(toolbar, "\u00B6", "Paragraph", () -> {
             syncSelectionFromDom();
             applyTransaction(Commands.setBlockType(state, BlockType.PARA));
-        });
+        }));
 
         // Separator.
         toolbarSeparator(toolbar);
 
         // List controls.
-        toolbarButton(toolbar, "\u2022", "Bullet List", () -> {
+        blockTypeButtons.put(BlockType.NLIST, toolbarButton(toolbar, "\u2022", "Bullet List", () -> {
             syncSelectionFromDom();
             applyTransaction(Commands.toggleBlockType(state, BlockType.NLIST));
-        });
-        toolbarButton(toolbar, "1.", "Numbered List", () -> {
+        }));
+        blockTypeButtons.put(BlockType.OLIST, toolbarButton(toolbar, "1.", "Numbered List", () -> {
             syncSelectionFromDom();
             applyTransaction(Commands.toggleBlockType(state, BlockType.OLIST));
-        });
+        }));
     }
 
     /**
      * Creates a single toolbar button. Uses {@code mousedown} with
      * {@code preventDefault} to avoid stealing focus from the editor.
+     *
+     * @return the created button element.
      */
-    private void toolbarButton(Element parent, String label, String tooltip, Runnable action) {
+    private Element toolbarButton(Element parent, String label, String tooltip, Runnable action) {
         Element btn = DomGlobal.document.createElement("button");
         btn.classList.add(styles().tbtn());
         btn.textContent = label;
@@ -246,6 +258,7 @@ public class Editor extends SimpleComponent {
             action.run();
         });
         parent.appendChild(btn);
+        return btn;
     }
 
     /**
@@ -298,6 +311,7 @@ public class Editor extends SimpleComponent {
             rendering = false;
         }
         restoreSelection();
+        updateToolbarState();
     }
 
     /**
@@ -410,6 +424,67 @@ public class Editor extends SimpleComponent {
         if ((sel[0] < 0) || (sel[0] >= numBlocks) || (sel[2] < 0) || (sel[2] >= numBlocks))
             return;
         state.setSelection(new Selection(sel[0], sel[1], sel[2], sel[3]));
+        updateToolbarState();
+    }
+
+    /**
+     * Updates toolbar button active states to reflect the current selection.
+     * Block type buttons highlight based on the anchor block's type; format
+     * buttons highlight based on whether the format is active at the cursor
+     * or across the entire range selection.
+     */
+    private void updateToolbarState() {
+        Selection sel = state.selection();
+        int blockIdx = sel.anchorBlock();
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return;
+        FormattedBlock blk = blocks.get(blockIdx);
+
+        // Block type buttons — one active at a time.
+        for (Map.Entry<BlockType, Element> entry : blockTypeButtons.entrySet()) {
+            if (blk.getType() == entry.getKey())
+                entry.getValue().classList.add(styles().tbtnActive());
+            else
+                entry.getValue().classList.remove(styles().tbtnActive());
+        }
+
+        // Format buttons — based on format at cursor or across selection.
+        for (Map.Entry<FormatType, Element> entry : formatButtons.entrySet()) {
+            if (isFormatActive(sel, entry.getKey()))
+                entry.getValue().classList.add(styles().tbtnActive());
+            else
+                entry.getValue().classList.remove(styles().tbtnActive());
+        }
+    }
+
+    /**
+     * Checks whether a format type is active at the current selection. For a
+     * cursor, checks the character immediately before the cursor. For a range,
+     * checks whether the entire range has the format.
+     */
+    private boolean isFormatActive(Selection sel, FormatType type) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if (sel.isCursor()) {
+            int block = sel.anchorBlock();
+            int offset = sel.anchorOffset();
+            FormattedBlock blk = blocks.get(block);
+            if (offset > 0)
+                return blk.hasFormat(offset - 1, 1, type);
+            if (Positions.contentSize(blk) > 0)
+                return blk.hasFormat(0, 1, type);
+            return false;
+        }
+        int fromBlock = sel.fromBlock();
+        int toBlock = sel.toBlock();
+        for (int i = fromBlock; i <= toBlock; i++) {
+            int start = (i == fromBlock) ? sel.fromOffset() : 0;
+            int end = (i == toBlock) ? sel.toOffset() : Positions.contentSize(blocks.get(i));
+            int len = end - start;
+            if ((len > 0) && !blocks.get(i).hasFormat(start, len, type))
+                return false;
+        }
+        return true;
     }
 
     /************************************************************************
@@ -776,7 +851,7 @@ public class Editor extends SimpleComponent {
         .listBullet::before {
             position: absolute;
             left: 0.35em;
-            content: '\2022';
+            content: '\\2022';
         }
         .listNumber {
             position: relative;

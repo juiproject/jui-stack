@@ -615,6 +615,104 @@ public class FormattedBlock {
     }
 
     /**
+     * Adds a {@link FormattedLine.FormatType} to every character in the range
+     * {@code [start, start+len)} across the block's lines.
+     *
+     * @param start
+     *              block-level character offset.
+     * @param len
+     *              number of characters.
+     * @param type
+     *              the format type to add.
+     */
+    public void addFormat(int start, int len, FormattedLine.FormatType type) {
+        if (len <= 0)
+            return;
+        for (FormattedLine line : getLines()) {
+            int ll = line.length();
+            if ((start < ll) && (len > 0)) {
+                int clippedStart = Math.max(0, start);
+                int clippedLen = Math.min(len, ll - clippedStart);
+                if (clippedLen > 0)
+                    line.addFormat(clippedStart, clippedLen, type);
+            }
+            start -= ll + 1;
+            if (start < 0) {
+                len += start;
+                start = 0;
+            }
+            if (len <= 0)
+                break;
+        }
+    }
+
+    /**
+     * Removes a {@link FormattedLine.FormatType} from every character in the
+     * range {@code [start, start+len)} across the block's lines.
+     *
+     * @param start
+     *              block-level character offset.
+     * @param len
+     *              number of characters.
+     * @param type
+     *              the format type to remove.
+     */
+    public void removeFormat(int start, int len, FormattedLine.FormatType type) {
+        if (len <= 0)
+            return;
+        for (FormattedLine line : getLines()) {
+            int ll = line.length();
+            if ((start < ll) && (len > 0)) {
+                int clippedStart = Math.max(0, start);
+                int clippedLen = Math.min(len, ll - clippedStart);
+                if (clippedLen > 0)
+                    line.removeFormat(clippedStart, clippedLen, type);
+            }
+            start -= ll + 1;
+            if (start < 0) {
+                len += start;
+                start = 0;
+            }
+            if (len <= 0)
+                break;
+        }
+    }
+
+    /**
+     * Checks whether every character in {@code [start, start+len)} across the
+     * block's lines is covered by the given format type.
+     *
+     * @param start
+     *              block-level character offset.
+     * @param len
+     *              number of characters.
+     * @param type
+     *              the format type to check.
+     * @return {@code true} if the entire range is covered.
+     */
+    public boolean hasFormat(int start, int len, FormattedLine.FormatType type) {
+        if (len <= 0)
+            return false;
+        for (FormattedLine line : getLines()) {
+            int ll = line.length();
+            if ((start < ll) && (len > 0)) {
+                int clippedStart = Math.max(0, start);
+                int clippedLen = Math.min(len, ll - clippedStart);
+                if ((clippedLen > 0) && !line.hasFormat(clippedStart, clippedLen, type))
+                    return false;
+            }
+            start -= ll + 1;
+            if (start < 0) {
+                len += start;
+                start = 0;
+            }
+            if (len <= 0)
+                break;
+        }
+        return true;
+    }
+
+    /**
      * Transform this block to a block of the given type.
      * 
      * @param type

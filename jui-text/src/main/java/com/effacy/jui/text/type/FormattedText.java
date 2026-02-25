@@ -234,6 +234,20 @@ public class FormattedText implements Iterable<FormattedBlock> {
         return blk;
     }
 
+    /**
+     * Creates a deep copy of this formatted text.
+     *
+     * @return the copy.
+     */
+    public FormattedText clone() {
+        FormattedText copy = new FormattedText();
+        if (blocks != null) {
+            for (FormattedBlock block : blocks)
+                copy.getBlocks().add(block.clone());
+        }
+        return copy;
+    }
+
     /************************************************************************
      * Overrides and contracted behaviour.
      ************************************************************************/

@@ -1,5 +1,6 @@
 package com.effacy.jui.text.ui.editor2;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ import com.effacy.jui.text.type.edit.History;
 import com.effacy.jui.text.type.edit.Positions;
 import com.effacy.jui.text.type.edit.Selection;
 import com.effacy.jui.text.type.edit.Transaction;
+import com.effacy.jui.text.type.edit.step.ReplaceBlockStep;
 import com.effacy.jui.text.type.edit.step.SetBlockTypeStep;
 import com.google.gwt.core.client.GWT;
 
@@ -75,6 +77,27 @@ public class Editor extends SimpleComponent {
      * Guards against selection sync during rendering.
      */
     private boolean rendering;
+
+    /**
+     * Block index of the currently focused table, or -1 if no cell is focused.
+     */
+    private int focusedTableIndex = -1;
+
+    /**
+     * Row index of the currently focused table cell.
+     */
+    private int focusedTableRow = -1;
+
+    /**
+     * Column index of the currently focused table cell.
+     */
+    private int focusedTableCol = -1;
+
+    /**
+     * Text content of the focused cell at focus time, used to detect changes
+     * on blur that need to be synced to the model.
+     */
+    private String focusedCellInitialContent = null;
 
     /**
      * Toolbar button elements keyed by format type, for active-state tracking.
@@ -174,38 +197,14 @@ public class Editor extends SimpleComponent {
      */
     private void buildToolbar(Element toolbar) {
         // Format toggles.
-        formatButtons.put(FormatType.BLD, toolbarButton(toolbar, "B", "Bold (Ctrl+B)", () -> {
-            syncSelectionFromDom();
-            applyTransaction(Commands.toggleFormat(state, FormatType.BLD));
-        }));
-        formatButtons.put(FormatType.ITL, toolbarButton(toolbar, "I", "Italic (Ctrl+I)", () -> {
-            syncSelectionFromDom();
-            applyTransaction(Commands.toggleFormat(state, FormatType.ITL));
-        }));
-        formatButtons.put(FormatType.UL, toolbarButton(toolbar, "U", "Underline (Ctrl+U)", () -> {
-            syncSelectionFromDom();
-            applyTransaction(Commands.toggleFormat(state, FormatType.UL));
-        }));
-        formatButtons.put(FormatType.STR, toolbarButton(toolbar, "S", "Strikethrough", () -> {
-            syncSelectionFromDom();
-            applyTransaction(Commands.toggleFormat(state, FormatType.STR));
-        }));
-        formatButtons.put(FormatType.SUB, toolbarButton(toolbar, "x\u2082", "Subscript", () -> {
-            syncSelectionFromDom();
-            applyTransaction(Commands.toggleFormat(state, FormatType.SUB));
-        }));
-        formatButtons.put(FormatType.SUP, toolbarButton(toolbar, "x\u00B2", "Superscript", () -> {
-            syncSelectionFromDom();
-            applyTransaction(Commands.toggleFormat(state, FormatType.SUP));
-        }));
-        formatButtons.put(FormatType.CODE, toolbarButton(toolbar, "<>", "Code", () -> {
-            syncSelectionFromDom();
-            applyTransaction(Commands.toggleFormat(state, FormatType.CODE));
-        }));
-        formatButtons.put(FormatType.HL, toolbarButton(toolbar, "H", "Highlight", () -> {
-            syncSelectionFromDom();
-            applyTransaction(Commands.toggleFormat(state, FormatType.HL));
-        }));
+        formatButtons.put(FormatType.BLD, toolbarButton(toolbar, "B", "Bold (Ctrl+B)", () -> handleFormatToggle(FormatType.BLD)));
+        formatButtons.put(FormatType.ITL, toolbarButton(toolbar, "I", "Italic (Ctrl+I)", () -> handleFormatToggle(FormatType.ITL)));
+        formatButtons.put(FormatType.UL, toolbarButton(toolbar, "U", "Underline (Ctrl+U)", () -> handleFormatToggle(FormatType.UL)));
+        formatButtons.put(FormatType.STR, toolbarButton(toolbar, "S", "Strikethrough", () -> handleFormatToggle(FormatType.STR)));
+        formatButtons.put(FormatType.SUB, toolbarButton(toolbar, "x\u2082", "Subscript", () -> handleFormatToggle(FormatType.SUB)));
+        formatButtons.put(FormatType.SUP, toolbarButton(toolbar, "x\u00B2", "Superscript", () -> handleFormatToggle(FormatType.SUP)));
+        formatButtons.put(FormatType.CODE, toolbarButton(toolbar, "<>", "Code", () -> handleFormatToggle(FormatType.CODE)));
+        formatButtons.put(FormatType.HL, toolbarButton(toolbar, "H", "Highlight", () -> handleFormatToggle(FormatType.HL)));
 
         // Separator.
         toolbarSeparator(toolbar);
@@ -247,7 +246,11 @@ public class Editor extends SimpleComponent {
         // Table insertion.
         toolbarButton(toolbar, "\u229E", "Insert Table", () -> {
             syncSelectionFromDom();
+            Selection preSel = state.selection();
+            int preBlock = preSel.isCursor() ? preSel.anchorBlock() : preSel.fromBlock();
             applyTransaction(Commands.insertTable(state, 2, 3));
+            // Focus the first cell of the newly inserted table.
+            focusCell(preBlock + 1, 0, 0, true);
         });
     }
 
@@ -321,6 +324,9 @@ public class Editor extends SimpleComponent {
         }
         restoreSelection();
         updateToolbarState();
+        // If a table cell was active before the re-render, re-focus it.
+        if (focusedTableIndex >= 0)
+            focusCell(focusedTableIndex, focusedTableRow, focusedTableCol);
     }
 
     /**
@@ -361,8 +367,9 @@ public class Editor extends SimpleComponent {
     }
 
     /**
-     * Renders a TABLE block as a non-editable wrapper containing a
-     * {@code <table>} element and hover controls for adding rows/columns.
+     * Renders a TABLE block as a wrapper containing an editable {@code <table>}
+     * and hover controls for adding rows/columns. Each cell is contenteditable
+     * and has focus/blur/keydown listeners for cell-level editing and navigation.
      */
     private Element renderTable(FormattedBlock table, int index) {
         Element wrapper = DomGlobal.document.createElement("div");
@@ -383,6 +390,24 @@ public class Editor extends SimpleComponent {
         String alignStr = table.meta("align");
         String[] align = (alignStr != null) ? alignStr.split(",") : null;
 
+        // Count rows and columns for navigation bounds.
+        int numRows = 0;
+        int numCols = 0;
+        for (FormattedBlock row : table.getBlocks()) {
+            if (row.getType() != BlockType.TROW)
+                continue;
+            numRows++;
+            int c = 0;
+            for (FormattedBlock cell : row.getBlocks()) {
+                if (cell.getType() == BlockType.TCELL)
+                    c++;
+            }
+            if (c > numCols)
+                numCols = c;
+        }
+        final int finalNumRows = numRows;
+        final int finalNumCols = numCols;
+
         // Build <table>.
         Element tableEl = DomGlobal.document.createElement("table");
         tableEl.classList.add(styles().table());
@@ -398,28 +423,46 @@ public class Editor extends SimpleComponent {
                 boolean isHeader = (rowIndex < headers);
                 Element td = DomGlobal.document.createElement(isHeader ? "th" : "td");
                 td.classList.add(styles().tableCell());
+                td.setAttribute("contenteditable", "true");
+                td.setAttribute("data-table-index", String.valueOf(index));
+                td.setAttribute("data-row", String.valueOf(rowIndex));
+                td.setAttribute("data-col", String.valueOf(cellIndex));
                 if ((align != null) && (cellIndex < align.length)) {
                     if ("C".equals(align[cellIndex].trim()))
                         ((elemental2.dom.HTMLElement) td).style.set("text-align", "center");
                     else if ("R".equals(align[cellIndex].trim()))
                         ((elemental2.dom.HTMLElement) td).style.set("text-align", "right");
                 }
-                // Render cell content.
+                // Render cell content (single line only — cells are paragraph-like).
                 List<FormattedLine> lines = cell.getLines();
-                if ((lines == null) || lines.isEmpty()) {
-                    td.innerHTML = "&nbsp;";
+                boolean hasText = ((lines != null) && !lines.isEmpty()) && (lines.get(0).length() > 0);
+                if (hasText) {
+                    renderLine(td, lines.get(0));
                 } else {
-                    boolean hasContent = false;
-                    for (int i = 0; i < lines.size(); i++) {
-                        if (lines.get(i).length() > 0)
-                            hasContent = true;
-                        if (i > 0)
-                            td.appendChild(DomGlobal.document.createElement("br"));
-                        renderLine(td, lines.get(i));
-                    }
-                    if (!hasContent)
-                        td.innerHTML = "&nbsp;";
+                    // Empty cell: BR needed for browser cursor placement.
+                    td.appendChild(DomGlobal.document.createElement("br"));
                 }
+
+                // Cell event listeners.
+                final int capturedRow = rowIndex;
+                final int capturedCol = cellIndex;
+                td.addEventListener("focus", evt -> {
+                    focusedTableIndex = index;
+                    focusedTableRow = capturedRow;
+                    focusedTableCol = capturedCol;
+                    focusedCellInitialContent = ((elemental2.dom.HTMLElement) evt.target).textContent;
+                });
+                td.addEventListener("blur", evt -> {
+                    syncCellToModel(index, capturedRow, capturedCol,
+                            (elemental2.dom.Element) Js.uncheckedCast(evt.target));
+                    focusedTableIndex = -1;
+                    focusedTableRow = -1;
+                    focusedTableCol = -1;
+                });
+                td.addEventListener("keydown", evt -> {
+                    handleCellKeyDown(Js.uncheckedCast(evt), index, capturedRow, capturedCol,
+                            finalNumRows, finalNumCols);
+                });
                 tr.appendChild(td);
                 cellIndex++;
             }
@@ -435,6 +478,7 @@ public class Editor extends SimpleComponent {
         addCol.addEventListener("mousedown", evt -> {
             evt.preventDefault();
             evt.stopPropagation();
+            syncFocusedCell();
             applyTransaction(Commands.addTableColumn(state, index));
         });
         wrapper.appendChild(addCol);
@@ -446,6 +490,7 @@ public class Editor extends SimpleComponent {
         addRow.addEventListener("mousedown", evt -> {
             evt.preventDefault();
             evt.stopPropagation();
+            syncFocusedCell();
             applyTransaction(Commands.addTableRow(state, index));
         });
         wrapper.appendChild(addRow);
@@ -517,7 +562,8 @@ public class Editor extends SimpleComponent {
     }
 
     /**
-     * Reads the DOM selection and updates the editor state.
+     * Reads the DOM selection and updates the editor state. Skips if the
+     * cursor is inside a table cell (handled separately).
      */
     private void syncSelectionFromDom() {
         if (rendering)
@@ -527,6 +573,9 @@ public class Editor extends SimpleComponent {
             return;
         int numBlocks = state.doc().getBlocks().size();
         if ((sel[0] < 0) || (sel[0] >= numBlocks) || (sel[2] < 0) || (sel[2] >= numBlocks))
+            return;
+        // Skip if selection resolved to a TABLE block (cursor is in a cell).
+        if (state.doc().getBlocks().get(sel[0]).getType() == BlockType.TABLE)
             return;
         state.setSelection(new Selection(sel[0], sel[1], sel[2], sel[3]));
         updateToolbarState();
@@ -597,6 +646,22 @@ public class Editor extends SimpleComponent {
      ************************************************************************/
 
     /**
+     * Applies or removes a format toggle. Reads the cell element directly from
+     * the DOM selection so this works even if the cell has already lost focus
+     * (e.g. when a toolbar button's mousedown caused a blur before the action ran).
+     * Falls back to the standard transaction path when no cell selection is found.
+     */
+    private void handleFormatToggle(FormatType type) {
+        elemental2.dom.Element cellEl = Js.uncheckedCast(EditorSupport2.cellFromSelection(editorEl));
+        if (cellEl != null) {
+            applyToggleFormatInCellEl(type, cellEl);
+            return;
+        }
+        syncSelectionFromDom();
+        applyTransaction(Commands.toggleFormat(state, type));
+    }
+
+    /**
      * Applies a transaction, pushes inverse to history, and re-renders.
      */
     private void applyTransaction(Transaction tr) {
@@ -620,8 +685,13 @@ public class Editor extends SimpleComponent {
 
     /**
      * Handles keyboard shortcuts (undo/redo, format toggles, indent).
+     * Events originating from table cells are ignored — the cell's own
+     * keydown listener handles navigation (Enter/Tab) and stopPropagation
+     * prevents this handler from firing for cell keys.
      */
     private void handleKeyDown(KeyboardEvent ke) {
+        if (isInsideTableCell(ke.target))
+            return;
         boolean ctrl = ke.ctrlKey || ke.metaKey;
         boolean shift = ke.shiftKey;
 
@@ -671,8 +741,12 @@ public class Editor extends SimpleComponent {
     /**
      * Handles content-mutating input events. All browser-native mutations are
      * prevented; the equivalent is performed through the transaction system.
+     * Events originating from table cells are skipped — the browser handles
+     * them directly inside the contenteditable cell.
      */
     private void handleBeforeInput(elemental2.dom.Event evt) {
+        if (isInsideTableCell(evt.target))
+            return;
         evt.preventDefault();
         syncSelectionFromDom();
 
@@ -763,9 +837,12 @@ public class Editor extends SimpleComponent {
 
     /**
      * Handles paste events. Reads plain text from the clipboard and inserts
-     * it via the transaction system.
+     * it via the transaction system. Skips events from table cells — the
+     * browser handles paste natively inside contenteditable cells.
      */
     private void handlePaste(elemental2.dom.Event evt) {
+        if (isInsideTableCell(evt.target))
+            return;
         evt.preventDefault();
         syncSelectionFromDom();
         String text = EditorSupport2.getClipboardText(evt);
@@ -774,6 +851,370 @@ public class Editor extends SimpleComponent {
         // Normalize line endings (Windows \r\n and old Mac \r).
         text = text.replace("\r\n", "\n").replace("\r", "\n");
         applyTransaction(Commands.pasteText(state, text));
+    }
+
+    /************************************************************************
+     * Table cell editing.
+     ************************************************************************/
+
+    /**
+     * Returns {@code true} if the event target is inside a contenteditable
+     * table cell ({@code <td>} or {@code <th>} with {@code contenteditable="true"}).
+     */
+    private boolean isInsideTableCell(elemental2.dom.EventTarget target) {
+        elemental2.dom.Element el = Js.uncheckedCast(target);
+        while ((el != null) && (el != editorEl)) {
+            String tag = el.tagName;
+            if (("TD".equalsIgnoreCase(tag) || "TH".equalsIgnoreCase(tag))
+                    && "true".equals(el.getAttribute("contenteditable")))
+                return true;
+            el = el.parentElement;
+        }
+        return false;
+    }
+
+    /**
+     * Handles keydown inside a table cell. Stops propagation to prevent the
+     * outer editor from firing shortcuts. Navigation rules:
+     * <ul>
+     * <li>Enter — next row, same column (do nothing at last row)</li>
+     * <li>Tab / Shift+Tab — forward / backward by column (wraps rows)</li>
+     * <li>ArrowDown / ArrowUp — next / previous row, same column</li>
+     * <li>ArrowRight — next cell only when cursor is at end of text</li>
+     * <li>ArrowLeft — previous cell only when cursor is at start of text</li>
+     * </ul>
+     */
+    private void handleCellKeyDown(KeyboardEvent ke, int tableIndex, int row, int col,
+            int numRows, int numCols) {
+        ke.stopPropagation();
+        if ("Enter".equals(ke.key) && !ke.shiftKey) {
+            ke.preventDefault();
+            if (row < (numRows - 1))
+                focusCell(tableIndex, row + 1, col, true);  // entering from above → start
+            // Last row: do nothing.
+        } else if ("Tab".equals(ke.key)) {
+            ke.preventDefault();
+            if (ke.shiftKey) {
+                // Shift+Tab: navigate backward → cursor at end.
+                int prevRow = row;
+                int prevCol = col - 1;
+                if (prevCol < 0) {
+                    prevCol = numCols - 1;
+                    prevRow--;
+                }
+                if (prevRow >= 0)
+                    focusCell(tableIndex, prevRow, prevCol, false);
+            } else {
+                // Tab: navigate forward → cursor at start.
+                int nextRow = row;
+                int nextCol = col + 1;
+                if (nextCol >= numCols) {
+                    nextCol = 0;
+                    nextRow++;
+                }
+                if (nextRow < numRows)
+                    focusCell(tableIndex, nextRow, nextCol, true);
+            }
+        } else if ("ArrowDown".equals(ke.key)) {
+            ke.preventDefault();
+            if (row < (numRows - 1))
+                focusCell(tableIndex, row + 1, col, true);  // entering from above → start
+        } else if ("ArrowUp".equals(ke.key)) {
+            ke.preventDefault();
+            if (row > 0)
+                focusCell(tableIndex, row - 1, col, false);  // entering from below → end
+        } else if ("ArrowRight".equals(ke.key)) {
+            // Navigate to next cell only when cursor is at end of text.
+            elemental2.dom.Element cell = Js.uncheckedCast(ke.target);
+            int offset = EditorSupport2.cursorOffsetInCell(cell);
+            if (offset >= cell.textContent.length()) {
+                ke.preventDefault();
+                int nextRow = row, nextCol = col + 1;
+                if (nextCol >= numCols) { nextCol = 0; nextRow++; }
+                if (nextRow < numRows)
+                    focusCell(tableIndex, nextRow, nextCol, true);  // entering from left → start
+            }
+            // Otherwise let browser move cursor right within the cell.
+        } else if ("ArrowLeft".equals(ke.key)) {
+            // Navigate to previous cell only when cursor is at start of text.
+            elemental2.dom.Element cell = Js.uncheckedCast(ke.target);
+            int offset = EditorSupport2.cursorOffsetInCell(cell);
+            if (offset <= 0) {
+                ke.preventDefault();
+                int prevRow = row, prevCol = col - 1;
+                if (prevCol < 0) { prevCol = numCols - 1; prevRow--; }
+                if (prevRow >= 0)
+                    focusCell(tableIndex, prevRow, prevCol, false);  // entering from right → end
+            }
+            // Otherwise let browser move cursor left within the cell.
+        } else if ((ke.ctrlKey || ke.metaKey) && !ke.shiftKey) {
+            // Format shortcuts within the cell (ke.target is the cell element).
+            FormatType fmt = null;
+            if ("b".equals(ke.key))
+                fmt = FormatType.BLD;
+            else if ("i".equals(ke.key))
+                fmt = FormatType.ITL;
+            else if ("u".equals(ke.key))
+                fmt = FormatType.UL;
+            if (fmt != null) {
+                ke.preventDefault();
+                applyToggleFormatInCellEl(fmt, Js.uncheckedCast(ke.target));
+            }
+        }
+    }
+
+    /**
+     * Focuses the cell at (tableIndex, row, col) and places the cursor at the
+     * end of the content (e.g. after re-render when the user was already editing).
+     */
+    private void focusCell(int tableIndex, int row, int col) {
+        focusCell(tableIndex, row, col, false);
+    }
+
+    /**
+     * Focuses the cell at (tableIndex, row, col) and places the cursor at the
+     * start ({@code atStart=true}) or end ({@code atStart=false}) of the content.
+     */
+    private void focusCell(int tableIndex, int row, int col, boolean atStart) {
+        String selector = "[data-table-index='" + tableIndex + "'][data-row='" + row
+                + "'][data-col='" + col + "']";
+        elemental2.dom.Element cell = editorEl.querySelector(selector);
+        if (cell != null) {
+            ((elemental2.dom.HTMLElement) cell).focus();
+            if (atStart)
+                EditorSupport2.moveCursorToStart(cell);
+            else
+                EditorSupport2.moveCursorToEnd(cell);
+        }
+    }
+
+    /**
+     * Syncs the focused cell (if any) to the model without re-rendering. Reads
+     * the current cell element and delegates to {@link #syncCellToModel}.
+     */
+    private void syncFocusedCell() {
+        if (focusedTableIndex < 0)
+            return;
+        String selector = "[data-table-index='" + focusedTableIndex + "'][data-row='"
+                + focusedTableRow + "'][data-col='" + focusedTableCol + "']";
+        elemental2.dom.Element cell = editorEl.querySelector(selector);
+        if (cell != null)
+            syncCellToModel(focusedTableIndex, focusedTableRow, focusedTableCol, cell);
+    }
+
+    /**
+     * Syncs the content of a table cell element back to the model. Clones the
+     * TABLE block, updates the target TCELL's first line, applies the change
+     * via {@link ReplaceBlockStep}, and pushes the inverse to history. Does
+     * NOT call {@code render()} — the DOM is already up to date.
+     */
+    private void syncCellToModel(int tableIndex, int row, int col,
+            elemental2.dom.Element cellEl) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((tableIndex < 0) || (tableIndex >= blocks.size()))
+            return;
+        FormattedBlock table = blocks.get(tableIndex);
+        if (table.getType() != BlockType.TABLE)
+            return;
+
+        String text = cellEl.textContent;
+        if (text == null)
+            text = "";
+
+        // If the plain text hasn't changed since focus, nothing to do (formatting
+        // changes are applied immediately via applyToggleFormatInCell, not here).
+        if (text.equals(focusedCellInitialContent))
+            return;
+
+        // Read the cell DOM to capture formatted content (typed text may have been
+        // entered inside existing formatted spans, which we want to preserve).
+        FormattedLine newLine = buildLineFromCellDom(cellEl);
+
+        // Clone the table and update the target cell.
+        FormattedBlock tableClone = table.clone();
+        int ri = 0;
+        outer:
+        for (FormattedBlock tableRow : tableClone.getBlocks()) {
+            if (tableRow.getType() != BlockType.TROW)
+                continue;
+            if (ri == row) {
+                int ci = 0;
+                for (FormattedBlock cell : tableRow.getBlocks()) {
+                    if (cell.getType() != BlockType.TCELL)
+                        continue;
+                    if (ci == col) {
+                        cell.getLines().clear();
+                        cell.getLines().add(newLine.clone());
+                        break outer;
+                    }
+                    ci++;
+                }
+            }
+            ri++;
+        }
+
+        Transaction tr = Transaction.create();
+        tr.step(new ReplaceBlockStep(tableIndex, tableClone));
+        tr.setSelection(state.selection());
+        Transaction inverse = state.apply(tr);
+        history.push(inverse);
+        focusedCellInitialContent = text;
+    }
+
+    /**
+     * Navigates to the TCELL at the given row/column within a TABLE block and
+     * returns it, or {@code null} if not found.
+     */
+    private FormattedBlock getCellBlock(FormattedBlock table, int row, int col) {
+        int ri = 0;
+        for (FormattedBlock tableRow : table.getBlocks()) {
+            if (tableRow.getType() != BlockType.TROW)
+                continue;
+            if (ri == row) {
+                int ci = 0;
+                for (FormattedBlock cell : tableRow.getBlocks()) {
+                    if (cell.getType() != BlockType.TCELL)
+                        continue;
+                    if (ci == col)
+                        return cell;
+                    ci++;
+                }
+                return null;
+            }
+            ri++;
+        }
+        return null;
+    }
+
+    /**
+     * Reads the DOM content of a cell element and reconstructs a
+     * {@link FormattedLine} that preserves inline formatting (bold, italic,
+     * etc.) encoded as CSS class names on {@code <span>} elements.
+     */
+    private FormattedLine buildLineFromCellDom(elemental2.dom.Element cellEl) {
+        FormattedLine line = new FormattedLine();
+        elemental2.dom.NodeList<elemental2.dom.Node> children = cellEl.childNodes;
+        for (int i = 0; i < children.length; i++) {
+            elemental2.dom.Node node = children.item(i);
+            if (node.nodeType == 3) {
+                // Text node — plain text.
+                String text = node.textContent;
+                if ((text != null) && !text.isEmpty())
+                    line.append(text);
+            } else if (node.nodeType == 1) {
+                elemental2.dom.Element el = Js.uncheckedCast(node);
+                String tag = el.tagName;
+                if ("SPAN".equalsIgnoreCase(tag)) {
+                    String text = el.textContent;
+                    if ((text != null) && !text.isEmpty()) {
+                        List<FormatType> fmts = new ArrayList<>();
+                        for (Map.Entry<FormatType, String> entry : FORMAT_CLASSES.entrySet()) {
+                            if (el.classList.contains(entry.getValue()))
+                                fmts.add(entry.getKey());
+                        }
+                        line.append(text, fmts.toArray(new FormatType[0]));
+                    }
+                } else if (!"BR".equalsIgnoreCase(tag)) {
+                    // Any other element (e.g. anchor) — fall back to plain text.
+                    String text = el.textContent;
+                    if ((text != null) && !text.isEmpty())
+                        line.append(text);
+                }
+            }
+        }
+        return line;
+    }
+
+    /**
+     * Clears and re-renders a cell element's content from the given cell block.
+     * Does not trigger a full re-render.
+     */
+    private void renderCellContent(elemental2.dom.Element cellEl, FormattedBlock cellBlock) {
+        while (cellEl.firstChild != null)
+            cellEl.removeChild(cellEl.firstChild);
+        List<FormattedLine> lines = cellBlock.getLines();
+        if (lines.isEmpty()) {
+            cellEl.appendChild(DomGlobal.document.createElement("br"));
+            return;
+        }
+        renderLine(cellEl, lines.get(0));
+        for (int i = 1; i < lines.size(); i++) {
+            cellEl.appendChild(DomGlobal.document.createElement("br"));
+            renderLine(cellEl, lines.get(i));
+        }
+    }
+
+    /**
+     * Toggles a format type on the current text selection within a table cell.
+     * The cell element is passed directly (read from the DOM selection at call
+     * time, not from stored focused-cell state) so this works even if the cell
+     * has already received a blur event. Coordinates are read from the cell's
+     * data attributes.
+     */
+    private void applyToggleFormatInCellEl(FormatType type, elemental2.dom.Element cellEl) {
+        if (cellEl == null)
+            return;
+
+        // Read table/row/col from data attributes — no dependency on stored state.
+        String tableIndexStr = cellEl.getAttribute("data-table-index");
+        String rowStr = cellEl.getAttribute("data-row");
+        String colStr = cellEl.getAttribute("data-col");
+        if ((tableIndexStr == null) || (rowStr == null) || (colStr == null))
+            return;
+        int tableIndex, row, col;
+        try {
+            tableIndex = Integer.parseInt(tableIndexStr);
+            row = Integer.parseInt(rowStr);
+            col = Integer.parseInt(colStr);
+        } catch (NumberFormatException e) {
+            return;
+        }
+
+        int[] range = EditorSupport2.selectionInCell(cellEl);
+        if (range == null)
+            return;
+        int from = Math.min(range[0], range[1]);
+        int to = Math.max(range[0], range[1]);
+        int len = to - from;
+        if (len <= 0)
+            return;
+
+        // Build the current cell content from the DOM, including any typed text
+        // and already-applied inline formatting, so we work on the latest state.
+        FormattedLine currentLine = buildLineFromCellDom(cellEl);
+        FormattedBlock tempCell = new FormattedBlock(BlockType.TCELL);
+        tempCell.getLines().add(currentLine);
+        boolean alreadyHas = tempCell.hasFormat(from, len, type);
+        if (alreadyHas)
+            tempCell.removeFormat(from, len, type);
+        else
+            tempCell.addFormat(from, len, type);
+        FormattedLine newLine = tempCell.getLines().get(0);
+
+        // Clone the table and replace the target cell's content.
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if (tableIndex >= blocks.size())
+            return;
+        FormattedBlock tableClone = blocks.get(tableIndex).clone();
+        FormattedBlock cellClone = getCellBlock(tableClone, row, col);
+        if (cellClone == null)
+            return;
+        cellClone.getLines().clear();
+        cellClone.getLines().add(newLine.clone());
+
+        // Apply to model (no full re-render needed).
+        Transaction tr = Transaction.create();
+        tr.step(new ReplaceBlockStep(tableIndex, tableClone));
+        tr.setSelection(state.selection());
+        Transaction inverse = state.apply(tr);
+        history.push(inverse);
+
+        // Re-render the cell DOM and restore selection.
+        renderCellContent(cellEl, cellClone);
+        EditorSupport2.setSelectionInCell(cellEl, from, to);
+
+        // Reset baseline so blur does not re-sync unchanged text.
+        focusedCellInitialContent = cellEl.textContent;
     }
 
     /************************************************************************

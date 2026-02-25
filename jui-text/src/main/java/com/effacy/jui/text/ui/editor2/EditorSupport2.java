@@ -86,4 +86,67 @@ public class EditorSupport2 {
      * @return the plain text, or {@code null}.
      */
     public static native String getClipboardText(Object event);
+
+    /**
+     * Moves the cursor to the start of the content of a contenteditable element.
+     *
+     * @param element
+     *                the contenteditable element.
+     */
+    public static native void moveCursorToStart(Object element);
+
+    /**
+     * Moves the cursor to the end of the content of a contenteditable element.
+     *
+     * @param element
+     *                the contenteditable element.
+     */
+    public static native void moveCursorToEnd(Object element);
+
+    /**
+     * Returns the character offset of the cursor within a contenteditable cell
+     * element, or {@code -1} if the cursor is not inside the element or the
+     * selection is not a cursor (i.e. is a range).
+     *
+     * @param cellElement
+     *                    the cell element to test against.
+     * @return cursor offset, or {@code -1}.
+     */
+    public static native int cursorOffsetInCell(Object cellElement);
+
+    /**
+     * Returns the {@code <td>} or {@code <th>} element (with
+     * {@code contenteditable="true"}) containing the current selection anchor,
+     * searching upward within {@code editorEl}. Returns {@code null} if the
+     * selection is not inside a contenteditable cell.
+     *
+     * @param editorEl
+     *                 the contenteditable editor element.
+     * @return the cell element, or {@code null}.
+     */
+    public static native Object cellFromSelection(Node editorEl);
+
+    /**
+     * Returns the {@code [anchorOffset, headOffset]} character offsets of the
+     * current selection within a contenteditable cell element, or {@code null}
+     * if the selection is not inside the element.
+     *
+     * @param cellElement
+     *                    the cell element to test against.
+     * @return {@code [anchorOffset, headOffset]}, or {@code null}.
+     */
+    public static native int[] selectionInCell(Object cellElement);
+
+    /**
+     * Sets the DOM selection to a range within a cell element at the given
+     * character offsets.
+     *
+     * @param cellElement
+     *                    the cell element.
+     * @param from
+     *             start character offset.
+     * @param to
+     *           end character offset.
+     */
+    public static native void setSelectionInCell(Object cellElement, int from, int to);
 }

@@ -121,12 +121,17 @@ EditorSupport2._offsetInBlock = function (blockEl, node, offset) {
 
 /**
  * Finds the nearest block element (with data-block-index) containing
- * the given node.
+ * the given node. Returns null if the found element has
+ * contenteditable="false" (e.g. a table wrapper) — cursor inside a table
+ * cell is not in a selectable editor block.
  */
 EditorSupport2._findBlockEl = function (editorEl, node) {
     while (node && node !== editorEl) {
-        if (node.nodeType === 1 && node.hasAttribute && node.hasAttribute('data-block-index'))
+        if (node.nodeType === 1 && node.hasAttribute && node.hasAttribute('data-block-index')) {
+            if (node.getAttribute('contenteditable') === 'false')
+                return null;
             return node;
+        }
         node = node.parentNode;
     }
     return null;
@@ -273,4 +278,112 @@ EditorSupport2.getClipboardText = function (evt) {
     if (!cd)
         return null;
     return cd.getData('text/plain') || null;
+}
+
+/************************************************************************
+ * Table cell helpers.
+ ************************************************************************/
+
+/**
+ * Moves the cursor to the start of the content of a contenteditable element.
+ */
+EditorSupport2.moveCursorToStart = function (el) {
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(true);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+}
+
+/**
+ * Moves the cursor to the end of the content of a contenteditable element.
+ */
+EditorSupport2.moveCursorToEnd = function (el) {
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+}
+
+/**
+ * Returns the character offset of the cursor within a contenteditable cell
+ * element, or -1 if the cursor is not inside the element or the selection
+ * is not collapsed.
+ */
+EditorSupport2.cursorOffsetInCell = function (cellEl) {
+    var sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || !sel.isCollapsed)
+        return -1;
+    var n = sel.anchorNode;
+    // Verify anchor is inside cellEl.
+    var p = n;
+    while (p && p !== cellEl)
+        p = p.parentNode;
+    if (!p)
+        return -1;
+    return EditorSupport2._offsetInBlock(cellEl, n, sel.anchorOffset);
+}
+
+/************************************************************************
+ * Cell selection helpers (for inline formatting).
+ ************************************************************************/
+
+/**
+ * Returns the TD/TH element (with contenteditable="true") that contains the
+ * current selection anchor, searching upward within editorEl. Returns null
+ * if the selection is not inside a contenteditable cell.
+ */
+EditorSupport2.cellFromSelection = function (editorEl) {
+    var sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0)
+        return null;
+    var n = sel.anchorNode;
+    while (n && n !== editorEl) {
+        if (n.nodeType === 1) {
+            var tag = n.tagName;
+            if ((tag === 'TD' || tag === 'TH') && n.getAttribute('contenteditable') === 'true')
+                return n;
+        }
+        n = n.parentNode;
+    }
+    return null;
+}
+
+/**
+ * Returns [anchorOffset, headOffset] character offsets of the current
+ * selection within a cell element, or null if the selection is not inside.
+ */
+EditorSupport2.selectionInCell = function (cellEl) {
+    var sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0)
+        return null;
+    // Verify anchor is inside cellEl.
+    var p = sel.anchorNode;
+    while (p && p !== cellEl)
+        p = p.parentNode;
+    if (!p)
+        return null;
+    var anchorOff = EditorSupport2._offsetInBlock(cellEl, sel.anchorNode, sel.anchorOffset);
+    var focusOff = EditorSupport2._offsetInBlock(cellEl, sel.focusNode, sel.focusOffset);
+    return [anchorOff, focusOff];
+}
+
+/**
+ * Sets the DOM selection to a range within a cell element at the given
+ * character offsets.
+ */
+EditorSupport2.setSelectionInCell = function (cellEl, from, to) {
+    var fromPos = EditorSupport2._resolvePosition(cellEl, from);
+    var toPos = EditorSupport2._resolvePosition(cellEl, to);
+    if (!fromPos || !toPos)
+        return;
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    var r = new Range();
+    r.setStart(fromPos.node, fromPos.offset);
+    sel.addRange(r);
+    sel.extend(toPos.node, toPos.offset);
 }

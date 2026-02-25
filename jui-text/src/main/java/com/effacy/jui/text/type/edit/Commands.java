@@ -1617,8 +1617,8 @@ public final class Commands {
 
     /**
      * Inserts a new table at the cursor position. The table has the given
-     * number of rows and columns with empty cells. An empty paragraph is
-     * inserted after the table so the cursor can be placed below it.
+     * number of rows and columns with empty cells. The selection is set to the
+     * table block so the caller can focus the first cell.
      *
      * @param state
      *              the current editor state.
@@ -1652,13 +1652,8 @@ public final class Commands {
         // Insert the table after the current block.
         tr.step(new InsertBlockStep(blockIdx + 1, table));
 
-        // Insert an empty paragraph after the table for cursor placement.
-        FormattedBlock trailingPara = new FormattedBlock(BlockType.PARA);
-        trailingPara.line("");
-        tr.step(new InsertBlockStep(blockIdx + 2, trailingPara));
-
-        // Place cursor on the trailing paragraph.
-        tr.setSelection(Selection.cursor(blockIdx + 2, 0));
+        // Selection points to the table block; caller should focus cell (0, 0).
+        tr.setSelection(Selection.cursor(blockIdx + 1, 0));
         return tr;
     }
 

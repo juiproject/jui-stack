@@ -25,7 +25,17 @@ import com.effacy.jui.ui.client.panel.Panel;
  *
  * @author Jeremy Buckley
  */
-public class EditorExamples extends Panel {
+public class EditorExamples extends Panel {private static final String SAMPLE_MARKDOWN0 = """
+# World War II
+
+After the Battle of France resulted in the French Third Republic capitulating to Nazi Germany in July 1940...
+
+|Type|Grade|
+|----|-----|
+|Apple|Prime|
+
+Robert's regime was overthrown by a local uprising in June of that year, which Fanon would later acclaim as...
+        """;
 
     private static final String SAMPLE_MARKDOWN1 = """
 # World War II
@@ -128,7 +138,7 @@ In the book, Fanon described the unfair treatment of black people in France and 
         super (new Panel.Config ());
 
         Editor editor = add (new Editor());
-        FormattedText doc = MarkdownParser.parse(SAMPLE_MARKDOWN2);
+        FormattedText doc = MarkdownParser.parse(SAMPLE_MARKDOWN0);
         editor.load(doc);
     }
 

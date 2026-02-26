@@ -2,8 +2,10 @@ package com.effacy.jui.text.ui.editor2;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.platform.css.client.CssResource;
@@ -127,6 +129,15 @@ public class TableBlockHandler implements IBlockHandler {
     public boolean handlePaste(elemental2.dom.Event evt, IEditorContext ctx) {
         // Let the browser handle paste inside contenteditable cells natively.
         return isInsideTableCell(evt.target, ctx);
+    }
+
+    @Override
+    public boolean handleSelectionChange(IEditorContext ctx) {
+        elemental2.dom.Element cellEl = Js.uncheckedCast(EditorSupport2.cellFromSelection(ctx.editorEl()));
+        if (cellEl == null)
+            return false;
+        ctx.notifyCellSelection(computeCellFormatState(cellEl, ctx));
+        return true;
     }
 
     @Override
@@ -497,6 +508,41 @@ public class TableBlockHandler implements IBlockHandler {
      ************************************************************************/
 
     /**
+     * Computes the set of {@link FormatType}s active at the current DOM
+     * selection within {@code cellEl}. For a cursor, checks the character
+     * immediately before the cursor (or the first character if at offset 0).
+     * For a range, returns only formats that span the entire selection.
+     */
+    private Set<FormatType> computeCellFormatState(elemental2.dom.Element cellEl, IEditorContext ctx) {
+        Set<FormatType> active = new HashSet<>();
+        int[] range = EditorSupport2.selectionInCell(cellEl);
+        if (range == null)
+            return active;
+        int from = Math.min(range[0], range[1]);
+        int to = Math.max(range[0], range[1]);
+        FormattedLine line = buildLineFromCellDom(cellEl, ctx);
+        FormattedBlock tempCell = new FormattedBlock(BlockType.TCELL);
+        tempCell.getLines().add(line);
+        int len = to - from;
+        for (FormatType fmt : ctx.formatClasses().keySet()) {
+            if (len > 0) {
+                // Range: format must span the entire selection.
+                if (tempCell.hasFormat(from, len, fmt))
+                    active.add(fmt);
+            } else if (from > 0) {
+                // Cursor: check character immediately before cursor.
+                if (tempCell.hasFormat(from - 1, 1, fmt))
+                    active.add(fmt);
+            } else if (line.length() > 0) {
+                // Cursor at start: check first character.
+                if (tempCell.hasFormat(0, 1, fmt))
+                    active.add(fmt);
+            }
+        }
+        return active;
+    }
+
+    /**
      * Returns {@code true} if the event target is inside a table cell content
      * div (a {@code <div contenteditable="true">} bearing a
      * {@code data-table-index} attribute).
@@ -847,6 +893,9 @@ public class TableBlockHandler implements IBlockHandler {
 
         // Reset baseline so blur does not re-sync unchanged text.
         focusedCellInitialContent = cellEl.textContent;
+
+        // Update toolbar to reflect the new format state at the selection.
+        ctx.notifyCellSelection(computeCellFormatState(cellEl, ctx));
     }
 
     /************************************************************************

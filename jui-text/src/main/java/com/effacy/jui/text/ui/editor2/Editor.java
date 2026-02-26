@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.core.client.component.SimpleComponent;
@@ -153,6 +154,11 @@ public class Editor extends SimpleComponent {
         @Override
         public void renderLine(Element parent, FormattedLine line) {
             Editor.this.renderLine(parent, line);
+        }
+
+        @Override
+        public void notifyCellSelection(Set<FormatType> activeFormats) {
+            Editor.this.updateToolbarForCellSelection(activeFormats);
         }
     };
 
@@ -403,20 +409,26 @@ public class Editor extends SimpleComponent {
     }
 
     /**
-     * Reads the DOM selection and updates the editor state. Skips if the
-     * cursor is inside a table cell (handled separately).
+     * Reads the DOM selection and updates the editor state and toolbar.
+     * When the selection is inside a non-block area (e.g. a table cell),
+     * {@link EditorSupport2#readSelection} returns {@code null}; handlers
+     * are consulted via {@link IBlockHandler#handleSelectionChange} so they
+     * can update the toolbar for the cell context.
      */
     private void syncSelectionFromDom() {
         if (rendering)
             return;
         int[] sel = EditorSupport2.readSelection(editorEl);
-        if (sel == null)
+        if (sel == null) {
+            // Cursor is in a non-block area (e.g. a table cell) — let handlers update the toolbar.
+            for (IBlockHandler h : handlers) {
+                if (h.handleSelectionChange(ctx))
+                    return;
+            }
             return;
+        }
         int numBlocks = state.doc().getBlocks().size();
         if ((sel[0] < 0) || (sel[0] >= numBlocks) || (sel[2] < 0) || (sel[2] >= numBlocks))
-            return;
-        // Skip if selection resolved to a TABLE block (cursor is in a cell).
-        if (state.doc().getBlocks().get(sel[0]).getType() == BlockType.TABLE)
             return;
         state.setSelection(new Selection(sel[0], sel[1], sel[2], sel[3]));
         updateToolbarState();
@@ -447,6 +459,24 @@ public class Editor extends SimpleComponent {
         // Format buttons — based on format at cursor or across selection.
         for (Map.Entry<FormatType, Element> entry : formatButtons.entrySet()) {
             if (isFormatActive(sel, entry.getKey()))
+                entry.getValue().classList.add(styles().tbtnActive());
+            else
+                entry.getValue().classList.remove(styles().tbtnActive());
+        }
+    }
+
+    /**
+     * Updates toolbar button active states for the cell-editing context.
+     * All block-type buttons are deactivated (cells have no block type). Format
+     * buttons are activated for the provided set of active formats.
+     *
+     * @param activeFormats
+     *                      the formats currently active at the cell selection.
+     */
+    private void updateToolbarForCellSelection(Set<FormatType> activeFormats) {
+        blockTypeButtons.values().forEach(btn -> btn.classList.remove(styles().tbtnActive()));
+        for (Map.Entry<FormatType, Element> entry : formatButtons.entrySet()) {
+            if (activeFormats.contains(entry.getKey()))
                 entry.getValue().classList.add(styles().tbtnActive());
             else
                 entry.getValue().classList.remove(styles().tbtnActive());

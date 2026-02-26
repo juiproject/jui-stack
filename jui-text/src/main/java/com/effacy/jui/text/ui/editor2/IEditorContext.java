@@ -1,6 +1,7 @@
 package com.effacy.jui.text.ui.editor2;
 
 import java.util.Map;
+import java.util.Set;
 
 import com.effacy.jui.text.type.FormattedLine;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
@@ -80,4 +81,16 @@ public interface IEditorContext {
      *               the formatted line to render.
      */
     void renderLine(elemental2.dom.Element parent, FormattedLine line);
+
+    /**
+     * Notifies the editor that the current context is a table cell, and
+     * requests a toolbar update for the given set of active format types.
+     * Block-type buttons are always cleared (cells have no block type).
+     * Pass an empty set when no formats are active at the cursor.
+     *
+     * @param activeFormats
+     *                      the set of format types active at the current
+     *                      cell selection; must not be {@code null}.
+     */
+    void notifyCellSelection(Set<FormatType> activeFormats);
 }

@@ -146,4 +146,18 @@ public interface IBlockHandler {
      *                   the editor context.
      */
     default void focusBlock(int blockIndex, IEditorContext ctx) {}
+
+    /**
+     * Called by the editor when the DOM selection changes but
+     * {@link EditorSupport2#readSelection} returns {@code null} (indicating
+     * that the cursor is not in a standard block element, e.g. it is inside a
+     * table cell). Return {@code true} if this handler owns the current
+     * selection and has updated the toolbar accordingly; the editor will stop
+     * consulting further handlers.
+     *
+     * @param ctx
+     *            the editor context.
+     * @return {@code true} if the selection was handled.
+     */
+    default boolean handleSelectionChange(IEditorContext ctx) { return false; }
 }

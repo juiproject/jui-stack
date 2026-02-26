@@ -10,6 +10,12 @@ Selection is synchronised in two directions: DOM-to-state on `selectionchange` e
 
 Every transaction triggers a full re-render (clear `innerHTML`, rebuild all blocks). For typical document sizes this is fast enough since DOM operations on a handful of elements are cheap. If it becomes a performance concern with large documents, an incremental render could diff previous and current block lists and only update changed blocks.
 
+### Block handler registry
+
+Rendering and event handling for each block family is delegated to a pluggable `IBlockHandler`. The editor maintains an ordered list of handlers; for every operation it iterates the list and delegates to the first handler whose `accepts(BlockType)` returns `true`. This allows new block types to be added without modifying `Editor` itself.
+
+`StandardBlockHandler` covers paragraph, heading, and list types. `TableBlockHandler` covers `TABLE` blocks. New block types are registered in `Editor`'s constructor via `handlers.add(...)`. Each handler can override only the lifecycle methods it needs: `beginRender`, `render`, `afterRender`, `beforeApplyTransaction`, `handleKeyDown`, `handleBeforeInput`, `handlePaste`, `handleFormatToggle`, and `focusBlock`.
+
 ## Editing rules
 
 ### Text input
@@ -64,6 +70,24 @@ These toggle the format on the selected range. With a cursor (no selection) they
 | Ctrl+X | Cut — browser copies selection to clipboard; editor deletes selection via transaction. |
 | Ctrl+V | Paste — plain text is read from the clipboard and inserted via `Commands.pasteText`. Multi-line text is split into separate PARA blocks. |
 
+### Table cell navigation
+
+When focus is inside a table cell, keydown is consumed by `TableBlockHandler` and does not reach the editor's standard key processing.
+
+| Input | Behaviour |
+|-------|-----------|
+| Enter | Move focus to the same column in the next row. No-op in the last row. |
+| Tab | Move focus to the next cell (wraps to next row). No-op after last cell in last row. |
+| Shift+Tab | Move focus to the previous cell (wraps to previous row). No-op before first cell. |
+| ArrowDown / ArrowUp | Move focus to the same column in the next / previous row. |
+| ArrowRight | Move focus to the next cell only when the cursor is at the end of the cell's text. |
+| ArrowLeft | Move focus to the previous cell only when the cursor is at the start of the cell's text. |
+| Ctrl+B / I / U | Toggle bold / italic / underline on the selection within the cell. |
+
+### Column resizing
+
+Each column border (except the rightmost) has an invisible 6 px drag handle positioned over the cell border. Dragging redistributes width between the two adjacent columns while keeping the table at full container width. Widths are stored as integer percentages summing to 100 in `meta("colwidths")` (e.g. `"33,33,34"`). The minimum column width is 5 %. Releasing the mouse persists the new widths to the model via a silent transaction (undo-able).
+
 ## Block types
 
 | Type | Rendering | Toolbar |
@@ -74,6 +98,7 @@ These toggle the format on the selected range. With a cursor (no selection) they
 | H3 | `<h3>` | H3 button |
 | NLIST | `<p>` with bullet marker via CSS `::before` | Bullet list button (toggle) |
 | OLIST | `<p>` with numbered marker via CSS `::before` and `data-list-index` | Numbered list button (toggle) |
+| TABLE | `<div>` wrapper containing `<table>` with per-cell contenteditable inner divs | Insert table button |
 
 List toolbar buttons use `toggleBlockType` — clicking when the block is already that list type converts it back to a paragraph.
 
@@ -101,59 +126,47 @@ When the last line of a block is empty, a trailing `<br data-trailing="true">` i
 
 Block elements use `white-space: pre-wrap` to preserve whitespace faithfully. Without this, the browser collapses trailing spaces and consecutive spaces under the default `white-space: normal` rule.
 
-## Contenteditable issues and resolutions
+### Table rendering
 
-This section documents browser quirks encountered during development and how they were resolved. These are important to understand when modifying the rendering or event handling code.
+A TABLE block renders as:
 
-### Trailing whitespace not visible
+```
+<div class="tableWrapper" contenteditable="false" data-block-index="N">
+  <table class="table" style="table-layout: fixed">
+    <colgroup>
+      <col data-col-index="0" style="width: 33%">
+      ...
+    </colgroup>
+    <tr>
+      <td class="tableCell">
+        <div class="tableCellContent" contenteditable="true"
+             data-table-index="N" data-row="R" data-col="C">
+          [content]
+        </div>
+        <div class="colResizeHandle"/>   <!-- last column omitted -->
+      </td>
+      ...
+    </tr>
+    ...
+  </table>
+  <div class="tableAddCol">+</div>
+  <div class="tableAddRow">+</div>
+</div>
+```
 
-**Problem**: A space typed at the end of a line doesn't render — the browser collapses trailing whitespace in text nodes under `white-space: normal`.
-
-**Resolution**: Block elements use `white-space: pre-wrap`, which preserves whitespace sequences and trailing spaces while still allowing line wrapping.
-
-### Consecutive spaces collapsed
-
-**Problem**: Typing a space after another space produces no visible effect — the browser collapses consecutive spaces under `white-space: normal`.
-
-**Resolution**: Same as above — `white-space: pre-wrap` on block elements preserves all space characters.
-
-### Cursor not visible after Shift+Enter at end of block
-
-**Problem**: After inserting a line break at the end of a block (Shift+Enter), the cursor appears to stay in place. The DOM has `"text"<br>` but the browser has nowhere to position the cursor on the new empty line.
-
-**Resolution**: When the last line of a block is empty, a trailing `<br data-trailing="true">` is appended after the separator `<br>`. The JS support functions (`_linesWalk`, `_resolvePosition`) are aware of this marker and skip it in character counting. `_resolvePosition` returns the position before the trailing BR so the cursor appears on the empty line.
-
-### Backspace at line break within a block does nothing
-
-**Problem**: Positioning the cursor at the start of the second line in a multi-line block and pressing Backspace has no effect. `DeleteTextStep` delegates to `FormattedBlock.remove()`, which cannot delete line breaks because they are implicit separators between `FormattedLine` objects (not characters in a line).
-
-**Resolution**: `Commands.deleteCharBefore` checks whether the character at `offset - 1` is `'\n'` (via `charAt()`). If so, it calls `joinLinesAt()` instead of `DeleteTextStep`. `joinLinesAt()` clones the block, walks lines to find the break point, merges the two adjacent lines via `FormattedLine.merge()`, and replaces the block with `ReplaceBlockStep`. The same logic applies to `deleteCharAfter` for the Delete key.
-
-### Enter at end of heading continues as heading
-
-**Problem**: Pressing Enter at the end of an H1/H2/H3 block creates another heading block (the new block inherits the type from `SplitBlockStep`). The expected behaviour is that the new block becomes a paragraph.
-
-**Resolution**: In `handleBeforeInput` for `insertParagraph`, after building the `splitBlock` transaction, the editor checks whether the cursor is at the end of a heading block. If so, it appends a `SetBlockTypeStep(blockIdx + 1, PARA)` to the same transaction (single undo unit). This is controlled by the `paragraphAfterHeading` flag (default `true`).
-
-### Toolbar buttons steal focus from editor
-
-**Problem**: Clicking a toolbar button moves focus away from the `contenteditable` element, causing the selection to be lost before the command can read it.
-
-**Resolution**: Toolbar buttons use `mousedown` with `preventDefault()` instead of `click`. This prevents the browser from moving focus out of the editor. The button's action reads the current selection and applies the transaction while focus remains in the editor.
-
-### Backspace/Delete at boundary between different block types does nothing
-
-**Problem**: Pressing Backspace at offset 0 of a paragraph that follows a list item (or any different block type) has no effect. Similarly, pressing Delete at the end of a list item before a paragraph does nothing. `Commands.joinWithPrevious` and `joinWithNext` return `null` when the adjacent blocks have different types, because `JoinBlocksStep` requires same-type blocks.
-
-**Resolution**: `Commands.forceJoinWithPrevious` and `forceJoinWithNext` handle cross-type joins by cloning the surviving block, merging the other block's content via `mergeBlockContent`, then replacing + deleting. Same-type joins still use the efficient `JoinBlocksStep`. The editor calls these force variants instead of `deleteCharBefore`/`deleteCharAfter` at block boundaries.
+The outer wrapper has `contenteditable="false"` so the editor's own `beforeinput` / `selectionchange` logic ignores it. Each cell has an inner `tableCellContent` div that is the actual `contenteditable="true"` element, carrying `data-table-index`, `data-row`, and `data-col` attributes. The resize handle is a sibling of this div, outside the contenteditable scope. Column widths use `<col>` elements under a `<colgroup>` so `table-layout: fixed` respects the explicit percentages.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
 | `Editor.java` | Main component — rendering, event handling, toolbar, CSS |
+| `IBlockHandler.java` | Pluggable block handler interface — render, event hooks, focus |
+| `StandardBlockHandler.java` | Handler for PARA, H1–H3, NLIST, OLIST block types |
+| `TableBlockHandler.java` | Handler for TABLE blocks — cell editing, column resizing, CSS |
+| `IEditorContext.java` | Context passed to block handlers — editor element, state, transaction helpers |
 | `EditorSupport2.java` | JsInterop bridge for selection read/write and input event helpers |
-| `jui_text_editor2.js` | Native JS — leaf traversal, line parsing, character counting, offset resolution, selection read/set |
+| `jui_text_editor2.js` | Native JS — leaf traversal, line parsing, character counting, offset resolution, selection read/set, cell helpers |
 
 ## Public API
 
@@ -164,3 +177,20 @@ editor.listIndexFormatter((indent, counter) -> String.valueOf(counter)); // all 
 editor.load(document);               // load a FormattedText
 FormattedText result = editor.value(); // retrieve current document
 ```
+
+# Appendix
+
+## Contenteditable issues and resolutions
+
+This section documents browser quirks encountered during development and how they were resolved. These are important to understand when modifying the rendering or event handling code.
+
+|Problem|Description|Resolution|
+|-------|-------|----------|
+|Trailing whitespace not visible|A space typed at the end of a line doesn't render — the browser collapses trailing whitespace in text nodes under `white-space: normal`.|Block elements use `white-space: pre-wrap`, which preserves whitespace sequences and trailing spaces while still allowing line wrapping.|
+|Consecutive spaces collapsed|Typing a space after another space produces no visible effect — the browser collapses consecutive spaces under `white-space: normal`.|Same as above — `white-space: pre-wrap` on block elements preserves all space characters.|
+|Cursor not visible after Shift+Enter at end of block|After inserting a line break at the end of a block (Shift+Enter), the cursor appears to stay in place. The DOM has `"text"<br>` but the browser has nowhere to position the cursor on the new empty line.|When the last line of a block is empty, a trailing `<br data-trailing="true">` is appended after the separator `<br>`. The JS support functions (`_linesWalk`, `_resolvePosition`) are aware of this marker and skip it in character counting. `_resolvePosition` returns the position before the trailing BR so the cursor appears on the empty line.|
+|Backspace at line break within a block does nothing|Positioning the cursor at the start of the second line in a multi-line block and pressing Backspace has no effect. `DeleteTextStep` delegates to `FormattedBlock.remove()`, which cannot delete line breaks because they are implicit separators between `FormattedLine` objects (not characters in a line).|`Commands.deleteCharBefore` checks whether the character at `offset - 1` is `'\n'` (via `charAt()`). If so, it calls `joinLinesAt()` instead of `DeleteTextStep`. `joinLinesAt()` clones the block, walks lines to find the break point, merges the two adjacent lines via `FormattedLine.merge()`, and replaces the block with `ReplaceBlockStep`. The same logic applies to `deleteCharAfter` for the Delete key.|
+|Enter at end of heading continues as heading|Pressing Enter at the end of an H1/H2/H3 block creates another heading block (the new block inherits the type from `SplitBlockStep`). The expected behaviour is that the new block becomes a paragraph.|In `handleBeforeInput` for `insertParagraph`, after building the `splitBlock` transaction, the editor checks whether the cursor is at the end of a heading block. If so, it appends a `SetBlockTypeStep(blockIdx + 1, PARA)` to the same transaction (single undo unit). This is controlled by the `paragraphAfterHeading` flag (default `true`).|
+|Toolbar buttons steal focus from editor|Clicking a toolbar button moves focus away from the `contenteditable` element, causing the selection to be lost before the command can read it.|Toolbar buttons use `mousedown` with `preventDefault()` instead of `click`. This prevents the browser from moving focus out of the editor. The button's action reads the current selection and applies the transaction while focus remains in the editor.|
+|Backspace/Delete at boundary between different block types does nothing|Pressing Backspace at offset 0 of a paragraph that follows a list item (or any different block type) has no effect. Similarly, pressing Delete at the end of a list item before a paragraph does nothing. `Commands.joinWithPrevious` and `joinWithNext` return `null` when the adjacent blocks have different types, because `JoinBlocksStep` requires same-type blocks.|`Commands.forceJoinWithPrevious` and `forceJoinWithNext` handle cross-type joins by cloning the surviving block, merging the other block's content via `mergeBlockContent`, then replacing + deleting. Same-type joins still use the efficient `JoinBlocksStep`. The editor calls these force variants instead of `deleteCharBefore`/`deleteCharAfter` at block boundaries.|
+|Table cell resize handle causes double-height empty rows|Placing an absolutely-positioned element (the column resize handle) inside a `contenteditable` `<td>` causes empty cells to render at double line-height in Chrome. Chrome adds an implicit cursor node after non-editable children, and the combination of a `<br>` cursor anchor with an absolutely-positioned sibling inflates the row height.|The `<td>` is no longer `contenteditable`. Instead each cell contains an inner `<div class="tableCellContent" contenteditable="true">` for editable content and a sibling `<div class="colResizeHandle">` for the drag handle. The handle is outside the contenteditable scope so browser normalisation never interacts with it. This mirrors Notion's cell DOM structure. `EditorSupport2.cellFromSelection` was updated to match the inner div (identified by `contenteditable="true"` and `data-table-index`) rather than `TD/TH` elements.|

@@ -332,9 +332,10 @@ EditorSupport2.cursorOffsetInCell = function (cellEl) {
  ************************************************************************/
 
 /**
- * Returns the TD/TH element (with contenteditable="true") that contains the
- * current selection anchor, searching upward within editorEl. Returns null
- * if the selection is not inside a contenteditable cell.
+ * Returns the inner cell content div (contenteditable="true" bearing a
+ * data-table-index attribute) containing the current selection anchor,
+ * searching upward within editorEl. Returns null if the selection is not
+ * inside a table cell content div.
  */
 EditorSupport2.cellFromSelection = function (editorEl) {
     var sel = window.getSelection();
@@ -342,11 +343,8 @@ EditorSupport2.cellFromSelection = function (editorEl) {
         return null;
     var n = sel.anchorNode;
     while (n && n !== editorEl) {
-        if (n.nodeType === 1) {
-            var tag = n.tagName;
-            if ((tag === 'TD' || tag === 'TH') && n.getAttribute('contenteditable') === 'true')
-                return n;
-        }
+        if (n.nodeType === 1 && n.getAttribute('contenteditable') === 'true' && n.hasAttribute('data-table-index'))
+            return n;
         n = n.parentNode;
     }
     return null;

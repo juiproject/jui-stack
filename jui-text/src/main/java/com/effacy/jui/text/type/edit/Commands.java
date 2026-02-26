@@ -1597,6 +1597,23 @@ public final class Commands {
      ************************************************************************/
 
     /**
+     * Returns a comma-separated string of integer column widths (percentages
+     * summing to 100) distributed as evenly as possible across {@code cols}
+     * columns. Any remainder is added to the last column.
+     */
+    private static String equalColWidths(int cols) {
+        int base = 100 / cols;
+        int remainder = 100 - base * cols;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < cols; i++) {
+            if (i > 0)
+                sb.append(',');
+            sb.append((i < (cols - 1)) ? base : (base + remainder));
+        }
+        return sb.toString();
+    }
+
+    /**
      * Builds an empty table cell block with a single empty line.
      */
     private static FormattedBlock emptyCell() {
@@ -1640,6 +1657,7 @@ public final class Commands {
         // Build the table structure.
         FormattedBlock table = new FormattedBlock(BlockType.TABLE);
         table.meta("columns", String.valueOf(cols));
+        table.meta("colwidths", equalColWidths(cols));
         for (int r = 0; r < rows; r++)
             table.getBlocks().add(emptyRow(cols));
 
@@ -1734,6 +1752,7 @@ public final class Commands {
             }
         }
         clone.meta("columns", String.valueOf(cols + 1));
+        clone.meta("colwidths", equalColWidths(cols + 1));
 
         // Extend alignment metadata if present.
         String align = clone.meta("align");

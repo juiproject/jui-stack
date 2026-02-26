@@ -1764,4 +1764,306 @@ public final class Commands {
         tr.setSelection(state.selection());
         return tr;
     }
+
+    /**
+     * Inserts an empty row immediately above the given row index in the table.
+     *
+     * @param state
+     *                        the current editor state.
+     * @param tableBlockIndex
+     *                        the index of the TABLE block.
+     * @param rowIndex
+     *                        the index of the row to insert above (0-based).
+     * @return the transaction, or {@code null} if the block is not a table or
+     *         the row index is out of range.
+     */
+    public static Transaction insertTableRowAbove(EditorState state, int tableBlockIndex, int rowIndex) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((tableBlockIndex < 0) || (tableBlockIndex >= blocks.size()))
+            return null;
+        FormattedBlock table = blocks.get(tableBlockIndex);
+        if (table.getType() != BlockType.TABLE)
+            return null;
+        FormattedBlock clone = table.clone();
+        if ((rowIndex < 0) || (rowIndex > clone.getBlocks().size()))
+            return null;
+        clone.getBlocks().add(rowIndex, emptyRow(tableCols(table)));
+        Transaction tr = Transaction.create();
+        tr.step(new ReplaceBlockStep(tableBlockIndex, clone));
+        tr.setSelection(state.selection());
+        return tr;
+    }
+
+    /**
+     * Inserts an empty row immediately below the given row index in the table.
+     *
+     * @param state
+     *                        the current editor state.
+     * @param tableBlockIndex
+     *                        the index of the TABLE block.
+     * @param rowIndex
+     *                        the index of the row to insert below (0-based).
+     * @return the transaction, or {@code null} if the block is not a table or
+     *         the row index is out of range.
+     */
+    public static Transaction insertTableRowBelow(EditorState state, int tableBlockIndex, int rowIndex) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((tableBlockIndex < 0) || (tableBlockIndex >= blocks.size()))
+            return null;
+        FormattedBlock table = blocks.get(tableBlockIndex);
+        if (table.getType() != BlockType.TABLE)
+            return null;
+        FormattedBlock clone = table.clone();
+        int insertAt = rowIndex + 1;
+        if ((insertAt < 0) || (insertAt > clone.getBlocks().size()))
+            return null;
+        clone.getBlocks().add(insertAt, emptyRow(tableCols(table)));
+        Transaction tr = Transaction.create();
+        tr.step(new ReplaceBlockStep(tableBlockIndex, clone));
+        tr.setSelection(state.selection());
+        return tr;
+    }
+
+    /**
+     * Deletes the row at the given index from the table. Returns {@code null}
+     * if the table has only one row (the last row cannot be deleted).
+     *
+     * @param state
+     *                        the current editor state.
+     * @param tableBlockIndex
+     *                        the index of the TABLE block.
+     * @param rowIndex
+     *                        the index of the row to delete (0-based).
+     * @return the transaction, or {@code null} if the block is not a table,
+     *         the index is out of range, or only one row remains.
+     */
+    public static Transaction deleteTableRow(EditorState state, int tableBlockIndex, int rowIndex) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((tableBlockIndex < 0) || (tableBlockIndex >= blocks.size()))
+            return null;
+        FormattedBlock table = blocks.get(tableBlockIndex);
+        if (table.getType() != BlockType.TABLE)
+            return null;
+        if (table.getBlocks().size() <= 1)
+            return null;  // Cannot delete the last row.
+        if ((rowIndex < 0) || (rowIndex >= table.getBlocks().size()))
+            return null;
+        FormattedBlock clone = table.clone();
+        clone.getBlocks().remove(rowIndex);
+        Transaction tr = Transaction.create();
+        tr.step(new ReplaceBlockStep(tableBlockIndex, clone));
+        tr.setSelection(state.selection());
+        return tr;
+    }
+
+    /**
+     * Inserts an empty column immediately to the left of the given column
+     * index in the table. Updates the {@code columns}, {@code colwidths}, and
+     * {@code align} metadata.
+     *
+     * @param state
+     *                        the current editor state.
+     * @param tableBlockIndex
+     *                        the index of the TABLE block.
+     * @param colIndex
+     *                        the index of the column to insert to the left of
+     *                        (0-based).
+     * @return the transaction, or {@code null} if the block is not a table or
+     *         the column index is out of range.
+     */
+    public static Transaction insertTableColumnLeft(EditorState state, int tableBlockIndex, int colIndex) {
+        return insertTableColumnAt(state, tableBlockIndex, colIndex);
+    }
+
+    /**
+     * Inserts an empty column immediately to the right of the given column
+     * index in the table. Updates the {@code columns}, {@code colwidths}, and
+     * {@code align} metadata.
+     *
+     * @param state
+     *                        the current editor state.
+     * @param tableBlockIndex
+     *                        the index of the TABLE block.
+     * @param colIndex
+     *                        the index of the column to insert to the right of
+     *                        (0-based).
+     * @return the transaction, or {@code null} if the block is not a table or
+     *         the column index is out of range.
+     */
+    public static Transaction insertTableColumnRight(EditorState state, int tableBlockIndex, int colIndex) {
+        return insertTableColumnAt(state, tableBlockIndex, colIndex + 1);
+    }
+
+    /**
+     * Deletes the column at the given index from the table. Returns
+     * {@code null} if the table has only one column (the last column cannot be
+     * deleted). Updates the {@code columns}, {@code colwidths}, and
+     * {@code align} metadata.
+     *
+     * @param state
+     *                        the current editor state.
+     * @param tableBlockIndex
+     *                        the index of the TABLE block.
+     * @param colIndex
+     *                        the index of the column to delete (0-based).
+     * @return the transaction, or {@code null} if the block is not a table,
+     *         the index is out of range, or only one column remains.
+     */
+    public static Transaction deleteTableColumn(EditorState state, int tableBlockIndex, int colIndex) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((tableBlockIndex < 0) || (tableBlockIndex >= blocks.size()))
+            return null;
+        FormattedBlock table = blocks.get(tableBlockIndex);
+        if (table.getType() != BlockType.TABLE)
+            return null;
+        int cols = tableCols(table);
+        if (cols <= 1)
+            return null;  // Cannot delete the last column.
+        if ((colIndex < 0) || (colIndex >= cols))
+            return null;
+        FormattedBlock clone = table.clone();
+        for (FormattedBlock row : clone.getBlocks()) {
+            if (row.getType() != BlockType.TROW)
+                continue;
+            List<FormattedBlock> cells = row.getBlocks();
+            if (colIndex < cells.size())
+                cells.remove(colIndex);
+        }
+        int newCols = cols - 1;
+        clone.meta("columns", String.valueOf(newCols));
+        clone.meta("colwidths", equalColWidths(newCols));
+        String align = clone.meta("align");
+        if (align != null)
+            clone.meta("align", removeAlignAt(align, colIndex));
+        Transaction tr = Transaction.create();
+        tr.step(new ReplaceBlockStep(tableBlockIndex, clone));
+        tr.setSelection(state.selection());
+        return tr;
+    }
+
+    /**
+     * Sets the number of header rows at the top of the table. Pass {@code 1}
+     * to make the first row a header row; pass {@code 0} to remove all header
+     * rows. The count is stored in {@code meta("headers")}.
+     *
+     * @param state
+     *                        the current editor state.
+     * @param tableBlockIndex
+     *                        the index of the TABLE block.
+     * @param headerRows
+     *                        the number of header rows (normally 0 or 1).
+     * @return the transaction, or {@code null} if the block is not a table.
+     */
+    public static Transaction setTableHeaders(EditorState state, int tableBlockIndex, int headerRows) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((tableBlockIndex < 0) || (tableBlockIndex >= blocks.size()))
+            return null;
+        FormattedBlock table = blocks.get(tableBlockIndex);
+        if (table.getType() != BlockType.TABLE)
+            return null;
+        FormattedBlock clone = table.clone();
+        clone.meta("headers", String.valueOf(headerRows));
+        Transaction tr = Transaction.create();
+        tr.step(new ReplaceBlockStep(tableBlockIndex, clone));
+        tr.setSelection(state.selection());
+        return tr;
+    }
+
+    /**
+     * Returns the column count for the given TABLE block, reading from the
+     * {@code columns} metadata; falls back to counting TCELL blocks in the
+     * first TROW.
+     */
+    private static int tableCols(FormattedBlock table) {
+        String colsMeta = table.meta("columns");
+        if (colsMeta != null) {
+            try {
+                return Integer.parseInt(colsMeta);
+            } catch (NumberFormatException e) {
+                // Fall through.
+            }
+        }
+        for (FormattedBlock row : table.getBlocks()) {
+            if (row.getType() != BlockType.TROW)
+                continue;
+            int count = 0;
+            for (FormattedBlock cell : row.getBlocks()) {
+                if (cell.getType() == BlockType.TCELL)
+                    count++;
+            }
+            return count;
+        }
+        return 3;
+    }
+
+    /**
+     * Shared implementation for inserting an empty column at a given position.
+     * Updates {@code columns}, {@code colwidths}, and {@code align} metadata.
+     */
+    private static Transaction insertTableColumnAt(EditorState state, int tableBlockIndex, int colPos) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((tableBlockIndex < 0) || (tableBlockIndex >= blocks.size()))
+            return null;
+        FormattedBlock table = blocks.get(tableBlockIndex);
+        if (table.getType() != BlockType.TABLE)
+            return null;
+        int cols = tableCols(table);
+        if ((colPos < 0) || (colPos > cols))
+            return null;
+        FormattedBlock clone = table.clone();
+        for (FormattedBlock row : clone.getBlocks()) {
+            if (row.getType() != BlockType.TROW)
+                continue;
+            row.getBlocks().add(colPos, emptyCell());
+        }
+        int newCols = cols + 1;
+        clone.meta("columns", String.valueOf(newCols));
+        clone.meta("colwidths", equalColWidths(newCols));
+        String align = clone.meta("align");
+        if (align != null)
+            clone.meta("align", insertAlignAt(align, colPos));
+        Transaction tr = Transaction.create();
+        tr.step(new ReplaceBlockStep(tableBlockIndex, clone));
+        tr.setSelection(state.selection());
+        return tr;
+    }
+
+    /**
+     * Inserts {@code "L"} at position {@code pos} in a comma-separated
+     * alignment string (e.g. {@code "L,C,R"} → {@code "L,L,C,R"} for
+     * {@code pos=1}).
+     */
+    private static String insertAlignAt(String align, int pos) {
+        String[] parts = align.split(",");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i <= parts.length; i++) {
+            if (i > 0)
+                sb.append(',');
+            if (i == pos) {
+                sb.append('L');
+            } else {
+                int srcIdx = (i < pos) ? i : (i - 1);
+                if (srcIdx < parts.length)
+                    sb.append(parts[srcIdx].trim());
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Removes the entry at {@code pos} from a comma-separated alignment string
+     * (e.g. {@code "L,C,R"} → {@code "L,R"} for {@code pos=1}).
+     */
+    private static String removeAlignAt(String align, int pos) {
+        String[] parts = align.split(",");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            if (i == pos)
+                continue;
+            if (sb.length() > 0)
+                sb.append(',');
+            sb.append(parts[i].trim());
+        }
+        return sb.toString();
+    }
 }

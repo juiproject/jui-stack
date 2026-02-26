@@ -291,6 +291,27 @@ public class TableBlockHandler implements IBlockHandler {
                     });
                     td.appendChild(handle);
                 }
+
+                // Row handle — left side of cell; reveals on hover; click opens row context menu.
+                Element rowHandle = DomGlobal.document.createElement("div");
+                rowHandle.classList.add(styles().tableRowHandle());
+                rowHandle.addEventListener("mousedown", hevt -> {
+                    hevt.preventDefault();
+                    hevt.stopPropagation();
+                    showRowMenu(rowHandle, index, capturedRow, ctx);
+                });
+                td.appendChild(rowHandle);
+
+                // Column handle — top of cell; reveals on hover; click opens column context menu.
+                Element colHandle = DomGlobal.document.createElement("div");
+                colHandle.classList.add(styles().tableColHandle());
+                colHandle.addEventListener("mousedown", hevt -> {
+                    hevt.preventDefault();
+                    hevt.stopPropagation();
+                    showColMenu(colHandle, index, capturedCol, ctx);
+                });
+                td.appendChild(colHandle);
+
                 tr.appendChild(td);
                 cellIndex++;
             }
@@ -899,6 +920,65 @@ public class TableBlockHandler implements IBlockHandler {
     }
 
     /************************************************************************
+     * Row / column context menus.
+     ************************************************************************/
+
+    /**
+     * Shows the row context menu anchored to the right of {@code handleEl}.
+     * When {@code rowIndex == 0} an additional toggle item is appended to
+     * switch the first row between a header row and a normal row.
+     */
+    private void showRowMenu(elemental2.dom.Element handleEl, int tableIndex, int rowIndex, IEditorContext ctx) {
+        ContextMenu menu = new ContextMenu()
+                .item("Insert row above", () -> ctx.applyTransaction(Commands.insertTableRowAbove(ctx.state(), tableIndex, rowIndex)))
+                .item("Insert row below", () -> ctx.applyTransaction(Commands.insertTableRowBelow(ctx.state(), tableIndex, rowIndex)))
+                .sep()
+                .item("Delete row", () -> ctx.applyTransaction(Commands.deleteTableRow(ctx.state(), tableIndex, rowIndex)));
+        if (rowIndex == 0) {
+            boolean isHeader = isTableHeaderRow(tableIndex, ctx);
+            menu.sep();
+            if (isHeader)
+                menu.item("Make normal row", () -> ctx.applyTransaction(Commands.setTableHeaders(ctx.state(), tableIndex, 0)));
+            else
+                menu.item("Make header row", () -> ctx.applyTransaction(Commands.setTableHeaders(ctx.state(), tableIndex, 1)));
+        }
+        menu.showRight(handleEl);
+    }
+
+    /**
+     * Returns {@code true} if the first row of the table at {@code tableIndex}
+     * is currently a header row (i.e. {@code meta("headers")} is &gt; 0).
+     */
+    private boolean isTableHeaderRow(int tableIndex, IEditorContext ctx) {
+        List<FormattedBlock> blocks = ctx.state().doc().getBlocks();
+        if ((tableIndex < 0) || (tableIndex >= blocks.size()))
+            return false;
+        FormattedBlock table = blocks.get(tableIndex);
+        if (table.getType() != BlockType.TABLE)
+            return false;
+        String headersStr = table.meta("headers");
+        if (headersStr == null)
+            return false;
+        try {
+            return Integer.parseInt(headersStr) > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Shows the column context menu anchored below {@code handleEl}.
+     */
+    private void showColMenu(elemental2.dom.Element handleEl, int tableIndex, int colIndex, IEditorContext ctx) {
+        new ContextMenu()
+                .item("Insert column left", () -> ctx.applyTransaction(Commands.insertTableColumnLeft(ctx.state(), tableIndex, colIndex)))
+                .item("Insert column right", () -> ctx.applyTransaction(Commands.insertTableColumnRight(ctx.state(), tableIndex, colIndex)))
+                .sep()
+                .item("Delete column", () -> ctx.applyTransaction(Commands.deleteTableColumn(ctx.state(), tableIndex, colIndex)))
+                .showBelow(handleEl);
+    }
+
+    /************************************************************************
      * CSS.
      ************************************************************************/
 
@@ -921,6 +1001,10 @@ public class TableBlockHandler implements IBlockHandler {
         String tableAddRow();
 
         String colResizeHandle();
+
+        String tableRowHandle();
+
+        String tableColHandle();
     }
 
     @CssResource(value = {
@@ -1011,6 +1095,56 @@ public class TableBlockHandler implements IBlockHandler {
         }
         .colResizeHandle:hover {
             background: rgba(59, 130, 246, 0.35);
+        }
+        .tableRowHandle {
+            position: absolute;
+            left: -3px;
+            top: 50%;
+            /* Resting: scaled-down pill at 60 % — small, unobtrusive hint. */
+            transform: translateY(-50%) scale(0.6);
+            width: 6px;
+            height: 29px;
+            border-radius: 3px;
+            background: rgba(0, 0, 0, 0.18);
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 2;
+            transition: transform 0.12s ease, background 0.12s ease, opacity 0.15s;
+        }
+        .tableCell:focus-within .tableRowHandle {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        /* Hover: expand to full size and turn blue. */
+        .tableRowHandle:hover {
+            transform: translateY(-50%) scale(1);
+            background: #3b82f6;
+        }
+        .tableColHandle {
+            position: absolute;
+            top: -3px;
+            left: 50%;
+            /* Resting: scaled-down pill at 60 %. */
+            transform: translateX(-50%) scale(0.6);
+            width: 36px;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(0, 0, 0, 0.18);
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 2;
+            transition: transform 0.12s ease, background 0.12s ease, opacity 0.15s;
+        }
+        .tableCell:focus-within .tableColHandle {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        /* Hover: expand to full size and turn blue. */
+        .tableColHandle:hover {
+            transform: translateX(-50%) scale(1);
+            background: #3b82f6;
         }
     """)
     public static abstract class TableCSS implements ITableCSS {

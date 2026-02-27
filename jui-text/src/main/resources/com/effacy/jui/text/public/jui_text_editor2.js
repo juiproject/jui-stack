@@ -23,6 +23,17 @@ EditorSupport2._firstLeaf = function (n) {
 }
 
 /**
+ * Returns the last leaf node under the given node.
+ */
+EditorSupport2._lastLeaf = function (n) {
+    if (n == null)
+        return null;
+    while (n.childNodes && n.childNodes.length > 0)
+        n = n.childNodes[n.childNodes.length - 1];
+    return n;
+}
+
+/**
  * Returns the next leaf node after n, bounded by scope.
  */
 EditorSupport2._nextLeaf = function (scope, n) {
@@ -35,6 +46,48 @@ EditorSupport2._nextLeaf = function (scope, n) {
             return EditorSupport2._firstLeaf(n.nextSibling);
     }
     return null;
+}
+
+/************************************************************************
+ * contenteditable="false" (CEF) helpers.
+ ************************************************************************/
+
+/**
+ * Returns the nearest ancestor of node (exclusive) that has
+ * contenteditable="false", stopping before scope (exclusive).
+ * Returns null if no such ancestor exists.
+ */
+EditorSupport2._cefAncestor = function (scope, node) {
+    var p = node.parentNode;
+    while (p && p !== scope) {
+        if (p.nodeType === 1 && p.getAttribute('contenteditable') === 'false')
+            return p;
+        p = p.parentNode;
+    }
+    return null;
+}
+
+/**
+ * Returns the total length of all text nodes under el.
+ */
+EditorSupport2._textLength = function (el) {
+    if (el.nodeType === 3)
+        return el.textContent.length;
+    var len = 0;
+    for (var i = 0; i < el.childNodes.length; i++)
+        len += EditorSupport2._textLength(el.childNodes[i]);
+    return len;
+}
+
+/**
+ * Returns the child index of child within parent.childNodes, or -1.
+ */
+EditorSupport2._childIndex = function (parent, child) {
+    for (var i = 0; i < parent.childNodes.length; i++) {
+        if (parent.childNodes[i] === child)
+            return i;
+    }
+    return -1;
 }
 
 /************************************************************************
@@ -99,11 +152,29 @@ EditorSupport2.charCount = function (el) {
 /**
  * Computes the character offset within a block element for a given
  * DOM node and offset (as returned by Selection.anchorNode/anchorOffset).
+ *
+ * When the browser positions the cursor next to a contenteditable="false"
+ * element, it reports anchorNode as the parent element with anchorOffset
+ * as a child index. This function handles both that case and the edge
+ * case where offset equals childNodes.length (cursor after the last child).
  */
 EditorSupport2._offsetInBlock = function (blockEl, node, offset) {
     if (node.nodeType === 1 && offset < node.childNodes.length) {
         node = node.childNodes[offset];
         offset = 0;
+    } else if (node.nodeType === 1 && offset > 0 && offset >= node.childNodes.length) {
+        // Cursor at end of an element (e.g. after a CEF span that is the
+        // last child). Count all text within this element.
+        if (node === blockEl)
+            return EditorSupport2.charCount(blockEl);
+        // Nested element: count text before it plus text inside it.
+        var beforeLines = EditorSupport2._lines(blockEl, node);
+        var count = 0;
+        for (var i = 0; i < beforeLines.length; i++) {
+            if (i > 0) count++;
+            count += beforeLines[i].length;
+        }
+        return count + EditorSupport2._textLength(node);
     }
     var lines = EditorSupport2._lines(blockEl, node);
     var count = 0;
@@ -177,17 +248,43 @@ EditorSupport2.readSelection = function (editorEl) {
 /**
  * Resolves a character offset within a block element to a DOM
  * node + offset pair suitable for Range.setStart/setEnd.
+ *
+ * contenteditable="false" elements (e.g. variable chips) are treated
+ * as atomic: the cursor is placed before or after them rather than
+ * inside their text content.
  */
 EditorSupport2._resolvePosition = function (blockEl, position) {
     if (position <= 0) {
         var first = EditorSupport2._firstLeaf(blockEl);
-        if (first && first.nodeType === 3)
+        if (first && first.nodeType === 3) {
+            // Don't position inside a CEF element at offset 0.
+            var cef = EditorSupport2._cefAncestor(blockEl, first);
+            if (cef) {
+                var idx = EditorSupport2._childIndex(cef.parentNode, cef);
+                return {node: cef.parentNode, offset: idx};
+            }
             return {node: first, offset: 0};
+        }
         return {node: blockEl, offset: 0};
     }
     var n = EditorSupport2._firstLeaf(blockEl);
     while (n != null) {
         if (n.nodeType === 3) {
+            // Check if this text node is inside a CEF element.
+            var cef = EditorSupport2._cefAncestor(blockEl, n);
+            if (cef) {
+                // Treat the CEF element as atomic.
+                var cefLen = EditorSupport2._textLength(cef);
+                var cefIdx = EditorSupport2._childIndex(cef.parentNode, cef);
+                if (position < cefLen) {
+                    // Position is within the CEF — place cursor after it.
+                    return {node: cef.parentNode, offset: cefIdx + 1};
+                }
+                position -= cefLen;
+                // Skip past all leaves inside the CEF.
+                n = EditorSupport2._nextLeaf(blockEl, EditorSupport2._lastLeaf(cef));
+                continue;
+            }
             if (position <= n.textContent.length)
                 return {node: n, offset: position};
             position -= n.textContent.length;

@@ -1448,6 +1448,108 @@ public final class Commands {
     }
 
     /************************************************************************
+     * Variable commands.
+     ************************************************************************/
+
+    /**
+     * Inserts a variable at the cursor position. If there is a range selection
+     * the selected content is deleted first. The variable is represented as
+     * text occupying character positions (so selection offsets remain correct)
+     * with a format entry carrying {@link FormattedLine#META_VARIABLE}
+     * metadata.
+     *
+     * @param state
+     *              the current editor state.
+     * @param name
+     *              the variable identifier stored in
+     *              {@link FormattedLine#META_VARIABLE}.
+     * @param label
+     *              the display label used as the text content; if {@code null}
+     *              the name is used.
+     * @return the transaction, or {@code null} if the name is empty.
+     */
+    public static Transaction insertVariable(EditorState state, String name, String label) {
+        if ((name == null) || name.isEmpty())
+            return null;
+        if ((label == null) || label.isEmpty())
+            label = name;
+        Selection sel = state.selection();
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        Transaction tr = Transaction.create();
+
+        int block, offset;
+        FormattedBlock result;
+
+        if (sel.isCursor()) {
+            block = sel.anchorBlock();
+            offset = sel.anchorOffset();
+            result = blocks.get(block).clone();
+        } else if (sel.fromBlock() == sel.toBlock()) {
+            block = sel.fromBlock();
+            offset = sel.fromOffset();
+            result = blocks.get(block).clone();
+            result.remove(offset, sel.toOffset() - offset);
+        } else {
+            block = sel.fromBlock();
+            offset = sel.fromOffset();
+            int toBlock = sel.toBlock();
+            int toOffset = sel.toOffset();
+
+            FormattedBlock leftPart = blocks.get(block).clone();
+            leftPart.split(offset);
+
+            FormattedBlock lastClone = blocks.get(toBlock).clone();
+            FormattedBlock rightPart = lastClone.split(toOffset);
+
+            mergeBlockContent(leftPart, rightPart);
+            result = leftPart;
+
+            for (int i = toBlock; i > block; i--)
+                tr.step(new DeleteBlockStep(i));
+        }
+
+        // Find the correct line for the block-level offset (accounting for
+        // line breaks between lines).
+        int remaining = offset;
+        FormattedLine targetLine = null;
+        for (FormattedLine line : result.getLines()) {
+            if (remaining <= line.length()) {
+                targetLine = line;
+                break;
+            }
+            remaining -= line.length() + 1;
+        }
+        if (targetLine == null) {
+            targetLine = result.getLines().get(result.getLines().size() - 1);
+            remaining = targetLine.length();
+        }
+
+        // The label is the displayed text; the variable name is metadata only.
+        targetLine.insert(remaining, label);
+
+        // Strip any existing formatting from the variable range so it does
+        // not inherit surrounding formats (e.g. bold).
+        stripFormattingInRange(result, offset, label.length());
+
+        // Add the variable Format entry.
+        FormattedLine.Format varFmt = new FormattedLine.Format(remaining, label.length());
+        varFmt.getMeta().put(FormattedLine.META_VARIABLE, name);
+        List<FormattedLine.Format> fmts = targetLine.getFormatting();
+        int insertPos = fmts.size();
+        for (int i = 0; i < fmts.size(); i++) {
+            if (fmts.get(i).getIndex() > remaining) {
+                insertPos = i;
+                break;
+            }
+        }
+        fmts.add(insertPos, varFmt);
+
+        tr.step(new ReplaceBlockStep(block, result));
+        tr.setSelection(Selection.cursor(block, offset + label.length()));
+        return tr;
+    }
+
+    /************************************************************************
      * Line break helpers (package-private for testability).
      ************************************************************************/
 

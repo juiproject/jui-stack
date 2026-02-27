@@ -15,9 +15,13 @@
  ******************************************************************************/
 package com.effacy.jui.playground.ui.editor;
 
-import com.effacy.jui.text.type.FormattedText;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.effacy.jui.text.type.markdown.MarkdownParser;
 import com.effacy.jui.text.ui.editor2.Editor;
+import com.effacy.jui.text.ui.editor2.LinkPanel;
+import com.effacy.jui.text.ui.editor2.VariablePanel;
 import com.effacy.jui.ui.client.panel.Panel;
 
 /**
@@ -134,12 +138,96 @@ In the book, Fanon described the unfair treatment of black people in France and 
 
 """;
 
+    private static final String SAMPLE_MARKDOWN3 = """
+After the Battle of France resulted in the French Third Republic ...
+        """;
+
+    private static final List<LinkPanel.AnchorItem> SAMPLE_LINKS = List.of(
+        new LinkPanel.AnchorItem("Frantz Fanon", "https://en.wikipedia.org/wiki/Frantz_Fanon"),
+        new LinkPanel.AnchorItem("Black Skin, White Masks", "https://en.wikipedia.org/wiki/Black_Skin,_White_Masks"),
+        new LinkPanel.AnchorItem("The Wretched of the Earth", "https://en.wikipedia.org/wiki/The_Wretched_of_the_Earth"),
+        new LinkPanel.AnchorItem("Battle of France", "https://en.wikipedia.org/wiki/Battle_of_France"),
+        new LinkPanel.AnchorItem("Vichy France", "https://en.wikipedia.org/wiki/Vichy_France"),
+        new LinkPanel.AnchorItem("Martinique", "https://en.wikipedia.org/wiki/Martinique"),
+        new LinkPanel.AnchorItem("Free French Forces", "https://en.wikipedia.org/wiki/Free_French_Forces"),
+        new LinkPanel.AnchorItem("Charles de Gaulle", "https://en.wikipedia.org/wiki/Charles_de_Gaulle"),
+        new LinkPanel.AnchorItem("Operation Dragoon", "https://en.wikipedia.org/wiki/Operation_Dragoon"),
+        new LinkPanel.AnchorItem("Battle of Alsace", "https://en.wikipedia.org/wiki/Battle_of_Alsace"),
+        new LinkPanel.AnchorItem("Croix de Guerre", "https://en.wikipedia.org/wiki/Croix_de_Guerre"),
+        new LinkPanel.AnchorItem("University of Lyon", "https://en.wikipedia.org/wiki/University_of_Lyon"),
+        new LinkPanel.AnchorItem("Maurice Merleau-Ponty", "https://en.wikipedia.org/wiki/Maurice_Merleau-Ponty"),
+        new LinkPanel.AnchorItem("Aim\u00e9 C\u00e9saire", "https://en.wikipedia.org/wiki/Aim%C3%A9_C%C3%A9saire"),
+        new LinkPanel.AnchorItem("Jean-Paul Sartre", "https://en.wikipedia.org/wiki/Jean-Paul_Sartre"),
+        new LinkPanel.AnchorItem("French Communist Party", "https://en.wikipedia.org/wiki/French_Communist_Party"),
+        new LinkPanel.AnchorItem("Algerian Revolution", "https://en.wikipedia.org/wiki/Algerian_War"),
+        new LinkPanel.AnchorItem("Front de Lib\u00e9ration Nationale", "https://en.wikipedia.org/wiki/National_Liberation_Front_(Algeria)"),
+        new LinkPanel.AnchorItem("Blida-Joinville Hospital", "https://en.wikipedia.org/wiki/Blida"),
+        new LinkPanel.AnchorItem("A Dying Colonialism", "https://en.wikipedia.org/wiki/A_Dying_Colonialism"),
+        new LinkPanel.AnchorItem("Francis Jeanson", "https://en.wikipedia.org/wiki/Francis_Jeanson"),
+        new LinkPanel.AnchorItem("Decolonization", "https://en.wikipedia.org/wiki/Decolonization"),
+        new LinkPanel.AnchorItem("Phenomenology", "https://en.wikipedia.org/wiki/Phenomenology_(philosophy)"),
+        new LinkPanel.AnchorItem("Postcolonialism", "https://en.wikipedia.org/wiki/Postcolonialism"),
+        new LinkPanel.AnchorItem("N\u00e9gritude", "https://en.wikipedia.org/wiki/N%C3%A9gritude"),
+        new LinkPanel.AnchorItem("Pieds-Noirs", "https://en.wikipedia.org/wiki/Pied-Noir"),
+        new LinkPanel.AnchorItem("Saint-Tropez", "https://en.wikipedia.org/wiki/Saint-Tropez"),
+        new LinkPanel.AnchorItem("Casablanca", "https://en.wikipedia.org/wiki/Casablanca"),
+        new LinkPanel.AnchorItem("Raoul Salan", "https://en.wikipedia.org/wiki/Raoul_Salan"),
+        new LinkPanel.AnchorItem("National Institutes of Health", "https://en.wikipedia.org/wiki/National_Institutes_of_Health")
+    );
+
+    private static final List<VariablePanel.VariableItem> SAMPLE_VARIABLES = List.of(
+        new VariablePanel.VariableItem("Recipient Name", "recipient.name"),
+        new VariablePanel.VariableItem("Recipient Email", "recipient.email"),
+        new VariablePanel.VariableItem("Sender Name", "sender.name"),
+        new VariablePanel.VariableItem("Sender Title", "sender.title"),
+        new VariablePanel.VariableItem("Company Name", "company.name"),
+        new VariablePanel.VariableItem("Review Period", "review.period"),
+        new VariablePanel.VariableItem("Review Due Date", "review.dueDate"),
+        new VariablePanel.VariableItem("Manager Name", "manager.name"),
+        new VariablePanel.VariableItem("Department", "department"),
+        new VariablePanel.VariableItem("Current Date", "date.current"),
+        new VariablePanel.VariableItem("Fiscal Year", "fiscal.year"),
+        new VariablePanel.VariableItem("Team Name", "team.name")
+    );
+
+    private static List<VariablePanel.VariableItem> filterVariables(String query) {
+        if ((query == null) || query.isEmpty())
+            return SAMPLE_VARIABLES;
+        String lower = query.toLowerCase();
+        List<VariablePanel.VariableItem> results = new ArrayList<>();
+        for (VariablePanel.VariableItem item : SAMPLE_VARIABLES) {
+            if (item.label().toLowerCase().contains(lower) || item.name().toLowerCase().contains(lower)) {
+                results.add(item);
+                if (results.size() >= 5)
+                    break;
+            }
+        }
+        return results;
+    }
+
+    private static List<LinkPanel.AnchorItem> filterLinks(String query) {
+        if ((query == null) || query.isEmpty())
+            return SAMPLE_LINKS.subList(0, 5);
+        String lower = query.toLowerCase();
+        List<LinkPanel.AnchorItem> results = new ArrayList<>();
+        for (LinkPanel.AnchorItem item : SAMPLE_LINKS) {
+            if (item.label().toLowerCase().contains(lower) || item.url().toLowerCase().contains(lower)) {
+                results.add(item);
+                if (results.size() >= 5)
+                    break;
+            }
+        }
+        return results;
+    }
+
     public EditorExamples() {
         super (new Panel.Config ());
 
-        Editor editor = add (new Editor());
-        FormattedText doc = MarkdownParser.parse(SAMPLE_MARKDOWN0);
-        editor.load(doc);
+        Editor editor = add(new Editor(new Editor.Config()
+            .linkOptions(EditorExamples::filterLinks)
+            .variableOptions(EditorExamples::filterVariables)
+            .debugLog(false)));
+        editor.load(MarkdownParser.parse(SAMPLE_MARKDOWN3));
     }
 
 }

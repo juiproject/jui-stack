@@ -342,9 +342,9 @@ public class FormattedLine {
         }
 
         /**
-         * Determines if this segment represents a variable. When {@code true}, the
-         * {@link #text()} method returns the variable name (not display text) which
-         * should be resolved at render time.
+         * Determines if this segment represents a variable. When {@code true},
+         * {@link #text()} returns the display label and the variable name is
+         * available via {@code meta().get(META_VARIABLE)}.
          *
          * @return {@code true} if this is a variable segment.
          */
@@ -531,15 +531,15 @@ public class FormattedLine {
                     result.add (new TextSegment (text.substring(idx, fmt.index), null, null));
                 TextSegment segment;
                 if ((variable != null) && !variable.isEmpty()) {
-                    // Variable segment: text is the variable name, not the underlying text.
-                    segment = new TextSegment (variable, fmt.formats, link, true);
+                    // Variable segment: text is the underlying line text (the label).
+                    segment = new TextSegment (text.substring (fmt.index, fmt.index + fmt.length), fmt.formats, link, true);
                 } else {
                     segment = new TextSegment (text.substring (fmt.index, fmt.index + fmt.length), fmt.formats, link);
                 }
-                // Copy metadata (excluding link and variable).
+                // Copy metadata (excluding link which is exposed via link()).
                 if (fmt.getMeta() != null) {
                     for (Map.Entry<String,String> entry : fmt.getMeta().entrySet()) {
-                        if (!META_LINK.equals(entry.getKey()) && !META_VARIABLE.equals(entry.getKey()))
+                        if (!META_LINK.equals(entry.getKey()))
                             segment.meta().put(entry.getKey(), entry.getValue());
                     }
                 }
@@ -590,8 +590,9 @@ public class FormattedLine {
         if (!getFormatting ().isEmpty ()) {
             for (Format format : new ArrayList<>(getFormatting ())) {
                 if ((format.index >= start) && (format.index < end)) {
-                    // Start of format is in range. Reduce the length to match and adjust the start.
-                    format.length = (format.index + format.length <= end) ? end - format.index - 1 : format.length - (end - format.index);
+                    // Start of format is in range. Keep only the portion
+                    // that extends beyond the deletion (if any).
+                    format.length = format.length - (end - format.index);
                     format.index = start;
                 } else if ((format.index + format.length >= start) && (format.index + format.length < end)) {
                     // End of format is in range. Reduce the length.
@@ -619,6 +620,9 @@ public class FormattedLine {
             if (format.index >= start) {
                 format.index += len;
             } else if (format.index + format.length >= start) {
+                // Variable formats are atomic — never expand them on adjacent insertion.
+                if ((format.meta != null) && format.meta.containsKey(META_VARIABLE))
+                    continue;
                 format.length += len;
             }
         }

@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.core.client.component.SimpleComponent;
@@ -72,6 +73,22 @@ public class Editor extends SimpleComponent {
      */
     private IListIndexFormatter listIndexFormatter = Editor::defaultListIndex;
 
+    /**
+     * Optional function that provides link suggestions based on typed text.
+     */
+    private Function<String, List<LinkPanel.AnchorItem>> linkOptions;
+
+    /**
+     * Optional function that provides variable suggestions based on typed text.
+     */
+    private Function<String, List<VariablePanel.VariableItem>> variableOptions;
+
+    /**
+     * When {@code true}, logs the document model and selection to the browser
+     * console after every transaction and selection change.
+     */
+    private boolean debugLog;
+
     /************************************************************************
      * DOM references.
      ************************************************************************/
@@ -92,6 +109,16 @@ public class Editor extends SimpleComponent {
      * Toolbar button elements keyed by block type, for active-state tracking.
      */
     private Map<BlockType, Element> blockTypeButtons = new HashMap<>();
+
+    /**
+     * Toolbar button for link, for active-state tracking.
+     */
+    private Element linkButton;
+
+    /**
+     * Toolbar button for variable insertion.
+     */
+    private Element variableButton;
 
     /************************************************************************
      * Block handler registry.
@@ -163,10 +190,82 @@ public class Editor extends SimpleComponent {
     };
 
     /************************************************************************
+     * Configuration.
+     ************************************************************************/
+
+    /**
+     * Configuration for the editor. Use fluent methods to customise, then pass
+     * to the {@link Editor#Editor(Config)} constructor.
+     */
+    public static class Config {
+
+        boolean paragraphAfterHeading = true;
+        IListIndexFormatter listIndexFormatter;
+        Function<String, List<LinkPanel.AnchorItem>> linkOptions;
+        Function<String, List<VariablePanel.VariableItem>> variableOptions;
+        boolean debugLog;
+
+        /**
+         * Configures whether pressing Enter at the end of a heading (H1–H3)
+         * creates a new paragraph instead of continuing the heading (default
+         * {@code true}).
+         */
+        public Config paragraphAfterHeading(boolean enable) {
+            this.paragraphAfterHeading = enable;
+            return this;
+        }
+
+        /**
+         * Configures the formatter used to generate ordered list markers.
+         */
+        public Config listIndexFormatter(IListIndexFormatter formatter) {
+            this.listIndexFormatter = formatter;
+            return this;
+        }
+
+        /**
+         * Configures a function that provides link suggestions as the user
+         * types in the link panel.
+         */
+        public Config linkOptions(Function<String, List<LinkPanel.AnchorItem>> linkOptions) {
+            this.linkOptions = linkOptions;
+            return this;
+        }
+
+        /**
+         * Configures a function that provides variable suggestions as the
+         * user types in the variable panel. When set, a variable toolbar
+         * button is displayed.
+         */
+        public Config variableOptions(Function<String, List<VariablePanel.VariableItem>> variableOptions) {
+            this.variableOptions = variableOptions;
+            return this;
+        }
+
+        /**
+         * Enables debug logging of the document model and selection to the
+         * browser console after every transaction and selection change.
+         */
+        public Config debugLog(boolean enable) {
+            this.debugLog = enable;
+            return this;
+        }
+    }
+
+    /************************************************************************
      * Construction.
      ************************************************************************/
 
     public Editor() {
+        this(new Config());
+    }
+
+    public Editor(Config config) {
+        this.paragraphAfterHeading = config.paragraphAfterHeading;
+        this.listIndexFormatter = (config.listIndexFormatter != null) ? config.listIndexFormatter : Editor::defaultListIndex;
+        this.linkOptions = config.linkOptions;
+        this.variableOptions = config.variableOptions;
+        this.debugLog = config.debugLog;
         FormattedText doc = new FormattedText()
             .block(BlockType.PARA, b -> b.line(""));
         state = EditorState.create(doc);
@@ -192,34 +291,6 @@ public class Editor extends SimpleComponent {
     /************************************************************************
      * Public API.
      ************************************************************************/
-
-    /**
-     * Configures whether pressing Enter at the end of a heading (H1–H3)
-     * creates a new paragraph instead of continuing the heading.
-     *
-     * @param enable
-     *               {@code true} to convert (default), {@code false} to
-     *               retain heading type.
-     * @return this editor for chaining.
-     */
-    public Editor paragraphAfterHeading(boolean enable) {
-        this.paragraphAfterHeading = enable;
-        return this;
-    }
-
-    /**
-     * Configures the formatter used to generate ordered list markers. The
-     * default cycles through numeric (1, 2, 3), lowercase alpha (a, b, c),
-     * and lowercase roman (i, ii, iii) by indent level.
-     *
-     * @param formatter
-     *                  the formatter (if {@code null}, reverts to default).
-     * @return this editor for chaining.
-     */
-    public Editor listIndexFormatter(IListIndexFormatter formatter) {
-        this.listIndexFormatter = (formatter != null) ? formatter : Editor::defaultListIndex;
-        return this;
-    }
 
     /**
      * Loads a document into the editor, replacing any current content.
@@ -307,6 +378,18 @@ public class Editor extends SimpleComponent {
             // Focus the first cell of the newly inserted table.
             handlerFor(BlockType.TABLE).focusBlock(preBlock + 1, ctx);
         });
+
+        // Separator.
+        toolbarSeparator(toolbar);
+
+        // Link.
+        linkButton = toolbarButton(toolbar, "\u26D3", "Link", () -> handleLinkAction());
+
+        // Variable (only when variableOptions is configured).
+        if (variableOptions != null) {
+            toolbarSeparator(toolbar);
+            variableButton = toolbarButton(toolbar, "{ }", "Variable", () -> handleVariableAction());
+        }
     }
 
     /**
@@ -368,7 +451,18 @@ public class Editor extends SimpleComponent {
      */
     private void renderLine(Element parent, FormattedLine line) {
         line.sequence().forEach(segment -> {
-            if (segment.formatting().length == 0) {
+            if (segment.variable()) {
+                Element chip = DomGlobal.document.createElement("span");
+                chip.classList.add(styles().variable());
+                chip.setAttribute("contenteditable", "false");
+                chip.textContent = segment.text();
+                parent.appendChild(chip);
+                // Append an empty text node after the CEF span so that the
+                // browser has a text-node cursor target. Without this,
+                // _resolvePosition falls back to an element-child reference
+                // that prevents beforeinput from firing for text insertion.
+                parent.appendChild(DomGlobal.document.createTextNode(""));
+            } else if (segment.formatting().length == 0) {
                 parent.appendChild(DomGlobal.document.createTextNode(segment.text()));
             } else if (segment.contains(FormatType.A)) {
                 Element a = DomGlobal.document.createElement("a");
@@ -531,6 +625,71 @@ public class Editor extends SimpleComponent {
     }
 
     /**
+     * Opens the link panel for adding, editing, or removing a link on the
+     * current selection. Requires a range selection (not a cursor).
+     */
+    private void handleLinkAction() {
+        syncSelectionFromDom();
+        Selection sel = state.selection();
+        if (sel.isCursor())
+            return;
+        String currentUrl = extractLinkUrl(sel);
+        LinkPanel.show(linkButton, currentUrl, linkOptions, new LinkPanel.ILinkPanelCallback() {
+
+            @Override
+            public void onApply(String url) {
+                applyTransaction(Commands.updateLink(state, url));
+            }
+
+            @Override
+            public void onRemove() {
+                applyTransaction(Commands.removeLink(state));
+            }
+        });
+    }
+
+    /**
+     * Opens the variable panel for selecting and inserting a variable at the
+     * current cursor position.
+     */
+    private void handleVariableAction() {
+        syncSelectionFromDom();
+        VariablePanel.show(variableButton, variableOptions, new VariablePanel.IVariablePanelCallback() {
+
+            @Override
+            public void onSelect(String name, String label) {
+                applyTransaction(Commands.insertVariable(state, name, label));
+            }
+        });
+    }
+
+    /**
+     * Extracts the link URL at the anchor position of the given selection, or
+     * {@code null} if no link exists there.
+     */
+    private String extractLinkUrl(Selection sel) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int blockIdx = sel.anchorBlock();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+        FormattedBlock blk = blocks.get(blockIdx);
+        int target = sel.anchorOffset();
+        int lineStart = 0;
+        for (FormattedLine line : blk.getLines()) {
+            for (FormattedLine.Format fmt : line.getFormatting()) {
+                int absStart = lineStart + fmt.getIndex();
+                int absEnd = absStart + fmt.getLength();
+                if ((target >= absStart) && (target < absEnd) && fmt.getFormats().contains(FormatType.A)) {
+                    if (fmt.getMeta() != null)
+                        return fmt.getMeta().get(FormattedLine.META_LINK);
+                }
+            }
+            lineStart += line.length() + 1;
+        }
+        return null;
+    }
+
+    /**
      * Applies a transaction, pushes inverse to history, and re-renders.
      * Calls {@link IBlockHandler#beforeApplyTransaction} on all handlers first
      * so that any in-progress edits (e.g. cell text) are flushed to the model.
@@ -541,6 +700,8 @@ public class Editor extends SimpleComponent {
         handlers.forEach(h -> h.beforeApplyTransaction(ctx));
         Transaction inverse = state.apply(tr);
         history.push(inverse);
+        if (debugLog)
+            debugLogState("applyTransaction");
         render();
     }
 
@@ -573,6 +734,8 @@ public class Editor extends SimpleComponent {
      * consumed and the editor's default logic is skipped.
      */
     private void handleKeyDown(KeyboardEvent ke) {
+        if (debugLog)
+            DomGlobal.console.log("[Editor:keydown] key=" + ke.key + " ctrl=" + (ke.ctrlKey || ke.metaKey) + " alt=" + ke.altKey + " shift=" + ke.shiftKey);
         for (IBlockHandler h : handlers) {
             if (h.handleKeyDown(ke, ctx))
                 return;
@@ -630,6 +793,8 @@ public class Editor extends SimpleComponent {
      * native input inside table cells).
      */
     private void handleBeforeInput(elemental2.dom.Event evt) {
+        if (debugLog)
+            DomGlobal.console.log("[Editor:beforeinput] inputType=" + EditorSupport2.getInputType(evt) + " data=" + EditorSupport2.getInputData(evt));
         for (IBlockHandler h : handlers) {
             if (h.handleBeforeInput(evt, ctx))
                 return;
@@ -694,10 +859,31 @@ public class Editor extends SimpleComponent {
                     applyTransaction(Commands.forceJoinWithPrevious(state));
                     break;
                 }
+                // Atomic variable deletion: if cursor is inside or at the
+                // end of a variable, delete the entire variable as a unit.
+                if (sel2.isCursor()) {
+                    int[] varRange = findVariableContaining(sel2.anchorBlock(), sel2.anchorOffset());
+                    if (varRange != null) {
+                        state.setSelection(Selection.range(sel2.anchorBlock(), varRange[0], sel2.anchorBlock(), varRange[1]));
+                        applyTransaction(Commands.deleteSelection(state));
+                        break;
+                    }
+                }
                 applyTransaction(Commands.deleteCharBefore(state));
                 break;
             }
             case "deleteContentForward": {
+                // Atomic variable deletion: if cursor is inside or at the
+                // start of a variable, delete the entire variable as a unit.
+                Selection selFwd = state.selection();
+                if (selFwd.isCursor()) {
+                    int[] varRange = findVariableAt(selFwd.anchorBlock(), selFwd.anchorOffset());
+                    if (varRange != null) {
+                        state.setSelection(Selection.range(selFwd.anchorBlock(), varRange[0], selFwd.anchorBlock(), varRange[1]));
+                        applyTransaction(Commands.deleteSelection(state));
+                        break;
+                    }
+                }
                 Transaction tr3 = Commands.deleteCharAfter(state);
                 if (tr3 != null) {
                     applyTransaction(tr3);
@@ -740,6 +926,76 @@ public class Editor extends SimpleComponent {
         // Normalize line endings (Windows \r\n and old Mac \r).
         text = text.replace("\r\n", "\n").replace("\r", "\n");
         applyTransaction(Commands.pasteText(state, text));
+    }
+
+    /************************************************************************
+     * Debug logging.
+     ************************************************************************/
+
+    private void debugLogState(String context) {
+        Selection sel = state.selection();
+        String selStr = sel.isCursor()
+            ? "cursor block=" + sel.anchorBlock() + " offset=" + sel.anchorOffset()
+            : "range anchor=" + sel.anchorBlock() + ":" + sel.anchorOffset()
+                + " head=" + sel.headBlock() + ":" + sel.headOffset();
+        DomGlobal.console.log("[Editor:" + context + "] " + selStr + "\n" + state.doc().debug());
+    }
+
+    /************************************************************************
+     * Variable boundary helpers (atomic deletion).
+     ************************************************************************/
+
+    /**
+     * Returns the {@code [start, end)} block-level range of the variable
+     * that contains, or is immediately adjacent to, {@code offset} in the
+     * given block.
+     * <p>
+     * A match occurs when {@code offset} falls strictly inside the variable
+     * range (absStart &lt; offset &lt; absEnd) or exactly at a boundary
+     * (absStart == offset or absEnd == offset). This handles the case where
+     * the browser positions the cursor anywhere within the variable chip
+     * text rather than at a precise boundary.
+     *
+     * @return {@code [absStart, absEnd]} or {@code null} if no variable
+     *         spans the given offset.
+     */
+    private int[] findVariableContaining(int blockIdx, int offset) {
+        FormattedBlock blk = state.doc().getBlocks().get(blockIdx);
+        int lineStart = 0;
+        for (FormattedLine line : blk.getLines()) {
+            for (FormattedLine.Format fmt : line.getFormatting()) {
+                if ((fmt.getMeta() == null) || !fmt.getMeta().containsKey(FormattedLine.META_VARIABLE))
+                    continue;
+                int absStart = lineStart + fmt.getIndex();
+                int absEnd = absStart + fmt.getLength();
+                if ((offset > absStart) && (offset <= absEnd))
+                    return new int[]{absStart, absEnd};
+            }
+            lineStart += line.length() + 1;
+        }
+        return null;
+    }
+
+    /**
+     * Like {@link #findVariableContaining(int, int)} but includes the case
+     * where the cursor is exactly at the start of the variable (for
+     * forward-delete).
+     */
+    private int[] findVariableAt(int blockIdx, int offset) {
+        FormattedBlock blk = state.doc().getBlocks().get(blockIdx);
+        int lineStart = 0;
+        for (FormattedLine line : blk.getLines()) {
+            for (FormattedLine.Format fmt : line.getFormatting()) {
+                if ((fmt.getMeta() == null) || !fmt.getMeta().containsKey(FormattedLine.META_VARIABLE))
+                    continue;
+                int absStart = lineStart + fmt.getIndex();
+                int absEnd = absStart + fmt.getLength();
+                if ((offset >= absStart) && (offset < absEnd))
+                    return new int[]{absStart, absEnd};
+            }
+            lineStart += line.length() + 1;
+        }
+        return null;
     }
 
     /************************************************************************
@@ -867,6 +1123,8 @@ public class Editor extends SimpleComponent {
 
         String listNumber();
 
+        String variable();
+
     }
 
     @CssResource(value = {
@@ -989,6 +1247,17 @@ public class Editor extends SimpleComponent {
             border-radius: 4px;
             font-size: 85%;
             padding: 0.2em 0.4em;
+        }
+        .variable {
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            font-weight: 500;
+            display: inline;
+            user-select: all;
+            cursor: default;
         }
     """)
     public static abstract class LocalCSS implements ILocalCSS {

@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import com.effacy.jui.core.client.component.IComponentCSS;
-import com.effacy.jui.core.client.component.SimpleComponent;
+import com.effacy.jui.core.client.component.Component;
 import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.platform.css.client.CssResource;
@@ -52,41 +52,25 @@ import elemental2.dom.KeyboardEvent;
  * FormattedText result = editor.value();
  * </pre>
  */
-public class Editor extends SimpleComponent {
+public class Editor extends Component<Editor.Config> {
 
     /************************************************************************
      * State.
      ************************************************************************/
 
+    /**
+     * The current editor state: document and selection. Mutated by applying
+     * transactions returned from {@link EditorState#apply}. The editor's
+     * transaction methods ensure that all mutations go through the transaction
+     * system and that the document and selection are always in sync with the view.
+     */
     private EditorState state;
+
+    /**
+     * History of transactions for undo/redo. Stores inverse transactions returned
+     * to the editor by {@link EditorState#apply}.
+     */
     private History history;
-
-    /**
-     * When {@code true}, pressing Enter at the end of a heading block (H1–H3)
-     * creates a new paragraph instead of another heading.
-     */
-    private boolean paragraphAfterHeading = true;
-
-    /**
-     * Formats the display label for ordered list items.
-     */
-    private IListIndexFormatter listIndexFormatter = Editor::defaultListIndex;
-
-    /**
-     * Optional function that provides link suggestions based on typed text.
-     */
-    private Function<String, List<LinkPanel.AnchorItem>> linkOptions;
-
-    /**
-     * Optional function that provides variable suggestions based on typed text.
-     */
-    private Function<String, List<VariablePanel.VariableItem>> variableOptions;
-
-    /**
-     * When {@code true}, logs the document model and selection to the browser
-     * console after every transaction and selection change.
-     */
-    private boolean debugLog;
 
     /************************************************************************
      * DOM references.
@@ -100,10 +84,11 @@ public class Editor extends SimpleComponent {
     private boolean rendering;
 
     /**
-     * Bound toolbar (if any). The editor sends state updates here and receives
-     * commands back via the internal {@link IEditorCommands} implementation.
+     * Listener for editor state changes (selection, block type, formats).
+     * The containing control uses this to update toolbars, manage floating
+     * behaviour, etc.
      */
-    private IEditorToolbar toolbar;
+    private IStateListener stateListener;
 
     /************************************************************************
      * Block handler registry.
@@ -160,7 +145,7 @@ public class Editor extends SimpleComponent {
 
         @Override
         public IListIndexFormatter listIndexFormatter() {
-            return listIndexFormatter;
+            return config().listIndexFormatter;
         }
 
         @Override
@@ -182,10 +167,10 @@ public class Editor extends SimpleComponent {
      * Configuration for the editor. Use fluent methods to customise, then pass
      * to the {@link Editor#Editor(Config)} constructor.
      */
-    public static class Config {
+    public static class Config extends Component.Config {
 
         boolean paragraphAfterHeading = true;
-        IListIndexFormatter listIndexFormatter;
+        IListIndexFormatter listIndexFormatter = Editor::defaultListIndex;
         Function<String, List<LinkPanel.AnchorItem>> linkOptions;
         Function<String, List<VariablePanel.VariableItem>> variableOptions;
         boolean debugLog;
@@ -246,11 +231,7 @@ public class Editor extends SimpleComponent {
     }
 
     public Editor(Config config) {
-        this.paragraphAfterHeading = config.paragraphAfterHeading;
-        this.listIndexFormatter = (config.listIndexFormatter != null) ? config.listIndexFormatter : Editor::defaultListIndex;
-        this.linkOptions = config.linkOptions;
-        this.variableOptions = config.variableOptions;
-        this.debugLog = config.debugLog;
+        super(config);
         FormattedText doc = new FormattedText()
             .block(BlockType.PARA, b -> b.line(""));
         state = EditorState.create(doc);
@@ -260,9 +241,9 @@ public class Editor extends SimpleComponent {
     }
 
     @Override
-    protected INodeProvider buildNode(Element el) {
+    protected INodeProvider buildNode(Element el, Config data) {
         return Wrap.$(el).$(root -> {
-            root.style(styles().editor()).attr("contenteditable", "true");
+            root.attr("contenteditable", "true");
         }).build(ctx -> {
             editorEl = el;
             render();
@@ -297,18 +278,55 @@ public class Editor extends SimpleComponent {
     }
 
     /**
-     * Binds an {@link IEditorToolbar} to this editor. The toolbar receives
-     * state updates and can send commands back via {@link IEditorCommands}.
+     * Listener for editor state changes. The containing control implements
+     * this to receive state updates and forward them to toolbars, manage
+     * floating behaviour, etc.
+     */
+    public interface IStateListener {
+
+        /**
+         * Called when the editor's selection or content changes. The listener
+         * should update toolbar state and handle any positional behaviour
+         * (e.g. floating toolbar show/hide).
+         *
+         * @param blockType
+         *                       the block type of the anchor block.
+         * @param activeFormats
+         *                       the set of inline formats active at the
+         *                       current cursor or range.
+         * @param rangeSelected
+         *                       {@code true} if the selection is a range.
+         */
+        void onStateUpdate(BlockType blockType, Set<FormatType> activeFormats, boolean rangeSelected);
+
+        /**
+         * Called when the selection is in a cell-editing context (e.g.
+         * table cell). Block-type information is not meaningful.
+         *
+         * @param activeFormats
+         *                      the set of inline formats active at the cell
+         *                      selection.
+         */
+        void onCellStateUpdate(Set<FormatType> activeFormats);
+    }
+
+    /**
+     * Binds a state listener to this editor and returns the command
+     * interface that can be used to drive the editor (e.g. from toolbar
+     * buttons).
      * <p>
      * May be called before or after the editor is rendered. If called after,
      * an initial state update is sent immediately.
      *
-     * @param toolbar
-     *                the toolbar to bind.
+     * @param listener
+     *                 the listener for state changes.
+     * @return the command interface for driving the editor.
      */
-    public void bind(IEditorToolbar toolbar) {
-        this.toolbar = toolbar;
-        toolbar.bind(new IEditorCommands() {
+    public IEditorCommands bind(IStateListener listener) {
+        this.stateListener = listener;
+        if (editorEl != null)
+            updateToolbarState();
+        return new IEditorCommands() {
 
             @Override
             public void toggleFormat(FormatType type) {
@@ -345,9 +363,7 @@ public class Editor extends SimpleComponent {
             public void insertVariable(Element anchor) {
                 handleVariableAction(anchor);
             }
-        });
-        if (editorEl != null)
-            updateToolbarState();
+        };
     }
 
     /************************************************************************
@@ -483,7 +499,7 @@ public class Editor extends SimpleComponent {
      * or across the entire range selection.
      */
     private void updateToolbarState() {
-        if (toolbar == null)
+        if (stateListener == null)
             return;
         Selection sel = state.selection();
         int blockIdx = sel.anchorBlock();
@@ -496,15 +512,15 @@ public class Editor extends SimpleComponent {
             if (isFormatActive(sel, ft))
                 active.add(ft);
         }
-        toolbar.updateState(blk.getType(), active, !sel.isCursor());
+        stateListener.onStateUpdate(blk.getType(), active, !sel.isCursor());
     }
 
     /**
-     * Updates the toolbar for the cell-editing context.
+     * Notifies the state listener for the cell-editing context.
      */
     private void updateToolbarForCellSelection(Set<FormatType> activeFormats) {
-        if (toolbar != null)
-            toolbar.updateCellState(activeFormats);
+        if (stateListener != null)
+            stateListener.onCellStateUpdate(activeFormats);
     }
 
     /**
@@ -564,7 +580,7 @@ public class Editor extends SimpleComponent {
         if (sel.isCursor())
             return;
         String currentUrl = extractLinkUrl(sel);
-        LinkPanel.show(anchor, currentUrl, linkOptions, new LinkPanel.ILinkPanelCallback() {
+        LinkPanel.show(anchor, currentUrl, config().linkOptions, new LinkPanel.ILinkPanelCallback() {
 
             @Override
             public void onApply(String url) {
@@ -584,7 +600,7 @@ public class Editor extends SimpleComponent {
      */
     private void handleVariableAction(Element anchor) {
         syncSelectionFromDom();
-        VariablePanel.show(anchor, variableOptions, new VariablePanel.IVariablePanelCallback() {
+        VariablePanel.show(anchor, config().variableOptions, new VariablePanel.IVariablePanelCallback() {
 
             @Override
             public void onSelect(String name, String label) {
@@ -630,7 +646,7 @@ public class Editor extends SimpleComponent {
         handlers.forEach(h -> h.beforeApplyTransaction(ctx));
         Transaction inverse = state.apply(tr);
         history.push(inverse);
-        if (debugLog)
+        if (config().debugLog)
             debugLogState("applyTransaction");
         render();
     }
@@ -664,7 +680,7 @@ public class Editor extends SimpleComponent {
      * consumed and the editor's default logic is skipped.
      */
     private void handleKeyDown(KeyboardEvent ke) {
-        if (debugLog)
+        if (config().debugLog)
             DomGlobal.console.log("[Editor:keydown] key=" + ke.key + " ctrl=" + (ke.ctrlKey || ke.metaKey) + " alt=" + ke.altKey + " shift=" + ke.shiftKey);
         for (IBlockHandler h : handlers) {
             if (h.handleKeyDown(ke, ctx))
@@ -723,7 +739,7 @@ public class Editor extends SimpleComponent {
      * native input inside table cells).
      */
     private void handleBeforeInput(elemental2.dom.Event evt) {
-        if (debugLog)
+        if (config().debugLog)
             DomGlobal.console.log("[Editor:beforeinput] inputType=" + EditorSupport2.getInputType(evt) + " data=" + EditorSupport2.getInputData(evt));
         for (IBlockHandler h : handlers) {
             if (h.handleBeforeInput(evt, ctx))
@@ -760,7 +776,7 @@ public class Editor extends SimpleComponent {
                 Transaction splitTr = Commands.splitBlock(state);
                 if (splitTr != null) {
                     // Heading at end → new block becomes paragraph.
-                    if (paragraphAfterHeading
+                    if (config().paragraphAfterHeading
                             && blk.getType().is(BlockType.H1, BlockType.H2, BlockType.H3)
                             && (offset >= Positions.contentSize(blk))) {
                         splitTr.step(new SetBlockTypeStep(blockIdx + 1, BlockType.PARA));
@@ -1037,8 +1053,6 @@ public class Editor extends SimpleComponent {
 
     public static interface ILocalCSS extends IComponentCSS {
 
-        String editor();
-
         String block();
 
         String listBullet();
@@ -1052,7 +1066,7 @@ public class Editor extends SimpleComponent {
     @CssResource(value = {
         IComponentCSS.COMPONENT_CSS
     }, stylesheet = """
-        .editor {
+        .component {
             outline: none;
             min-height: 2em;
             cursor: text;
@@ -1060,65 +1074,65 @@ public class Editor extends SimpleComponent {
             flex: 1;
             overflow: auto;
         }
-        .editor:focus {
+        .component:focus {
             outline: none;
         }
-        .block {
+        .component .block {
             margin: 0 0 0.15em 0;
             padding: 2px 0;
             min-height: 1em;
             white-space: pre-wrap;
         }
-        .listBullet {
+        .component .listBullet {
             position: relative;
             padding-left: 1.5em;
         }
-        .listBullet::before {
+        .component .listBullet::before {
             position: absolute;
             left: 0.35em;
             content: '\\2022';
         }
-        .listNumber {
+        .component .listNumber {
             position: relative;
             padding-left: 1.5em;
         }
-        .listNumber::before {
+        .component .listNumber::before {
             position: absolute;
             left: 0.15em;
             content: attr(data-list-index) '.';
         }
-        .editor h1 {
+        .component h1 {
             font-size: 1.8em;
             font-weight: 500;
             margin: 0 0 0.15em 0;
         }
-        .editor h2 {
+        .component h2 {
             font-size: 1.5em;
             font-weight: 500;
             margin: 0 0 0.15em 0;
         }
-        .editor h3 {
+        .component h3 {
             font-size: 1.25em;
             font-weight: 500;
             margin: 0 0 0.15em 0;
         }
-        .editor p {
+        .component p {
             margin: 0 0 0.15em 0;
         }
-        .editor .indent1 { margin-left: 1.5em; }
-        .editor .indent2 { margin-left: 3em; }
-        .editor .indent3 { margin-left: 4.5em; }
-        .editor .indent4 { margin-left: 6em; }
-        .editor .indent5 { margin-left: 7.5em; }
-        .editor .fmt_bold { font-weight: 600; }
-        .editor .fmt_italic { font-style: italic; }
-        .editor .fmt_underline { text-decoration: underline; }
-        .editor .fmt_strike { text-decoration: line-through; }
-        .editor .fmt_strike.fmt_underline { text-decoration: underline line-through; }
-        .editor .fmt_superscript { vertical-align: super; font-size: 0.8em; }
-        .editor .fmt_subscript { vertical-align: sub; font-size: 0.8em; }
-        .editor .fmt_highlight { background-color: #F5EB72; }
-        .editor .fmt_code {
+        .component .indent1 { margin-left: 1.5em; }
+        .component .indent2 { margin-left: 3em; }
+        .component .indent3 { margin-left: 4.5em; }
+        .component .indent4 { margin-left: 6em; }
+        .component .indent5 { margin-left: 7.5em; }
+        .component .fmt_bold { font-weight: 600; }
+        .component .fmt_italic { font-style: italic; }
+        .component .fmt_underline { text-decoration: underline; }
+        .component .fmt_strike { text-decoration: line-through; }
+        .component .fmt_strike.fmt_underline { text-decoration: underline line-through; }
+        .component .fmt_superscript { vertical-align: super; font-size: 0.8em; }
+        .component .fmt_subscript { vertical-align: sub; font-size: 0.8em; }
+        .component .fmt_highlight { background-color: #F5EB72; }
+        .component .fmt_code {
             font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace;
             line-height: normal;
             background: rgba(135,131,120,.15);
@@ -1127,7 +1141,7 @@ public class Editor extends SimpleComponent {
             font-size: 85%;
             padding: 0.2em 0.4em;
         }
-        .variable {
+        .component .variable {
             background: #e0e7ff;
             color: #3730a3;
             padding: 1px 6px;

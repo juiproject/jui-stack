@@ -8,7 +8,7 @@ import java.util.Set;
 
 import com.effacy.jui.core.client.component.Component;
 import com.effacy.jui.core.client.component.IComponentCSS;
-import com.effacy.jui.core.client.dom.DomSupport;
+import com.effacy.jui.core.client.component.layout.LayoutData;
 import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.UIEventType;
 import com.effacy.jui.core.client.dom.builder.Button;
@@ -18,44 +18,24 @@ import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
-
 import com.google.gwt.core.client.GWT;
 
-import elemental2.dom.DomGlobal;
 import elemental2.dom.Element;
-import elemental2.dom.Range;
-import jsinterop.annotations.JsPackage;
-import jsinterop.annotations.JsType;
-import jsinterop.base.Js;
 
 /**
  * Default toolbar for the editor. Renders as a JUI component with
  * configurable tool buttons.
  * <p>
- * Supports three positions via {@link Position}:
- * <ul>
- * <li><b>{@link Position#TOP}</b> (default) — fixed above the editor
- * with a bottom border.</li>
- * <li><b>{@link Position#BOTTOM}</b> — fixed below the editor with a
- * top border.</li>
- * <li><b>{@link Position#FLOATING}</b> — rendered into a body-level
- * container, positioned above the current text selection. Shows when a
- * range is selected; hides when the selection collapses.</li>
- * </ul>
+ * The toolbar is responsible only for its inner representation (buttons,
+ * active states, layout). All positional concerns (fixed, floating,
+ * containment styling) are managed by the containing control.
  * <p>
  * Each button sends commands to the editor via {@link IEditorCommands}
- * (bound during {@link #bind(IEditorCommands)}). The editor sends state
- * updates back via {@link #updateState(BlockType, Set, boolean)} and
- * {@link #updateCellState(Set)}.
+ * (bound during {@link #bind(IEditorCommands)}). The containing control
+ * sends state updates via {@link #updateState(BlockType, Set, boolean)}
+ * and {@link #updateCellState(Set)}.
  */
 public class EditorToolbar extends Component<EditorToolbar.Config> implements IEditorToolbar {
-
-    /**
-     * Toolbar position relative to the editor area.
-     */
-    public enum Position {
-        TOP, BOTTOM, FLOATING
-    }
 
     /**
      * Available toolbar tools. Each maps to a specific
@@ -92,7 +72,6 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
         }
 
         Set<Tool> tools;
-        Position position = Position.TOP;
         Style style = Style.STANDARD;
 
         /**
@@ -106,16 +85,6 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
         }
 
         /**
-         * Sets the toolbar position relative to the editor area. Defaults to
-         * {@link Position#TOP}.
-         */
-        public Config position(Position position) {
-            if (position != null)
-                this.position = position;
-            return this;
-        }
-
-        /**
          * Sets the style pack for the toolbar. When not called, the
          * {@link Style#STANDARD} style is used.
          */
@@ -124,17 +93,12 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
                 this.style = style;
             return this;
         }
-    }
 
-    /************************************************************************
-     * Body-level container for floating toolbars.
-     ************************************************************************/
-
-    private static final String FLOATING_CONTAINER_ID = "floating-toolbar-container";
-    static {
-        Element container = DomSupport.createElement("div");
-        container.id = FLOATING_CONTAINER_ID;
-        DomGlobal.document.body.appendChild(container);
+        @Override
+        @SuppressWarnings("unchecked")
+        public EditorToolbar build(LayoutData... data) {
+            return build (new EditorToolbar (this), data);
+        }
     }
 
     /************************************************************************
@@ -204,8 +168,6 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
     @Override
     public void bind(IEditorCommands commands) {
         this.commands = commands;
-        if ((config().position == Position.FLOATING) && !isRendered())
-            bind(FLOATING_CONTAINER_ID, false);
     }
 
     @Override
@@ -222,12 +184,6 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
             else
                 entry.getValue().classList.remove(styles().tbtnActive());
         }
-        if (config().position == Position.FLOATING) {
-            if (rangeSelected)
-                showAboveSelection();
-            else
-                dismiss();
-        }
     }
 
     @Override
@@ -239,54 +195,6 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
             else
                 entry.getValue().classList.remove(styles().tbtnActive());
         }
-        if (config().position == Position.FLOATING)
-            dismiss();
-    }
-
-    /************************************************************************
-     * Floating mode: show / hide / positioning.
-     ************************************************************************/
-
-    private void showAboveSelection() {
-        if (!isRendered())
-            return;
-        elemental2.dom.Selection sel = DomGlobal.document.getSelection();
-        if ((sel == null) || (sel.rangeCount == 0)) {
-            dismiss();
-            return;
-        }
-        Range range = sel.getRangeAt(0);
-        if (range.collapsed) {
-            dismiss();
-            return;
-        }
-        JsRect rect = Js.uncheckedCast(range.getBoundingClientRect());
-        elemental2.dom.HTMLElement root = Js.uncheckedCast(getRoot());
-        root.style.display = "flex";
-
-        // Position above the selection, centered horizontally. Use
-        // requestAnimationFrame so the browser has laid out the toolbar and
-        // we can measure its dimensions.
-        DomGlobal.requestAnimationFrame(time -> {
-            double panelWidth = getRoot().getBoundingClientRect().width;
-            double panelHeight = getRoot().getBoundingClientRect().height;
-            double left = rect.left + (rect.width / 2) - (panelWidth / 2);
-            double top = rect.top - panelHeight - 8;
-            // Keep within viewport bounds.
-            if (left < 4)
-                left = 4;
-            if (top < 4)
-                top = rect.bottom + 8;
-            root.style.setProperty("left", left + "px");
-            root.style.setProperty("top", top + "px");
-        });
-    }
-
-    private void dismiss() {
-        if (isRendered()) {
-            elemental2.dom.HTMLElement root = Js.uncheckedCast(getRoot());
-            root.style.display = "none";
-        }
     }
 
     /************************************************************************
@@ -297,12 +205,6 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
     protected INodeProvider buildNode(Element el) {
         return Wrap.$(el).$(root -> {
             root.style(styles().toolbar());
-            if (config().position == Position.TOP)
-                root.style(styles().top());
-            else if (config().position == Position.BOTTOM)
-                root.style(styles().bottom());
-            else if (config().position == Position.FLOATING)
-                root.style(styles().floating());
 
             // Format toggles.
             formatButton(root, Tool.BOLD, "B", "Bold (Ctrl+B)");
@@ -399,15 +301,6 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
     }
 
     /************************************************************************
-     * JsInterop helpers (floating mode).
-     ************************************************************************/
-
-    @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "Object")
-    private static class JsRect {
-        public double left, top, bottom, width, height;
-    }
-
-    /************************************************************************
      * CSS.
      ************************************************************************/
 
@@ -419,12 +312,6 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
     public static interface ILocalCSS extends IComponentCSS {
 
         String toolbar();
-
-        String top();
-
-        String bottom();
-
-        String floating();
 
         String tbtn();
 
@@ -450,10 +337,6 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
             --jui-toolbar-btn-active-bg: #dbeafe;
             --jui-toolbar-btn-active-color: #1d4ed8;
             --jui-toolbar-sep-color: #ccc;
-            --jui-toolbar-float-bg: #fff;
-            --jui-toolbar-float-border: #e5e7eb;
-            --jui-toolbar-float-radius: 6px;
-            --jui-toolbar-float-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
         }
         .toolbar {
             display: flex;
@@ -463,21 +346,6 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
             padding: var(--jui-toolbar-padding);
             background: var(--jui-toolbar-bg);
             flex-shrink: 0;
-        }
-        .top {
-            border-bottom: 1px solid var(--jui-toolbar-border);
-        }
-        .bottom {
-            border-top: 1px solid var(--jui-toolbar-border);
-        }
-        .floating {
-            position: fixed;
-            display: none;
-            border: 1px solid var(--jui-toolbar-float-border);
-            border-radius: var(--jui-toolbar-float-radius);
-            box-shadow: var(--jui-toolbar-float-shadow);
-            background: var(--jui-toolbar-float-bg);
-            z-index: 10000;
         }
         .tbtn {
             border: none;

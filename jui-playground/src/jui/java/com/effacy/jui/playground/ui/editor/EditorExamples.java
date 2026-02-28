@@ -23,7 +23,7 @@ import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.text.type.markdown.MarkdownParser;
 import com.effacy.jui.text.ui.editor2.Editor;
 import com.effacy.jui.text.ui.editor2.EditorToolbar;
-import com.effacy.jui.text.ui.editor2.EditorToolbar.Position;
+import com.effacy.jui.text.ui.editor2.IEditorToolbar.Position;
 import com.effacy.jui.text.ui.editor2.EditorToolbar.Tool;
 import com.effacy.jui.text.ui.editor2.FormattedTextEditor;
 import com.effacy.jui.text.ui.editor2.LinkPanel;
@@ -235,9 +235,8 @@ After the Battle of France resulted in the French Third Republic ...
                 .variableOptions(EditorExamples::filterVariables)
                 .debugLog(false))
             .height(Length.px(200))
+            .position(Position.FLOATING)
             .toolbar(new EditorToolbar.Config()
-                // .position(Position.FLOATING)
-                .position(Position.BOTTOM)
                 .tools(Tool.BOLD, Tool.ITALIC, Tool.UNDERLINE, Tool.STRIKETHROUGH,
                        Tool.SUBSCRIPT, Tool.SUPERSCRIPT, Tool.CODE, Tool.HIGHLIGHT,
                        Tool.H1, Tool.H2, Tool.H3, Tool.PARAGRAPH,

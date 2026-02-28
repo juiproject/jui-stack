@@ -5,6 +5,8 @@ import com.effacy.jui.core.client.control.Control;
 import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.builder.Cpt;
 import com.effacy.jui.core.client.dom.builder.Wrap;
+import com.effacy.jui.core.client.dom.css.CSS;
+import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.text.type.FormattedText;
 import com.google.gwt.core.client.GWT;
@@ -16,9 +18,9 @@ import elemental2.dom.Element;
  * to provide a complete rich text editing experience with value management
  * and dirty detection.
  * <p>
- * The toolbar can be fixed (above or below the editor) or floating (appears
- * above the current text selection). Configure via
- * {@link EditorToolbar.Config#floating(boolean)}.
+ * Toolbar position is configured via
+ * {@link EditorToolbar.Config#position(EditorToolbar.Position)}: {@code TOP}
+ * (default), {@code BOTTOM}, or {@code FLOATING}.
  * <p>
  * Usage:
  * <pre>
@@ -27,6 +29,7 @@ import elemental2.dom.Element;
  *         .linkOptions(MyApp::filterLinks)
  *         .variableOptions(MyApp::filterVariables))
  *     .toolbar(new EditorToolbar.Config()
+ *         .position(Position.BOTTOM)
  *         .tools(Tool.BOLD, Tool.ITALIC, Tool.UNDERLINE, Tool.H1, Tool.H2)));
  * editor.setValue(Value.of(myDocument));
  * </pre>
@@ -38,21 +41,12 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
      */
     public static class Config extends Control.Config<FormattedText, Config> {
 
-        boolean toolbarBelow;
         EditorToolbar.Config toolbarConfig;
         Editor.Config editorConfig;
+        Length height;
 
         /**
-         * Places the toolbar below the editor area instead of above (default
-         * is above). Ignored when the toolbar is configured as floating.
-         */
-        public Config toolbarBelow(boolean below) {
-            this.toolbarBelow = below;
-            return this;
-        }
-
-        /**
-         * Configures the toolbar (tool selection, etc).
+         * Configures the toolbar (tool selection, position, etc).
          */
         public Config toolbar(EditorToolbar.Config config) {
             this.toolbarConfig = config;
@@ -65,6 +59,15 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
          */
         public Config editor(Editor.Config config) {
             this.editorConfig = config;
+            return this;
+        }
+
+        /**
+         * Sets the minimum height of the editor. Overrides the default of
+         * 500px.
+         */
+        public Config height(Length height) {
+            this.height = height;
             return this;
         }
     }
@@ -100,24 +103,28 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
         EditorToolbar toolbar = new EditorToolbar(tbConfig);
         editor.bind(toolbar);
 
-        if (tbConfig.floating) {
+        if (tbConfig.position == EditorToolbar.Position.FLOATING) {
             // Floating toolbar renders into a body-level container (not in
             // the component DOM tree).
             return Wrap.$(el).$(root -> {
                 root.style(styles().component());
+                if (data.height != null)
+                    root.css(CSS.MIN_HEIGHT, data.height);
                 Cpt.$(root, editor);
             }).build();
         }
 
-        // Fixed toolbar.
+        // Fixed toolbar (TOP or BOTTOM).
         return Wrap.$(el).$(root -> {
             root.style(styles().component());
-            if (!data.toolbarBelow) {
-                Cpt.$(root, toolbar);
+            if (data.height != null)
+                root.css(CSS.MIN_HEIGHT, data.height);
+            if (tbConfig.position == EditorToolbar.Position.BOTTOM) {
                 Cpt.$(root, editor);
+                Cpt.$(root, toolbar);
             } else {
-                Cpt.$(root, editor);
                 Cpt.$(root, toolbar);
+                Cpt.$(root, editor);
             }
         }).build();
     }

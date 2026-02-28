@@ -32,35 +32,30 @@ import jsinterop.base.Js;
  * Default toolbar for the editor. Renders as a JUI component with
  * configurable tool buttons.
  * <p>
- * Supports two display modes:
+ * Supports three positions via {@link Position}:
  * <ul>
- * <li><b>Fixed</b> (default) — rendered inline as part of the editor
- * layout.</li>
- * <li><b>Floating</b> — rendered into a body-level container and
- * positioned above the current text selection. Shows automatically when
- * a range is selected; hides when the selection collapses to a
- * cursor.</li>
+ * <li><b>{@link Position#TOP}</b> (default) — fixed above the editor
+ * with a bottom border.</li>
+ * <li><b>{@link Position#BOTTOM}</b> — fixed below the editor with a
+ * top border.</li>
+ * <li><b>{@link Position#FLOATING}</b> — rendered into a body-level
+ * container, positioned above the current text selection. Shows when a
+ * range is selected; hides when the selection collapses.</li>
  * </ul>
  * <p>
  * Each button sends commands to the editor via {@link IEditorCommands}
  * (bound during {@link #bind(IEditorCommands)}). The editor sends state
  * updates back via {@link #updateState(BlockType, Set, boolean)} and
  * {@link #updateCellState(Set)}.
- * <p>
- * Usage (fixed):
- * <pre>
- * EditorToolbar toolbar = new EditorToolbar(new EditorToolbar.Config()
- *     .tools(Tool.BOLD, Tool.ITALIC, Tool.UNDERLINE, Tool.H1, Tool.H2, Tool.LINK));
- * </pre>
- * <p>
- * Usage (floating):
- * <pre>
- * EditorToolbar toolbar = new EditorToolbar(new EditorToolbar.Config()
- *     .floating(true)
- *     .tools(Tool.BOLD, Tool.ITALIC, Tool.UNDERLINE));
- * </pre>
  */
 public class EditorToolbar extends Component<EditorToolbar.Config> implements IEditorToolbar {
+
+    /**
+     * Toolbar position relative to the editor area.
+     */
+    public enum Position {
+        TOP, BOTTOM, FLOATING
+    }
 
     /**
      * Available toolbar tools. Each maps to a specific
@@ -97,7 +92,7 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
         }
 
         Set<Tool> tools;
-        boolean floating;
+        Position position = Position.TOP;
         Style style = Style.STANDARD;
 
         /**
@@ -111,13 +106,12 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
         }
 
         /**
-         * Enables floating mode. When floating, the toolbar renders into a
-         * body-level container and appears above the current text selection.
-         * It shows when a range is selected and hides when the selection
-         * collapses.
+         * Sets the toolbar position relative to the editor area. Defaults to
+         * {@link Position#TOP}.
          */
-        public Config floating(boolean floating) {
-            this.floating = floating;
+        public Config position(Position position) {
+            if (position != null)
+                this.position = position;
             return this;
         }
 
@@ -210,7 +204,7 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
     @Override
     public void bind(IEditorCommands commands) {
         this.commands = commands;
-        if ((config().floating) && !isRendered())
+        if ((config().position == Position.FLOATING) && !isRendered())
             bind(FLOATING_CONTAINER_ID, false);
     }
 
@@ -228,7 +222,7 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
             else
                 entry.getValue().classList.remove(styles().tbtnActive());
         }
-        if (config().floating) {
+        if (config().position == Position.FLOATING) {
             if (rangeSelected)
                 showAboveSelection();
             else
@@ -245,7 +239,7 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
             else
                 entry.getValue().classList.remove(styles().tbtnActive());
         }
-        if (config().floating)
+        if (config().position == Position.FLOATING)
             dismiss();
     }
 
@@ -303,7 +297,11 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
     protected INodeProvider buildNode(Element el) {
         return Wrap.$(el).$(root -> {
             root.style(styles().toolbar());
-            if (config().floating)
+            if (config().position == Position.TOP)
+                root.style(styles().top());
+            else if (config().position == Position.BOTTOM)
+                root.style(styles().bottom());
+            else if (config().position == Position.FLOATING)
                 root.style(styles().floating());
 
             // Format toggles.
@@ -422,6 +420,10 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
 
         String toolbar();
 
+        String top();
+
+        String bottom();
+
         String floating();
 
         String tbtn();
@@ -459,14 +461,18 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
             align-items: center;
             gap: var(--jui-toolbar-gap);
             padding: var(--jui-toolbar-padding);
-            border-bottom: 1px solid var(--jui-toolbar-border);
             background: var(--jui-toolbar-bg);
             flex-shrink: 0;
+        }
+        .top {
+            border-bottom: 1px solid var(--jui-toolbar-border);
+        }
+        .bottom {
+            border-top: 1px solid var(--jui-toolbar-border);
         }
         .floating {
             position: fixed;
             display: none;
-            border-bottom: none;
             border: 1px solid var(--jui-toolbar-float-border);
             border-radius: var(--jui-toolbar-float-radius);
             box-shadow: var(--jui-toolbar-float-shadow);

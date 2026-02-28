@@ -372,6 +372,7 @@ public class Editor extends SimpleComponent {
             rendering = false;
         }
         restoreSelection();
+        ensureCursorVisible();
         updateToolbarState();
         handlers.forEach(h -> h.afterRender(ctx));
     }
@@ -430,6 +431,23 @@ public class Editor extends SimpleComponent {
             EditorSupport2.setCursor(editorEl, sel.anchorBlock(), sel.anchorOffset());
         else
             EditorSupport2.setSelection(editorEl, sel.anchorBlock(), sel.anchorOffset(), sel.headBlock(), sel.headOffset());
+    }
+
+    /**
+     * Scrolls the editor so that the block containing the cursor is visible.
+     */
+    private void ensureCursorVisible() {
+        Selection sel = state.selection();
+        int blockIdx = sel.anchorBlock();
+        if ((blockIdx < 0) || (blockIdx >= editorEl.childElementCount))
+            return;
+        elemental2.dom.HTMLElement blockEl = (elemental2.dom.HTMLElement) editorEl.childNodes.item(blockIdx);
+        int blockBottom = blockEl.offsetTop + blockEl.offsetHeight;
+        double viewBottom = editorEl.scrollTop + editorEl.clientHeight;
+        if (blockBottom > viewBottom)
+            editorEl.scrollTop = blockBottom - editorEl.clientHeight;
+        else if (blockEl.offsetTop < editorEl.scrollTop)
+            editorEl.scrollTop = blockEl.offsetTop;
     }
 
     /**

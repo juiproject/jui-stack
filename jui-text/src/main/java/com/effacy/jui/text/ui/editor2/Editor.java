@@ -10,7 +10,6 @@ import java.util.function.Function;
 import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.core.client.component.SimpleComponent;
 import com.effacy.jui.core.client.dom.INodeProvider;
-import com.effacy.jui.core.client.dom.builder.Div;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.text.type.FormattedBlock;
@@ -101,24 +100,10 @@ public class Editor extends SimpleComponent {
     private boolean rendering;
 
     /**
-     * Toolbar button elements keyed by format type, for active-state tracking.
+     * Bound toolbar (if any). The editor sends state updates here and receives
+     * commands back via the internal {@link IEditorCommands} implementation.
      */
-    private Map<FormatType, Element> formatButtons = new HashMap<>();
-
-    /**
-     * Toolbar button elements keyed by block type, for active-state tracking.
-     */
-    private Map<BlockType, Element> blockTypeButtons = new HashMap<>();
-
-    /**
-     * Toolbar button for link, for active-state tracking.
-     */
-    private Element linkButton;
-
-    /**
-     * Toolbar button for variable insertion.
-     */
-    private Element variableButton;
+    private IEditorToolbar toolbar;
 
     /************************************************************************
      * Block handler registry.
@@ -277,12 +262,9 @@ public class Editor extends SimpleComponent {
     @Override
     protected INodeProvider buildNode(Element el) {
         return Wrap.$(el).$(root -> {
-            root.style(styles().component());
-            Div.$(root).style(styles().toolbar()).by("toolbar");
-            Div.$(root).style(styles().editor()).attr("contenteditable", "true").by("editor");
+            root.style(styles().editor()).attr("contenteditable", "true");
         }).build(ctx -> {
-            editorEl = ctx.first("editor");
-            buildToolbar(ctx.first("toolbar"));
+            editorEl = el;
             render();
             attachEventListeners();
         });
@@ -314,110 +296,58 @@ public class Editor extends SimpleComponent {
         return state.doc();
     }
 
-    /************************************************************************
-     * Toolbar.
-     ************************************************************************/
-
     /**
-     * Builds the toolbar buttons into the given container element.
-     */
-    private void buildToolbar(Element toolbar) {
-        // Format toggles.
-        formatButtons.put(FormatType.BLD, toolbarButton(toolbar, "B", "Bold (Ctrl+B)", () -> handleFormatToggle(FormatType.BLD)));
-        formatButtons.put(FormatType.ITL, toolbarButton(toolbar, "I", "Italic (Ctrl+I)", () -> handleFormatToggle(FormatType.ITL)));
-        formatButtons.put(FormatType.UL, toolbarButton(toolbar, "U", "Underline (Ctrl+U)", () -> handleFormatToggle(FormatType.UL)));
-        formatButtons.put(FormatType.STR, toolbarButton(toolbar, "S", "Strikethrough", () -> handleFormatToggle(FormatType.STR)));
-        formatButtons.put(FormatType.SUB, toolbarButton(toolbar, "x\u2082", "Subscript", () -> handleFormatToggle(FormatType.SUB)));
-        formatButtons.put(FormatType.SUP, toolbarButton(toolbar, "x\u00B2", "Superscript", () -> handleFormatToggle(FormatType.SUP)));
-        formatButtons.put(FormatType.CODE, toolbarButton(toolbar, "<>", "Code", () -> handleFormatToggle(FormatType.CODE)));
-        formatButtons.put(FormatType.HL, toolbarButton(toolbar, "H", "Highlight", () -> handleFormatToggle(FormatType.HL)));
-
-        // Separator.
-        toolbarSeparator(toolbar);
-
-        // Block type controls.
-        blockTypeButtons.put(BlockType.H1, toolbarButton(toolbar, "H1", "Heading 1", () -> {
-            syncSelectionFromDom();
-            applyTransaction(Commands.setBlockType(state, BlockType.H1));
-        }));
-        blockTypeButtons.put(BlockType.H2, toolbarButton(toolbar, "H2", "Heading 2", () -> {
-            syncSelectionFromDom();
-            applyTransaction(Commands.setBlockType(state, BlockType.H2));
-        }));
-        blockTypeButtons.put(BlockType.H3, toolbarButton(toolbar, "H3", "Heading 3", () -> {
-            syncSelectionFromDom();
-            applyTransaction(Commands.setBlockType(state, BlockType.H3));
-        }));
-        blockTypeButtons.put(BlockType.PARA, toolbarButton(toolbar, "\u00B6", "Paragraph", () -> {
-            syncSelectionFromDom();
-            applyTransaction(Commands.setBlockType(state, BlockType.PARA));
-        }));
-
-        // Separator.
-        toolbarSeparator(toolbar);
-
-        // List controls.
-        blockTypeButtons.put(BlockType.NLIST, toolbarButton(toolbar, "\u2022", "Bullet List", () -> {
-            syncSelectionFromDom();
-            applyTransaction(Commands.toggleBlockType(state, BlockType.NLIST));
-        }));
-        blockTypeButtons.put(BlockType.OLIST, toolbarButton(toolbar, "1.", "Numbered List", () -> {
-            syncSelectionFromDom();
-            applyTransaction(Commands.toggleBlockType(state, BlockType.OLIST));
-        }));
-
-        // Separator.
-        toolbarSeparator(toolbar);
-
-        // Table insertion.
-        toolbarButton(toolbar, "\u229E", "Insert Table", () -> {
-            syncSelectionFromDom();
-            Selection preSel = state.selection();
-            int preBlock = preSel.isCursor() ? preSel.anchorBlock() : preSel.fromBlock();
-            applyTransaction(Commands.insertTable(state, 2, 3));
-            // Focus the first cell of the newly inserted table.
-            handlerFor(BlockType.TABLE).focusBlock(preBlock + 1, ctx);
-        });
-
-        // Separator.
-        toolbarSeparator(toolbar);
-
-        // Link.
-        linkButton = toolbarButton(toolbar, "\u26D3", "Link", () -> handleLinkAction());
-
-        // Variable (only when variableOptions is configured).
-        if (variableOptions != null) {
-            toolbarSeparator(toolbar);
-            variableButton = toolbarButton(toolbar, "{ }", "Variable", () -> handleVariableAction());
-        }
-    }
-
-    /**
-     * Creates a single toolbar button. Uses {@code mousedown} with
-     * {@code preventDefault} to avoid stealing focus from the editor.
+     * Binds an {@link IEditorToolbar} to this editor. The toolbar receives
+     * state updates and can send commands back via {@link IEditorCommands}.
+     * <p>
+     * May be called before or after the editor is rendered. If called after,
+     * an initial state update is sent immediately.
      *
-     * @return the created button element.
+     * @param toolbar
+     *                the toolbar to bind.
      */
-    private Element toolbarButton(Element parent, String label, String tooltip, Runnable action) {
-        Element btn = DomGlobal.document.createElement("button");
-        btn.classList.add(styles().tbtn());
-        btn.textContent = label;
-        btn.setAttribute("title", tooltip);
-        btn.addEventListener("mousedown", evt -> {
-            evt.preventDefault();
-            action.run();
-        });
-        parent.appendChild(btn);
-        return btn;
-    }
+    public void bind(IEditorToolbar toolbar) {
+        this.toolbar = toolbar;
+        toolbar.bind(new IEditorCommands() {
 
-    /**
-     * Creates a visual separator in the toolbar.
-     */
-    private void toolbarSeparator(Element parent) {
-        Element sep = DomGlobal.document.createElement("span");
-        sep.classList.add(styles().tbtnSep());
-        parent.appendChild(sep);
+            @Override
+            public void toggleFormat(FormatType type) {
+                handleFormatToggle(type);
+            }
+
+            @Override
+            public void setBlockType(BlockType type) {
+                syncSelectionFromDom();
+                applyTransaction(Commands.setBlockType(state, type));
+            }
+
+            @Override
+            public void toggleBlockType(BlockType type) {
+                syncSelectionFromDom();
+                applyTransaction(Commands.toggleBlockType(state, type));
+            }
+
+            @Override
+            public void insertTable(int rows, int cols) {
+                syncSelectionFromDom();
+                Selection preSel = state.selection();
+                int preBlock = preSel.isCursor() ? preSel.anchorBlock() : preSel.fromBlock();
+                applyTransaction(Commands.insertTable(state, rows, cols));
+                handlerFor(BlockType.TABLE).focusBlock(preBlock + 1, ctx);
+            }
+
+            @Override
+            public void insertLink(Element anchor) {
+                handleLinkAction(anchor);
+            }
+
+            @Override
+            public void insertVariable(Element anchor) {
+                handleVariableAction(anchor);
+            }
+        });
+        if (editorEl != null)
+            updateToolbarState();
     }
 
     /************************************************************************
@@ -535,46 +465,28 @@ public class Editor extends SimpleComponent {
      * or across the entire range selection.
      */
     private void updateToolbarState() {
+        if (toolbar == null)
+            return;
         Selection sel = state.selection();
         int blockIdx = sel.anchorBlock();
         List<FormattedBlock> blocks = state.doc().getBlocks();
         if ((blockIdx < 0) || (blockIdx >= blocks.size()))
             return;
         FormattedBlock blk = blocks.get(blockIdx);
-
-        // Block type buttons — one active at a time.
-        for (Map.Entry<BlockType, Element> entry : blockTypeButtons.entrySet()) {
-            if (blk.getType() == entry.getKey())
-                entry.getValue().classList.add(styles().tbtnActive());
-            else
-                entry.getValue().classList.remove(styles().tbtnActive());
+        Set<FormatType> active = java.util.EnumSet.noneOf(FormatType.class);
+        for (FormatType ft : FormatType.values()) {
+            if (isFormatActive(sel, ft))
+                active.add(ft);
         }
-
-        // Format buttons — based on format at cursor or across selection.
-        for (Map.Entry<FormatType, Element> entry : formatButtons.entrySet()) {
-            if (isFormatActive(sel, entry.getKey()))
-                entry.getValue().classList.add(styles().tbtnActive());
-            else
-                entry.getValue().classList.remove(styles().tbtnActive());
-        }
+        toolbar.updateState(blk.getType(), active, !sel.isCursor());
     }
 
     /**
-     * Updates toolbar button active states for the cell-editing context.
-     * All block-type buttons are deactivated (cells have no block type). Format
-     * buttons are activated for the provided set of active formats.
-     *
-     * @param activeFormats
-     *                      the formats currently active at the cell selection.
+     * Updates the toolbar for the cell-editing context.
      */
     private void updateToolbarForCellSelection(Set<FormatType> activeFormats) {
-        blockTypeButtons.values().forEach(btn -> btn.classList.remove(styles().tbtnActive()));
-        for (Map.Entry<FormatType, Element> entry : formatButtons.entrySet()) {
-            if (activeFormats.contains(entry.getKey()))
-                entry.getValue().classList.add(styles().tbtnActive());
-            else
-                entry.getValue().classList.remove(styles().tbtnActive());
-        }
+        if (toolbar != null)
+            toolbar.updateCellState(activeFormats);
     }
 
     /**
@@ -628,13 +540,13 @@ public class Editor extends SimpleComponent {
      * Opens the link panel for adding, editing, or removing a link on the
      * current selection. Requires a range selection (not a cursor).
      */
-    private void handleLinkAction() {
+    private void handleLinkAction(Element anchor) {
         syncSelectionFromDom();
         Selection sel = state.selection();
         if (sel.isCursor())
             return;
         String currentUrl = extractLinkUrl(sel);
-        LinkPanel.show(linkButton, currentUrl, linkOptions, new LinkPanel.ILinkPanelCallback() {
+        LinkPanel.show(anchor, currentUrl, linkOptions, new LinkPanel.ILinkPanelCallback() {
 
             @Override
             public void onApply(String url) {
@@ -652,9 +564,9 @@ public class Editor extends SimpleComponent {
      * Opens the variable panel for selecting and inserting a variable at the
      * current cursor position.
      */
-    private void handleVariableAction() {
+    private void handleVariableAction(Element anchor) {
         syncSelectionFromDom();
-        VariablePanel.show(variableButton, variableOptions, new VariablePanel.IVariablePanelCallback() {
+        VariablePanel.show(anchor, variableOptions, new VariablePanel.IVariablePanelCallback() {
 
             @Override
             public void onSelect(String name, String label) {
@@ -1107,14 +1019,6 @@ public class Editor extends SimpleComponent {
 
     public static interface ILocalCSS extends IComponentCSS {
 
-        String toolbar();
-
-        String tbtn();
-
-        String tbtnActive();
-
-        String tbtnSep();
-
         String editor();
 
         String block();
@@ -1130,49 +1034,6 @@ public class Editor extends SimpleComponent {
     @CssResource(value = {
         IComponentCSS.COMPONENT_CSS
     }, stylesheet = """
-        .component {
-            position: relative;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            display: flex;
-            flex-direction: column;
-            overflow: auto;
-            min-height: 500px;
-        }
-        .toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 2px;
-            padding: 4px 6px;
-            border-bottom: 1px solid #ddd;
-            background: #fafafa;
-            flex-shrink: 0;
-        }
-        .tbtn {
-            border: none;
-            background: none;
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.85em;
-            font-weight: 500;
-            color: #444;
-            line-height: 1.4;
-        }
-        .tbtn:hover {
-            background: #e8e8e8;
-        }
-        .tbtnActive {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-        .tbtnSep {
-            width: 1px;
-            height: 1.2em;
-            background: #ccc;
-            margin: 0 4px;
-        }
         .editor {
             outline: none;
             min-height: 2em;

@@ -531,8 +531,11 @@ public class FormattedLine {
                     result.add (new TextSegment (text.substring(idx, fmt.index), null, null));
                 TextSegment segment;
                 if ((variable != null) && !variable.isEmpty()) {
-                    // Variable segment: text is the underlying line text (the label).
-                    segment = new TextSegment (text.substring (fmt.index, fmt.index + fmt.length), fmt.formats, link, true);
+                    // Variable segment: use underlying line text if present (label-as-text
+                    // convention), otherwise fall back to the variable name (zero-length
+                    // convention from the variable() builder method).
+                    String varText = (fmt.length > 0) ? text.substring(fmt.index, fmt.index + fmt.length) : variable;
+                    segment = new TextSegment (varText, fmt.formats, link, true);
                 } else {
                     segment = new TextSegment (text.substring (fmt.index, fmt.index + fmt.length), fmt.formats, link);
                 }

@@ -170,6 +170,42 @@ public class FormattedText implements Iterable<FormattedBlock> {
     }
 
     /************************************************************************
+     * Hash computation (for dirty detection).
+     ************************************************************************/
+
+    /**
+     * Computes a content hash over the entire document structure (block types,
+     * indents, line text, formatting entries, and metadata). Two documents
+     * with identical content produce the same hash.
+     *
+     * @return the computed hash value.
+     */
+    public int computeHash() {
+        int h = 0;
+        if (blocks != null) {
+            for (FormattedBlock block : blocks) {
+                h = 31 * h + block.getType().hashCode();
+                h = 31 * h + block.getIndent();
+                if (block.getMeta() != null)
+                    h = 31 * h + block.getMeta().hashCode();
+                for (FormattedLine line : block.getLines()) {
+                    h = 31 * h + line.getText().hashCode();
+                    if (line.getFormatting() != null) {
+                        for (FormattedLine.Format fmt : line.getFormatting()) {
+                            h = 31 * h + fmt.getIndex();
+                            h = 31 * h + fmt.getLength();
+                            h = 31 * h + fmt.getFormats().hashCode();
+                            if (fmt.getMeta() != null)
+                                h = 31 * h + fmt.getMeta().hashCode();
+                        }
+                    }
+                }
+            }
+        }
+        return h;
+    }
+
+    /************************************************************************
      * Property getters and setters.
      ************************************************************************/
     

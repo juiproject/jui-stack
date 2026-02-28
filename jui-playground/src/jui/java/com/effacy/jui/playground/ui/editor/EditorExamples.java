@@ -18,8 +18,12 @@ package com.effacy.jui.playground.ui.editor;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.effacy.jui.core.client.control.IControl.Value;
 import com.effacy.jui.text.type.markdown.MarkdownParser;
 import com.effacy.jui.text.ui.editor2.Editor;
+import com.effacy.jui.text.ui.editor2.EditorToolbar;
+import com.effacy.jui.text.ui.editor2.EditorToolbar.Tool;
+import com.effacy.jui.text.ui.editor2.FormattedTextEditor;
 import com.effacy.jui.text.ui.editor2.LinkPanel;
 import com.effacy.jui.text.ui.editor2.VariablePanel;
 import com.effacy.jui.ui.client.panel.Panel;
@@ -223,11 +227,19 @@ After the Battle of France resulted in the French Third Republic ...
     public EditorExamples() {
         super (new Panel.Config ());
 
-        Editor editor = add(new Editor(new Editor.Config()
-            .linkOptions(EditorExamples::filterLinks)
-            .variableOptions(EditorExamples::filterVariables)
-            .debugLog(false)));
-        editor.load(MarkdownParser.parse(SAMPLE_MARKDOWN3));
+        FormattedTextEditor editor = add(new FormattedTextEditor(new FormattedTextEditor.Config()
+            .editor(new Editor.Config()
+                .linkOptions(EditorExamples::filterLinks)
+                .variableOptions(EditorExamples::filterVariables)
+                .debugLog(false))
+                .floatingToolbar(true)
+            .toolbar(new EditorToolbar.Config()
+                .tools(Tool.BOLD, Tool.ITALIC, Tool.UNDERLINE, Tool.STRIKETHROUGH,
+                       Tool.SUBSCRIPT, Tool.SUPERSCRIPT, Tool.CODE, Tool.HIGHLIGHT,
+                       Tool.H1, Tool.H2, Tool.H3, Tool.PARAGRAPH,
+                       Tool.BULLET_LIST, Tool.NUMBERED_LIST,
+                       Tool.TABLE, Tool.LINK, Tool.VARIABLE))));
+        editor.setValue(Value.of(MarkdownParser.parse(SAMPLE_MARKDOWN3)));
     }
 
 }

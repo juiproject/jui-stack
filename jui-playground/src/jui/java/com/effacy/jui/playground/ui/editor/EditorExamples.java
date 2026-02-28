@@ -232,8 +232,8 @@ After the Battle of France resulted in the French Third Republic ...
                 .linkOptions(EditorExamples::filterLinks)
                 .variableOptions(EditorExamples::filterVariables)
                 .debugLog(false))
-                .floatingToolbar(true)
             .toolbar(new EditorToolbar.Config()
+                .floating(true)
                 .tools(Tool.BOLD, Tool.ITALIC, Tool.UNDERLINE, Tool.STRIKETHROUGH,
                        Tool.SUBSCRIPT, Tool.SUPERSCRIPT, Tool.CODE, Tool.HIGHLIGHT,
                        Tool.H1, Tool.H2, Tool.H3, Tool.PARAGRAPH,

@@ -12,9 +12,13 @@ import com.google.gwt.core.client.GWT;
 import elemental2.dom.Element;
 
 /**
- * JUI control that composes an {@link Editor} with a toolbar (either
- * {@link EditorToolbar} or {@link FloatingToolbar}) to provide a complete
- * rich text editing experience with value management and dirty detection.
+ * JUI control that composes an {@link Editor} with an {@link EditorToolbar}
+ * to provide a complete rich text editing experience with value management
+ * and dirty detection.
+ * <p>
+ * The toolbar can be fixed (above or below the editor) or floating (appears
+ * above the current text selection). Configure via
+ * {@link EditorToolbar.Config#floating(boolean)}.
  * <p>
  * Usage:
  * <pre>
@@ -35,25 +39,15 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
     public static class Config extends Control.Config<FormattedText, Config> {
 
         boolean toolbarBelow;
-        boolean floatingToolbar;
         EditorToolbar.Config toolbarConfig;
         Editor.Config editorConfig;
 
         /**
          * Places the toolbar below the editor area instead of above (default
-         * is above).
+         * is above). Ignored when the toolbar is configured as floating.
          */
         public Config toolbarBelow(boolean below) {
             this.toolbarBelow = below;
-            return this;
-        }
-
-        /**
-         * Uses a floating toolbar that appears on text selection instead of a
-         * fixed toolbar.
-         */
-        public Config floatingToolbar(boolean enable) {
-            this.floatingToolbar = enable;
             return this;
         }
 
@@ -103,11 +97,12 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
         EditorToolbar.Config tbConfig = (data.toolbarConfig != null) ? data.toolbarConfig : new EditorToolbar.Config();
 
         editor = new Editor(editorConfig);
+        EditorToolbar toolbar = new EditorToolbar(tbConfig);
+        editor.bind(toolbar);
 
-        if (data.floatingToolbar) {
-            // Floating toolbar — no fixed toolbar component in the DOM.
-            FloatingToolbar floatingTb = new FloatingToolbar(tbConfig);
-            editor.bind(floatingTb);
+        if (tbConfig.floating) {
+            // Floating toolbar renders into a body-level container (not in
+            // the component DOM tree).
             return Wrap.$(el).$(root -> {
                 root.style(styles().component());
                 Cpt.$(root, editor);
@@ -115,16 +110,14 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
         }
 
         // Fixed toolbar.
-        EditorToolbar fixedTb = new EditorToolbar(tbConfig);
-        editor.bind(fixedTb);
         return Wrap.$(el).$(root -> {
             root.style(styles().component());
             if (!data.toolbarBelow) {
-                Cpt.$(root, fixedTb);
+                Cpt.$(root, toolbar);
                 Cpt.$(root, editor);
             } else {
                 Cpt.$(root, editor);
-                Cpt.$(root, fixedTb);
+                Cpt.$(root, toolbar);
             }
         }).build();
     }

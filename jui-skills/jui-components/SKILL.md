@@ -318,120 +318,14 @@ Usage: `Cpt.$(parent, new MyComponent(MyComponent.Config.of("Title")));`
 
 ## CSS / Styling
 
-### Localised CSS (standard pattern)
+For comprehensive styling guidance -- localised CSS, CSS variables, style packs, and creating custom styles -- see the `jui-styles` skill. The key points for components:
 
-Every non-trivial component should use localised CSS with the GWT CSS resource mechanism:
-
-```java
-public class MyComponent extends SimpleComponent {
-
-    // ... component code ...
-
-    /************************************************************************
-     * CSS.
-     ************************************************************************/
-
-    @Override
-    protected ILocalCSS styles() {
-        return LocalCSS.instance();
-    }
-
-    public static interface ILocalCSS extends IComponentCSS {
-
-        String header();
-
-        String body();
-
-        String active();
-    }
-
-    @CssResource(value = {
-        IComponentCSS.COMPONENT_CSS
-    }, stylesheet = """
-        .component {
-            display: flex;
-            flex-direction: column;
-        }
-        .component .header {
-            padding: 8px 12px;
-            font-weight: 600;
-        }
-        .component .body {
-            flex: 1;
-            padding: 12px;
-        }
-        .component .active {
-            background: #dbeafe;
-        }
-    """)
-    public static abstract class LocalCSS implements ILocalCSS {
-
-        private static LocalCSS STYLES;
-
-        public static ILocalCSS instance() {
-            if (STYLES == null) {
-                STYLES = (LocalCSS) GWT.create(LocalCSS.class);
-                STYLES.ensureInjected();
-            }
-            return STYLES;
-        }
-    }
-}
-```
-
-Key rules:
-
-- `ILocalCSS` extends `IComponentCSS` (for components) or `IControlCSS` (for controls)
-- `IComponentCSS` provides `component()`, `disabled()`, `focus()` — these are applied automatically
-- `@CssResource` must include `IComponentCSS.COMPONENT_CSS` (or `IControlCSS.CONTROL_CSS` for controls)
-- Stylesheet can be inlined via `stylesheet = """..."""` or referenced via file path in `value`
-- Style method names use underscores not dashes: `my_style()` not `my-style()`
-- Styles are obfuscated at compile time — always reference via `styles().methodName()`
-- Styles under `.component` should be scoped `.component .mystyle` for better isolation
-
-### Using styles in DOM
-
-```java
-root.style(styles().component());
-Div.$(root).style(styles().header());
-
-// Toggle styles at runtime
-element.classList.add(styles().active());
-element.classList.remove(styles().active());
-```
-
-### Config-based style variants
-
-For components with multiple visual styles:
-
-```java
-public static class Config extends Component.Config {
-
-    public interface Style {
-        public ILocalCSS styles();
-
-        public static Style create(ILocalCSS styles) {
-            return () -> styles;
-        }
-
-        public static final Style NORMAL = create(NormalCSS.instance());
-        public static final Style COMPACT = create(CompactCSS.instance());
-    }
-
-    private Style style = Style.NORMAL;
-
-    public Config style(Style style) {
-        if (style != null)
-            this.style = style;
-        return this;
-    }
-}
-
-@Override
-protected ILocalCSS styles() {
-    return config().style.styles();
-}
-```
+- `ILocalCSS` extends `IComponentCSS`
+- `@CssResource` must include `IComponentCSS.COMPONENT_CSS`
+- The `.component` class is applied automatically to the root element
+- Scope child styles under `.component` (e.g. `.component .header`)
+- Reference styles via `styles().methodName()` (names are obfuscated)
+- For style variants, declare a `Style` interface in `Config` (see `jui-styles` skill for full pattern)
 
 ## Child Components
 

@@ -247,82 +247,27 @@ public MyFrag() {
 
 ## Styling
 
-### Injected CSS (recommended for fragments)
+For comprehensive styling guidance see the `jui-styles` skill. Fragments support two approaches:
 
-Create a CSS file in the module's `public` directory and inject it:
+### Injected CSS (recommended for application fragments)
+
+Create a CSS file in the module's `public` directory and inject it. Scope styles using a unique class name prefix (e.g. `fragMyFrag`):
 
 ```java
-public class MyFrag extends Fragment<MyFrag> {
-
-    static {
-        CSSInjector.injectFromModuleBase("MyFrag.css");
-    }
-
-    // ...
-}
-```
-
-Scope styles using a unique class name:
-
-```css
-.fragMyFrag {
-    display: flex;
-    gap: 8px;
-}
-.fragMyFrag > .title {
-    font-weight: 600;
+static {
+    CSSInjector.injectFromModuleBase("MyFrag.css");
 }
 ```
 
 ```java
-public MyFrag() {
-    super(parent -> {
-        Div.$(parent).style("fragMyFrag").$(inner -> {
-            Span.$(inner).style("title").text(title);
-        });
-    });
-}
+Div.$(parent).style("fragMyFrag").$(inner -> {
+    Span.$(inner).style("title").text(title);
+});
 ```
 
 ### Localised CSS (for library fragments)
 
-Fragments can also use the localised CSS pattern when stronger isolation is needed:
-
-```java
-public class MyFrag extends Fragment<MyFrag> {
-
-    protected ILocalCSS styles() {
-        return LocalCSS.instance();
-    }
-
-    public interface ILocalCSS extends CssDeclaration {
-        String wrapper();
-        String title();
-    }
-
-    @CssResource(stylesheet = """
-        .wrapper {
-            display: flex;
-            gap: 8px;
-        }
-        .title {
-            font-weight: 600;
-        }
-    """)
-    public static abstract class LocalCSS implements ILocalCSS {
-
-        private static LocalCSS STYLES;
-
-        public static ILocalCSS instance() {
-            if (STYLES == null) {
-                STYLES = (LocalCSS) GWT.create(LocalCSS.class);
-                STYLES.ensureInjected();
-            }
-            return STYLES;
-        }
-    }
-}
-```
+Use the localised CSS pattern with `ILocalCSS extends CssDeclaration` when stronger isolation is needed. See the `jui-styles` skill for the full pattern.
 
 ## Variations
 

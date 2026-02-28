@@ -9,12 +9,8 @@ import com.effacy.jui.text.type.FormattedLine.FormatType;
  * Contract for an editor toolbar.
  * <p>
  * Implementations receive state updates from the editor and send commands back
- * via {@link IEditorCommands}. Two stock implementations are provided:
- * <ul>
- * <li>{@link EditorToolbar} — a fixed toolbar rendered as a JUI component.</li>
- * <li>{@link FloatingToolbar} — a floating toolbar that appears above the
- * current text selection.</li>
- * </ul>
+ * via {@link IEditorCommands}. The stock implementation is {@link EditorToolbar}
+ * which supports both fixed and floating display modes.
  */
 public interface IEditorToolbar {
 

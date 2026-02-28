@@ -6,8 +6,9 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.effacy.jui.core.client.component.Component;
 import com.effacy.jui.core.client.component.IComponentCSS;
-import com.effacy.jui.core.client.component.SimpleComponent;
+import com.effacy.jui.core.client.dom.DomSupport;
 import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.UIEventType;
 import com.effacy.jui.core.client.dom.builder.Button;
@@ -20,25 +21,46 @@ import com.effacy.jui.text.type.FormattedLine.FormatType;
 
 import com.google.gwt.core.client.GWT;
 
+import elemental2.dom.DomGlobal;
 import elemental2.dom.Element;
+import elemental2.dom.Range;
+import jsinterop.annotations.JsPackage;
+import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
 
 /**
- * Default fixed toolbar for the editor. Renders as a JUI component with
+ * Default toolbar for the editor. Renders as a JUI component with
  * configurable tool buttons.
  * <p>
- * Each button sends commands to the editor via {@link IEditorCommands} (bound
- * during {@link #bind(IEditorCommands)}). The editor sends state updates back
- * via {@link #updateState(BlockType, Set, boolean)} and
+ * Supports two display modes:
+ * <ul>
+ * <li><b>Fixed</b> (default) — rendered inline as part of the editor
+ * layout.</li>
+ * <li><b>Floating</b> — rendered into a body-level container and
+ * positioned above the current text selection. Shows automatically when
+ * a range is selected; hides when the selection collapses to a
+ * cursor.</li>
+ * </ul>
+ * <p>
+ * Each button sends commands to the editor via {@link IEditorCommands}
+ * (bound during {@link #bind(IEditorCommands)}). The editor sends state
+ * updates back via {@link #updateState(BlockType, Set, boolean)} and
  * {@link #updateCellState(Set)}.
  * <p>
- * Usage:
+ * Usage (fixed):
  * <pre>
  * EditorToolbar toolbar = new EditorToolbar(new EditorToolbar.Config()
  *     .tools(Tool.BOLD, Tool.ITALIC, Tool.UNDERLINE, Tool.H1, Tool.H2, Tool.LINK));
- * editor.bind(toolbar);
+ * </pre>
+ * <p>
+ * Usage (floating):
+ * <pre>
+ * EditorToolbar toolbar = new EditorToolbar(new EditorToolbar.Config()
+ *     .floating(true)
+ *     .tools(Tool.BOLD, Tool.ITALIC, Tool.UNDERLINE));
  * </pre>
  */
-public class EditorToolbar extends SimpleComponent implements IEditorToolbar {
+public class EditorToolbar extends Component<EditorToolbar.Config> implements IEditorToolbar {
 
     /**
      * Available toolbar tools. Each maps to a specific
@@ -55,9 +77,28 @@ public class EditorToolbar extends SimpleComponent implements IEditorToolbar {
     /**
      * Configuration for the toolbar.
      */
-    public static class Config {
+    public static class Config extends Component.Config {
+
+        /**
+         * Style pack for the toolbar. Provides the localised CSS used to
+         * render toolbar buttons and layout. Custom styles can be created
+         * externally by implementing {@link ILocalCSS} with a different
+         * stylesheet and wrapping via {@link Style#create(ILocalCSS)}.
+         */
+        public interface Style {
+
+            public ILocalCSS styles();
+
+            public static Style create(ILocalCSS styles) {
+                return () -> styles;
+            }
+
+            public static final Style STANDARD = create(LocalCSS.instance());
+        }
 
         Set<Tool> tools;
+        boolean floating;
+        Style style = Style.STANDARD;
 
         /**
          * Configures which tools to display. When not called (or called with
@@ -68,13 +109,43 @@ public class EditorToolbar extends SimpleComponent implements IEditorToolbar {
                 this.tools = EnumSet.copyOf(Arrays.asList(tools));
             return this;
         }
+
+        /**
+         * Enables floating mode. When floating, the toolbar renders into a
+         * body-level container and appears above the current text selection.
+         * It shows when a range is selected and hides when the selection
+         * collapses.
+         */
+        public Config floating(boolean floating) {
+            this.floating = floating;
+            return this;
+        }
+
+        /**
+         * Sets the style pack for the toolbar. When not called, the
+         * {@link Style#STANDARD} style is used.
+         */
+        public Config style(Style style) {
+            if (style != null)
+                this.style = style;
+            return this;
+        }
+    }
+
+    /************************************************************************
+     * Body-level container for floating toolbars.
+     ************************************************************************/
+
+    private static final String FLOATING_CONTAINER_ID = "floating-toolbar-container";
+    static {
+        Element container = DomSupport.createElement("div");
+        container.id = FLOATING_CONTAINER_ID;
+        DomGlobal.document.body.appendChild(container);
     }
 
     /************************************************************************
      * State.
      ************************************************************************/
-
-    private Set<Tool> tools;
 
     private IEditorCommands commands;
 
@@ -127,7 +198,9 @@ public class EditorToolbar extends SimpleComponent implements IEditorToolbar {
     }
 
     public EditorToolbar(Config config) {
-        this.tools = (config.tools != null) ? config.tools : EnumSet.allOf(Tool.class);
+        super(config);
+        if (config.tools == null)
+            config.tools = EnumSet.allOf(Tool.class);
     }
 
     /************************************************************************
@@ -137,6 +210,8 @@ public class EditorToolbar extends SimpleComponent implements IEditorToolbar {
     @Override
     public void bind(IEditorCommands commands) {
         this.commands = commands;
+        if ((config().floating) && !isRendered())
+            bind(FLOATING_CONTAINER_ID, false);
     }
 
     @Override
@@ -153,6 +228,12 @@ public class EditorToolbar extends SimpleComponent implements IEditorToolbar {
             else
                 entry.getValue().classList.remove(styles().tbtnActive());
         }
+        if (config().floating) {
+            if (rangeSelected)
+                showAboveSelection();
+            else
+                dismiss();
+        }
     }
 
     @Override
@@ -164,6 +245,54 @@ public class EditorToolbar extends SimpleComponent implements IEditorToolbar {
             else
                 entry.getValue().classList.remove(styles().tbtnActive());
         }
+        if (config().floating)
+            dismiss();
+    }
+
+    /************************************************************************
+     * Floating mode: show / hide / positioning.
+     ************************************************************************/
+
+    private void showAboveSelection() {
+        if (!isRendered())
+            return;
+        elemental2.dom.Selection sel = DomGlobal.document.getSelection();
+        if ((sel == null) || (sel.rangeCount == 0)) {
+            dismiss();
+            return;
+        }
+        Range range = sel.getRangeAt(0);
+        if (range.collapsed) {
+            dismiss();
+            return;
+        }
+        JsRect rect = Js.uncheckedCast(range.getBoundingClientRect());
+        elemental2.dom.HTMLElement root = Js.uncheckedCast(getRoot());
+        root.style.display = "flex";
+
+        // Position above the selection, centered horizontally. Use
+        // requestAnimationFrame so the browser has laid out the toolbar and
+        // we can measure its dimensions.
+        DomGlobal.requestAnimationFrame(time -> {
+            double panelWidth = getRoot().getBoundingClientRect().width;
+            double panelHeight = getRoot().getBoundingClientRect().height;
+            double left = rect.left + (rect.width / 2) - (panelWidth / 2);
+            double top = rect.top - panelHeight - 8;
+            // Keep within viewport bounds.
+            if (left < 4)
+                left = 4;
+            if (top < 4)
+                top = rect.bottom + 8;
+            root.style.setProperty("left", left + "px");
+            root.style.setProperty("top", top + "px");
+        });
+    }
+
+    private void dismiss() {
+        if (isRendered()) {
+            elemental2.dom.HTMLElement root = Js.uncheckedCast(getRoot());
+            root.style.display = "none";
+        }
     }
 
     /************************************************************************
@@ -174,6 +303,8 @@ public class EditorToolbar extends SimpleComponent implements IEditorToolbar {
     protected INodeProvider buildNode(Element el) {
         return Wrap.$(el).$(root -> {
             root.style(styles().toolbar());
+            if (config().floating)
+                root.style(styles().floating());
 
             // Format toggles.
             formatButton(root, Tool.BOLD, "B", "Bold (Ctrl+B)");
@@ -258,15 +389,24 @@ public class EditorToolbar extends SimpleComponent implements IEditorToolbar {
     }
 
     private boolean hasTool(Tool tool) {
-        return tools.contains(tool);
+        return config().tools.contains(tool);
     }
 
     private boolean hasAnyTool(Tool... candidates) {
         for (Tool t : candidates) {
-            if (tools.contains(t))
+            if (config().tools.contains(t))
                 return true;
         }
         return false;
+    }
+
+    /************************************************************************
+     * JsInterop helpers (floating mode).
+     ************************************************************************/
+
+    @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "Object")
+    private static class JsRect {
+        public double left, top, bottom, width, height;
     }
 
     /************************************************************************
@@ -275,12 +415,14 @@ public class EditorToolbar extends SimpleComponent implements IEditorToolbar {
 
     @Override
     protected ILocalCSS styles() {
-        return LocalCSS.instance();
+        return config().style.styles();
     }
 
     public static interface ILocalCSS extends IComponentCSS {
 
         String toolbar();
+
+        String floating();
 
         String tbtn();
 
@@ -292,38 +434,67 @@ public class EditorToolbar extends SimpleComponent implements IEditorToolbar {
     @CssResource(value = {
         IComponentCSS.COMPONENT_CSS
     }, stylesheet = """
+        .component {
+            --jui-toolbar-bg: #fafafa;
+            --jui-toolbar-gap: 2px;
+            --jui-toolbar-padding: 4px 6px;
+            --jui-toolbar-border: #ddd;
+            --jui-toolbar-btn-color: #444;
+            --jui-toolbar-btn-size: 0.85em;
+            --jui-toolbar-btn-lineheight: 1.4;
+            --jui-toolbar-btn-padding: 4px 8px;
+            --jui-toolbar-btn-border-radius: 4px;
+            --jui-toolbar-btn-hover-bg: #e8e8e8;
+            --jui-toolbar-btn-active-bg: #dbeafe;
+            --jui-toolbar-btn-active-color: #1d4ed8;
+            --jui-toolbar-sep-color: #ccc;
+            --jui-toolbar-float-bg: #fff;
+            --jui-toolbar-float-border: #e5e7eb;
+            --jui-toolbar-float-radius: 6px;
+            --jui-toolbar-float-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
+        }
         .toolbar {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            gap: 2px;
-            padding: 4px 6px;
-            border-bottom: 1px solid #ddd;
-            background: #fafafa;
+            gap: var(--jui-toolbar-gap);
+            padding: var(--jui-toolbar-padding);
+            border-bottom: 1px solid var(--jui-toolbar-border);
+            background: var(--jui-toolbar-bg);
             flex-shrink: 0;
+        }
+        .floating {
+            position: fixed;
+            display: none;
+            border-bottom: none;
+            border: 1px solid var(--jui-toolbar-float-border);
+            border-radius: var(--jui-toolbar-float-radius);
+            box-shadow: var(--jui-toolbar-float-shadow);
+            background: var(--jui-toolbar-float-bg);
+            z-index: 10000;
         }
         .tbtn {
             border: none;
             background: none;
             cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.85em;
+            padding: var(--jui-toolbar-btn-padding);
+            border-radius: var(--jui-toolbar-btn-border-radius);
+            font-size: var(--jui-toolbar-btn-size);
             font-weight: 500;
-            color: #444;
-            line-height: 1.4;
+            color: var(--jui-toolbar-btn-color);
+            line-height: var(--jui-toolbar-btn-lineheight);
         }
         .tbtn:hover {
-            background: #e8e8e8;
+            background: var(--jui-toolbar-btn-hover-bg);
         }
         .tbtnActive {
-            background: #dbeafe;
-            color: #1d4ed8;
+            background: var(--jui-toolbar-btn-active-bg);
+            color: var(--jui-toolbar-btn-active-color);
         }
         .tbtnSep {
             width: 1px;
             height: 1.2em;
-            background: #ccc;
+            background: var(--jui-toolbar-sep-color);
             margin: 0 4px;
         }
     """)

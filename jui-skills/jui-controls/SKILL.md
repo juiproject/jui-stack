@@ -240,25 +240,11 @@ The first registered element becomes the default focus target. The `IComponentCS
 
 ## CSS Rules for Controls
 
-Controls differ from components in their CSS setup:
+For comprehensive styling guidance -- localised CSS, CSS variables, style packs, and creating custom styles -- see the `jui-styles` skill. The key differences from components:
 
 - `ILocalCSS` extends `IControlCSS` (not `IComponentCSS`)
 - `IControlCSS` extends `IComponentCSS` and adds: `invalid()`, `read_only()`, `waiting()`
 - `@CssResource` must include **both** `IComponentCSS.COMPONENT_CSS` and `IControlCSS.CONTROL_CSS`
-- `IComponentCSS.COMPONENT_CSS` provides: `.component`, `.disabled`, `.focus`
-- `IControlCSS.CONTROL_CSS` provides: `.invalid`, `.read_only`, `.waiting`
-
-```java
-@CssResource(value = {
-    IComponentCSS.COMPONENT_CSS,
-    IControlCSS.CONTROL_CSS
-}, stylesheet = """
-    .component {
-        /* ... */
-    }
-""")
-public static abstract class LocalCSS implements ILocalCSS { ... }
-```
 
 ## Full Template with Style Variants
 

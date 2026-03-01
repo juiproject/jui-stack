@@ -1,4 +1,4 @@
-package com.effacy.jui.text.ui.editor2;
+package com.effacy.jui.text.ui.editor;
 
 import java.util.Set;
 

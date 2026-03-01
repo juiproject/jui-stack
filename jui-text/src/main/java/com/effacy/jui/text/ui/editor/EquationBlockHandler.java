@@ -1,4 +1,4 @@
-package com.effacy.jui.text.ui.editor2;
+package com.effacy.jui.text.ui.editor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -121,12 +121,12 @@ public class EquationBlockHandler implements IBlockHandler {
     private void renderLatex(Element wrapper, Element renderEl, String source) {
         if (LOADING != null) {
             LOADING.add(() -> {
-                String err = EditorSupport2.latex(renderEl, source, true);
+                String err = EditorSupport.latex(renderEl, source, true);
                 if (!StringSupport.empty(err))
                     wrapper.classList.add(styles().eqnWrapperError());
             });
         } else {
-            String err = EditorSupport2.latex(renderEl, source, true);
+            String err = EditorSupport.latex(renderEl, source, true);
             if (!StringSupport.empty(err))
                 wrapper.classList.add(styles().eqnWrapperError());
         }

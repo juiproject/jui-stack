@@ -1,4 +1,4 @@
-package com.effacy.jui.text.ui.editor2;
+package com.effacy.jui.text.ui.editor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,6 +23,8 @@ import com.effacy.jui.text.type.edit.Positions;
 import com.effacy.jui.text.type.edit.Selection;
 import com.effacy.jui.text.type.edit.Transaction;
 import com.effacy.jui.text.type.edit.step.SetBlockTypeStep;
+import com.effacy.jui.text.ui.editor.IEditorCommands;
+import com.effacy.jui.text.ui.editor.IEditorContext;
 import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.DomGlobal;
@@ -467,9 +469,9 @@ public class Editor extends Component<Editor.Config> {
     private void restoreSelection() {
         Selection sel = state.selection();
         if (sel.isCursor())
-            EditorSupport2.setCursor(editorEl, sel.anchorBlock(), sel.anchorOffset());
+            EditorSupport.setCursor(editorEl, sel.anchorBlock(), sel.anchorOffset());
         else
-            EditorSupport2.setSelection(editorEl, sel.anchorBlock(), sel.anchorOffset(), sel.headBlock(), sel.headOffset());
+            EditorSupport.setSelection(editorEl, sel.anchorBlock(), sel.anchorOffset(), sel.headBlock(), sel.headOffset());
     }
 
     /**
@@ -492,14 +494,14 @@ public class Editor extends Component<Editor.Config> {
     /**
      * Reads the DOM selection and updates the editor state and toolbar.
      * When the selection is inside a non-block area (e.g. a table cell),
-     * {@link EditorSupport2#readSelection} returns {@code null}; handlers
+     * {@link EditorSupport#readSelection} returns {@code null}; handlers
      * are consulted via {@link IBlockHandler#handleSelectionChange} so they
      * can update the toolbar for the cell context.
      */
     private void syncSelectionFromDom() {
         if (rendering)
             return;
-        int[] sel = EditorSupport2.readSelection(editorEl);
+        int[] sel = EditorSupport.readSelection(editorEl);
         if (sel == null) {
             // Cursor is in a non-block area (e.g. a table cell) — let handlers update the toolbar.
             for (IBlockHandler h : handlers) {
@@ -724,7 +726,7 @@ public class Editor extends Component<Editor.Config> {
      */
     private void handleBeforeInput(elemental2.dom.Event evt) {
         if (config().debugLog)
-            DomGlobal.console.log("[Editor:beforeinput] inputType=" + EditorSupport2.getInputType(evt) + " data=" + EditorSupport2.getInputData(evt));
+            DomGlobal.console.log("[Editor:beforeinput] inputType=" + EditorSupport.getInputType(evt) + " data=" + EditorSupport.getInputData(evt));
         for (IBlockHandler h : handlers) {
             if (h.handleBeforeInput(evt, ctx))
                 return;
@@ -732,13 +734,13 @@ public class Editor extends Component<Editor.Config> {
         evt.preventDefault();
         syncSelectionFromDom();
 
-        String inputType = EditorSupport2.getInputType(evt);
+        String inputType = EditorSupport.getInputType(evt);
         if (inputType == null)
             return;
 
         switch (inputType) {
             case "insertText": {
-                String data = EditorSupport2.getInputData(evt);
+                String data = EditorSupport.getInputData(evt);
                 if ((data != null) && !data.isEmpty())
                     applyTransaction(Commands.insertText(state, data));
                 break;
@@ -850,7 +852,7 @@ public class Editor extends Component<Editor.Config> {
         }
         evt.preventDefault();
         syncSelectionFromDom();
-        String text = EditorSupport2.getClipboardText(evt);
+        String text = EditorSupport.getClipboardText(evt);
         if ((text == null) || text.isEmpty())
             return;
         // Normalize line endings (Windows \r\n and old Mac \r).

@@ -1,4 +1,4 @@
-package com.effacy.jui.text.ui.editor2;
+package com.effacy.jui.text.ui.editor;
 
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;

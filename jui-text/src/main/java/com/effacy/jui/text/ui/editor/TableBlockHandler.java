@@ -1,4 +1,4 @@
-package com.effacy.jui.text.ui.editor2;
+package com.effacy.jui.text.ui.editor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -133,7 +133,7 @@ public class TableBlockHandler implements IBlockHandler {
 
     @Override
     public boolean handleSelectionChange(IEditorContext ctx) {
-        elemental2.dom.Element cellEl = Js.uncheckedCast(EditorSupport2.cellFromSelection(ctx.editorEl()));
+        elemental2.dom.Element cellEl = Js.uncheckedCast(EditorSupport.cellFromSelection(ctx.editorEl()));
         if (cellEl == null)
             return false;
         ctx.notifyCellSelection(computeCellFormatState(cellEl, ctx));
@@ -148,7 +148,7 @@ public class TableBlockHandler implements IBlockHandler {
     @Override
     public boolean handleFormatToggle(FormatType type, IEditorContext ctx) {
         elemental2.dom.Element cellEl = Js.uncheckedCast(
-                EditorSupport2.cellFromSelection(ctx.editorEl()));
+                EditorSupport.cellFromSelection(ctx.editorEl()));
         if (cellEl == null)
             return false;
         applyToggleFormatInCellEl(type, cellEl, ctx);
@@ -536,7 +536,7 @@ public class TableBlockHandler implements IBlockHandler {
      */
     private Set<FormatType> computeCellFormatState(elemental2.dom.Element cellEl, IEditorContext ctx) {
         Set<FormatType> active = new HashSet<>();
-        int[] range = EditorSupport2.selectionInCell(cellEl);
+        int[] range = EditorSupport.selectionInCell(cellEl);
         if (range == null)
             return active;
         int from = Math.min(range[0], range[1]);
@@ -631,7 +631,7 @@ public class TableBlockHandler implements IBlockHandler {
         } else if ("ArrowRight".equals(ke.key)) {
             // Navigate to next cell only when cursor is at end of text.
             elemental2.dom.Element cell = Js.uncheckedCast(ke.target);
-            int offset = EditorSupport2.cursorOffsetInCell(cell);
+            int offset = EditorSupport.cursorOffsetInCell(cell);
             if (offset >= cell.textContent.length()) {
                 ke.preventDefault();
                 int nextRow = row, nextCol = col + 1;
@@ -643,7 +643,7 @@ public class TableBlockHandler implements IBlockHandler {
         } else if ("ArrowLeft".equals(ke.key)) {
             // Navigate to previous cell only when cursor is at start of text.
             elemental2.dom.Element cell = Js.uncheckedCast(ke.target);
-            int offset = EditorSupport2.cursorOffsetInCell(cell);
+            int offset = EditorSupport.cursorOffsetInCell(cell);
             if (offset <= 0) {
                 ke.preventDefault();
                 int prevRow = row, prevCol = col - 1;
@@ -680,9 +680,9 @@ public class TableBlockHandler implements IBlockHandler {
         if (cell != null) {
             ((elemental2.dom.HTMLElement) cell).focus();
             if (atStart)
-                EditorSupport2.moveCursorToStart(cell);
+                EditorSupport.moveCursorToStart(cell);
             else
-                EditorSupport2.moveCursorToEnd(cell);
+                EditorSupport.moveCursorToEnd(cell);
         }
     }
 
@@ -870,7 +870,7 @@ public class TableBlockHandler implements IBlockHandler {
             return;
         }
 
-        int[] range = EditorSupport2.selectionInCell(cellEl);
+        int[] range = EditorSupport.selectionInCell(cellEl);
         if (range == null)
             return;
         int from = Math.min(range[0], range[1]);
@@ -910,7 +910,7 @@ public class TableBlockHandler implements IBlockHandler {
 
         // Re-render the cell DOM and restore selection.
         renderCellContent(cellEl, cellClone, ctx);
-        EditorSupport2.setSelectionInCell(cellEl, from, to);
+        EditorSupport.setSelectionInCell(cellEl, from, to);
 
         // Reset baseline so blur does not re-sync unchanged text.
         focusedCellInitialContent = cellEl.textContent;

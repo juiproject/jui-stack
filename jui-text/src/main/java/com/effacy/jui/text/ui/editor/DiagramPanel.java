@@ -1,4 +1,4 @@
-package com.effacy.jui.text.ui.editor2;
+package com.effacy.jui.text.ui.editor;
 
 import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.core.client.dom.UIEventType;
@@ -203,7 +203,7 @@ public class DiagramPanel extends ToolPopupPanel {
         if (StringSupport.empty(lastPreviewSource)) {
             panel.classList.add(styles().diaPanelEmpty());
         } else {
-            String url = EditorSupport2.diagram(DiagramBlockHandler.BASE_URL, lastPreviewSource);
+            String url = EditorSupport.diagram(DiagramBlockHandler.BASE_URL, lastPreviewSource);
             imageEl.setAttribute("src", url);
         }
     }

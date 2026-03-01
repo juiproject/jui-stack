@@ -1,4 +1,4 @@
-package com.effacy.jui.text.ui.editor2;
+package com.effacy.jui.text.ui.editor;
 
 import com.effacy.jui.core.client.component.SimpleComponent;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;

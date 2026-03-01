@@ -28,6 +28,5 @@ public class Initialiser implements EntryPoint {
     public void onModuleLoad() {
         CSSInjector.injectFromModuleBase ("jui_text_fragments.css");
         ScriptInjector.injectFromModuleBase ("jui_text_editor.js");
-        ScriptInjector.injectFromModuleBase ("jui_text_editor2.js");
     }
 }

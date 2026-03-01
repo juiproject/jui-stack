@@ -1,4 +1,4 @@
-package com.effacy.jui.text.ui.editor2;
+package com.effacy.jui.text.ui.editor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -131,11 +131,11 @@ public class DiagramBlockHandler implements IBlockHandler {
     private void renderDiagram(Element imageEl, String source) {
         if (LOADING != null) {
             LOADING.add(() -> {
-                String url = EditorSupport2.diagram(BASE_URL, source);
+                String url = EditorSupport.diagram(BASE_URL, source);
                 imageEl.setAttribute("src", url);
             });
         } else {
-            String url = EditorSupport2.diagram(BASE_URL, source);
+            String url = EditorSupport.diagram(BASE_URL, source);
             imageEl.setAttribute("src", url);
         }
     }

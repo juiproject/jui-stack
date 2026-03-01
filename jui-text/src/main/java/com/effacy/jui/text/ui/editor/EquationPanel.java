@@ -1,4 +1,4 @@
-package com.effacy.jui.text.ui.editor2;
+package com.effacy.jui.text.ui.editor;
 
 import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.core.client.dom.DomSupport;
@@ -161,7 +161,7 @@ public class EquationPanel extends ToolPopupPanel {
         if (StringSupport.empty(source)) {
             panel.classList.add(styles().eqnPanelEmpty());
         } else {
-            String err = EditorSupport2.latex(previewEl, source, true);
+            String err = EditorSupport.latex(previewEl, source, true);
             if (!StringSupport.empty(err)) {
                 panel.classList.add(styles().eqnPanelError());
                 if (err.startsWith("KaTeX parse error:"))

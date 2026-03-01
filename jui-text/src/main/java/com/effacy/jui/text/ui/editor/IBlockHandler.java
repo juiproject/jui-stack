@@ -1,4 +1,4 @@
-package com.effacy.jui.text.ui.editor2;
+package com.effacy.jui.text.ui.editor;
 
 import com.effacy.jui.text.type.FormattedBlock;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
@@ -149,7 +149,7 @@ public interface IBlockHandler {
 
     /**
      * Called by the editor when the DOM selection changes but
-     * {@link EditorSupport2#readSelection} returns {@code null} (indicating
+     * {@link EditorSupport#readSelection} returns {@code null} (indicating
      * that the cursor is not in a standard block element, e.g. it is inside a
      * table cell). Return {@code true} if this handler owns the current
      * selection and has updated the toolbar accordingly; the editor will stop

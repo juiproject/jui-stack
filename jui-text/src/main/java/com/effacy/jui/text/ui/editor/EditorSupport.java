@@ -1,4 +1,4 @@
-package com.effacy.jui.text.ui.editor2;
+package com.effacy.jui.text.ui.editor;
 
 import elemental2.dom.Node;
 
@@ -11,7 +11,7 @@ import jsinterop.annotations.JsType;
  * Implementation is in {@code <module-script-base>/jui_text_editor2.js}.
  */
 @JsType(isNative = true, namespace = JsPackage.GLOBAL)
-public class EditorSupport2 {
+public class EditorSupport {
 
     /**
      * Reads the current DOM selection mapped to block coordinates.

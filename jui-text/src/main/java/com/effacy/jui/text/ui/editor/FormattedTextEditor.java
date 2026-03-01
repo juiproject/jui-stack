@@ -1,4 +1,4 @@
-package com.effacy.jui.text.ui.editor2;
+package com.effacy.jui.text.ui.editor;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -14,8 +14,8 @@ import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
+import com.effacy.jui.text.ui.editor.IEditorToolbar.Position;
 import com.effacy.jui.text.type.FormattedText;
-import com.effacy.jui.text.ui.editor2.IEditorToolbar.Position;
 import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.DomGlobal;

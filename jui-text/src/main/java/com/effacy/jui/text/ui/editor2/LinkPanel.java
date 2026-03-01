@@ -11,8 +11,6 @@ import elemental2.dom.DomGlobal;
 import elemental2.dom.Element;
 import elemental2.dom.HTMLInputElement;
 import elemental2.dom.KeyboardEvent;
-import jsinterop.annotations.JsPackage;
-import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 /**
@@ -23,11 +21,10 @@ import jsinterop.base.Js;
  * are displayed in a selectable list below the input. When no suggestions
  * match, a hint row instructs the user to type a complete URL.
  * <p>
- * At most one {@code LinkPanel} is visible at a time; showing a new panel
- * automatically hides the previously open one. The panel dismisses itself when
- * the user clicks outside it.
+ * Extends {@link ToolPopupPanel} for positioning, dismiss, and singleton
+ * tracking. At most one popup panel is visible at a time.
  */
-public class LinkPanel {
+public class LinkPanel extends ToolPopupPanel {
 
     /************************************************************************
      * Types.
@@ -55,21 +52,7 @@ public class LinkPanel {
     }
 
     /************************************************************************
-     * Static single-instance tracking (at most one panel open at a time).
-     ************************************************************************/
-
-    private static LinkPanel currentPanel;
-
-    /**
-     * Hides the currently visible panel if any.
-     */
-    public static void hideCurrent() {
-        if (currentPanel != null)
-            currentPanel.hide();
-    }
-
-    /************************************************************************
-     * Show / hide.
+     * Show.
      ************************************************************************/
 
     /**
@@ -93,47 +76,37 @@ public class LinkPanel {
      *               the callback for apply/remove actions.
      */
     public static void show(Element anchor, String currentUrl, Function<String, List<AnchorItem>> options, ILinkPanelCallback callback) {
-        hideCurrent();
-        currentPanel = new LinkPanel();
-        currentPanel.build(anchor, currentUrl, options, callback);
+        LinkPanel panel = new LinkPanel(currentUrl, options, callback);
+        panel.show(anchor);
     }
 
     /************************************************************************
      * Instance state.
      ************************************************************************/
 
-    private Element panelEl;
-    private elemental2.dom.EventListener dismissListener;
+    private String currentUrl;
+    private Function<String, List<AnchorItem>> options;
+    private ILinkPanelCallback callback;
+    private HTMLInputElement input;
 
-    /**
-     * Hides and destroys the panel, removing any document-level listeners.
-     */
-    public void hide() {
-        if (dismissListener != null) {
-            DomGlobal.document.removeEventListener("mousedown", dismissListener);
-            dismissListener = null;
-        }
-        if (panelEl != null) {
-            if (panelEl.parentNode != null)
-                panelEl.parentNode.removeChild(panelEl);
-            panelEl = null;
-        }
-        if (currentPanel == this)
-            currentPanel = null;
+    private LinkPanel(String currentUrl, Function<String, List<AnchorItem>> options, ILinkPanelCallback callback) {
+        this.currentUrl = currentUrl;
+        this.options = options;
+        this.callback = callback;
     }
 
     /************************************************************************
-     * Internal construction.
+     * ToolPopupPanel.
      ************************************************************************/
 
-    private void build(Element anchor, String currentUrl, Function<String, List<AnchorItem>> options, ILinkPanelCallback callback) {
-        panelEl = DomGlobal.document.createElement("div");
-        panelEl.classList.add(styles().linkPanel());
+    @Override
+    protected void buildContent(Element panel) {
+        panel.classList.add(styles().linkPanel());
         if (options != null)
-            panelEl.classList.add(styles().linkPanelVertical());
+            panel.classList.add(styles().linkPanelVertical());
 
         // URL input.
-        HTMLInputElement input = Js.uncheckedCast(DomGlobal.document.createElement("input"));
+        input = Js.uncheckedCast(DomGlobal.document.createElement("input"));
         input.type = "text";
         input.placeholder = "Enter URL...";
         input.classList.add(styles().linkInput());
@@ -148,25 +121,25 @@ public class LinkPanel {
 
             // Remove button (only when editing an existing link).
             if ((currentUrl != null) && !currentUrl.isEmpty())
-                inputRow.appendChild(buildRemoveButton(callback));
+                inputRow.appendChild(buildRemoveButton());
 
-            panelEl.appendChild(inputRow);
+            panel.appendChild(inputRow);
 
             // Suggestion list container.
             Element suggestionList = DomGlobal.document.createElement("div");
             suggestionList.classList.add(styles().suggestionList());
-            panelEl.appendChild(suggestionList);
+            panel.appendChild(suggestionList);
 
             // Wire up input event for filtering.
             input.addEventListener("input", evt -> {
-                updateSuggestions(suggestionList, input.value.trim(), options, callback);
+                updateSuggestions(suggestionList, input.value.trim());
             });
 
             // Show initial suggestions.
-            updateSuggestions(suggestionList, input.value.trim(), options, callback);
+            updateSuggestions(suggestionList, input.value.trim());
         } else {
             // Original horizontal layout: input + Apply + Remove inline.
-            panelEl.appendChild(input);
+            panel.appendChild(input);
 
             // Apply button.
             Element applyBtn = DomGlobal.document.createElement("button");
@@ -181,11 +154,11 @@ public class LinkPanel {
                     callback.onApply(url);
                 }
             });
-            panelEl.appendChild(applyBtn);
+            panel.appendChild(applyBtn);
 
             // Remove button (only when editing an existing link).
             if ((currentUrl != null) && !currentUrl.isEmpty())
-                panelEl.appendChild(buildRemoveButton(callback));
+                panel.appendChild(buildRemoveButton());
         }
 
         // Keyboard handling on input.
@@ -203,24 +176,19 @@ public class LinkPanel {
                 hide();
             }
         });
-
-        // Prevent clicks inside the panel from dismissing it.
-        panelEl.addEventListener("mousedown", evt -> {
-            evt.stopPropagation();
-        });
-
-        DomGlobal.document.body.appendChild(panelEl);
-        positionBelow(anchor);
-
-        // Defer dismiss listener and input focus so the originating mousedown
-        // event finishes bubbling before the outside-click listener is active.
-        DomGlobal.setTimeout(args -> {
-            installDismiss();
-            input.focus();
-        }, 0);
     }
 
-    private Element buildRemoveButton(ILinkPanelCallback callback) {
+    @Override
+    protected void onShown() {
+        if (input != null)
+            input.focus();
+    }
+
+    /************************************************************************
+     * Helpers.
+     ************************************************************************/
+
+    private Element buildRemoveButton() {
         Element removeBtn = DomGlobal.document.createElement("button");
         removeBtn.classList.add(styles().linkBtn());
         removeBtn.classList.add(styles().linkBtnDanger());
@@ -234,11 +202,7 @@ public class LinkPanel {
         return removeBtn;
     }
 
-    /************************************************************************
-     * Suggestion list.
-     ************************************************************************/
-
-    private void updateSuggestions(Element container, String text, Function<String, List<AnchorItem>> options, ILinkPanelCallback callback) {
+    private void updateSuggestions(Element container, String text) {
         container.innerHTML = "";
         List<AnchorItem> items = options.apply(text);
         if ((items != null) && !items.isEmpty()) {
@@ -279,36 +243,6 @@ public class LinkPanel {
             hint.appendChild(info);
             container.appendChild(hint);
         }
-    }
-
-    /************************************************************************
-     * Positioning and dismiss.
-     ************************************************************************/
-
-    @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "Object")
-    private static class JsRect {
-        public double left, top, bottom;
-    }
-
-    private void positionBelow(Element anchor) {
-        JsRect rect = Js.uncheckedCast(anchor.getBoundingClientRect());
-        elemental2.dom.HTMLElement panelHtml = Js.uncheckedCast(panelEl);
-        panelHtml.style.setProperty("left", rect.left + "px");
-        panelHtml.style.setProperty("top", (rect.bottom + 4) + "px");
-    }
-
-    private void installDismiss() {
-        dismissListener = evt -> {
-            Element target = Js.uncheckedCast(evt.target);
-            Element el = target;
-            while (el != null) {
-                if (el == panelEl)
-                    return;
-                el = el.parentElement;
-            }
-            hide();
-        };
-        DomGlobal.document.addEventListener("mousedown", dismissListener);
     }
 
     /************************************************************************

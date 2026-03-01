@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.core.client.component.Component;
@@ -171,8 +170,6 @@ public class Editor extends Component<Editor.Config> {
 
         boolean paragraphAfterHeading = true;
         IListIndexFormatter listIndexFormatter = Editor::defaultListIndex;
-        Function<String, List<LinkPanel.AnchorItem>> linkOptions;
-        Function<String, List<VariablePanel.VariableItem>> variableOptions;
         boolean debugLog;
 
         /**
@@ -190,25 +187,6 @@ public class Editor extends Component<Editor.Config> {
          */
         public Config listIndexFormatter(IListIndexFormatter formatter) {
             this.listIndexFormatter = formatter;
-            return this;
-        }
-
-        /**
-         * Configures a function that provides link suggestions as the user
-         * types in the link panel.
-         */
-        public Config linkOptions(Function<String, List<LinkPanel.AnchorItem>> linkOptions) {
-            this.linkOptions = linkOptions;
-            return this;
-        }
-
-        /**
-         * Configures a function that provides variable suggestions as the
-         * user types in the variable panel. When set, a variable toolbar
-         * button is displayed.
-         */
-        public Config variableOptions(Function<String, List<VariablePanel.VariableItem>> variableOptions) {
-            this.variableOptions = variableOptions;
             return this;
         }
 
@@ -355,21 +333,38 @@ public class Editor extends Component<Editor.Config> {
             }
 
             @Override
-            public void insertLink(Element anchor) {
-                handleLinkAction(anchor);
-            }
-
-            @Override
-            public void insertVariable(Element anchor) {
-                handleVariableAction(anchor);
-            }
-
-            @Override
             public void insertText(String text) {
                 if ((text == null) || text.isEmpty())
                     return;
                 syncSelectionFromDom();
                 applyTransaction(Commands.insertText(state, text));
+            }
+
+            @Override
+            public void syncSelection() {
+                syncSelectionFromDom();
+            }
+
+            @Override
+            public String currentLink() {
+                syncSelectionFromDom();
+                return extractLinkUrl(state.selection());
+            }
+
+            @Override
+            public void applyLink(String url) {
+                applyTransaction(Commands.updateLink(state, url));
+            }
+
+            @Override
+            public void removeLink() {
+                applyTransaction(Commands.removeLink(state));
+            }
+
+            @Override
+            public void applyVariable(String name, String label) {
+                syncSelectionFromDom();
+                applyTransaction(Commands.insertVariable(state, name, label));
             }
         };
     }
@@ -576,45 +571,6 @@ public class Editor extends Component<Editor.Config> {
         }
         syncSelectionFromDom();
         applyTransaction(Commands.toggleFormat(state, type));
-    }
-
-    /**
-     * Opens the link panel for adding, editing, or removing a link on the
-     * current selection. Requires a range selection (not a cursor).
-     */
-    private void handleLinkAction(Element anchor) {
-        syncSelectionFromDom();
-        Selection sel = state.selection();
-        if (sel.isCursor())
-            return;
-        String currentUrl = extractLinkUrl(sel);
-        LinkPanel.show(anchor, currentUrl, config().linkOptions, new LinkPanel.ILinkPanelCallback() {
-
-            @Override
-            public void onApply(String url) {
-                applyTransaction(Commands.updateLink(state, url));
-            }
-
-            @Override
-            public void onRemove() {
-                applyTransaction(Commands.removeLink(state));
-            }
-        });
-    }
-
-    /**
-     * Opens the variable panel for selecting and inserting a variable at the
-     * current cursor position.
-     */
-    private void handleVariableAction(Element anchor) {
-        syncSelectionFromDom();
-        VariablePanel.show(anchor, config().variableOptions, new VariablePanel.IVariablePanelCallback() {
-
-            @Override
-            public void onSelect(String name, String label) {
-                applyTransaction(Commands.insertVariable(state, name, label));
-            }
-        });
     }
 
     /**

@@ -11,8 +11,6 @@ import elemental2.dom.DomGlobal;
 import elemental2.dom.Element;
 import elemental2.dom.HTMLInputElement;
 import elemental2.dom.KeyboardEvent;
-import jsinterop.annotations.JsPackage;
-import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 /**
@@ -22,11 +20,10 @@ import jsinterop.base.Js;
  * based on the user's input. Items are displayed in a selectable list below
  * the search input. When no suggestions match, a hint row is shown.
  * <p>
- * At most one {@code VariablePanel} is visible at a time; showing a new panel
- * automatically hides the previously open one. The panel dismisses itself when
- * the user clicks outside it.
+ * Extends {@link ToolPopupPanel} for positioning, dismiss, and singleton
+ * tracking. At most one popup panel is visible at a time.
  */
-public class VariablePanel {
+public class VariablePanel extends ToolPopupPanel {
 
     /************************************************************************
      * Types.
@@ -54,21 +51,7 @@ public class VariablePanel {
     }
 
     /************************************************************************
-     * Static single-instance tracking (at most one panel open at a time).
-     ************************************************************************/
-
-    private static VariablePanel currentPanel;
-
-    /**
-     * Hides the currently visible panel if any.
-     */
-    public static void hideCurrent() {
-        if (currentPanel != null)
-            currentPanel.hide();
-    }
-
-    /************************************************************************
-     * Show / hide.
+     * Show.
      ************************************************************************/
 
     /**
@@ -83,58 +66,46 @@ public class VariablePanel {
      *               the callback for selection actions.
      */
     public static void show(Element anchor, Function<String, List<VariableItem>> options, IVariablePanelCallback callback) {
-        hideCurrent();
-        currentPanel = new VariablePanel();
-        currentPanel.build(anchor, options, callback);
+        VariablePanel panel = new VariablePanel(options, callback);
+        panel.show(anchor);
     }
 
     /************************************************************************
      * Instance state.
      ************************************************************************/
 
-    private Element panelEl;
-    private elemental2.dom.EventListener dismissListener;
+    private Function<String, List<VariableItem>> options;
+    private IVariablePanelCallback callback;
+    private HTMLInputElement input;
 
-    /**
-     * Hides and destroys the panel, removing any document-level listeners.
-     */
-    public void hide() {
-        if (dismissListener != null) {
-            DomGlobal.document.removeEventListener("mousedown", dismissListener);
-            dismissListener = null;
-        }
-        if (panelEl != null) {
-            if (panelEl.parentNode != null)
-                panelEl.parentNode.removeChild(panelEl);
-            panelEl = null;
-        }
-        if (currentPanel == this)
-            currentPanel = null;
+    private VariablePanel(Function<String, List<VariableItem>> options, IVariablePanelCallback callback) {
+        this.options = options;
+        this.callback = callback;
     }
 
     /************************************************************************
-     * Internal construction.
+     * ToolPopupPanel.
      ************************************************************************/
 
-    private void build(Element anchor, Function<String, List<VariableItem>> options, IVariablePanelCallback callback) {
-        panelEl = DomGlobal.document.createElement("div");
-        panelEl.classList.add(styles().varPanel());
+    @Override
+    protected void buildContent(Element panel) {
+        panel.classList.add(styles().varPanel());
 
         // Search input.
-        HTMLInputElement input = Js.uncheckedCast(DomGlobal.document.createElement("input"));
+        input = Js.uncheckedCast(DomGlobal.document.createElement("input"));
         input.type = "text";
         input.placeholder = "Search variables...";
         input.classList.add(styles().varInput());
-        panelEl.appendChild(input);
+        panel.appendChild(input);
 
         // Suggestion list container.
         Element suggestionList = DomGlobal.document.createElement("div");
         suggestionList.classList.add(styles().varList());
-        panelEl.appendChild(suggestionList);
+        panel.appendChild(suggestionList);
 
         // Wire up input event for filtering.
         input.addEventListener("input", evt -> {
-            updateSuggestions(suggestionList, input.value.trim(), options, callback);
+            updateSuggestions(suggestionList, input.value.trim());
         });
 
         // Keyboard handling.
@@ -147,29 +118,20 @@ public class VariablePanel {
         });
 
         // Show initial suggestions.
-        updateSuggestions(suggestionList, "", options, callback);
+        updateSuggestions(suggestionList, "");
+    }
 
-        // Prevent clicks inside the panel from dismissing it.
-        panelEl.addEventListener("mousedown", evt -> {
-            evt.stopPropagation();
-        });
-
-        DomGlobal.document.body.appendChild(panelEl);
-        positionBelow(anchor);
-
-        // Defer dismiss listener and input focus so the originating mousedown
-        // event finishes bubbling before the outside-click listener is active.
-        DomGlobal.setTimeout(args -> {
-            installDismiss();
+    @Override
+    protected void onShown() {
+        if (input != null)
             input.focus();
-        }, 0);
     }
 
     /************************************************************************
      * Suggestion list.
      ************************************************************************/
 
-    private void updateSuggestions(Element container, String text, Function<String, List<VariableItem>> options, IVariablePanelCallback callback) {
+    private void updateSuggestions(Element container, String text) {
         container.innerHTML = "";
         List<VariableItem> items = options.apply(text);
         if ((items != null) && !items.isEmpty()) {
@@ -202,36 +164,6 @@ public class VariablePanel {
             hint.textContent = "No matching variables";
             container.appendChild(hint);
         }
-    }
-
-    /************************************************************************
-     * Positioning and dismiss.
-     ************************************************************************/
-
-    @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "Object")
-    private static class JsRect {
-        public double left, top, bottom;
-    }
-
-    private void positionBelow(Element anchor) {
-        JsRect rect = Js.uncheckedCast(anchor.getBoundingClientRect());
-        elemental2.dom.HTMLElement panelHtml = Js.uncheckedCast(panelEl);
-        panelHtml.style.setProperty("left", rect.left + "px");
-        panelHtml.style.setProperty("top", (rect.bottom + 4) + "px");
-    }
-
-    private void installDismiss() {
-        dismissListener = evt -> {
-            Element target = Js.uncheckedCast(evt.target);
-            Element el = target;
-            while (el != null) {
-                if (el == panelEl)
-                    return;
-                el = el.parentElement;
-            }
-            hide();
-        };
-        DomGlobal.document.addEventListener("mousedown", dismissListener);
     }
 
     /************************************************************************

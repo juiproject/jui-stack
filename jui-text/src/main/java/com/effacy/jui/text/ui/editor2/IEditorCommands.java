@@ -3,8 +3,6 @@ package com.effacy.jui.text.ui.editor2;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
 
-import elemental2.dom.Element;
-
 /**
  * Command callback interface through which a toolbar (or other external
  * controller) drives the editor.
@@ -36,26 +34,6 @@ public interface IEditorCommands {
     void insertTable(int rows, int cols);
 
     /**
-     * Opens the link editing panel for the current selection. The
-     * {@code anchor} element is used to position the panel popup.
-     *
-     * @param anchor
-     *               the DOM element to anchor the link panel below (typically
-     *               the toolbar's link button).
-     */
-    void insertLink(Element anchor);
-
-    /**
-     * Opens the variable insertion panel at the current cursor position. The
-     * {@code anchor} element is used to position the panel popup.
-     *
-     * @param anchor
-     *               the DOM element to anchor the variable panel below
-     *               (typically the toolbar's variable button).
-     */
-    void insertVariable(Element anchor);
-
-    /**
      * Inserts text at the current cursor position, replacing any active
      * selection.
      *
@@ -63,4 +41,44 @@ public interface IEditorCommands {
      *             the text to insert.
      */
     void insertText(String text);
+
+    /**
+     * Synchronises the editor's internal selection state with the current
+     * DOM selection. Call this before querying selection-dependent state
+     * (e.g. {@link #currentLink()}) or before opening a popup that will
+     * modify the document at the captured selection.
+     */
+    void syncSelection();
+
+    /**
+     * Returns the link URL at the current cursor position, or {@code null}
+     * if the cursor is not inside a link. Call {@link #syncSelection()}
+     * first to ensure the selection is up to date.
+     */
+    String currentLink();
+
+    /**
+     * Applies a link URL to the current range selection. If the selection
+     * is a cursor (collapsed) and not inside an existing link, this is a
+     * no-op.
+     *
+     * @param url
+     *            the URL to apply.
+     */
+    void applyLink(String url);
+
+    /**
+     * Removes the link from the current selection.
+     */
+    void removeLink();
+
+    /**
+     * Inserts a variable at the current cursor position.
+     *
+     * @param name
+     *             the variable identifier.
+     * @param label
+     *             the display label for the variable.
+     */
+    void applyVariable(String name, String label);
 }

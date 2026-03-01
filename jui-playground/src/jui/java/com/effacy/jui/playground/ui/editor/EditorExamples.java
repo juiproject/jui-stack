@@ -234,8 +234,6 @@ After the Battle of France resulted in the French Third Republic ...
 
         FormattedTextEditor editor = add(new FormattedTextEditor(new FormattedTextEditor.Config()
             .editor(new Editor.Config()
-                .linkOptions(EditorExamples::filterLinks)
-                .variableOptions(EditorExamples::filterVariables)
                 .debugLog(false))
             .height(Length.px(200))
             .position(Position.FLOATING)
@@ -247,7 +245,10 @@ After the Battle of France resulted in the French Third Republic ...
                        Tools.SEPARATOR,
                        Tools.BULLET_LIST, Tools.NUMBERED_LIST,
                        Tools.SEPARATOR,
-                       Tools.TABLE, Tools.SEPARATOR, Tools.LINK, Tools.SEPARATOR, Tools.VARIABLE))));
+                       Tools.TABLE, Tools.SEPARATOR,
+                       Tools.link(r -> Em.$(r).style(FontAwesome.link()), "Link", EditorExamples::filterLinks),
+                       Tools.SEPARATOR,
+                       Tools.variable("{}", "Variable", EditorExamples::filterVariables)))));
         editor.setValue(Value.of(MarkdownParser.parse(SAMPLE_MARKDOWN3)));
     }
 

@@ -1,8 +1,10 @@
 package com.effacy.jui.text.ui.editor2;
 
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import com.effacy.jui.core.client.dom.UIEventType;
 import com.effacy.jui.core.client.dom.builder.Button;
@@ -71,8 +73,6 @@ public class Tools {
      ************************************************************************/
 
     public static final ITool TABLE = action(r -> Em.$(r).style(FontAwesome.table()), "Insert Table", cmd -> cmd.insertTable(2, 3));
-    public static final ITool LINK = anchoredAction(r -> Em.$(r).style(FontAwesome.link()), "Link", (cmd, el) -> cmd.insertLink(el));
-    public static final ITool VARIABLE = anchoredAction("{}", "Variable", (cmd, el) -> cmd.insertVariable(el));
 
     /************************************************************************
      * Visual separator.
@@ -96,7 +96,7 @@ public class Tools {
             SEPARATOR,
             BULLET_LIST, NUMBERED_LIST,
             SEPARATOR,
-            TABLE, SEPARATOR, LINK, SEPARATOR, VARIABLE
+            TABLE
         };
     }
 
@@ -316,6 +316,101 @@ public class Tools {
                     e.stopEvent();
                     if (ctx.commands() != null)
                         action.accept(ctx.commands(), (Element) n);
+                }, UIEventType.ONMOUSEDOWN);
+            return null;
+        };
+    }
+
+    /**
+     * Creates a link tool with a text label.
+     *
+     * @see #link(Consumer, String, Function)
+     */
+    public static ITool link(String label, String tooltip, Function<String, List<LinkPanel.AnchorItem>> options) {
+        return link(btn -> btn.text(label), tooltip, options);
+    }
+
+    /**
+     * Creates a link tool with custom button content. The button freezes
+     * the selection, then opens a {@link LinkPanel} for applying, editing,
+     * or removing a link. The tool owns the popup and data source; the
+     * editor provides only data-level commands.
+     *
+     * @param content
+     *              populates the button's inner content.
+     * @param tooltip
+     *              the button tooltip.
+     * @param options
+     *              function returning link suggestions for the typed text.
+     */
+    public static ITool link(Consumer<ElementBuilder> content, String tooltip, Function<String, List<LinkPanel.AnchorItem>> options) {
+        return ctx -> {
+            Element[] btn = new Element[1];
+            Button.$(ctx.parent()).style(ctx.styles().tbtn()).$(content).attr("title", tooltip)
+                .use(n -> btn[0] = (Element) n)
+                .on(e -> {
+                    e.stopEvent();
+                    if (ctx.commands() == null)
+                        return;
+                    ctx.commands().syncSelection();
+                    String currentUrl = ctx.commands().currentLink();
+                    LinkPanel.show(btn[0], currentUrl, options, new LinkPanel.ILinkPanelCallback() {
+
+                        @Override
+                        public void onApply(String url) {
+                            ctx.commands().applyLink(url);
+                        }
+
+                        @Override
+                        public void onRemove() {
+                            ctx.commands().removeLink();
+                        }
+                    });
+                }, UIEventType.ONMOUSEDOWN);
+            return null;
+        };
+    }
+
+    /**
+     * Creates a variable tool with a text label.
+     *
+     * @see #variable(Consumer, String, Function)
+     */
+    public static ITool variable(String label, String tooltip, Function<String, List<VariablePanel.VariableItem>> options) {
+        return variable(btn -> btn.text(label), tooltip, options);
+    }
+
+    /**
+     * Creates a variable tool with custom button content. The button
+     * freezes the selection, then opens a {@link VariablePanel} for
+     * selecting a variable to insert. The tool owns the popup and data
+     * source.
+     *
+     * @param content
+     *              populates the button's inner content.
+     * @param tooltip
+     *              the button tooltip.
+     * @param options
+     *              function returning variable suggestions for the typed
+     *              text.
+     */
+    public static ITool variable(Consumer<ElementBuilder> content, String tooltip, Function<String, List<VariablePanel.VariableItem>> options) {
+        return ctx -> {
+            Element[] btn = new Element[1];
+            Button.$(ctx.parent()).style(ctx.styles().tbtn()).$(content).attr("title", tooltip)
+                .use(n -> btn[0] = (Element) n)
+                .on(e -> {
+                    e.stopEvent();
+                    if (ctx.commands() == null)
+                        return;
+                    ctx.commands().syncSelection();
+                    VariablePanel.show(btn[0], options, new VariablePanel.IVariablePanelCallback() {
+
+                        @Override
+                        public void onSelect(String name, String label) {
+                            ctx.commands().applyVariable(name, label);
+                        }
+                    });
                 }, UIEventType.ONMOUSEDOWN);
             return null;
         };

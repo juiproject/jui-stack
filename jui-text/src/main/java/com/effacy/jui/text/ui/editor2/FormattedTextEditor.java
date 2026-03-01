@@ -44,11 +44,11 @@ import jsinterop.base.Js;
  * <pre>
  * FormattedTextEditor editor = new FormattedTextEditor(new FormattedTextEditor.Config()
  *     .position(Position.BOTTOM)
- *     .editor(new Editor.Config()
- *         .linkOptions(MyApp::filterLinks)
- *         .variableOptions(MyApp::filterVariables))
+ *     .editor(new Editor.Config())
  *     .toolbar(new EditorToolbar.Config()
- *         .tools(Tool.BOLD, Tool.ITALIC, Tool.UNDERLINE, Tool.H1, Tool.H2)));
+ *         .tools(Tools.BOLD, Tools.ITALIC, Tools.UNDERLINE, Tools.H1, Tools.H2,
+ *                Tools.link("Link", "Link", MyApp::filterLinks),
+ *                Tools.variable("Var", "Variable", MyApp::filterVariables))));
  * editor.setValue(Value.of(myDocument));
  * </pre>
  */

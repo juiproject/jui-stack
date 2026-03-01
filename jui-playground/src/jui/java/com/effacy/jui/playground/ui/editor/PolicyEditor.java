@@ -32,8 +32,7 @@ import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
 import com.effacy.jui.text.type.FormattedText;
-import com.effacy.jui.text.ui.editor.DiagramBlock;
-import com.effacy.jui.text.ui.editor.EquationBlock;
+import com.effacy.jui.text.ui.editor2.DiagramBlockHandler;
 import com.effacy.jui.text.ui.editor2.Editor;
 import com.effacy.jui.text.ui.editor2.EditorToolbar;
 import com.effacy.jui.text.ui.editor2.FormattedTextEditor;
@@ -70,13 +69,13 @@ public class PolicyEditor  extends SimpleComponent {
                 .append (" substitutable."))
                 .indent (1))
             .block (BlockType.EQN, blk -> blk
-                .split (EquationBlock.DEMO_2)
+                .split (EditorExamples.EQUATION)
                 .indent (1))
             .block (BlockType.PARA, blk -> blk
                 .line (line -> line.append ("Two challenges to free market assumptions: coercion / fairness (market assumption relies on the ideal of consent however one questions whether free choice is truely voluntary in the face of inequity - on the supply side needing the money and on the demand side not having the money) and corruption / degradation (some measures of value not substitutable with economic value so commodification degrades that value - commonly civic and honorific).")))
             .block (BlockType.DIA, blk -> blk
-                .split (DiagramBlock.DEMO_2)
-                .meta (DiagramBlock.META_CAPTION, "Demonstration diagram"))
+                .split (EditorExamples.DIAGRAM)
+                .meta (DiagramBlockHandler.META_CAPTION, "Demonstration diagram"))
             .block (BlockType.PARA, blk -> blk
                 .line (line -> line.append ("Two challenges to free market assumptions: coercion / fairness (market assumption relies on the ideal of consent however one questions whether free choice is truely voluntary in the face of inequity - on the supply side needing the money and on the demand side not having the money) and corruption / degradation (some measures of value not substitutable with economic value so commodification degrades that value - commonly civic and honorific).")))
             .block (BlockType.PARA, blk -> blk

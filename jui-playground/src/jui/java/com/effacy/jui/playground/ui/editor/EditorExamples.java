@@ -21,7 +21,6 @@ import java.util.List;
 import com.effacy.jui.core.client.control.IControl.Value;
 import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.css.Length;
-import com.effacy.jui.text.type.FormattedLine.FormatType;
 import com.effacy.jui.text.type.markdown.MarkdownParser;
 import com.effacy.jui.text.ui.editor2.Editor;
 import com.effacy.jui.text.ui.editor2.EditorToolbar;
@@ -151,7 +150,7 @@ In the book, Fanon described the unfair treatment of black people in France and 
 After the Battle of France resulted in the French Third Republic ...
         """;
 
-    private static final String DIAGRAM = """
+    public static final String DIAGRAM = """
 @startditaa
 +--------+   +-------+    +-------+
 |        +---+ ditaa +--> |       |
@@ -165,7 +164,7 @@ After the Battle of France resulted in the French Third Republic ...
 @endditaa
 """;
 
-    private static final String EQUATION = """
+    public static final String EQUATION = """
 \\begin{align*}
 x&=y         & w&=z             & a&=b+c\\\\
 2x&=-y       & 3w&=\\frac{1}{2}z & a&=b\\\\

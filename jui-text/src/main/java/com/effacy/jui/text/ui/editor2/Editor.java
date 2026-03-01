@@ -363,6 +363,14 @@ public class Editor extends Component<Editor.Config> {
             public void insertVariable(Element anchor) {
                 handleVariableAction(anchor);
             }
+
+            @Override
+            public void insertText(String text) {
+                if ((text == null) || text.isEmpty())
+                    return;
+                syncSelectionFromDom();
+                applyTransaction(Commands.insertText(state, text));
+            }
         };
     }
 

@@ -19,15 +19,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.effacy.jui.core.client.control.IControl.Value;
+import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.css.Length;
+import com.effacy.jui.text.type.FormattedLine.FormatType;
 import com.effacy.jui.text.type.markdown.MarkdownParser;
 import com.effacy.jui.text.ui.editor2.Editor;
 import com.effacy.jui.text.ui.editor2.EditorToolbar;
-import com.effacy.jui.text.ui.editor2.IEditorToolbar.Position;
-import com.effacy.jui.text.ui.editor2.EditorToolbar.Tool;
 import com.effacy.jui.text.ui.editor2.FormattedTextEditor;
+import com.effacy.jui.text.ui.editor2.IEditorToolbar.Position;
 import com.effacy.jui.text.ui.editor2.LinkPanel;
+import com.effacy.jui.text.ui.editor2.Tools;
 import com.effacy.jui.text.ui.editor2.VariablePanel;
+import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.effacy.jui.ui.client.panel.Panel;
 
 /**
@@ -237,11 +240,14 @@ After the Battle of France resulted in the French Third Republic ...
             .height(Length.px(200))
             .position(Position.FLOATING)
             .toolbar(new EditorToolbar.Config()
-                .tools(Tool.BOLD, Tool.ITALIC, Tool.UNDERLINE, Tool.STRIKETHROUGH,
-                       Tool.SUBSCRIPT, Tool.SUPERSCRIPT, Tool.CODE, Tool.HIGHLIGHT,
-                       Tool.H1, Tool.H2, Tool.H3, Tool.PARAGRAPH,
-                       Tool.BULLET_LIST, Tool.NUMBERED_LIST,
-                       Tool.TABLE, Tool.LINK, Tool.VARIABLE))));
+                .tools(Tools.BOLD, Tools.ITALIC, Tools.UNDERLINE, Tools.STRIKETHROUGH,
+                       Tools.SUBSCRIPT, Tools.SUPERSCRIPT, Tools.CODE, Tools.HIGHLIGHT,
+                       Tools.SEPARATOR,
+                       Tools.H1, Tools.H2, Tools.H3, Tools.PARAGRAPH,
+                       Tools.SEPARATOR,
+                       Tools.BULLET_LIST, Tools.NUMBERED_LIST,
+                       Tools.SEPARATOR,
+                       Tools.TABLE, Tools.SEPARATOR, Tools.LINK, Tools.SEPARATOR, Tools.VARIABLE))));
         editor.setValue(Value.of(MarkdownParser.parse(SAMPLE_MARKDOWN3)));
     }
 

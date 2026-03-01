@@ -54,4 +54,13 @@ public interface IEditorCommands {
      *               (typically the toolbar's variable button).
      */
     void insertVariable(Element anchor);
+
+    /**
+     * Inserts text at the current cursor position, replacing any active
+     * selection.
+     *
+     * @param text
+     *             the text to insert.
+     */
+    void insertText(String text);
 }

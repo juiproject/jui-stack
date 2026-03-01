@@ -214,6 +214,8 @@ public class Editor extends Component<Editor.Config> {
             .block(BlockType.PARA, b -> b.line(""));
         state = EditorState.create(doc);
         history = new History();
+        handlers.add(new EquationBlockHandler());
+        handlers.add(new DiagramBlockHandler());
         handlers.add(new TableBlockHandler());
         handlers.add(new StandardBlockHandler());
     }
@@ -330,6 +332,24 @@ public class Editor extends Component<Editor.Config> {
                 int preBlock = preSel.isCursor() ? preSel.anchorBlock() : preSel.fromBlock();
                 applyTransaction(Commands.insertTable(state, rows, cols));
                 handlerFor(BlockType.TABLE).focusBlock(preBlock + 1, ctx);
+            }
+
+            @Override
+            public void insertEquation() {
+                syncSelectionFromDom();
+                Selection preSel = state.selection();
+                int preBlock = preSel.isCursor() ? preSel.anchorBlock() : preSel.fromBlock();
+                applyTransaction(Commands.insertEquation(state));
+                handlerFor(BlockType.EQN).focusBlock(preBlock + 1, ctx);
+            }
+
+            @Override
+            public void insertDiagram() {
+                syncSelectionFromDom();
+                Selection preSel = state.selection();
+                int preBlock = preSel.isCursor() ? preSel.anchorBlock() : preSel.fromBlock();
+                applyTransaction(Commands.insertDiagram(state));
+                handlerFor(BlockType.DIA).focusBlock(preBlock + 1, ctx);
             }
 
             @Override

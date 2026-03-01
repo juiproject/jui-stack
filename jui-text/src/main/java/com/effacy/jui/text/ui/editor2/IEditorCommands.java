@@ -34,6 +34,16 @@ public interface IEditorCommands {
     void insertTable(int rows, int cols);
 
     /**
+     * Inserts an equation block after the current block.
+     */
+    void insertEquation();
+
+    /**
+     * Inserts a diagram block after the current block.
+     */
+    void insertDiagram();
+
+    /**
      * Inserts text at the current cursor position, replacing any active
      * selection.
      *

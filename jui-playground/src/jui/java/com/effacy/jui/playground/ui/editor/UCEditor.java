@@ -18,6 +18,7 @@ package com.effacy.jui.playground.ui.editor;
 import com.effacy.jui.core.client.component.SimpleComponent;
 import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.builder.Div;
+import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.builder.H1;
 import com.effacy.jui.core.client.dom.builder.Header;
 import com.effacy.jui.core.client.dom.builder.Li;
@@ -26,7 +27,17 @@ import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.builder.Ul;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.core.client.dom.css.CSSInjector;
-import com.effacy.jui.text.ui.editor.EditorComponent;
+import com.effacy.jui.core.client.dom.css.Length;
+import com.effacy.jui.text.type.FormattedBlock.BlockType;
+import com.effacy.jui.text.type.FormattedLine.FormatType;
+import com.effacy.jui.text.type.FormattedText;
+import com.effacy.jui.text.ui.editor.DiagramBlock;
+import com.effacy.jui.text.ui.editor.EquationBlock;
+import com.effacy.jui.text.ui.editor2.Editor;
+import com.effacy.jui.text.ui.editor2.EditorToolbar;
+import com.effacy.jui.text.ui.editor2.FormattedTextEditor;
+import com.effacy.jui.text.ui.editor2.IEditorToolbar.Position;
+import com.effacy.jui.text.ui.editor2.Tools;
 import com.effacy.jui.ui.client.button.Button;
 import com.effacy.jui.ui.client.button.ButtonCreator;
 import com.effacy.jui.ui.client.icon.FontAwesome;
@@ -47,6 +58,49 @@ public class UCEditor extends SimpleComponent {
 
     @Override
     protected INodeProvider buildNode(Element el) {
+        // Seeding content.
+        FormattedText content = new FormattedText()
+            .block (BlockType.H1, blk -> blk.line (line -> line.append ("Markets and economics")))
+            .block (BlockType.OLIST, blk -> blk.line ("This is a line item"))
+            .block (BlockType.OLIST, blk -> blk.line ("This is a second line item"))
+            .block (BlockType.PARA, blk -> blk
+                .line (line -> line
+                .append ("Markets assume basic economic\n value as underlying decision making but this conflicts with social relations and morals whose values are ")
+                .append ("not", FormatType.BLD)
+                .append (" substitutable."))
+                .indent (1))
+            .block (BlockType.EQN, blk -> blk
+                .split (EquationBlock.DEMO_2)
+                .indent (1))
+            .block (BlockType.PARA, blk -> blk
+                .line (line -> line.append ("Two challenges to free market assumptions: coercion / fairness (market assumption relies on the ideal of consent however one questions whether free choice is truely voluntary in the face of inequity - on the supply side needing the money and on the demand side not having the money) and corruption / degradation (some measures of value not substitutable with economic value so commodification degrades that value - commonly civic and honorific).")))
+            .block (BlockType.DIA, blk -> blk
+                .split (DiagramBlock.DEMO_2)
+                .meta (DiagramBlock.META_CAPTION, "Demonstration diagram"))
+            .block (BlockType.PARA, blk -> blk
+                .line (line -> line.append ("Two challenges to free market assumptions: coercion / fairness (market assumption relies on the ideal of consent however one questions whether free choice is truely voluntary in the face of inequity - on the supply side needing the money and on the demand side not having the money) and corruption / degradation (some measures of value not substitutable with economic value so commodification degrades that value - commonly civic and honorific).")))
+            .block (BlockType.PARA, blk -> blk
+                .line (line -> line.append ("Two challenges to free market assumptions: coercion / fairness (market assumption relies on the ideal of consent however one questions whether free choice is truely voluntary in the face of inequity - on the supply side needing the money and on the demand side not having the money) and corruption / degradation (some measures of value not substitutable with economic value so commodification degrades that value - commonly civic and honorific).")))
+            .block (BlockType.PARA, blk -> blk
+                .line (line -> line.append ("Two challenges to free market assumptions: coercion / fairness (market assumption relies on the ideal of consent however one questions whether free choice is truely voluntary in the face of inequity - on the supply side needing the money and on the demand side not having the money) and corruption / degradation (some measures of value not substitutable with economic value so commodification degrades that value - commonly civic and honorific).")))
+            ;
+        FormattedTextEditor editor = new FormattedTextEditor(new FormattedTextEditor.Config()
+            .editor(new Editor.Config()
+                .debugLog(false))
+            .height(Length.px(200))
+            .position(Position.TOP)
+            .toolbar(new EditorToolbar.Config()
+                .tools(Tools.BOLD, Tools.ITALIC, Tools.UNDERLINE, Tools.STRIKETHROUGH,
+                       Tools.SUBSCRIPT, Tools.SUPERSCRIPT, Tools.CODE, Tools.HIGHLIGHT,
+                       Tools.SEPARATOR,
+                       Tools.H1, Tools.H2, Tools.H3, Tools.PARAGRAPH,
+                       Tools.SEPARATOR,
+                       Tools.BULLET_LIST, Tools.NUMBERED_LIST,
+                       Tools.SEPARATOR,
+                       Tools.TABLE, Tools.EQUATION, Tools.DIAGRAM, Tools.SEPARATOR,
+                       Tools.link(r -> Em.$(r).style(FontAwesome.link()), "Link", null),
+                       Tools.SEPARATOR)));
+        editor.setValue(content);
         return Wrap.$ (el).style ("page_editor").$ (root -> {
             Div.$ (root).style ("page").$ (page -> {
                 Header.$ (page).$ (header -> {
@@ -83,7 +137,7 @@ public class UCEditor extends SimpleComponent {
                 Div.$ (page).style("inner").$ (inner -> {
                     H1.$ (inner).text ("UC001 Recover password");
                     P.$ (inner).text ("A User has forgotten their password and has a need to recover it so they can continue to use the system.");
-                    inner.insert(new EditorComponent (true));
+                    inner.insert(editor);
                 });
             });
         }).build ();

@@ -149,4 +149,29 @@ public class EditorSupport2 {
      *           end character offset.
      */
     public static native void setSelectionInCell(Object cellElement, int from, int to);
+
+    /**
+     * Renders a LaTeX expression into a DOM element using KaTeX.
+     *
+     * @param target
+     *               the element to render into.
+     * @param text
+     *             the LaTeX source.
+     * @param displayMode
+     *                    {@code true} for display mode (block), {@code false} for
+     *                    inline.
+     * @return {@code null} on success, or an error message string.
+     */
+    public static native String latex(Node target, String text, boolean displayMode);
+
+    /**
+     * Encodes PlantUML source and returns the full image URL.
+     *
+     * @param baseurl
+     *                the PlantUML server base URL.
+     * @param text
+     *             the PlantUML source text.
+     * @return the full image URL.
+     */
+    public static native String diagram(String baseurl, String text);
 }

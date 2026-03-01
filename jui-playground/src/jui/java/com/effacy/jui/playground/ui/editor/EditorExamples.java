@@ -151,6 +151,29 @@ In the book, Fanon described the unfair treatment of black people in France and 
 After the Battle of France resulted in the French Third Republic ...
         """;
 
+    private static final String DIAGRAM = """
+@startditaa
++--------+   +-------+    +-------+
+|        +---+ ditaa +--> |       |
+|  Text  |   +-------+    |diagram|
+|Document|   |!magic!|    |       |
+|     {d}|   |       |    |       |
++---+----+   +-------+    +-------+
+    :                         ^
+    |       Lots of work      |
+    +-------------------------+
+@endditaa
+""";
+
+    private static final String EQUATION = """
+\\begin{align*}
+x&=y         & w&=z             & a&=b+c\\\\
+2x&=-y       & 3w&=\\frac{1}{2}z & a&=b\\\\
+-4 + 5x&=2+y & w+2&=-1+w        & ab&=cb\\\\
+\\end{align*}
+""";
+
+
     private static final List<LinkPanel.AnchorItem> SAMPLE_LINKS = List.of(
         new LinkPanel.AnchorItem("Frantz Fanon", "https://en.wikipedia.org/wiki/Frantz_Fanon"),
         new LinkPanel.AnchorItem("Black Skin, White Masks", "https://en.wikipedia.org/wiki/Black_Skin,_White_Masks"),
@@ -236,7 +259,7 @@ After the Battle of France resulted in the French Third Republic ...
             .editor(new Editor.Config()
                 .debugLog(false))
             .height(Length.px(200))
-            .position(Position.FLOATING)
+            .position(Position.TOP)
             .toolbar(new EditorToolbar.Config()
                 .tools(Tools.BOLD, Tools.ITALIC, Tools.UNDERLINE, Tools.STRIKETHROUGH,
                        Tools.SUBSCRIPT, Tools.SUPERSCRIPT, Tools.CODE, Tools.HIGHLIGHT,
@@ -245,7 +268,7 @@ After the Battle of France resulted in the French Third Republic ...
                        Tools.SEPARATOR,
                        Tools.BULLET_LIST, Tools.NUMBERED_LIST,
                        Tools.SEPARATOR,
-                       Tools.TABLE, Tools.SEPARATOR,
+                       Tools.TABLE, Tools.EQUATION, Tools.DIAGRAM, Tools.SEPARATOR,
                        Tools.link(r -> Em.$(r).style(FontAwesome.link()), "Link", EditorExamples::filterLinks),
                        Tools.SEPARATOR,
                        Tools.variable("{}", "Variable", EditorExamples::filterVariables)))));

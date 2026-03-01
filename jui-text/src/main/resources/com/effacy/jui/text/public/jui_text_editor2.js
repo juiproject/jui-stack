@@ -482,3 +482,21 @@ EditorSupport2.setSelectionInCell = function (cellEl, from, to) {
     sel.addRange(r);
     sel.extend(toPos.node, toPos.offset);
 }
+
+EditorSupport2.latex = function(el, text, displayMode) {
+    try {
+        katex.render(text, el, {
+            throwOnError: true,
+            displayMode: displayMode
+        });
+        return null;
+    } catch (e) {
+        if (e instanceof katex.ParseError)
+            return e.message;
+        return e;
+    }
+}
+
+EditorSupport2.diagram = function(baseurl, text) {
+    return baseurl + plantumlEncoder.encode(text);
+}

@@ -1778,6 +1778,66 @@ public final class Commands {
     }
 
     /**
+     * Inserts an empty equation block after the current block. If there is a
+     * range selection, it is deleted first.
+     *
+     * @param state
+     *              the current editor state.
+     * @return the transaction, or {@code null} if the selection is invalid.
+     */
+    public static Transaction insertEquation(EditorState state) {
+        Selection sel = state.selection();
+        int blockIdx = sel.isCursor() ? sel.anchorBlock() : sel.fromBlock();
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+
+        FormattedBlock eqn = new FormattedBlock(BlockType.EQN);
+
+        Transaction tr = Transaction.create();
+
+        // If range selection, delete it first.
+        if (!sel.isCursor())
+            addDeleteRangeSteps(tr, state);
+
+        // Insert the equation after the current block.
+        tr.step(new InsertBlockStep(blockIdx + 1, eqn));
+
+        tr.setSelection(Selection.cursor(blockIdx + 1, 0));
+        return tr;
+    }
+
+    /**
+     * Inserts an empty diagram block after the current block. If there is a
+     * range selection, it is deleted first.
+     *
+     * @param state
+     *              the current editor state.
+     * @return the transaction, or {@code null} if the selection is invalid.
+     */
+    public static Transaction insertDiagram(EditorState state) {
+        Selection sel = state.selection();
+        int blockIdx = sel.isCursor() ? sel.anchorBlock() : sel.fromBlock();
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+
+        FormattedBlock dia = new FormattedBlock(BlockType.DIA);
+
+        Transaction tr = Transaction.create();
+
+        // If range selection, delete it first.
+        if (!sel.isCursor())
+            addDeleteRangeSteps(tr, state);
+
+        // Insert the diagram after the current block.
+        tr.step(new InsertBlockStep(blockIdx + 1, dia));
+
+        tr.setSelection(Selection.cursor(blockIdx + 1, 0));
+        return tr;
+    }
+
+    /**
      * Adds a new row to the table at the given block index. The new row is
      * appended at the bottom with the same number of columns.
      *

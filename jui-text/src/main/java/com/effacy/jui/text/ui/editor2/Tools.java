@@ -73,6 +73,8 @@ public class Tools {
      ************************************************************************/
 
     public static final ITool TABLE = action(r -> Em.$(r).style(FontAwesome.table()), "Insert Table", cmd -> cmd.insertTable(2, 3));
+    public static final ITool EQUATION = action(r -> Em.$(r).style(FontAwesome.squareRootVariable()), "Insert Equation", cmd -> cmd.insertEquation());
+    public static final ITool DIAGRAM = action(r -> Em.$(r).style(FontAwesome.diagramProject()), "Insert Diagram", cmd -> cmd.insertDiagram());
 
     /************************************************************************
      * Visual separator.
@@ -96,7 +98,7 @@ public class Tools {
             SEPARATOR,
             BULLET_LIST, NUMBERED_LIST,
             SEPARATOR,
-            TABLE
+            TABLE, EQUATION, DIAGRAM
         };
     }
 

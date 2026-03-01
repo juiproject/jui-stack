@@ -1,4 +1,4 @@
-# editor2 — Transaction-based rich text editor
+# Package
 
 `Editor` is a `SimpleComponent` that renders a `FormattedText` document as editable content. All mutations flow through the transaction system (`Commands`, `EditorState`, `History`) and the DOM is fully re-rendered after each transaction.
 
@@ -156,26 +156,197 @@ A TABLE block renders as:
 
 The outer wrapper has `contenteditable="false"` so the editor's own `beforeinput` / `selectionchange` logic ignores it. Each cell has an inner `tableCellContent` div that is the actual `contenteditable="true"` element, carrying `data-table-index`, `data-row`, and `data-col` attributes. The resize handle is a sibling of this div, outside the contenteditable scope. Column widths use `<col>` elements under a `<colgroup>` so `table-layout: fixed` respects the explicit percentages.
 
+## Toolbar and tools
+
+The toolbar is decoupled from the editor via the `ITool` interface. Each tool is a stateless descriptor that renders a button into the toolbar and optionally returns a `Handle` for tracking active state. Standard tools are available as constants on `Tools` and custom tools can be created by implementing `ITool` directly or using the factory methods on `Tools`.
+
+### Architecture
+
+`ITool` instances are stateless — safe as `static final` constants. When the toolbar renders, it calls `tool.render(ctx)` on each tool, passing an `ITool.Context` that provides:
+
+- `parent()` — the DOM container to insert elements into
+- `commands()` — the `IEditorCommands` interface for driving the editor (may be `null` during initial render, so action handlers must read this lazily at click time)
+- `styles()` — CSS classes for toolbar buttons (`tbtn`, `tbtnActive`, `tbtnSep`)
+
+The returned `Handle` (or `null` for stateless tools like separators) receives `updateState(BlockType, Set<FormatType>)` and `updateCellState(Set<FormatType>)` callbacks whenever the editor selection changes, allowing the button to toggle its active appearance.
+
+Popup-based tools (link, variable) use `ToolPopupPanel` as a shared base for floating panels. The base class handles singleton tracking (at most one popup open at a time), fixed positioning below an anchor element, outside-click dismissal, and cleanup. Subclasses implement `buildContent(Element)` and optionally override `onShown()`.
+
+### Standard tools
+
+`Tools` provides ready-to-use constants:
+
+| Constant | Description |
+|----------|-------------|
+| `BOLD`, `ITALIC`, `UNDERLINE`, `STRIKETHROUGH`, `SUBSCRIPT`, `SUPERSCRIPT`, `CODE`, `HIGHLIGHT` | Inline format toggles |
+| `H1`, `H2`, `H3`, `PARAGRAPH` | Block type setters |
+| `BULLET_LIST`, `NUMBERED_LIST` | Block type toggles |
+| `TABLE` | Inserts a 2x3 table |
+| `SEPARATOR` | Visual divider between tool groups |
+
+Link and variable tools require a data source and are created via factory methods rather than constants:
+
+```java
+Tools.link(r -> Em.$(r).style(FontAwesome.link()), "Link", MyApp::filterLinks)
+Tools.variable("{}", "Variable", MyApp::filterVariables)
+```
+
+### Configuration
+
+Tools are configured on `EditorToolbar.Config`. When not configured, `Tools.all()` is used as the default (excludes link and variable since they need a data source).
+
+```java
+new FormattedTextEditor(new FormattedTextEditor.Config()
+    .editor(new Editor.Config())
+    .toolbar(new EditorToolbar.Config()
+        .tools(Tools.BOLD, Tools.ITALIC, Tools.UNDERLINE,
+               Tools.SEPARATOR,
+               Tools.H1, Tools.H2, Tools.H3,
+               Tools.SEPARATOR,
+               Tools.link("Link", "Link", MyApp::filterLinks),
+               Tools.SEPARATOR,
+               Tools.variable("{}", "Variable", MyApp::filterVariables))));
+```
+
+### Creating custom tools
+
+#### Using factory methods
+
+`Tools` provides factory methods for the common patterns: format toggles, block type setters/toggles, and stateless actions. Each has a `String` label overload and a `Consumer<ElementBuilder>` overload for custom button content (e.g. FontAwesome icons).
+
+A stateless action tool that inserts a 4x4 table:
+
+```java
+ITool bigTable = Tools.action(
+    r -> Em.$(r).style(FontAwesome.tableColumns()),
+    "Insert 4x4 Table",
+    cmd -> cmd.insertTable(4, 4));
+```
+
+A tool that applies both bold and italic:
+
+```java
+ITool boldItalic = Tools.action("B/I", "Bold + Italic", cmd -> {
+    cmd.toggleFormat(FormatType.BLD);
+    cmd.toggleFormat(FormatType.ITL);
+});
+```
+
+#### Implementing ITool directly
+
+For tools that need active-state tracking or custom behaviour beyond what the factory methods offer, implement `ITool` directly. The `render` method receives the toolbar context and returns a `Handle`.
+
+A tool that inserts random placeholder text:
+
+```java
+ITool loremIpsum = ctx -> {
+    Button.$(ctx.parent())
+        .style(ctx.styles().tbtn())
+        .text("Lorem")
+        .attr("title", "Insert placeholder text")
+        .on(e -> {
+            e.stopEvent();
+            if (ctx.commands() != null)
+                ctx.commands().insertText("Lorem ipsum dolor sit amet.");
+        }, UIEventType.ONMOUSEDOWN);
+    return null; // stateless — no active state to track
+};
+```
+
+A tool with active-state tracking (highlights when a specific format is active):
+
+```java
+ITool customFormat = ctx -> {
+    Element[] btn = new Element[1];
+    Button.$(ctx.parent())
+        .style(ctx.styles().tbtn())
+        .text("HL")
+        .attr("title", "Highlight")
+        .use(n -> btn[0] = (Element) n)
+        .on(e -> {
+            e.stopEvent();
+            if (ctx.commands() != null)
+                ctx.commands().toggleFormat(FormatType.HL);
+        }, UIEventType.ONMOUSEDOWN);
+    return new ITool.Handle() {
+
+        @Override
+        public void updateState(BlockType activeBlockType, Set<FormatType> activeFormats) {
+            if (activeFormats.contains(FormatType.HL))
+                btn[0].classList.add(ctx.styles().tbtnActive());
+            else
+                btn[0].classList.remove(ctx.styles().tbtnActive());
+        }
+
+        @Override
+        public void updateCellState(Set<FormatType> activeFormats) {
+            updateState(null, activeFormats);
+        }
+    };
+};
+```
+
+### IEditorCommands
+
+The `IEditorCommands` interface is how tools drive the editor. All commands operate on the editor's current selection.
+
+| Method | Description |
+|--------|-------------|
+| `toggleFormat(FormatType)` | Toggles an inline format on the selection |
+| `setBlockType(BlockType)` | Sets the block type of the current block |
+| `toggleBlockType(BlockType)` | Toggles a block type (e.g. list on/off) |
+| `insertTable(int rows, int cols)` | Inserts a table after the current block |
+| `insertText(String text)` | Inserts text at the cursor, replacing any selection |
+| `syncSelection()` | Freezes the DOM selection into the editor's internal state — call before opening popups |
+| `currentLink()` | Returns the link URL at the cursor, or `null` |
+| `applyLink(String url)` | Applies a link URL to the current range selection |
+| `removeLink()` | Removes the link from the current selection |
+| `applyVariable(String name, String label)` | Inserts a variable at the cursor |
+
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `Editor.java` | Main component — rendering, event handling, toolbar, CSS |
+| `Editor.java` | Main component — rendering, event handling, CSS |
 | `IBlockHandler.java` | Pluggable block handler interface — render, event hooks, focus |
 | `StandardBlockHandler.java` | Handler for PARA, H1–H3, NLIST, OLIST block types |
 | `TableBlockHandler.java` | Handler for TABLE blocks — cell editing, column resizing, CSS |
 | `IEditorContext.java` | Context passed to block handlers — editor element, state, transaction helpers |
 | `EditorSupport2.java` | JsInterop bridge for selection read/write and input event helpers |
 | `jui_text_editor2.js` | Native JS — leaf traversal, line parsing, character counting, offset resolution, selection read/set, cell helpers |
+| `ITool.java` | Tool contract — stateless descriptor with `render(Context)` returning a `Handle` |
+| `Tools.java` | Standard tool constants and factory methods |
+| `IEditorCommands.java` | Command interface through which tools drive the editor |
+| `EditorToolbar.java` | Default toolbar component — renders `ITool` instances, manages active state |
+| `IEditorToolbar.java` | Toolbar contract — `bind`, `updateState`, `updateCellState`, `Position` |
+| `FormattedTextEditor.java` | JUI control composing `Editor` + `IEditorToolbar` with value management |
+| `ToolPopupPanel.java` | Shared base for floating popup panels — positioning, dismiss, singleton tracking |
+| `LinkPanel.java` | Popup panel for applying/editing/removing links |
+| `VariablePanel.java` | Popup panel for selecting and inserting variables |
 
 ## Public API
 
 ```java
-Editor editor = new Editor();
-editor.paragraphAfterHeading(true);  // default
-editor.listIndexFormatter((indent, counter) -> String.valueOf(counter)); // all numeric
-editor.load(document);               // load a FormattedText
-FormattedText result = editor.value(); // retrieve current document
+// Minimal setup with default tools (no link/variable)
+FormattedTextEditor editor = new FormattedTextEditor(new FormattedTextEditor.Config()
+    .editor(new Editor.Config())
+    .toolbar(new EditorToolbar.Config()));
+editor.setValue(Value.of(myDocument));
+FormattedText result = editor.getValue();
+
+// Custom tool selection with link and variable support
+FormattedTextEditor editor = new FormattedTextEditor(new FormattedTextEditor.Config()
+    .editor(new Editor.Config())
+    .toolbar(new EditorToolbar.Config()
+        .tools(Tools.BOLD, Tools.ITALIC, Tools.UNDERLINE,
+               Tools.SEPARATOR,
+               Tools.H1, Tools.H2, Tools.H3,
+               Tools.SEPARATOR,
+               Tools.TABLE,
+               Tools.SEPARATOR,
+               Tools.link(r -> Em.$(r).style(FontAwesome.link()), "Link", MyApp::filterLinks),
+               Tools.SEPARATOR,
+               Tools.variable("{}", "Variable", MyApp::filterVariables))));
 ```
 
 # Appendix

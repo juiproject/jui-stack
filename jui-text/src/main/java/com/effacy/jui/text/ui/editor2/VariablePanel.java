@@ -4,13 +4,16 @@ import java.util.List;
 import java.util.function.Function;
 
 import com.effacy.jui.core.client.component.IComponentCSS;
+import com.effacy.jui.core.client.dom.UIEventType;
+import com.effacy.jui.core.client.dom.builder.Div;
+import com.effacy.jui.core.client.dom.builder.ElementBuilder;
+import com.effacy.jui.core.client.dom.builder.Input;
+import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.google.gwt.core.client.GWT;
 
-import elemental2.dom.DomGlobal;
 import elemental2.dom.Element;
 import elemental2.dom.HTMLInputElement;
-import elemental2.dom.KeyboardEvent;
 import jsinterop.base.Js;
 
 /**
@@ -77,6 +80,8 @@ public class VariablePanel extends ToolPopupPanel {
     private Function<String, List<VariableItem>> options;
     private IVariablePanelCallback callback;
     private HTMLInputElement input;
+    private Element suggestionListEl;
+    private List<VariableItem> currentItems;
 
     private VariablePanel(Function<String, List<VariableItem>> options, IVariablePanelCallback callback) {
         this.options = options;
@@ -88,89 +93,75 @@ public class VariablePanel extends ToolPopupPanel {
      ************************************************************************/
 
     @Override
-    protected void buildContent(Element panel) {
-        panel.classList.add(styles().varPanel());
-
-        // Search input.
-        input = Js.uncheckedCast(DomGlobal.document.createElement("input"));
-        input.type = "text";
-        input.placeholder = "Search variables...";
-        input.classList.add(styles().varInput());
-        panel.appendChild(input);
-
-        // Suggestion list container.
-        Element suggestionList = DomGlobal.document.createElement("div");
-        suggestionList.classList.add(styles().varList());
-        panel.appendChild(suggestionList);
-
-        // Wire up input event for filtering.
-        input.addEventListener("input", evt -> {
-            updateSuggestions(suggestionList, input.value.trim());
-        });
-
-        // Keyboard handling.
-        input.addEventListener("keydown", evt -> {
-            KeyboardEvent ke = Js.uncheckedCast(evt);
-            if ("Escape".equals(ke.key)) {
-                evt.preventDefault();
-                hide();
-            }
-        });
-
-        // Show initial suggestions.
-        updateSuggestions(suggestionList, "");
+    protected void buildContent(ElementBuilder root) {
+        root.style(styles().varPanel());
+        Input.$(root, "text")
+            .style(styles().varInput())
+            .attr("placeholder", "Search variables...")
+            .use(n -> input = Js.uncheckedCast(n))
+            .on(e -> updateSuggestions(input.value.trim()), UIEventType.ONINPUT)
+            .on(e -> {
+                if ("Escape".equals(e.getKey())) {
+                    e.stopEvent();
+                    hide();
+                }
+            }, UIEventType.ONKEYDOWN);
+        Div.$(root).style(styles().varList())
+            .use(n -> suggestionListEl = (Element) n)
+            .on(e -> {
+                Element target = e.getTarget();
+                while ((target != null) && (target != suggestionListEl)) {
+                    String idx = target.getAttribute("data-idx");
+                    if ((idx != null) && !idx.isEmpty()) {
+                        int i = Integer.parseInt(idx);
+                        if ((currentItems != null) && (i >= 0) && (i < currentItems.size())) {
+                            e.stopEvent();
+                            hide();
+                            VariableItem item = currentItems.get(i);
+                            callback.onSelect(item.name(), item.label());
+                        }
+                        return;
+                    }
+                    target = target.parentElement;
+                }
+            }, UIEventType.ONMOUSEDOWN);
     }
 
     @Override
     protected void onShown() {
         if (input != null)
             input.focus();
+        updateSuggestions("");
     }
 
     /************************************************************************
      * Suggestion list.
      ************************************************************************/
 
-    private void updateSuggestions(Element container, String text) {
-        container.innerHTML = "";
-        List<VariableItem> items = options.apply(text);
-        if ((items != null) && !items.isEmpty()) {
-            for (VariableItem item : items) {
-                Element row = DomGlobal.document.createElement("div");
-                row.classList.add(styles().varItem());
-
-                Element label = DomGlobal.document.createElement("div");
-                label.classList.add(styles().varItemLabel());
-                label.textContent = item.label();
-                row.appendChild(label);
-
-                Element name = DomGlobal.document.createElement("div");
-                name.classList.add(styles().varItemName());
-                name.textContent = item.name();
-                row.appendChild(name);
-
-                row.addEventListener("mousedown", evt -> {
-                    evt.preventDefault();
-                    evt.stopPropagation();
-                    hide();
-                    callback.onSelect(item.name(), item.label());
-                });
-                container.appendChild(row);
+    private void updateSuggestions(String text) {
+        currentItems = options.apply(text);
+        Wrap.buildInto(suggestionListEl, root -> {
+            if ((currentItems != null) && !currentItems.isEmpty()) {
+                for (int i = 0; i < currentItems.size(); i++) {
+                    VariableItem item = currentItems.get(i);
+                    Div.$(root).style(styles().varItem())
+                        .attr("data-idx", String.valueOf(i))
+                        .$(row -> {
+                            Div.$(row).style(styles().varItemLabel()).text(item.label());
+                            Div.$(row).style(styles().varItemName()).text(item.name());
+                        });
+                }
+            } else {
+                Div.$(root).style(styles().varHint()).text("No matching variables");
             }
-        } else {
-            // No matches — show hint row.
-            Element hint = DomGlobal.document.createElement("div");
-            hint.classList.add(styles().varHint());
-            hint.textContent = "No matching variables";
-            container.appendChild(hint);
-        }
+        });
     }
 
     /************************************************************************
      * CSS.
      ************************************************************************/
 
-    private static IVariablePanelCSS styles() {
+    protected IVariablePanelCSS styles() {
         return VariablePanelCSS.instance();
     }
 

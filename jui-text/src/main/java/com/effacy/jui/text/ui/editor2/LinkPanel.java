@@ -4,13 +4,19 @@ import java.util.List;
 import java.util.function.Function;
 
 import com.effacy.jui.core.client.component.IComponentCSS;
+import com.effacy.jui.core.client.dom.UIEventType;
+import com.effacy.jui.core.client.dom.builder.Button;
+import com.effacy.jui.core.client.dom.builder.Div;
+import com.effacy.jui.core.client.dom.builder.ElementBuilder;
+import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
+import com.effacy.jui.core.client.dom.builder.Input;
+import com.effacy.jui.core.client.dom.builder.Span;
+import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.google.gwt.core.client.GWT;
 
-import elemental2.dom.DomGlobal;
 import elemental2.dom.Element;
 import elemental2.dom.HTMLInputElement;
-import elemental2.dom.KeyboardEvent;
 import jsinterop.base.Js;
 
 /**
@@ -88,6 +94,8 @@ public class LinkPanel extends ToolPopupPanel {
     private Function<String, List<AnchorItem>> options;
     private ILinkPanelCallback callback;
     private HTMLInputElement input;
+    private Element suggestionListEl;
+    private List<AnchorItem> currentItems;
 
     private LinkPanel(String currentUrl, Function<String, List<AnchorItem>> options, ILinkPanelCallback callback) {
         this.currentUrl = currentUrl;
@@ -100,156 +108,127 @@ public class LinkPanel extends ToolPopupPanel {
      ************************************************************************/
 
     @Override
-    protected void buildContent(Element panel) {
-        panel.classList.add(styles().linkPanel());
-        if (options != null)
-            panel.classList.add(styles().linkPanelVertical());
-
-        // URL input.
-        input = Js.uncheckedCast(DomGlobal.document.createElement("input"));
-        input.type = "text";
-        input.placeholder = "Enter URL...";
-        input.classList.add(styles().linkInput());
-        if ((currentUrl != null) && !currentUrl.isEmpty())
-            input.value = currentUrl;
-
+    protected void buildContent(ElementBuilder root) {
+        root.style(styles().linkPanel())
+            .style(options != null, styles().linkPanelVertical());
         if (options != null) {
             // Vertical layout: input row with optional Remove button, then suggestion list.
-            Element inputRow = DomGlobal.document.createElement("div");
-            inputRow.classList.add(styles().inputRow());
-            inputRow.appendChild(input);
-
-            // Remove button (only when editing an existing link).
-            if ((currentUrl != null) && !currentUrl.isEmpty())
-                inputRow.appendChild(buildRemoveButton());
-
-            panel.appendChild(inputRow);
-
-            // Suggestion list container.
-            Element suggestionList = DomGlobal.document.createElement("div");
-            suggestionList.classList.add(styles().suggestionList());
-            panel.appendChild(suggestionList);
-
-            // Wire up input event for filtering.
-            input.addEventListener("input", evt -> {
-                updateSuggestions(suggestionList, input.value.trim());
+            Div.$(root).style(styles().inputRow()).$(inputRow -> {
+                buildInputField(inputRow);
+                if ((currentUrl != null) && !currentUrl.isEmpty())
+                    buildRemoveButton(inputRow);
             });
-
-            // Show initial suggestions.
-            updateSuggestions(suggestionList, input.value.trim());
+            Div.$(root).style(styles().suggestionList())
+                .use(n -> suggestionListEl = (Element) n)
+                .on(e -> {
+                    Element target = e.getTarget();
+                    while ((target != null) && (target != suggestionListEl)) {
+                        String idx = target.getAttribute("data-idx");
+                        if ((idx != null) && !idx.isEmpty()) {
+                            int i = Integer.parseInt(idx);
+                            if ((currentItems != null) && (i >= 0) && (i < currentItems.size())) {
+                                e.stopEvent();
+                                hide();
+                                callback.onApply(currentItems.get(i).url());
+                            }
+                            return;
+                        }
+                        target = target.parentElement;
+                    }
+                }, UIEventType.ONMOUSEDOWN);
         } else {
-            // Original horizontal layout: input + Apply + Remove inline.
-            panel.appendChild(input);
-
-            // Apply button.
-            Element applyBtn = DomGlobal.document.createElement("button");
-            applyBtn.classList.add(styles().linkBtn());
-            applyBtn.textContent = "Apply";
-            applyBtn.addEventListener("mousedown", evt -> {
-                evt.preventDefault();
-                evt.stopPropagation();
-                String url = input.value.trim();
-                if (!url.isEmpty()) {
-                    hide();
-                    callback.onApply(url);
-                }
-            });
-            panel.appendChild(applyBtn);
-
-            // Remove button (only when editing an existing link).
+            // Horizontal layout: input + Apply + Remove inline.
+            buildInputField(root);
+            Button.$(root).style(styles().linkBtn()).text("Apply")
+                .on(e -> {
+                    e.stopEvent();
+                    String url = input.value.trim();
+                    if (!url.isEmpty()) {
+                        hide();
+                        callback.onApply(url);
+                    }
+                }, UIEventType.ONMOUSEDOWN);
             if ((currentUrl != null) && !currentUrl.isEmpty())
-                panel.appendChild(buildRemoveButton());
+                buildRemoveButton(root);
         }
-
-        // Keyboard handling on input.
-        input.addEventListener("keydown", evt -> {
-            KeyboardEvent ke = Js.uncheckedCast(evt);
-            if ("Enter".equals(ke.key)) {
-                evt.preventDefault();
-                String url = input.value.trim();
-                if (!url.isEmpty()) {
-                    hide();
-                    callback.onApply(url);
-                }
-            } else if ("Escape".equals(ke.key)) {
-                evt.preventDefault();
-                hide();
-            }
-        });
     }
 
     @Override
     protected void onShown() {
         if (input != null)
             input.focus();
+        if (options != null) {
+            input.addEventListener("input", evt -> updateSuggestions(input.value.trim()));
+            updateSuggestions(input.value.trim());
+        }
     }
 
     /************************************************************************
      * Helpers.
      ************************************************************************/
 
-    private Element buildRemoveButton() {
-        Element removeBtn = DomGlobal.document.createElement("button");
-        removeBtn.classList.add(styles().linkBtn());
-        removeBtn.classList.add(styles().linkBtnDanger());
-        removeBtn.textContent = "Remove";
-        removeBtn.addEventListener("mousedown", evt -> {
-            evt.preventDefault();
-            evt.stopPropagation();
-            hide();
-            callback.onRemove();
-        });
-        return removeBtn;
+    private void buildInputField(IDomInsertableContainer<?> parent) {
+        Input.$(parent, "text")
+            .style(styles().linkInput())
+            .attr("placeholder", "Enter URL...")
+            .use(n -> {
+                input = Js.uncheckedCast(n);
+                if ((currentUrl != null) && !currentUrl.isEmpty())
+                    input.value = currentUrl;
+            })
+            .on(e -> {
+                if ("Enter".equals(e.getKey())) {
+                    e.stopEvent();
+                    String url = input.value.trim();
+                    if (!url.isEmpty()) {
+                        hide();
+                        callback.onApply(url);
+                    }
+                }
+                if ("Escape".equals(e.getKey())) {
+                    e.stopEvent();
+                    hide();
+                }
+            }, UIEventType.ONKEYDOWN);
     }
 
-    private void updateSuggestions(Element container, String text) {
-        container.innerHTML = "";
-        List<AnchorItem> items = options.apply(text);
-        if ((items != null) && !items.isEmpty()) {
-            for (AnchorItem item : items) {
-                Element row = DomGlobal.document.createElement("div");
-                row.classList.add(styles().suggestionItem());
-                row.textContent = item.label();
-                row.addEventListener("mousedown", evt -> {
-                    evt.preventDefault();
-                    evt.stopPropagation();
-                    hide();
-                    callback.onApply(item.url());
+    private void buildRemoveButton(IDomInsertableContainer<?> parent) {
+        Button.$(parent).style(styles().linkBtn(), styles().linkBtnDanger()).text("Remove")
+            .on(e -> {
+                e.stopEvent();
+                hide();
+                callback.onRemove();
+            }, UIEventType.ONMOUSEDOWN);
+    }
+
+    private void updateSuggestions(String text) {
+        currentItems = options.apply(text);
+        Wrap.buildInto(suggestionListEl, root -> {
+            if ((currentItems != null) && !currentItems.isEmpty()) {
+                for (int i = 0; i < currentItems.size(); i++) {
+                    Div.$(root).style(styles().suggestionItem())
+                        .attr("data-idx", String.valueOf(i))
+                        .text(currentItems.get(i).label());
+                }
+            } else {
+                Div.$(root).style(styles().hintItem()).$(hint -> {
+                    Span.$(hint).style(styles().hintIcon()).text("\u2295");
+                    Div.$(hint).$(info -> {
+                        Div.$(info).style(styles().hintLabel())
+                            .text(text.isEmpty() ? "..." : text);
+                        Div.$(info).style(styles().hintDesc())
+                            .text("Type a complete URL to link");
+                    });
                 });
-                container.appendChild(row);
             }
-        } else {
-            // No matches — show hint row.
-            Element hint = DomGlobal.document.createElement("div");
-            hint.classList.add(styles().hintItem());
-
-            Element icon = DomGlobal.document.createElement("span");
-            icon.classList.add(styles().hintIcon());
-            icon.textContent = "\u2295";
-            hint.appendChild(icon);
-
-            Element info = DomGlobal.document.createElement("div");
-
-            Element label = DomGlobal.document.createElement("div");
-            label.classList.add(styles().hintLabel());
-            label.textContent = text.isEmpty() ? "..." : text;
-            info.appendChild(label);
-
-            Element desc = DomGlobal.document.createElement("div");
-            desc.classList.add(styles().hintDesc());
-            desc.textContent = "Type a complete URL to link";
-            info.appendChild(desc);
-
-            hint.appendChild(info);
-            container.appendChild(hint);
-        }
+        });
     }
 
     /************************************************************************
      * CSS.
      ************************************************************************/
 
-    private static ILinkPanelCSS styles() {
+    protected ILinkPanelCSS styles() {
         return LinkPanelCSS.instance();
     }
 

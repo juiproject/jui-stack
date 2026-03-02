@@ -8,6 +8,8 @@
     --cpt-tabbedpanel-hu-text-active: var(--jui-text);
     --cpt-tabbedpanel-hu-underline-hover: var(--jui-color-neutral30);
     --cpt-tabbedpanel-hu-underline-active: var(--jui-color-primary50);
+    --cpt-tabnavigator-indicator-top: -6px;
+    --cpt-tabnavigator-indicator-right: -16px;
 }
 
 .component .tabs {

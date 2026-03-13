@@ -136,7 +136,7 @@ public class ListPaginatedStore<R> extends PaginatedStore<R> implements IFiltere
             int toIndex = Math.min(fromIndex + pageSize, filtered.size());
             subset.addAll(filtered.subList(fromIndex, toIndex));
         }
-        Logger.log (getClass ().getSimpleName () + " filtered=" + (filtered != null) + " page=" + page + " pageSize=" + pageSize + " results=" + records.size ());
+        // Logger.log (getClass ().getSimpleName () + " filtered=" + (filtered != null) + " page=" + page + " pageSize=" + pageSize + " results=" + records.size ());
         cb.onSuccess(subset, filtered.size(), false);
     }
 

@@ -24,7 +24,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             Double count = (Double) page.executeJavaScript("""
-                EditorSupport2.charCount(document.querySelector('[data-block-index="0"]'));
+                EditorSupport.charCount(document.querySelector('[data-block-index="0"]'));
             """).getJavaScriptResult();
             Assertions.assertEquals(11, count);
         }
@@ -37,7 +37,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             Double count = (Double) page.executeJavaScript("""
-                EditorSupport2.charCount(document.querySelector('[data-block-index="0"]'));
+                EditorSupport.charCount(document.querySelector('[data-block-index="0"]'));
             """).getJavaScriptResult();
             Assertions.assertEquals(11, count);
         }
@@ -50,7 +50,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             Double count = (Double) page.executeJavaScript("""
-                EditorSupport2.charCount(document.querySelector('[data-block-index="0"]'));
+                EditorSupport.charCount(document.querySelector('[data-block-index="0"]'));
             """).getJavaScriptResult();
             Assertions.assertEquals(13, count);
         }
@@ -63,7 +63,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             Double count = (Double) page.executeJavaScript("""
-                EditorSupport2.charCount(document.querySelector('[data-block-index="0"]'));
+                EditorSupport.charCount(document.querySelector('[data-block-index="0"]'));
             """).getJavaScriptResult();
             Assertions.assertEquals(13, count);
         }
@@ -76,7 +76,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             Double count = (Double) page.executeJavaScript("""
-                EditorSupport2.charCount(document.querySelector('[data-block-index="0"]'));
+                EditorSupport.charCount(document.querySelector('[data-block-index="0"]'));
             """).getJavaScriptResult();
             Assertions.assertEquals(0, count);
         }
@@ -89,7 +89,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             Double count = (Double) page.executeJavaScript("""
-                EditorSupport2.charCount(document.querySelector('[data-block-index="0"]'));
+                EditorSupport.charCount(document.querySelector('[data-block-index="0"]'));
             """).getJavaScriptResult();
             // "A" + BR + "B" + BR + "C" = 1 + 1 + 1 + 1 + 1 = 5
             Assertions.assertEquals(5, count);
@@ -103,7 +103,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             Double count = (Double) page.executeJavaScript("""
-                EditorSupport2.charCount(document.querySelector('[data-block-index="0"]'));
+                EditorSupport.charCount(document.querySelector('[data-block-index="0"]'));
             """).getJavaScriptResult();
             // "Hello" + BR + "world" = 5 + 1 + 5 = 11
             Assertions.assertEquals(11, count);
@@ -121,7 +121,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             NativeArray result = (NativeArray) page.executeJavaScript("""
-                EditorSupport2._lines(document.querySelector('[data-block-index="0"]'), null);
+                EditorSupport._lines(document.querySelector('[data-block-index="0"]'), null);
             """).getJavaScriptResult();
             Assertions.assertEquals(1, result.getLength());
             assertLine("Hello world", result, 0);
@@ -135,7 +135,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             NativeArray result = (NativeArray) page.executeJavaScript("""
-                EditorSupport2._lines(document.querySelector('[data-block-index="0"]'), null);
+                EditorSupport._lines(document.querySelector('[data-block-index="0"]'), null);
             """).getJavaScriptResult();
             Assertions.assertEquals(2, result.getLength());
             assertLine("Line 1", result, 0);
@@ -150,7 +150,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             NativeArray result = (NativeArray) page.executeJavaScript("""
-                EditorSupport2._lines(document.querySelector('[data-block-index="0"]'), null);
+                EditorSupport._lines(document.querySelector('[data-block-index="0"]'), null);
             """).getJavaScriptResult();
             Assertions.assertEquals(1, result.getLength());
             assertLine("Hello world", result, 0);
@@ -164,7 +164,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             NativeArray result = (NativeArray) page.executeJavaScript("""
-                EditorSupport2._lines(document.querySelector('[data-block-index="0"]'), null);
+                EditorSupport._lines(document.querySelector('[data-block-index="0"]'), null);
             """).getJavaScriptResult();
             Assertions.assertEquals(3, result.getLength());
             assertLine("A", result, 0);
@@ -182,7 +182,7 @@ public class EditorSupportTest {
             NativeArray result = (NativeArray) page.executeJavaScript("""
                 var block = document.querySelector('[data-block-index="0"]');
                 var stop = document.getElementById('stop');
-                EditorSupport2._lines(block, stop);
+                EditorSupport._lines(block, stop);
             """).getJavaScriptResult();
             Assertions.assertEquals(1, result.getLength());
             assertLine("Hello ", result, 0);
@@ -200,7 +200,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             String result = (String) page.executeJavaScript("""
-                EditorSupport2.getInputType({inputType: 'insertText'});
+                EditorSupport.getInputType({inputType: 'insertText'});
             """).getJavaScriptResult();
             Assertions.assertEquals("insertText", result);
         }
@@ -213,7 +213,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             String result = (String) page.executeJavaScript("""
-                EditorSupport2.getInputType({inputType: 'deleteContentBackward'});
+                EditorSupport.getInputType({inputType: 'deleteContentBackward'});
             """).getJavaScriptResult();
             Assertions.assertEquals("deleteContentBackward", result);
         }
@@ -226,7 +226,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             Object result = page.executeJavaScript("""
-                EditorSupport2.getInputType(null);
+                EditorSupport.getInputType(null);
             """).getJavaScriptResult();
             Assertions.assertNull(result);
         }
@@ -239,7 +239,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             String result = (String) page.executeJavaScript("""
-                EditorSupport2.getInputData({data: 'a'});
+                EditorSupport.getInputData({data: 'a'});
             """).getJavaScriptResult();
             Assertions.assertEquals("a", result);
         }
@@ -252,7 +252,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             Object result = page.executeJavaScript("""
-                EditorSupport2.getInputData(null);
+                EditorSupport.getInputData(null);
             """).getJavaScriptResult();
             Assertions.assertNull(result);
         }
@@ -265,7 +265,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             String result = (String) page.executeJavaScript("""
-                EditorSupport2.getClipboardText({clipboardData: {getData: function(t) { return 'pasted text'; }}});
+                EditorSupport.getClipboardText({clipboardData: {getData: function(t) { return 'pasted text'; }}});
             """).getJavaScriptResult();
             Assertions.assertEquals("pasted text", result);
         }
@@ -278,7 +278,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             Object result = page.executeJavaScript("""
-                EditorSupport2.getClipboardText(null);
+                EditorSupport.getClipboardText(null);
             """).getJavaScriptResult();
             Assertions.assertNull(result);
         }
@@ -291,7 +291,7 @@ public class EditorSupportTest {
             HtmlPage page = webClient.loadHtmlCodeIntoCurrentWindow(load("EditorSupportTest.html", content));
 
             Object result = page.executeJavaScript("""
-                EditorSupport2.getClipboardText({});
+                EditorSupport.getClipboardText({});
             """).getJavaScriptResult();
             Assertions.assertNull(result);
         }
@@ -309,8 +309,8 @@ public class EditorSupportTest {
 
             NativeArray result = (NativeArray) page.executeJavaScript("""
                 var editor = document.getElementById('editor');
-                EditorSupport2.setCursor(editor, 0, 5);
-                EditorSupport2.readSelection(editor);
+                EditorSupport.setCursor(editor, 0, 5);
+                EditorSupport.readSelection(editor);
             """).getJavaScriptResult();
             assertArray(result, 0, 5, 0, 5);
         }
@@ -324,8 +324,8 @@ public class EditorSupportTest {
 
             NativeArray result = (NativeArray) page.executeJavaScript("""
                 var editor = document.getElementById('editor');
-                EditorSupport2.setCursor(editor, 0, 0);
-                EditorSupport2.readSelection(editor);
+                EditorSupport.setCursor(editor, 0, 0);
+                EditorSupport.readSelection(editor);
             """).getJavaScriptResult();
             assertArray(result, 0, 0, 0, 0);
         }
@@ -339,8 +339,8 @@ public class EditorSupportTest {
 
             NativeArray result = (NativeArray) page.executeJavaScript("""
                 var editor = document.getElementById('editor');
-                EditorSupport2.setCursor(editor, 0, 11);
-                EditorSupport2.readSelection(editor);
+                EditorSupport.setCursor(editor, 0, 11);
+                EditorSupport.readSelection(editor);
             """).getJavaScriptResult();
             assertArray(result, 0, 11, 0, 11);
         }
@@ -354,8 +354,8 @@ public class EditorSupportTest {
 
             NativeArray result = (NativeArray) page.executeJavaScript("""
                 var editor = document.getElementById('editor');
-                EditorSupport2.setCursor(editor, 1, 3);
-                EditorSupport2.readSelection(editor);
+                EditorSupport.setCursor(editor, 1, 3);
+                EditorSupport.readSelection(editor);
             """).getJavaScriptResult();
             assertArray(result, 1, 3, 1, 3);
         }
@@ -369,8 +369,8 @@ public class EditorSupportTest {
 
             NativeArray result = (NativeArray) page.executeJavaScript("""
                 var editor = document.getElementById('editor');
-                EditorSupport2.setCursor(editor, 0, 4);
-                EditorSupport2.readSelection(editor);
+                EditorSupport.setCursor(editor, 0, 4);
+                EditorSupport.readSelection(editor);
             """).getJavaScriptResult();
             assertArray(result, 0, 4, 0, 4);
         }
@@ -385,8 +385,8 @@ public class EditorSupportTest {
             // Offset 8 = "Line 1" (6) + BR (1) + "L" (1) = cursor at position 8
             NativeArray result = (NativeArray) page.executeJavaScript("""
                 var editor = document.getElementById('editor');
-                EditorSupport2.setCursor(editor, 0, 8);
-                EditorSupport2.readSelection(editor);
+                EditorSupport.setCursor(editor, 0, 8);
+                EditorSupport.readSelection(editor);
             """).getJavaScriptResult();
             assertArray(result, 0, 8, 0, 8);
         }
@@ -405,8 +405,8 @@ public class EditorSupportTest {
 
             NativeArray result = (NativeArray) page.executeJavaScript("""
                 var editor = document.getElementById('editor');
-                EditorSupport2.setSelection(editor, 0, 2, 0, 8);
-                EditorSupport2.readSelection(editor);
+                EditorSupport.setSelection(editor, 0, 2, 0, 8);
+                EditorSupport.readSelection(editor);
             """).getJavaScriptResult();
             assertArray(result, 0, 2, 0, 8);
         }
@@ -421,8 +421,8 @@ public class EditorSupportTest {
 
             NativeArray result = (NativeArray) page.executeJavaScript("""
                 var editor = document.getElementById('editor');
-                EditorSupport2.setSelection(editor, 0, 3, 1, 2);
-                EditorSupport2.readSelection(editor);
+                EditorSupport.setSelection(editor, 0, 3, 1, 2);
+                EditorSupport.readSelection(editor);
             """).getJavaScriptResult();
             assertArray(result, 0, 3, 1, 2);
         }
@@ -437,8 +437,8 @@ public class EditorSupportTest {
 
             NativeArray result = (NativeArray) page.executeJavaScript("""
                 var editor = document.getElementById('editor');
-                EditorSupport2.setSelection(editor, 0, 0, 0, 11);
-                EditorSupport2.readSelection(editor);
+                EditorSupport.setSelection(editor, 0, 0, 0, 11);
+                EditorSupport.readSelection(editor);
             """).getJavaScriptResult();
             assertArray(result, 0, 0, 0, 11);
         }
@@ -457,7 +457,7 @@ public class EditorSupportTest {
             Object result = page.executeJavaScript("""
                 var editor = document.getElementById('editor');
                 document.getSelection().removeAllRanges();
-                EditorSupport2.readSelection(editor);
+                EditorSupport.readSelection(editor);
             """).getJavaScriptResult();
             Assertions.assertNull(result);
         }
@@ -481,8 +481,8 @@ public class EditorSupportTest {
 
             Double result = (Double) page.executeJavaScript("""
                 var cell = document.querySelector('[data-table-index="0-0"]');
-                EditorSupport2.moveCursorToStart(cell);
-                EditorSupport2.cursorOffsetInCell(cell);
+                EditorSupport.moveCursorToStart(cell);
+                EditorSupport.cursorOffsetInCell(cell);
             """).getJavaScriptResult();
             Assertions.assertEquals(0, result);
         }
@@ -495,8 +495,8 @@ public class EditorSupportTest {
 
             Double result = (Double) page.executeJavaScript("""
                 var cell = document.querySelector('[data-table-index="0-0"]');
-                EditorSupport2.moveCursorToEnd(cell);
-                EditorSupport2.cursorOffsetInCell(cell);
+                EditorSupport.moveCursorToEnd(cell);
+                EditorSupport.cursorOffsetInCell(cell);
             """).getJavaScriptResult();
             Assertions.assertEquals(5, result);
         }
@@ -509,9 +509,9 @@ public class EditorSupportTest {
 
             Object result = page.executeJavaScript("""
                 var cell = document.querySelector('[data-table-index="0-0"]');
-                EditorSupport2.moveCursorToStart(cell);
+                EditorSupport.moveCursorToStart(cell);
                 var editor = document.getElementById('editor');
-                var found = EditorSupport2.cellFromSelection(editor);
+                var found = EditorSupport.cellFromSelection(editor);
                 found ? found.getAttribute('data-table-index') : null;
             """).getJavaScriptResult();
             Assertions.assertEquals("0-0", result);
@@ -526,8 +526,8 @@ public class EditorSupportTest {
 
             Object result = page.executeJavaScript("""
                 var editor = document.getElementById('editor');
-                EditorSupport2.setCursor(editor, 0, 3);
-                EditorSupport2.cellFromSelection(editor);
+                EditorSupport.setCursor(editor, 0, 3);
+                EditorSupport.cellFromSelection(editor);
             """).getJavaScriptResult();
             Assertions.assertNull(result);
         }
@@ -541,8 +541,8 @@ public class EditorSupportTest {
 
             NativeArray result = (NativeArray) page.executeJavaScript("""
                 var cell = document.querySelector('[data-table-index="0-0"]');
-                EditorSupport2.setSelectionInCell(cell, 1, 4);
-                EditorSupport2.selectionInCell(cell);
+                EditorSupport.setSelectionInCell(cell, 1, 4);
+                EditorSupport.selectionInCell(cell);
             """).getJavaScriptResult();
             assertArray(result, 1, 4);
         }
@@ -556,9 +556,9 @@ public class EditorSupportTest {
 
             Double result = (Double) page.executeJavaScript("""
                 var editor = document.getElementById('editor');
-                EditorSupport2.setCursor(editor, 0, 3);
+                EditorSupport.setCursor(editor, 0, 3);
                 var cell = document.createElement('div');
-                EditorSupport2.cursorOffsetInCell(cell);
+                EditorSupport.cursorOffsetInCell(cell);
             """).getJavaScriptResult();
             Assertions.assertEquals(-1, result);
         }
@@ -578,8 +578,8 @@ public class EditorSupportTest {
             // Place cursor at offset 7 = after "Hi Name" = start of " there"
             NativeArray result = (NativeArray) page.executeJavaScript("""
                 var editor = document.getElementById('editor');
-                EditorSupport2.setCursor(editor, 0, 7);
-                EditorSupport2.readSelection(editor);
+                EditorSupport.setCursor(editor, 0, 7);
+                EditorSupport.readSelection(editor);
             """).getJavaScriptResult();
             assertArray(result, 0, 7, 0, 7);
         }
@@ -594,8 +594,8 @@ public class EditorSupportTest {
             // Place cursor at offset 3 = after "Hi " = before the variable
             NativeArray result = (NativeArray) page.executeJavaScript("""
                 var editor = document.getElementById('editor');
-                EditorSupport2.setCursor(editor, 0, 3);
-                EditorSupport2.readSelection(editor);
+                EditorSupport.setCursor(editor, 0, 3);
+                EditorSupport.readSelection(editor);
             """).getJavaScriptResult();
             assertArray(result, 0, 3, 0, 3);
         }
@@ -642,7 +642,7 @@ public class EditorSupportTest {
     }
 
     protected String loadEditorJs() throws Exception {
-        try (InputStream is = EditorSupportTest.class.getResourceAsStream("/com/effacy/jui/text/public/jui_text_editor2.js")) {
+        try (InputStream is = EditorSupportTest.class.getResourceAsStream("/com/effacy/jui/text/public/jui_text_editor.js")) {
             return IOUtils.toString(is, StandardCharsets.UTF_8);
         }
     }

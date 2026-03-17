@@ -28,6 +28,7 @@ import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Color;
 import com.effacy.jui.core.client.dom.css.Colors;
 import com.effacy.jui.platform.util.client.StringSupport;
+import com.effacy.jui.ui.client.icon.FontAwesome;
 
 /**
  * Displays a collection of options as selectable items in a row. Good for use
@@ -154,6 +155,11 @@ public class ChoiceSelector {
         protected List<Option> options = new ArrayList<>();
 
         /**
+         * See {@link #disable(boolean)}.
+         */
+        protected boolean disabled;
+
+        /**
          * Assigns a variant to the card.
          * 
          * @param variant
@@ -197,6 +203,20 @@ public class ChoiceSelector {
             return (T) this;
         }
 
+        /**
+         * Generates a disabled version of the selector. This is a convenience to avoid
+         * having to set each option to disabled.
+         * 
+         * @param disabled
+         *                 {@code true} to disable.
+         * @return this fragment.
+         */
+        @SuppressWarnings("unchecked")
+        public T disable(boolean disabled) {
+            this.disabled = disabled;
+            return (T) this;
+        }
+
         @Override
         protected void buildInto(ElementBuilder root) {
             root.style ("juiChoiceSelector", variant.style());
@@ -204,7 +224,7 @@ public class ChoiceSelector {
                 root.style("dropshadow");
             options.forEach(option -> {
                 Div.$(root).$(op -> {
-                    if (option.state().disabled()) {
+                    if (option.state().disabled() || disabled) {
                         op.style("disabled");
                     } else {
                         if (option.state().active())

@@ -1127,7 +1127,9 @@
     color: var(--juiChoiceSelector-text);
     border-radius: var(--juiChoiceSelector-option-radius);
     flex-grow: 1;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .juiChoiceSelector > div.active {

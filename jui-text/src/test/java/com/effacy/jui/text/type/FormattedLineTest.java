@@ -300,13 +300,13 @@ public class FormattedLineTest {
 
         Assertions.assertEquals(2, segments.size());
 
-        // Variable segment should have custom metadata but not variable key.
+        // Variable segment should have custom metadata and the variable key.
         TextSegment varSeg = segments.get(1);
         Assertions.assertEquals("userName", varSeg.text());
         Assertions.assertTrue(varSeg.variable());
         Assertions.assertTrue(varSeg.hasMeta());
         Assertions.assertEquals("customValue", varSeg.meta().get("customKey"));
-        Assertions.assertNull(varSeg.meta().get(FormattedLine.META_VARIABLE));
+        Assertions.assertEquals("userName", varSeg.meta().get(FormattedLine.META_VARIABLE));
     }
 
     @Test

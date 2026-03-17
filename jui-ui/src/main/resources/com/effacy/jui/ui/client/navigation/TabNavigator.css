@@ -14,6 +14,9 @@
     --cpt-tabbedpanel-radius: var(--jui-border-radius);
     --cpt-tabbedpanel-indicator: #fff;
     --cpt-tabbedpanel-indicator-bg: var(--jui-color-secondary30);
+    --cpt-tabnavigator-indicator-top: 4px;
+    --cpt-tabnavigator-indicator-right: 4px;
+    --cpt-tabnavigator-indicator-size: 0.8em;
 
     --cpt-navigator-line-color: #e1e1e1;
     --cpt-navigator-group-text-size: 0.8em;
@@ -117,9 +120,9 @@
 
 .component .tabs ul li>strong {
     position: absolute;
-    right: 4px;
-    top: 4px;
-    font-size: 0.8em;
+    right: var(--cpt-tabnavigator-indicator-right);
+    top: var(--cpt-tabnavigator-indicator-top);
+    font-size: var(--cpt-tabnavigator-indicator-size);
     font-weight: 500;
     padding: 0em 4px;
     border-radius: 4px;

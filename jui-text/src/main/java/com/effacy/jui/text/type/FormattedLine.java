@@ -342,9 +342,9 @@ public class FormattedLine {
         }
 
         /**
-         * Determines if this segment represents a variable. When {@code true}, the
-         * {@link #text()} method returns the variable name (not display text) which
-         * should be resolved at render time.
+         * Determines if this segment represents a variable. When {@code true},
+         * {@link #text()} returns the display label and the variable name is
+         * available via {@code meta().get(META_VARIABLE)}.
          *
          * @return {@code true} if this is a variable segment.
          */
@@ -531,15 +531,18 @@ public class FormattedLine {
                     result.add (new TextSegment (text.substring(idx, fmt.index), null, null));
                 TextSegment segment;
                 if ((variable != null) && !variable.isEmpty()) {
-                    // Variable segment: text is the variable name, not the underlying text.
-                    segment = new TextSegment (variable, fmt.formats, link, true);
+                    // Variable segment: use underlying line text if present (label-as-text
+                    // convention), otherwise fall back to the variable name (zero-length
+                    // convention from the variable() builder method).
+                    String varText = (fmt.length > 0) ? text.substring(fmt.index, fmt.index + fmt.length) : variable;
+                    segment = new TextSegment (varText, fmt.formats, link, true);
                 } else {
                     segment = new TextSegment (text.substring (fmt.index, fmt.index + fmt.length), fmt.formats, link);
                 }
-                // Copy metadata (excluding link and variable).
+                // Copy metadata (excluding link which is exposed via link()).
                 if (fmt.getMeta() != null) {
                     for (Map.Entry<String,String> entry : fmt.getMeta().entrySet()) {
-                        if (!META_LINK.equals(entry.getKey()) && !META_VARIABLE.equals(entry.getKey()))
+                        if (!META_LINK.equals(entry.getKey()))
                             segment.meta().put(entry.getKey(), entry.getValue());
                     }
                 }
@@ -590,8 +593,9 @@ public class FormattedLine {
         if (!getFormatting ().isEmpty ()) {
             for (Format format : new ArrayList<>(getFormatting ())) {
                 if ((format.index >= start) && (format.index < end)) {
-                    // Start of format is in range. Reduce the length to match and adjust the start.
-                    format.length = (format.index + format.length <= end) ? end - format.index - 1 : format.length - (end - format.index);
+                    // Start of format is in range. Keep only the portion
+                    // that extends beyond the deletion (if any).
+                    format.length = format.length - (end - format.index);
                     format.index = start;
                 } else if ((format.index + format.length >= start) && (format.index + format.length < end)) {
                     // End of format is in range. Reduce the length.
@@ -619,6 +623,9 @@ public class FormattedLine {
             if (format.index >= start) {
                 format.index += len;
             } else if (format.index + format.length >= start) {
+                // Variable formats are atomic — never expand them on adjacent insertion.
+                if ((format.meta != null) && format.meta.containsKey(META_VARIABLE))
+                    continue;
                 format.length += len;
             }
         }
@@ -712,6 +719,212 @@ public class FormattedLine {
      */
     public void stripFormatting() {
         getFormatting ().clear();
+    }
+
+    /**
+     * Adds a {@link FormatType} to every character in the range
+     * {@code [start, start+len)}. Existing formats in the range gain the type;
+     * gaps are filled with new formats containing just the type. Metadata on
+     * existing formats is preserved when they are split at range boundaries.
+     *
+     * @param start
+     *              start offset in the line.
+     * @param len
+     *              number of characters.
+     * @param type
+     *              the format type to add.
+     */
+    public void addFormat(int start, int len, FormatType type) {
+        if (len <= 0)
+            return;
+        int end = start + len;
+        List<Format> result = new ArrayList<>();
+        int coveredUpTo = start;
+
+        for (Format f : getFormatting()) {
+            int fEnd = f.index + f.length;
+
+            // Entirely before range.
+            if (fEnd <= start) {
+                result.add(f);
+                continue;
+            }
+
+            // Entirely after range — fill any remaining gap first.
+            if (f.index >= end) {
+                if (coveredUpTo < end)
+                    result.add(new Format(coveredUpTo, end - coveredUpTo, type));
+                coveredUpTo = end;
+                result.add(f);
+                continue;
+            }
+
+            // Gap between previous coverage and this format (within range).
+            int gapStart = Math.max(start, coveredUpTo);
+            if (gapStart < f.index)
+                result.add(new Format(gapStart, f.index - gapStart, type));
+
+            // Pre-overlap portion (before our range).
+            if (f.index < start) {
+                Format pre = new Format(f.index, start - f.index, f.formats());
+                if (f.meta != null)
+                    pre.meta = new HashMap<>(f.meta);
+                result.add(pre);
+            }
+
+            // Overlap portion — add the type.
+            int overlapStart = Math.max(f.index, start);
+            int overlapEnd = Math.min(fEnd, end);
+            Format overlap = new Format(overlapStart, overlapEnd - overlapStart, addType(f.formats(), type));
+            if (f.meta != null)
+                overlap.meta = new HashMap<>(f.meta);
+            result.add(overlap);
+
+            // Post-overlap portion (after our range).
+            if (fEnd > end) {
+                Format post = new Format(end, fEnd - end, f.formats());
+                if (f.meta != null)
+                    post.meta = new HashMap<>(f.meta);
+                result.add(post);
+            }
+
+            coveredUpTo = Math.max(coveredUpTo, overlapEnd);
+        }
+
+        // Trailing gap.
+        if (coveredUpTo < end)
+            result.add(new Format(coveredUpTo, end - coveredUpTo, type));
+
+        getFormatting().clear();
+        getFormatting().addAll(result);
+    }
+
+    /**
+     * Removes a {@link FormatType} from every character in the range
+     * {@code [start, start+len)}. Formats that lose their last type (and have
+     * no metadata) are removed entirely. Metadata is preserved on remaining
+     * fragments.
+     *
+     * @param start
+     *              start offset in the line.
+     * @param len
+     *              number of characters.
+     * @param type
+     *              the format type to remove.
+     */
+    public void removeFormat(int start, int len, FormatType type) {
+        if (len <= 0)
+            return;
+        int end = start + len;
+        List<Format> result = new ArrayList<>();
+
+        for (Format f : getFormatting()) {
+            int fEnd = f.index + f.length;
+
+            // No overlap with the range — keep unchanged.
+            if ((fEnd <= start) || (f.index >= end)) {
+                result.add(f);
+                continue;
+            }
+
+            // Pre-overlap portion.
+            if (f.index < start) {
+                Format pre = new Format(f.index, start - f.index, f.formats());
+                if (f.meta != null)
+                    pre.meta = new HashMap<>(f.meta);
+                result.add(pre);
+            }
+
+            // Overlap portion — remove the type.
+            int overlapStart = Math.max(f.index, start);
+            int overlapEnd = Math.min(fEnd, end);
+            FormatType[] reduced = removeType(f.formats(), type);
+            if ((reduced.length > 0) || ((f.meta != null) && !f.meta.isEmpty())) {
+                Format overlap = new Format(overlapStart, overlapEnd - overlapStart, reduced);
+                if (f.meta != null)
+                    overlap.meta = new HashMap<>(f.meta);
+                result.add(overlap);
+            }
+
+            // Post-overlap portion.
+            if (fEnd > end) {
+                Format post = new Format(end, fEnd - end, f.formats());
+                if (f.meta != null)
+                    post.meta = new HashMap<>(f.meta);
+                result.add(post);
+            }
+        }
+
+        getFormatting().clear();
+        getFormatting().addAll(result);
+    }
+
+    /**
+     * Checks whether every character in {@code [start, start+len)} is covered
+     * by a format containing the given type.
+     *
+     * @param start
+     *              start offset in the line.
+     * @param len
+     *              number of characters.
+     * @param type
+     *              the format type to check.
+     * @return {@code true} if the entire range is covered.
+     */
+    public boolean hasFormat(int start, int len, FormatType type) {
+        if (len <= 0)
+            return false;
+        int end = start + len;
+        int coveredUpTo = start;
+
+        for (Format f : getFormatting()) {
+            if (f.index >= end)
+                break;
+            int fEnd = f.index + f.length;
+            if (fEnd <= coveredUpTo)
+                continue;
+            if (f.index > coveredUpTo)
+                return false;
+            boolean hasType = false;
+            for (FormatType ft : f.formats()) {
+                if (ft == type) {
+                    hasType = true;
+                    break;
+                }
+            }
+            if (!hasType)
+                return false;
+            coveredUpTo = Math.min(fEnd, end);
+        }
+        return coveredUpTo >= end;
+    }
+
+    private static FormatType[] addType(FormatType[] existing, FormatType type) {
+        for (FormatType ft : existing) {
+            if (ft == type)
+                return existing;
+        }
+        FormatType[] result = new FormatType[existing.length + 1];
+        System.arraycopy(existing, 0, result, 0, existing.length);
+        result[existing.length] = type;
+        Arrays.sort(result);
+        return result;
+    }
+
+    private static FormatType[] removeType(FormatType[] existing, FormatType type) {
+        int idx = -1;
+        for (int i = 0; i < existing.length; i++) {
+            if (existing[i] == type) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx < 0)
+            return existing;
+        FormatType[] result = new FormatType[existing.length - 1];
+        System.arraycopy(existing, 0, result, 0, idx);
+        System.arraycopy(existing, idx + 1, result, idx, existing.length - idx - 1);
+        return result;
     }
 
     /**

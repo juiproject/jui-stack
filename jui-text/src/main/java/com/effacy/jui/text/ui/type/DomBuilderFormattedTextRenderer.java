@@ -49,7 +49,7 @@ import com.effacy.jui.text.type.FormattedLine.TextSegment;
  * Renders a {@link FormattedText} model into a JUI
  * {@link IDomInsertableContainer} using the builder-pattern DOM API. This is
  * the model-driven counterpart of {@link
- * com.effacy.jui.text.ui.type.markdown.DomBuilderMarkdownHandler} — it
+ * com.effacy.jui.text.ui.type.builder.DomBuilderBuilder} — it
  * walks the pre-built model rather than responding to streaming parser events.
  * <p>
  * Typical usage inside a fragment or component build method:

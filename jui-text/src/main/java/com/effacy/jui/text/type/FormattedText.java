@@ -23,6 +23,8 @@ import java.util.function.Function;
 
 import com.effacy.jui.json.annotation.JsonSerializable;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
+import com.effacy.jui.text.type.builder.FormattedTextBuilder;
+import com.effacy.jui.text.type.builder.markdown.MarkdownParser;
 
 /**
  * Captures text that is formatted in a rich content sense (i.e custom blocks of
@@ -52,7 +54,7 @@ public class FormattedText implements Iterable<FormattedBlock> {
      * @return the formatted text.
      */
     public static FormattedText markdown(Function<String,String> lineProcessor, String... content) {
-        return com.effacy.jui.text.type.markdown.MarkdownParser.parse(lineProcessor, content);
+        return new MarkdownParser().lineProcessor(lineProcessor).parse(new FormattedTextBuilder(), content);
     }
 
     /**
@@ -170,6 +172,42 @@ public class FormattedText implements Iterable<FormattedBlock> {
     }
 
     /************************************************************************
+     * Hash computation (for dirty detection).
+     ************************************************************************/
+
+    /**
+     * Computes a content hash over the entire document structure (block types,
+     * indents, line text, formatting entries, and metadata). Two documents
+     * with identical content produce the same hash.
+     *
+     * @return the computed hash value.
+     */
+    public int computeHash() {
+        int h = 0;
+        if (blocks != null) {
+            for (FormattedBlock block : blocks) {
+                h = 31 * h + block.getType().hashCode();
+                h = 31 * h + block.getIndent();
+                if (block.getMeta() != null)
+                    h = 31 * h + block.getMeta().hashCode();
+                for (FormattedLine line : block.getLines()) {
+                    h = 31 * h + line.getText().hashCode();
+                    if (line.getFormatting() != null) {
+                        for (FormattedLine.Format fmt : line.getFormatting()) {
+                            h = 31 * h + fmt.getIndex();
+                            h = 31 * h + fmt.getLength();
+                            h = 31 * h + fmt.getFormats().hashCode();
+                            if (fmt.getMeta() != null)
+                                h = 31 * h + fmt.getMeta().hashCode();
+                        }
+                    }
+                }
+            }
+        }
+        return h;
+    }
+
+    /************************************************************************
      * Property getters and setters.
      ************************************************************************/
     
@@ -232,6 +270,20 @@ public class FormattedText implements Iterable<FormattedBlock> {
         FormattedBlock blk = new FormattedBlock (type);
         getBlocks ().add (blk);
         return blk;
+    }
+
+    /**
+     * Creates a deep copy of this formatted text.
+     *
+     * @return the copy.
+     */
+    public FormattedText clone() {
+        FormattedText copy = new FormattedText();
+        if (blocks != null) {
+            for (FormattedBlock block : blocks)
+                copy.getBlocks().add(block.clone());
+        }
+        return copy;
     }
 
     /************************************************************************

@@ -1,930 +1,1152 @@
-/*******************************************************************************
- * Copyright 2024 Jeremy Buckley
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- * <p>
- * <a href= "http://www.apache.org/licenses/LICENSE-2.0">Apache License v2</a>
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- ******************************************************************************/
 package com.effacy.jui.text.ui.editor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
-import java.util.Stack;
+import java.util.Map;
+import java.util.Set;
 
-import com.effacy.jui.core.client.dom.DomSupport;
-import com.effacy.jui.core.client.dom.IUIEventHandler;
-import com.effacy.jui.core.client.dom.UIEvent;
-import com.effacy.jui.core.client.dom.UIEventType;
+import com.effacy.jui.core.client.component.IComponentCSS;
+import com.effacy.jui.core.client.component.Component;
+import com.effacy.jui.core.client.dom.INodeProvider;
+import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.platform.css.client.CssResource;
-import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.text.type.FormattedBlock;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
+import com.effacy.jui.text.type.FormattedLine;
+import com.effacy.jui.text.type.FormattedLine.FormatType;
 import com.effacy.jui.text.type.FormattedText;
-import com.effacy.jui.text.ui.editor.DiagramBlock.IDiagramBlockCSS;
-import com.effacy.jui.text.ui.editor.EquationBlock.IEquationBlockCSS;
-import com.effacy.jui.text.ui.editor.NumberedListBlock.INumberedListBlockCSS;
-import com.effacy.jui.text.ui.editor.command.ICommand;
-import com.effacy.jui.text.ui.editor.tools.IToolBar;
+import com.effacy.jui.text.type.edit.Commands;
+import com.effacy.jui.text.type.edit.EditorState;
+import com.effacy.jui.text.type.edit.History;
+import com.effacy.jui.text.type.edit.Positions;
+import com.effacy.jui.text.type.edit.Selection;
+import com.effacy.jui.text.type.edit.Transaction;
+import com.effacy.jui.text.type.edit.step.SetBlockTypeStep;
+import com.effacy.jui.text.ui.editor.IEditorCommands;
+import com.effacy.jui.text.ui.editor.IEditorContext;
 import com.google.gwt.core.client.GWT;
 
+import elemental2.dom.DomGlobal;
 import elemental2.dom.Element;
-import elemental2.dom.MouseEvent;
+import elemental2.dom.KeyboardEvent;
 
 /**
- * Editor
- *
- * @author Jeremy Buckley
+ * Transaction-based rich text editor component.
+ * <p>
+ * Renders a {@link FormattedText} document as editable content and dispatches
+ * all mutations through the transaction system ({@link Commands},
+ * {@link EditorState}, {@link History}). The DOM is fully re-rendered after
+ * each transaction, ensuring the view always matches the model.
+ * <p>
+ * Block-type-specific behaviour (rendering, event routing, format handling) is
+ * encapsulated in {@link IBlockHandler} implementations registered in the
+ * {@link #handlers} list. Extend the editor with new block types by
+ * implementing {@code IBlockHandler} and adding an instance to the list in the
+ * constructor.
+ * <p>
+ * Usage:
+ * <pre>
+ * Editor editor = new Editor();
+ * editor.load(myDocument);
+ * // ... add to a panel ...
+ * FormattedText result = editor.value();
+ * </pre>
  */
-public class Editor implements IUIEventHandler {
+public class Editor extends Component<Editor.Config> {
 
     /************************************************************************
-     * Debugging
+     * State.
      ************************************************************************/
 
     /**
-     * Various debug modes.
+     * The current editor state: document and selection. Mutated by applying
+     * transactions returned from {@link EditorState#apply}. The editor's
+     * transaction methods ensure that all mutations go through the transaction
+     * system and that the document and selection are always in sync with the view.
      */
-    public enum DebugMode {
-        /**
-         * Log rendering related activities.
-         */
-        ACTIVATION(1<<1),
-        
-        /**
-         * Log the flow of events.
-         */
-        EVENT(1<<2);
-
-        /**
-         * Bit flag for the specific debug mode.
-         */
-        private int flag;
-
-        /**
-         * Construct with initial data.
-         */
-        private DebugMode(int flag) {
-            this.flag = flag;
-        }
-
-        /**
-         * Determines if the flag is set.
-         * 
-         * @return {@code true} if it is.
-         */
-        public boolean set() {
-            return ((Editor.DEBUG & flag) > 0);
-        }
-    }
+    private EditorState state;
 
     /**
-     * Flag to toggle debug mode.
+     * History of transactions for undo/redo. Stores inverse transactions returned
+     * to the editor by {@link EditorState#apply}.
      */
-    private static int DEBUG = 0;
+    private History history;
+
+    /************************************************************************
+     * DOM references.
+     ************************************************************************/
+
+    private Element editorEl;
 
     /**
-     * Assigns the passed modes for debugging.
-     * 
-     * @param modes
-     *              the modes.
+     * Guards against selection sync during rendering.
      */
-    public static void debug(DebugMode...modes) {
-        DEBUG = 0;
-        for (DebugMode mode : modes) {
-            if (mode == null)
-                continue;
-            DEBUG |= mode.flag;
-        }
-    }
+    private boolean rendering;
 
-    public interface IEditor {
+    /**
+     * Listener for editor state changes (selection, block type, formats).
+     * The containing control uses this to update toolbars, manage floating
+     * behaviour, etc.
+     */
+    private IStateListener stateListener;
 
-        /**
-         * Navigates to the previous block from the current (active) one. If the
-         * previous block is not navigable (see {@link Block#navigable()}) then it will
-         * keep going back until it finds the first one that is. If no block is found
-         * then no navigation is performed.
-         * 
-         * @param length
-         *               positional hint as to where to place the cursor in the block
-         *               when activated.
-         */
-        public void previous(int length);
+    /************************************************************************
+     * Block handler registry.
+     ************************************************************************/
 
-        /**
-         * Navigates to the next block from the current (active) one. If the
-         * next block is not navigable (see {@link Block#navigable()}) then it will
-         * keep going forward until it finds the first one that is. If no block is found
-         * then no navigation is performed.
-         * 
-         * @param length
-         *               positional hint as to where to place the cursor in the block
-         *               when activated.
-         */
-        public void next(int length);
-        public void onInsertNext(Block block, boolean activate);
-        public void onInsertPrior(Block block, boolean activate);
-        public void onReplace(Block replace, Block block, boolean active);
-        public void onMergePrior();
+    /**
+     * Ordered list of block handlers. For each operation the editor iterates
+     * this list and delegates to the first handler whose {@link IBlockHandler#accepts}
+     * returns {@code true}.
+     */
+    private final List<IBlockHandler> handlers = new ArrayList<>();
 
-        /**
-         * Obtains the prior block to the block that has been passed. If not block is
-         * passed then the active block is assumed. If there is no active block then the
-         * first block (if it exists) is returned. In all cases if the reference block
-         * is the first block then {@code null} is returned.
-         * 
-         * @param block
-         *              the reference block.
-         * @return the block prior to the reference (as defined in the description).
-         */
-        public Block prior(Block block);
-        public Block next(Block block);
-
-        /**
-         * Source of standard styles to use.
-         * 
-         * @return the styles.
-         */
-        public IEditorCSS styles();
-
-        /**
-         * Obtains any externally declared toolbar.
-         * 
-         * @return the toolbar.
-         */
-        public IToolBar toolbar();
-    }
-
-    public static long COUNTER = 0;
-
-    private Element holder;
-
-    private IEditorCSS styles = StandardEditorCSS.instance ();
-
-    private List<Block> blocks = new ArrayList<> ();
-
-    private Block activeBlock;
-
-    private IToolBar toolbar;
-
-    private IEditor editor = new IEditor() {
+    /**
+     * Context object exposed to all block handlers, providing lazy access to
+     * the editor's services. Fields like {@code editorEl} are read at call
+     * time (not at construction time) so the context is safe to create eagerly.
+     */
+    private final IEditorContext ctx = new IEditorContext() {
 
         @Override
-        public void previous(int length) {
-            if (activeBlock == null)
-                return;
-            int idx = blocks.indexOf (activeBlock);
-            Block previousBlk;
-            do {
-                idx--;
-                if (idx < 0)
-                    return;
-                previousBlk = blocks.get (idx);
-                if (previousBlk == null)
-                    return;
-            } while (!previousBlk.navigable());
-            activate (previousBlk, length);
+        public Element editorEl() {
+            return editorEl;
         }
 
         @Override
-        public void next(int length) {
-            if (activeBlock == null)
-                return;
-            int idx = blocks.indexOf (activeBlock);
-            if (idx < 0)
-                return;
-            Block nextBlk;
-            do {
-                idx++;
-                if (idx >= blocks.size ())
-                    return;
-                nextBlk = blocks.get (idx);
-                if (nextBlk == null)
-                    return;
-            } while (!nextBlk.navigable ());
-            activate (nextBlk, length);
+        public EditorState state() {
+            return state;
         }
 
         @Override
-        public IEditorCSS styles() {
-            return Editor.this.styles ();
+        public void applyTransaction(Transaction tr) {
+            Editor.this.applyTransaction(tr);
         }
 
         @Override
-        public void onInsertNext(Block block, boolean activate) {
-            Editor.this.actionInsertNext (block, activate);
+        public void applyTransactionSilent(Transaction tr) {
+            Editor.this.applyTransactionSilent(tr);
         }
 
         @Override
-        public void onInsertPrior(Block block, boolean activate) {
-            Editor.this.actionInsertPrior (block, activate);
+        public void syncSelectionFromDom() {
+            Editor.this.syncSelectionFromDom();
         }
 
         @Override
-        public void onReplace(Block replace, Block block, boolean active) {
-            Editor.this.actionReplaceBlock(replace, block, active);
+        public Map<FormatType, String> formatClasses() {
+            return FORMAT_CLASSES;
         }
 
         @Override
-        public void onMergePrior() {
-            Editor.this.actionMergePrior ();
+        public ILocalCSS styles() {
+            return Editor.this.styles();
         }
 
         @Override
-        public Block prior(Block block) {
-            if (blocks.isEmpty ())
-                return null;
-            if (block == null)
-                block = activeBlock;
-            if (block == null)
-                return blocks.get (0);
-            int idx = blocks.indexOf (block);
-            if (idx <= 0)
-                return null;
-            return blocks.get (idx - 1);
+        public IListIndexFormatter listIndexFormatter() {
+            return config().listIndexFormatter;
         }
 
         @Override
-        public Block next(Block block) {
-            if (blocks.isEmpty ())
-                return null;
-            if (block == null)
-                block = activeBlock;
-            if (block == null)
-                return blocks.get (blocks.size () - 1);
-            int idx = blocks.indexOf (block);
-            if (idx < 0)
-                return null;
-            if (idx >= blocks.size () - 1)
-                return null;
-            return blocks.get (idx + 1);
+        public void renderLine(Element parent, FormattedLine line) {
+            Editor.this.renderLine(parent, line);
         }
 
         @Override
-        public IToolBar toolbar() {
-            return toolbar;
+        public void notifyCellSelection(Set<FormatType> activeFormats) {
+            Editor.this.updateToolbarForCellSelection(activeFormats);
         }
-        
     };
 
-    /**
-     * Command stack.
-     */
-    private Stack<ICommand> commands = new Stack<>();
+    /************************************************************************
+     * Configuration.
+     ************************************************************************/
 
     /**
-     * Reverts the last command on the command stack.
+     * Configuration for the editor. Use fluent methods to customise, then pass
+     * to the {@link Editor#Editor(Config)} constructor.
      */
-    public void revertLastCommand() {
-        if (!commands.isEmpty()) {
-            ICommand command = commands.pop();
-            command.revert();
-        }
-    }
+    public static class Config extends Component.Config {
 
-    /**
-     * Default constructor. Note that it is expected that the editor will be bound
-     * using {@link #bind(Element)}.
-     */
-    public Editor() {
-        // Nothing.
-    }
+        boolean paragraphAfterHeading = true;
+        IListIndexFormatter listIndexFormatter = Editor::defaultListIndex;
+        boolean debugLog;
 
-    /**
-     * Construct with an element to bind to (see {@link #bind(Element)}).
-     * 
-     * @param holder
-     *               the element to bind to.
-     */
-    public Editor(Element holder) {
-        bind (holder);
-    }
-
-    /**
-     * Binds the editor to an element. This will render the editor structures and
-     * attach event handlers. It is expected that the including component will
-     * implement event hooking and will delegate them to the editor.
-     * 
-     * @param holder
-     *               the element to bind to.
-     * @return this editor instance.
-     */
-    public Editor bind(Element holder) {
-        if (holder == null)
+        /**
+         * Configures whether pressing Enter at the end of a heading (H1–H3)
+         * creates a new paragraph instead of continuing the heading (default
+         * {@code true}).
+         */
+        public Config paragraphAfterHeading(boolean enable) {
+            this.paragraphAfterHeading = enable;
             return this;
-        this.holder = holder;
-        this.holder.classList.add (styles ().editor ());
-        UIEventType.DRAGOVER.attach (holder);
-        UIEventType.DRAGLEAVE.attach (holder);
-        UIEventType.DROP.attach (holder);
-        UIEventType.ONMOUSEDOWN.attach (holder);
-        update (preBindContent);
-        preBindContent = null;
-        return this;
-    }
-
-    /**
-     * Registers a toolbar handler.
-     * <p>
-     * Only use this if the toolbar is being managed externally to the editor.
-     * Otherwise the editor will employ an internal (contextual) toolbar.
-     * 
-     * @param toolbar
-     *                the toolbar (interface to) to register.
-     * @return this editor instance.
-     */
-    public Editor toolbar(IToolBar toolbar) {
-        this.toolbar = toolbar;
-        return this;
-    }
-
-    /**
-     * Content assigned prior to the editor being bound. Once bound this content will be rendered.
-     */
-    private FormattedText preBindContent;
-
-    /**
-     * Updates the editor to display the given content.
-     * <p>
-     * If the content is {@code null} then the editor will be updated with a seeding
-     * (empty) paragraph.
-     * 
-     * @param content
-     *                the content to render into the editor.
-     */
-    public void update(FormattedText content) {
-        if (holder == null) {
-            this.preBindContent = content;
-            return;
         }
 
-        // Clear any existing content.
-        blocks.clear ();
+        /**
+         * Configures the formatter used to generate ordered list markers.
+         */
+        public Config listIndexFormatter(IListIndexFormatter formatter) {
+            this.listIndexFormatter = formatter;
+            return this;
+        }
 
-        // Build out content.
-        if (content != null) {
-            for (FormattedBlock blk : content) {
-                Optional<Block> block = BlockFactory.create (editor, blk);
-                if (block.isPresent ())
-                    blocks.add (block.get ());
-            }
-        } 
-        
-        // If there is no content then seed with an empty paragraph.
-        if (blocks.isEmpty())
-            blocks.add (BlockFactory.create (editor, new FormattedBlock (BlockType.PARA)).get());
-
-        DomSupport.removeAllChildren (holder);
-        blocks.forEach (blk -> domInsertBlockAfter (blk, null));
-
-        activate (blocks.get (blocks.size() - 1), 0);
+        /**
+         * Enables debug logging of the document model and selection to the
+         * browser console after every transaction and selection change.
+         */
+        public Config debugLog(boolean enable) {
+            this.debugLog = enable;
+            return this;
+        }
     }
 
+    /************************************************************************
+     * Construction.
+     ************************************************************************/
 
-    /**
-     * CSS styles to employ.
-     * 
-     * @return the styles.
-     */
-    protected IEditorCSS styles() {
-        return styles;
+    public Editor() {
+        this(new Config());
     }
 
-    protected Element domCreateSpacer() {
-        return DomSupport.createDiv (holder, spacer -> {
-            spacer.classList.add (styles ().spacer ());
-            DomSupport.createDiv (spacer);
+    public Editor(Config config) {
+        super(config);
+        FormattedText doc = new FormattedText()
+            .block(BlockType.PARA, b -> b.line(""));
+        state = EditorState.create(doc);
+        history = new History();
+        handlers.add(new EquationBlockHandler());
+        handlers.add(new DiagramBlockHandler());
+        handlers.add(new TableBlockHandler());
+        handlers.add(new StandardBlockHandler());
+    }
+
+    @Override
+    protected INodeProvider buildNode(Element el, Config data) {
+        return Wrap.$(el).$(root -> {
+            root.attr("contenteditable", "true");
+        }).build(ctx -> {
+            editorEl = el;
+            render();
+            attachEventListeners();
         });
     }
 
+    /************************************************************************
+     * Public API.
+     ************************************************************************/
+
     /**
-     * DOM only operation to insert the passed block after the reference block. The
-     * inserted block will be rendered during this process.
-     * 
-     * @param block
-     *                  the block to insert.
-     * @param reference
-     *                  the reference block (if this is {@code null} then the last
-     *                  place is used).
+     * Loads a document into the editor, replacing any current content.
+     *
+     * @param doc
+     *            the document to load.
      */
-    void domInsertBlockAfter(Block block, Block reference) {
-        if (block == null)
-            return;
-        Element pivotEl = null;
-        if (reference != null) {
-            // Pivot is the spacer after the relative block.
-            pivotEl = reference.getRootEl ().nextElementSibling;
-        } else if (holder.childNodes.length == 0) {
-            // If there are no children create the solo spacer.
-            pivotEl = domCreateSpacer ();
-        } else {
-            // If there are children then the last element is the spacer to use as the
-            // pivot.
-            pivotEl = holder.lastElementChild;
-        }
-
-        // Render the block and insert prior to the pivot creating a spacer above it.
-        Element blockEl = block.render ();
-        holder.insertBefore (blockEl, pivotEl);
-        Element spacerEl = domCreateSpacer();
-        holder.insertBefore (spacerEl, blockEl);
-
-        // Apply the indent to the spacer after the inserted block.
-        Element afterSpacerEl = blockEl.parentElement.nextElementSibling;
-        if (afterSpacerEl != null) {
-            int indent = block.indent;
-            afterSpacerEl.classList.remove (styles ().block_indent1 (), styles ().block_indent2 (), styles ().block_indent3 (), styles ().block_indent4 (), styles ().block_indent5 ());
-            if (indent == 1)
-                afterSpacerEl.classList.add (styles ().block_indent1 ());
-            else if (indent == 2)
-                afterSpacerEl.classList.add (styles ().block_indent2 ());
-            else if (indent == 3)
-                afterSpacerEl.classList.add (styles ().block_indent3 ());
-            else if (indent == 4)
-                afterSpacerEl.classList.add (styles ().block_indent4 ());
-            else if (indent == 5)
-                afterSpacerEl.classList.add (styles ().block_indent5 ());
-        }
+    public void load(FormattedText doc) {
+        if (doc == null)
+            doc = new FormattedText().block(BlockType.PARA, b -> b.line(""));
+        state = EditorState.create(doc);
+        history.clear();
+        if (editorEl != null)
+            render();
     }
 
     /**
-     * DOM only operation to insert the passed block before the reference block. The
-     * inserted block will be rendered during this process.
-     * 
-     * @param block
-     *                  the block to insert.
-     * @param reference
-     *                  the reference block (if this is {@code null} then the first
-     *                  place is used).
+     * Returns the current document.
      */
-    void domInsertBlockBefore(Block block, Block relative) {
-        Element pivotEl = null;
-        if (relative != null) {
-            // Pivot is the spacer after the relative block.
-            pivotEl = relative.getRootEl ().previousElementSibling;
-        } else if (holder.childNodes.length == 0) {
-            // If there are no children create the solo spacer.
-            pivotEl = domCreateSpacer();
-        } else {
-            // If there are children then the first element is the spacer to use as the
-            // pivot.
-            pivotEl = holder.firstElementChild;
-        }
-
-        // Render the block and insert prior to the pivot creating a spacer above it.
-        Element blockEl = block.render ();
-        holder.insertBefore(blockEl, pivotEl);
-        Element spacerEl = domCreateSpacer();
-        holder.insertBefore (spacerEl, blockEl);
+    public FormattedText value() {
+        return state.doc();
     }
 
     /**
-     * DOM only operation to remove the passed block from the DOM.
-     * 
-     * @param block
-     *              the block to remove.
+     * Listener for editor state changes. The containing control implements
+     * this to receive state updates and forward them to toolbars, manage
+     * floating behaviour, etc.
      */
-    void domRemoveBlock(Block block) {
-        if (block == null)
-            return;
-        Element blockEl = block.getRootEl ();
-        Element spacerEl = blockEl.previousElementSibling;
-        blockEl.remove ();
-        spacerEl.remove ();
-        if (this.activeBlock == block)
-            this.activeBlock = null;
+    public interface IStateListener {
+
+        /**
+         * Called when the editor's selection or content changes. The listener
+         * should update toolbar state and handle any positional behaviour
+         * (e.g. floating toolbar show/hide).
+         *
+         * @param blockType
+         *                       the block type of the anchor block.
+         * @param activeFormats
+         *                       the set of inline formats active at the
+         *                       current cursor or range.
+         * @param rangeSelected
+         *                       {@code true} if the selection is a range.
+         */
+        void onStateUpdate(BlockType blockType, Set<FormatType> activeFormats, boolean rangeSelected);
+
+        /**
+         * Called when the selection is in a cell-editing context (e.g.
+         * table cell). Block-type information is not meaningful.
+         *
+         * @param activeFormats
+         *                      the set of inline formats active at the cell
+         *                      selection.
+         */
+        void onCellStateUpdate(Set<FormatType> activeFormats);
     }
 
     /**
-     * Insert the passed block prior to the active block, but keeps the active block
-     * active.
+     * Binds a state listener to this editor and returns the command
+     * interface that can be used to drive the editor (e.g. from toolbar
+     * buttons).
      * <p>
-     * This will invoke a change cascade (that calls {@link Block#onPriorChanged()}).
-     * 
-     * @param block
-     *              the block to insert.
-     * @param activate
-     *                  {@code true} if the new block should be make the active
-     *                  block.
+     * May be called before or after the editor is rendered. If called after,
+     * an initial state update is sent immediately.
+     *
+     * @param listener
+     *                 the listener for state changes.
+     * @return the command interface for driving the editor.
      */
-    void actionInsertPrior(Block block, boolean activate) {
-        if (block == null)
-            return;
+    public IEditorCommands bind(IStateListener listener) {
+        this.stateListener = listener;
+        if (editorEl != null)
+            updateToolbarState();
+        return new IEditorCommands() {
 
-        if (activeBlock != null)
-            blocks.add ( blocks.indexOf (activeBlock), block);
+            @Override
+            public void toggleFormat(FormatType type) {
+                handleFormatToggle(type);
+            }
+
+            @Override
+            public void setBlockType(BlockType type) {
+                syncSelectionFromDom();
+                applyTransaction(Commands.setBlockType(state, type));
+            }
+
+            @Override
+            public void toggleBlockType(BlockType type) {
+                syncSelectionFromDom();
+                applyTransaction(Commands.toggleBlockType(state, type));
+            }
+
+            @Override
+            public void insertTable(int rows, int cols) {
+                syncSelectionFromDom();
+                Selection preSel = state.selection();
+                int preBlock = preSel.isCursor() ? preSel.anchorBlock() : preSel.fromBlock();
+                applyTransaction(Commands.insertTable(state, rows, cols));
+                handlerFor(BlockType.TABLE).focusBlock(preBlock + 1, ctx);
+            }
+
+            @Override
+            public void insertEquation() {
+                syncSelectionFromDom();
+                Selection preSel = state.selection();
+                int preBlock = preSel.isCursor() ? preSel.anchorBlock() : preSel.fromBlock();
+                applyTransaction(Commands.insertEquation(state));
+                handlerFor(BlockType.EQN).focusBlock(preBlock + 1, ctx);
+            }
+
+            @Override
+            public void insertDiagram() {
+                syncSelectionFromDom();
+                Selection preSel = state.selection();
+                int preBlock = preSel.isCursor() ? preSel.anchorBlock() : preSel.fromBlock();
+                applyTransaction(Commands.insertDiagram(state));
+                handlerFor(BlockType.DIA).focusBlock(preBlock + 1, ctx);
+            }
+
+            @Override
+            public void insertText(String text) {
+                if ((text == null) || text.isEmpty())
+                    return;
+                syncSelectionFromDom();
+                applyTransaction(Commands.insertText(state, text));
+            }
+
+            @Override
+            public void syncSelection() {
+                syncSelectionFromDom();
+            }
+
+            @Override
+            public String currentLink() {
+                syncSelectionFromDom();
+                return extractLinkUrl(state.selection());
+            }
+
+            @Override
+            public void applyLink(String url) {
+                applyTransaction(Commands.updateLink(state, url));
+            }
+
+            @Override
+            public void removeLink() {
+                applyTransaction(Commands.removeLink(state));
+            }
+
+            @Override
+            public void applyVariable(String name, String label) {
+                syncSelectionFromDom();
+                applyTransaction(Commands.insertVariable(state, name, label));
+            }
+        };
+    }
+
+    /************************************************************************
+     * Rendering.
+     ************************************************************************/
+
+    /**
+     * Full re-render of the document into the editor element. Each block is
+     * delegated to the appropriate {@link IBlockHandler}.
+     */
+    private void render() {
+        rendering = true;
+        try {
+            editorEl.innerHTML = "";
+            List<FormattedBlock> blocks = state.doc().getBlocks();
+            handlers.forEach(h -> h.beginRender(ctx));
+            for (int i = 0; i < blocks.size(); i++) {
+                Element el = handlerFor(blocks.get(i).getType()).render(blocks.get(i), i, ctx);
+                editorEl.appendChild(el);
+            }
+        } finally {
+            rendering = false;
+        }
+        restoreSelection();
+        ensureCursorVisible();
+        updateToolbarState();
+        handlers.forEach(h -> h.afterRender(ctx));
+    }
+
+    /**
+     * Renders a single line's formatted content into a parent element.
+     */
+    private void renderLine(Element parent, FormattedLine line) {
+        line.sequence().forEach(segment -> {
+            if (segment.variable()) {
+                Element chip = DomGlobal.document.createElement("span");
+                chip.classList.add(styles().variable());
+                chip.setAttribute("contenteditable", "false");
+                chip.textContent = segment.text();
+                parent.appendChild(chip);
+                // Append an empty text node after the CEF span so that the
+                // browser has a text-node cursor target. Without this,
+                // _resolvePosition falls back to an element-child reference
+                // that prevents beforeinput from firing for text insertion.
+                parent.appendChild(DomGlobal.document.createTextNode(""));
+            } else if (segment.formatting().length == 0) {
+                parent.appendChild(DomGlobal.document.createTextNode(segment.text()));
+            } else if (segment.contains(FormatType.A)) {
+                Element a = DomGlobal.document.createElement("a");
+                String href = segment.link();
+                if (href != null) {
+                    a.setAttribute("href", href);
+                    if (href.startsWith("http"))
+                        a.setAttribute("target", "_blank");
+                }
+                a.textContent = segment.text();
+                parent.appendChild(a);
+            } else {
+                Element span = DomGlobal.document.createElement("span");
+                for (FormatType fmt : segment.formatting()) {
+                    String cls = FORMAT_CLASSES.get(fmt);
+                    if (cls != null)
+                        span.classList.add(cls);
+                }
+                span.appendChild(DomGlobal.document.createTextNode(segment.text()));
+                parent.appendChild(span);
+            }
+        });
+    }
+
+    /************************************************************************
+     * Selection synchronisation.
+     ************************************************************************/
+
+    /**
+     * Restores the DOM selection from the editor state.
+     */
+    private void restoreSelection() {
+        Selection sel = state.selection();
+        if (sel.isCursor())
+            EditorSupport.setCursor(editorEl, sel.anchorBlock(), sel.anchorOffset());
         else
-            blocks.add (0, block);
-        domInsertBlockBefore (block, activeBlock);
-        
-        if (activate)
-            activate (block, 0);
-
-        cascadeChange (block);
+            EditorSupport.setSelection(editorEl, sel.anchorBlock(), sel.anchorOffset(), sel.headBlock(), sel.headOffset());
     }
 
     /**
-     * Inserts the passed (newly constructed and not yet attached) block to the slot
-     * immediately after the currently active block then make this new block active.
-     * <p>
-     * This will invoke a change cascade (that calls {@link Block#onPriorChanged()}).
-     * 
-     * @param block
-     *              the block to insert.
-     * @param activate
-     *                  {@code true} if the new block should be make the active
-     *                  block.
+     * Scrolls the editor so that the block containing the cursor is visible.
      */
-    void actionInsertNext(Block block, boolean activate) {
-        if (block == null)
+    private void ensureCursorVisible() {
+        Selection sel = state.selection();
+        int blockIdx = sel.anchorBlock();
+        if ((blockIdx < 0) || (blockIdx >= editorEl.childElementCount))
             return;
-
-        if (activeBlock != null)
-            blocks.add (blocks.indexOf (activeBlock) + 1, block);
-        else
-            blocks.add (block);
-        domInsertBlockAfter (block, activeBlock);
-        
-        if (activate)
-            activate (block, 0);
-
-        cascadeChange (block);
+        elemental2.dom.HTMLElement blockEl = (elemental2.dom.HTMLElement) editorEl.childNodes.item(blockIdx);
+        int blockBottom = blockEl.offsetTop + blockEl.offsetHeight;
+        double viewBottom = editorEl.scrollTop + editorEl.clientHeight;
+        if (blockBottom > viewBottom)
+            editorEl.scrollTop = blockBottom - editorEl.clientHeight;
+        else if (blockEl.offsetTop < editorEl.scrollTop)
+            editorEl.scrollTop = blockEl.offsetTop;
     }
 
     /**
-     * Replaces one block with another block (permanently removing the first).
-     * <p>
-     * This will invoke a change cascade (that calls
-     * {@link Block#onPriorChanged()}).
-     * 
-     * @param toReplace
-     *                  the block that is going to be replace.
-     * @param block
-     *                  the block that will replace it (should be new).
-     * @param activate
-     *                  {@code true} if the new block should be make the active
-     *                  block.
+     * Reads the DOM selection and updates the editor state and toolbar.
+     * When the selection is inside a non-block area (e.g. a table cell),
+     * {@link EditorSupport#readSelection} returns {@code null}; handlers
+     * are consulted via {@link IBlockHandler#handleSelectionChange} so they
+     * can update the toolbar for the cell context.
      */
-    void actionReplaceBlock(Block toReplace, Block block, boolean activate) {
-        if ((block == null) || (toReplace == null))
+    private void syncSelectionFromDom() {
+        if (rendering)
             return;
-        blocks.add (blocks.indexOf (toReplace) + 1, block);
-        blocks.remove (toReplace);
-
-        // Apply DOM changes.
-        domInsertBlockAfter (block, toReplace);
-        domRemoveBlock (toReplace);
-
-        if (activate)
-            activate(block, 0);
-
-        cascadeChange (block);
+        int[] sel = EditorSupport.readSelection(editorEl);
+        if (sel == null) {
+            // Cursor is in a non-block area (e.g. a table cell) — let handlers update the toolbar.
+            for (IBlockHandler h : handlers) {
+                if (h.handleSelectionChange(ctx))
+                    return;
+            }
+            return;
+        }
+        int numBlocks = state.doc().getBlocks().size();
+        if ((sel[0] < 0) || (sel[0] >= numBlocks) || (sel[2] < 0) || (sel[2] >= numBlocks))
+            return;
+        state.setSelection(new Selection(sel[0], sel[1], sel[2], sel[3]));
+        updateToolbarState();
     }
 
     /**
-     * Attempts a merge of the active block and the block prior to it (if there is
-     * one). The relies on a merge-compatibility match between the two block (namely
-     * that the prior block is able to absorb the active block). If successful the
-     * active block is removed and the prior one becomes the new active block.
-     * <p>
-     * This will invoke a change cascade (that calls {@link Block#onPriorChanged()}).
+     * Updates toolbar button active states to reflect the current selection.
+     * Block type buttons highlight based on the anchor block's type; format
+     * buttons highlight based on whether the format is active at the cursor
+     * or across the entire range selection.
      */
-    void actionMergePrior() {
-        if (activeBlock != null) {
-            int idx = blocks.indexOf (activeBlock);
-            if (idx <= 0) {
-                // Nothing to do.
+    private void updateToolbarState() {
+        if (stateListener == null)
+            return;
+        Selection sel = state.selection();
+        int blockIdx = sel.anchorBlock();
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return;
+        FormattedBlock blk = blocks.get(blockIdx);
+        Set<FormatType> active = java.util.EnumSet.noneOf(FormatType.class);
+        for (FormatType ft : FormatType.values()) {
+            if (isFormatActive(sel, ft))
+                active.add(ft);
+        }
+        stateListener.onStateUpdate(blk.getType(), active, !sel.isCursor());
+    }
+
+    /**
+     * Notifies the state listener for the cell-editing context.
+     */
+    private void updateToolbarForCellSelection(Set<FormatType> activeFormats) {
+        if (stateListener != null)
+            stateListener.onCellStateUpdate(activeFormats);
+    }
+
+    /**
+     * Checks whether a format type is active at the current selection. For a
+     * cursor, checks the character immediately before the cursor. For a range,
+     * checks whether the entire range has the format.
+     */
+    private boolean isFormatActive(Selection sel, FormatType type) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if (sel.isCursor()) {
+            int block = sel.anchorBlock();
+            int offset = sel.anchorOffset();
+            FormattedBlock blk = blocks.get(block);
+            if (offset > 0)
+                return blk.hasFormat(offset - 1, 1, type);
+            if (Positions.contentSize(blk) > 0)
+                return blk.hasFormat(0, 1, type);
+            return false;
+        }
+        int fromBlock = sel.fromBlock();
+        int toBlock = sel.toBlock();
+        for (int i = fromBlock; i <= toBlock; i++) {
+            int start = (i == fromBlock) ? sel.fromOffset() : 0;
+            int end = (i == toBlock) ? sel.toOffset() : Positions.contentSize(blocks.get(i));
+            int len = end - start;
+            if ((len > 0) && !blocks.get(i).hasFormat(start, len, type))
+                return false;
+        }
+        return true;
+    }
+
+    /************************************************************************
+     * Transaction dispatch.
+     ************************************************************************/
+
+    /**
+     * Applies or removes a format toggle. Handlers are given the first chance
+     * to handle the toggle (e.g. TableBlockHandler applies it within a cell).
+     * Falls back to the standard transaction path when no handler claims it.
+     */
+    private void handleFormatToggle(FormatType type) {
+        for (IBlockHandler h : handlers) {
+            if (h.handleFormatToggle(type, ctx))
                 return;
-            }
-
-            // We need to retain the active block as a merge may end up changing dues to a
-            // loss of focus.
-            Block merge = activeBlock;
-            Block prior = blocks.get (idx - 1);
-
-            if (prior.canMerge (merge)) {
-                // Remove block prior to merge (which will refresh).
-                blocks.remove (merge);
-                prior.merge (merge);
-                domRemoveBlock (merge);
-                activate (prior, 0);
-                cascadeChange (prior);
-            }
         }
+        syncSelectionFromDom();
+        applyTransaction(Commands.toggleFormat(state, type));
     }
 
     /**
-     * See {@link #cascadeChange(Block)} but applies to all block in the collection.
-     * This is less efficient but will ensure any change is properly reflected.
+     * Extracts the link URL at the anchor position of the given selection, or
+     * {@code null} if no link exists there.
      */
-    protected void cascadeChangeAll() {
-        blocks.forEach (block -> block.onPriorChanged());
-    }
-
-    /**
-     * Implements a change cascade from the passed block. The process is to
-     * determine the next block in the chain and invoke that blocks
-     * {@link Block#onPriorChanged()} method. If that method returns {@code true}
-     * then we continue the process for that block.
-     * 
-     * @param block
-     *              the block to chain from (starts with the block after this).
-     */
-    protected void cascadeChange(Block block) {
-        int idx = blocks.indexOf (block);
-        while ((idx >= 0) && (++idx <= blocks.size ()) && blocks.get (idx).onPriorChanged ()) 
-            ;
-    }
-
-    /**
-     * Used for efficiency. This is the last block that mouse activity was recorded
-     * against.
-     */
-    private Block lastMouseActivityBlock;
-
-    protected Block matchBlock(Element targetBlockEl) {
-        if (targetBlockEl == null)
+    private String extractLinkUrl(Selection sel) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int blockIdx = sel.anchorBlock();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
             return null;
-        if ((lastMouseActivityBlock != null) && (targetBlockEl == lastMouseActivityBlock.getRootEl ()))
-            return lastMouseActivityBlock;
-        for (Block blk : blocks) {
-            if (targetBlockEl == blk.getRootEl ())
-                return blk;
+        FormattedBlock blk = blocks.get(blockIdx);
+        int target = sel.anchorOffset();
+        int lineStart = 0;
+        for (FormattedLine line : blk.getLines()) {
+            for (FormattedLine.Format fmt : line.getFormatting()) {
+                int absStart = lineStart + fmt.getIndex();
+                int absEnd = absStart + fmt.getLength();
+                if ((target >= absStart) && (target < absEnd) && fmt.getFormats().contains(FormatType.A)) {
+                    if (fmt.getMeta() != null)
+                        return fmt.getMeta().get(FormattedLine.META_LINK);
+                }
+            }
+            lineStart += line.length() + 1;
         }
         return null;
     }
 
-    protected Block matchBlock(String uuid) {
-        Optional<Block> block = blocks.stream ().filter (blk -> blk.getUuid ().equals (uuid)).findFirst ();
-        return block.isPresent() ? block.get() : null;
+    /**
+     * Applies a transaction, pushes inverse to history, and re-renders.
+     * Calls {@link IBlockHandler#beforeApplyTransaction} on all handlers first
+     * so that any in-progress edits (e.g. cell text) are flushed to the model.
+     */
+    private void applyTransaction(Transaction tr) {
+        if (tr == null)
+            return;
+        handlers.forEach(h -> h.beforeApplyTransaction(ctx));
+        Transaction inverse = state.apply(tr);
+        history.push(inverse);
+        if (config().debugLog)
+            debugLogState("applyTransaction");
+        render();
     }
 
     /**
-     * {@inheritDoc}
+     * Applies a transaction and pushes its inverse to history without
+     * re-rendering. Used by handlers that update the DOM directly (e.g.
+     * cell formatting) and do not need a full re-render.
+     */
+    private void applyTransactionSilent(Transaction tr) {
+        if (tr == null)
+            return;
+        Transaction inverse = state.apply(tr);
+        history.push(inverse);
+    }
+
+    /************************************************************************
+     * Event handling.
+     ************************************************************************/
+
+    private void attachEventListeners() {
+        editorEl.addEventListener("keydown", evt -> handleKeyDown((KeyboardEvent) evt));
+        editorEl.addEventListener("beforeinput", evt -> handleBeforeInput(evt));
+        editorEl.addEventListener("paste", evt -> handlePaste(evt));
+        DomGlobal.document.addEventListener("selectionchange", evt -> syncSelectionFromDom());
+    }
+
+    /**
+     * Handles keyboard shortcuts (undo/redo, format toggles, indent).
+     * Handlers are consulted first; if one returns {@code true} the event is
+     * consumed and the editor's default logic is skipped.
+     */
+    private void handleKeyDown(KeyboardEvent ke) {
+        if (config().debugLog)
+            DomGlobal.console.log("[Editor:keydown] key=" + ke.key + " ctrl=" + (ke.ctrlKey || ke.metaKey) + " alt=" + ke.altKey + " shift=" + ke.shiftKey);
+        for (IBlockHandler h : handlers) {
+            if (h.handleKeyDown(ke, ctx))
+                return;
+        }
+        boolean ctrl = ke.ctrlKey || ke.metaKey;
+        boolean shift = ke.shiftKey;
+
+        // Undo / redo.
+        if (ctrl && "z".equals(ke.key) && !shift) {
+            ke.preventDefault();
+            if (history.undo(state))
+                render();
+            return;
+        }
+        if ((ctrl && shift && ("z".equals(ke.key) || "Z".equals(ke.key)))
+                || (ctrl && "y".equals(ke.key))) {
+            ke.preventDefault();
+            if (history.redo(state))
+                render();
+            return;
+        }
+
+        // Format toggles.
+        if (ctrl && !shift) {
+            FormatType fmt = null;
+            if ("b".equals(ke.key))
+                fmt = FormatType.BLD;
+            else if ("i".equals(ke.key))
+                fmt = FormatType.ITL;
+            else if ("u".equals(ke.key))
+                fmt = FormatType.UL;
+            if (fmt != null) {
+                ke.preventDefault();
+                syncSelectionFromDom();
+                applyTransaction(Commands.toggleFormat(state, fmt));
+                return;
+            }
+        }
+
+        // Indent / outdent.
+        if ("Tab".equals(ke.key)) {
+            ke.preventDefault();
+            syncSelectionFromDom();
+            if (shift)
+                applyTransaction(Commands.outdent(state));
+            else
+                applyTransaction(Commands.indent(state));
+        }
+    }
+
+    /**
+     * Handles content-mutating input events. All browser-native mutations are
+     * prevented; the equivalent is performed through the transaction system.
+     * Handlers are consulted first and may consume the event (e.g. to allow
+     * native input inside table cells).
+     */
+    private void handleBeforeInput(elemental2.dom.Event evt) {
+        if (config().debugLog)
+            DomGlobal.console.log("[Editor:beforeinput] inputType=" + EditorSupport.getInputType(evt) + " data=" + EditorSupport.getInputData(evt));
+        for (IBlockHandler h : handlers) {
+            if (h.handleBeforeInput(evt, ctx))
+                return;
+        }
+        evt.preventDefault();
+        syncSelectionFromDom();
+
+        String inputType = EditorSupport.getInputType(evt);
+        if (inputType == null)
+            return;
+
+        switch (inputType) {
+            case "insertText": {
+                String data = EditorSupport.getInputData(evt);
+                if ((data != null) && !data.isEmpty())
+                    applyTransaction(Commands.insertText(state, data));
+                break;
+            }
+            case "insertParagraph": {
+                Selection sel = state.selection();
+                int blockIdx = sel.isCursor() ? sel.anchorBlock() : sel.fromBlock();
+                FormattedBlock blk = state.doc().getBlocks().get(blockIdx);
+                int offset = sel.isCursor() ? sel.anchorOffset() : sel.fromOffset();
+
+                // Empty list item: convert to paragraph instead of splitting.
+                if (sel.isCursor()
+                        && blk.getType().is(BlockType.NLIST, BlockType.OLIST)
+                        && (Positions.contentSize(blk) == 0)) {
+                    applyTransaction(Commands.setBlockType(state, BlockType.PARA));
+                    break;
+                }
+
+                Transaction splitTr = Commands.splitBlock(state);
+                if (splitTr != null) {
+                    // Heading at end → new block becomes paragraph.
+                    if (config().paragraphAfterHeading
+                            && blk.getType().is(BlockType.H1, BlockType.H2, BlockType.H3)
+                            && (offset >= Positions.contentSize(blk))) {
+                        splitTr.step(new SetBlockTypeStep(blockIdx + 1, BlockType.PARA));
+                    }
+                }
+                applyTransaction(splitTr);
+                break;
+            }
+            case "insertLineBreak":
+                applyTransaction(Commands.insertLineBreak(state));
+                break;
+            case "deleteContentBackward": {
+                Selection sel2 = state.selection();
+                if (sel2.isCursor() && (sel2.anchorOffset() == 0)) {
+                    FormattedBlock blk2 = state.doc().getBlocks().get(sel2.anchorBlock());
+                    if (blk2.getIndent() > 0) {
+                        applyTransaction(Commands.outdent(state));
+                        break;
+                    }
+                    // List item at indent 0: exit list (convert to paragraph).
+                    if (blk2.getType().is(BlockType.NLIST, BlockType.OLIST)) {
+                        applyTransaction(Commands.setBlockType(state, BlockType.PARA));
+                        break;
+                    }
+                    // Join with previous block (cross-type allowed).
+                    applyTransaction(Commands.forceJoinWithPrevious(state));
+                    break;
+                }
+                // Atomic variable deletion: if cursor is inside or at the
+                // end of a variable, delete the entire variable as a unit.
+                if (sel2.isCursor()) {
+                    int[] varRange = findVariableContaining(sel2.anchorBlock(), sel2.anchorOffset());
+                    if (varRange != null) {
+                        state.setSelection(Selection.range(sel2.anchorBlock(), varRange[0], sel2.anchorBlock(), varRange[1]));
+                        applyTransaction(Commands.deleteSelection(state));
+                        break;
+                    }
+                }
+                applyTransaction(Commands.deleteCharBefore(state));
+                break;
+            }
+            case "deleteContentForward": {
+                // Atomic variable deletion: if cursor is inside or at the
+                // start of a variable, delete the entire variable as a unit.
+                Selection selFwd = state.selection();
+                if (selFwd.isCursor()) {
+                    int[] varRange = findVariableAt(selFwd.anchorBlock(), selFwd.anchorOffset());
+                    if (varRange != null) {
+                        state.setSelection(Selection.range(selFwd.anchorBlock(), varRange[0], selFwd.anchorBlock(), varRange[1]));
+                        applyTransaction(Commands.deleteSelection(state));
+                        break;
+                    }
+                }
+                Transaction tr3 = Commands.deleteCharAfter(state);
+                if (tr3 != null) {
+                    applyTransaction(tr3);
+                    break;
+                }
+                // deleteCharAfter returns null at cross-type block boundary.
+                applyTransaction(Commands.forceJoinWithNext(state));
+                break;
+            }
+            case "deleteWordBackward":
+                applyTransaction(Commands.deleteWordBefore(state));
+                break;
+            case "deleteWordForward":
+                applyTransaction(Commands.deleteWordAfter(state));
+                break;
+            case "deleteByCut":
+                applyTransaction(Commands.deleteSelection(state));
+                break;
+            default:
+                // All other input types are prevented (no-op).
+                break;
+        }
+    }
+
+    /**
+     * Handles paste events. Reads plain text from the clipboard and inserts
+     * it via the transaction system. Handlers are consulted first and may
+     * consume the event (e.g. to allow native paste inside table cells).
+     */
+    private void handlePaste(elemental2.dom.Event evt) {
+        for (IBlockHandler h : handlers) {
+            if (h.handlePaste(evt, ctx))
+                return;
+        }
+        evt.preventDefault();
+        syncSelectionFromDom();
+        String text = EditorSupport.getClipboardText(evt);
+        if ((text == null) || text.isEmpty())
+            return;
+        // Normalize line endings (Windows \r\n and old Mac \r).
+        text = text.replace("\r\n", "\n").replace("\r", "\n");
+        applyTransaction(Commands.pasteText(state, text));
+    }
+
+    /************************************************************************
+     * Debug logging.
+     ************************************************************************/
+
+    private void debugLogState(String context) {
+        Selection sel = state.selection();
+        String selStr = sel.isCursor()
+            ? "cursor block=" + sel.anchorBlock() + " offset=" + sel.anchorOffset()
+            : "range anchor=" + sel.anchorBlock() + ":" + sel.anchorOffset()
+                + " head=" + sel.headBlock() + ":" + sel.headOffset();
+        DomGlobal.console.log("[Editor:" + context + "] " + selStr + "\n" + state.doc().debug());
+    }
+
+    /************************************************************************
+     * Variable boundary helpers (atomic deletion).
+     ************************************************************************/
+
+    /**
+     * Returns the {@code [start, end)} block-level range of the variable
+     * that contains, or is immediately adjacent to, {@code offset} in the
+     * given block.
+     * <p>
+     * A match occurs when {@code offset} falls strictly inside the variable
+     * range (absStart &lt; offset &lt; absEnd) or exactly at a boundary
+     * (absStart == offset or absEnd == offset). This handles the case where
+     * the browser positions the cursor anywhere within the variable chip
+     * text rather than at a precise boundary.
      *
-     * @see com.effacy.jui.core.client.dom.IUIEventHandler#handleEvent(com.effacy.jui.core.client.dom.UIEvent)
+     * @return {@code [absStart, absEnd]} or {@code null} if no variable
+     *         spans the given offset.
      */
+    private int[] findVariableContaining(int blockIdx, int offset) {
+        FormattedBlock blk = state.doc().getBlocks().get(blockIdx);
+        int lineStart = 0;
+        for (FormattedLine line : blk.getLines()) {
+            for (FormattedLine.Format fmt : line.getFormatting()) {
+                if ((fmt.getMeta() == null) || !fmt.getMeta().containsKey(FormattedLine.META_VARIABLE))
+                    continue;
+                int absStart = lineStart + fmt.getIndex();
+                int absEnd = absStart + fmt.getLength();
+                if ((offset > absStart) && (offset <= absEnd))
+                    return new int[]{absStart, absEnd};
+            }
+            lineStart += line.length() + 1;
+        }
+        return null;
+    }
+
+    /**
+     * Like {@link #findVariableContaining(int, int)} but includes the case
+     * where the cursor is exactly at the start of the variable (for
+     * forward-delete).
+     */
+    private int[] findVariableAt(int blockIdx, int offset) {
+        FormattedBlock blk = state.doc().getBlocks().get(blockIdx);
+        int lineStart = 0;
+        for (FormattedLine line : blk.getLines()) {
+            for (FormattedLine.Format fmt : line.getFormatting()) {
+                if ((fmt.getMeta() == null) || !fmt.getMeta().containsKey(FormattedLine.META_VARIABLE))
+                    continue;
+                int absStart = lineStart + fmt.getIndex();
+                int absEnd = absStart + fmt.getLength();
+                if ((offset >= absStart) && (offset < absEnd))
+                    return new int[]{absStart, absEnd};
+            }
+            lineStart += line.length() + 1;
+        }
+        return null;
+    }
+
+    /************************************************************************
+     * Handler registry helpers.
+     ************************************************************************/
+
+    /**
+     * Returns the first registered handler that accepts the given block type,
+     * or the last handler in the registry as a fallback.
+     */
+    private IBlockHandler handlerFor(BlockType type) {
+        for (IBlockHandler h : handlers) {
+            if (h.accepts(type))
+                return h;
+        }
+        return handlers.get(handlers.size() - 1);
+    }
+
+    /************************************************************************
+     * List index formatting.
+     ************************************************************************/
+
+    /**
+     * Formats the counter value for an ordered list item at a given indent
+     * level. The returned string is used as the visible list marker.
+     */
+    @FunctionalInterface
+    public interface IListIndexFormatter {
+
+        /**
+         * Formats a list counter value.
+         *
+         * @param indent
+         *               the indent level (0–5).
+         * @param counter
+         *                the sequential counter value (1-based).
+         * @return the display string (e.g. "1", "a", "iii").
+         */
+        String format(int indent, int counter);
+    }
+
+    /**
+     * Default formatter: numeric at level 0, lowercase alpha at level 1,
+     * lowercase roman at level 2, then cycles.
+     */
+    private static String defaultListIndex(int indent, int counter) {
+        switch (indent % 3) {
+            case 0:
+                return String.valueOf(counter);
+            case 1:
+                return toLetter(counter);
+            case 2:
+                return toRoman(counter);
+            default:
+                return String.valueOf(counter);
+        }
+    }
+
+    private static String toLetter(int n) {
+        StringBuilder sb = new StringBuilder();
+        while (n > 0) {
+            n--;
+            sb.insert(0, (char) ('a' + (n % 26)));
+            n /= 26;
+        }
+        return sb.toString();
+    }
+
+    private static final int[] ROMAN_VALUES = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
+    private static final String[] ROMAN_SYMBOLS = {"m", "cm", "d", "cd", "c", "xc", "l", "xl", "x", "ix", "v", "iv", "i"};
+
+    private static String toRoman(int n) {
+        if (n <= 0)
+            return String.valueOf(n);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < ROMAN_VALUES.length; i++) {
+            while (n >= ROMAN_VALUES[i]) {
+                sb.append(ROMAN_SYMBOLS[i]);
+                n -= ROMAN_VALUES[i];
+            }
+        }
+        return sb.toString();
+    }
+
+    /************************************************************************
+     * Format type to CSS class mapping.
+     ************************************************************************/
+
+    private static final Map<FormatType, String> FORMAT_CLASSES = new HashMap<>();
+    static {
+        FORMAT_CLASSES.put(FormatType.BLD, "fmt_bold");
+        FORMAT_CLASSES.put(FormatType.ITL, "fmt_italic");
+        FORMAT_CLASSES.put(FormatType.UL, "fmt_underline");
+        FORMAT_CLASSES.put(FormatType.STR, "fmt_strike");
+        FORMAT_CLASSES.put(FormatType.SUP, "fmt_superscript");
+        FORMAT_CLASSES.put(FormatType.SUB, "fmt_subscript");
+        FORMAT_CLASSES.put(FormatType.CODE, "fmt_code");
+        FORMAT_CLASSES.put(FormatType.HL, "fmt_highlight");
+    }
+
+    /************************************************************************
+     * CSS.
+     ************************************************************************/
+
     @Override
-    public boolean handleEvent(UIEvent event) {
-        if (DebugMode.EVENT.set () && !event.isEvent (UIEventType.ONMOUSEENTER, UIEventType.ONMOUSELEAVE, UIEventType.ONMOUSEMOVE))
-            Logger.trace ("{editor-event::editor}", event.toString ());
-
-        Element targetEl = event.getTarget ();
-        Element blockEl = DomSupport.parent (targetEl, "." + styles ().block (), holder);
-        Element spacerEl = (blockEl != null) ? null : DomSupport.parent (targetEl, "." + styles ().spacer (), holder);
-
-        // If we have a toolbar check that first.
-        if ((toolbar != null) && toolbar.handleEvent (event)) {
-            if (DebugMode.EVENT.set () && !event.isEvent (UIEventType.ONMOUSEENTER, UIEventType.ONMOUSELEAVE, UIEventType.ONMOUSEMOVE))
-                Logger.trace ("{editor-event::editor}", event.toString () + "-* handled by toolbar");
-            return true;
-        }
-        
-        // Special case of drag over, drag leave and drop which are bound to the editor.
-        if (event.isEvent(UIEventType.DRAGLEAVE)) {
-            // Clear all active on a leave.
-            DomSupport.forEach (holder, child -> {
-                if (child instanceof Element)
-                    ((Element) child).classList.remove (styles ().active ());
-            });
-            return true;
-        }
-        if (event.isEvent (UIEventType.DRAGOVER)) {
-            if (spacerEl != null) {
-                spacerEl.classList.add (styles ().active ());
-            } else if (blockEl != null) {
-                Block blk = matchBlock (blockEl);
-                if (blk == null)
-                    return true;
-                lastMouseActivityBlock = blk;
-                if (event.getEvent() instanceof MouseEvent) {
-                    int offsetY = (int)((MouseEvent) event.getEvent ()).offsetY;
-                    int height = event.getTarget().clientHeight;
-                    int topThreshold = height / 3;
-                    int bottomThreshold = height - topThreshold;
-                    if (offsetY < topThreshold) {
-                        blockEl.previousElementSibling.classList.add (styles ().active ());
-                        blockEl.nextElementSibling.classList.remove (styles ().active ());
-                    } else if (offsetY > bottomThreshold) {
-                        blockEl.previousElementSibling.classList.remove (styles ().active ());
-                        blockEl.nextElementSibling.classList.add (styles ().active ());
-                    } else {
-                        blockEl.previousElementSibling.classList.remove (styles ().active ());
-                        blockEl.nextElementSibling.classList.remove (styles ().active ());
-                    }
-                    return true;
-                }
-            }
-            return true;
-        }
-        if (event.isEvent(UIEventType.DROP)) {
-            // Find the active state.
-            Element spacer = (Element) DomSupport.find (holder, child -> {
-                if (!(child instanceof Element))
-                    return false;
-                return ((Element) child).classList.contains (styles ().active ());
-            });
-            if (spacer == null)
-                return true;
-            spacer.classList.remove (styles ().active ());
-            String uuid = event.getDataTransfer ().getData ("text");
-            Block blockToMove = matchBlock (uuid);
-            if (blockToMove == null)
-                return true;
-            if (blockToMove.getRootEl () == spacer.previousElementSibling)
-                return true;
-            if (blockToMove.getRootEl () == spacer.nextElementSibling)
-                return true;
-            // Here we need to clone the node. The reason being is that we need to keep
-            // event handlers in place.
-            Block clonedBlock = blockToMove.clone ();
-            blocks.remove (blockToMove);
-            domRemoveBlock (blockToMove);
-            if (spacer.nextElementSibling == null) {
-                // We are adding to the end.
-                activeBlock = null;
-                actionInsertNext (clonedBlock, true);
-            } else {
-                activeBlock = matchBlock(spacer.nextElementSibling.getAttribute ("uuid"));
-                actionInsertPrior (clonedBlock, true);
-            }
-            cascadeChangeAll ();
-            return true;
-        }
-
-        if (event.isEvent(UIEventType.DRAGSTART, UIEventType.DRAGEND)) {
-            // Clear all activate states.
-            DomSupport.forEach (holder, child -> {
-                if (child instanceof Element)
-                    ((Element) child).classList.remove (styles ().active ());
-            });
-            // Initialise or terminate the drag image.
-            Block blk = matchBlock(blockEl);
-            if (blk != null) {
-                lastMouseActivityBlock = blk;
-                if (event.isEvent(UIEventType.DRAGSTART)) {
-                    blk.dragStart (event);
-                    event.getDataTransfer ().setData ("text", blk.getUuid ());
-                } else {
-                    blk.dragEnd (event);
-                }
-            }
-            return false;
-        }
-
-        // These events need to be passed onto the relevent block regardless.
-        if (event.isEvent (UIEventType.ONMOUSEENTER, UIEventType.ONMOUSELEAVE, UIEventType.ONMOUSEMOVE)) {
-            // Check the last mouse activity block.
-            Block blk = matchBlock (blockEl);
-            if (blk != null) {
-                lastMouseActivityBlock = blk;
-                if (event.isEvent(UIEventType.ONMOUSEMOVE))
-                    blk.mouseMove ();
-                else if (event.isEvent(UIEventType.ONMOUSEENTER))
-                    blk.mouseEnter();
-                else
-                    blk.mouseLeave();
-            }
-            return false;
-        }
-
-        // On a focus or click event we need to find and activate the relevant block.
-        if (event.isEvent (UIEventType.ONFOCUS, UIEventType.ONCLICK, UIEventType.ONMOUSEDOWN)) {
-            // Obtain the block from the associated element.
-            Block blk = matchBlock (blockEl);
-            if (blk != null) {
-                // If this is the active block then we check for a click, we then delegate it to
-                // the block.
-                if (this.activeBlock == blk) {
-                    if (event.isEvent(UIEventType.ONCLICK)) {
-                        if (DebugMode.EVENT.set ())
-                            Logger.trace ("{editor-event::editor}", event.toString () + " -> dispatch to block");
-                        return activeBlock.handleEvent (event);
-                    }
-                }
-                // If it is not the active block then we check to see if we should activate it.
-                // Once active if it a click then we delegate (as above).
-                else if (blk.activationEvent (event)) {
-                    activate (blk, event.isEvent(UIEventType.ONMOUSEDOWN) ? -1 : 0);
-                    if (DebugMode.EVENT.set ())
-                        Logger.trace ("{editor-event::editor}", event.toString () + " -> activate block");
-                    if (event.isEvent(UIEventType.ONCLICK)) {
-                        if (DebugMode.EVENT.set ())
-                            Logger.trace ("{editor-event::editor}", event.toString () + " -> dispatch to block");
-                        return activeBlock.handleEvent (event);
-                    }
-                    return !blk.propagateActivationEvent(event);
-                }
-            }
-            return false;
-        }
-
-        if (activeBlock == null)
-            return false;
-        if (blockEl != activeBlock.getRootEl ())
-            return false;
-
-        if (DebugMode.EVENT.set () && !event.isEvent (UIEventType.ONMOUSEENTER, UIEventType.ONMOUSELEAVE, UIEventType.ONMOUSEMOVE))
-            Logger.trace ("{editor-event::editor}", event.toString () + " -> dispatch to block");
-        return activeBlock.handleEvent (event);
+    protected ILocalCSS styles() {
+        return LocalCSS.instance();
     }
 
-    private boolean activateRunning = false;
+    public static interface ILocalCSS extends IComponentCSS {
 
-    /**
-     * Activates the passed block using the passed length as a hint as to where to
-     * place the cursor.
-     * 
-     * @param <B>
-     * @param block
-     *               the block being activated (can be {@code null} if just
-     *               deactivating the current block).
-     * @param length
-     *               the hint to locate the cursor (if not relevant or known then
-     *               just use 0).
-     * @return the passed block.
-     */
-    protected <B extends Block> B activate(B block, int length) {
-        if (activateRunning)
-            return block;
-        try {
-            activateRunning = true;
-            if (block == this.activeBlock)
-                return block;
-            if (this.activeBlock != null)
-                this.activeBlock.deactivate ();
-            this.activeBlock = block;
-            if (this.activeBlock != null)
-                this.activeBlock.activate (Math.max (length, -1));
-            return block;
-        } finally {
-            activateRunning = false;
+        String block();
+
+        String listBullet();
+
+        String listNumber();
+
+        String variable();
+
+    }
+
+    @CssResource(value = {
+        IComponentCSS.COMPONENT_CSS
+    }, stylesheet = """
+        .component {
+            outline: none;
+            min-height: 2em;
+            cursor: text;
+            padding: 0.5em;
+            flex: 1;
+            overflow: auto;
         }
-    }
+        .component:focus {
+            outline: none;
+        }
+        .component .block {
+            margin: 0 0 0.15em 0;
+            padding: 2px 0;
+            min-height: 1em;
+            white-space: pre-wrap;
+        }
+        .component .listBullet {
+            position: relative;
+            padding-left: 1.5em;
+        }
+        .component .listBullet::before {
+            position: absolute;
+            left: 0.35em;
+            content: '\\2022';
+        }
+        .component .listNumber {
+            position: relative;
+            padding-left: 1.5em;
+        }
+        .component .listNumber::before {
+            position: absolute;
+            left: 0.15em;
+            content: attr(data-list-index) '.';
+        }
+        .component h1 {
+            font-size: 1.8em;
+            font-weight: 500;
+            margin: 0 0 0.15em 0;
+        }
+        .component h2 {
+            font-size: 1.5em;
+            font-weight: 500;
+            margin: 0 0 0.15em 0;
+        }
+        .component h3 {
+            font-size: 1.25em;
+            font-weight: 500;
+            margin: 0 0 0.15em 0;
+        }
+        .component p {
+            margin: 0 0 0.15em 0;
+        }
+        .component .indent1 { margin-left: 1.5em; }
+        .component .indent2 { margin-left: 3em; }
+        .component .indent3 { margin-left: 4.5em; }
+        .component .indent4 { margin-left: 6em; }
+        .component .indent5 { margin-left: 7.5em; }
+        .component .fmt_bold { font-weight: 600; }
+        .component .fmt_italic { font-style: italic; }
+        .component .fmt_underline { text-decoration: underline; }
+        .component .fmt_strike { text-decoration: line-through; }
+        .component .fmt_strike.fmt_underline { text-decoration: underline line-through; }
+        .component .fmt_superscript { vertical-align: super; font-size: 0.8em; }
+        .component .fmt_subscript { vertical-align: sub; font-size: 0.8em; }
+        .component .fmt_highlight { background-color: #F5EB72; }
+        .component .fmt_code {
+            font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace;
+            line-height: normal;
+            background: rgba(135,131,120,.15);
+            color: #EB5757;
+            border-radius: 4px;
+            font-size: 85%;
+            padding: 0.2em 0.4em;
+        }
+        .component .variable {
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            font-weight: 500;
+            display: inline;
+            user-select: all;
+            cursor: default;
+        }
+    """)
+    public static abstract class LocalCSS implements ILocalCSS {
 
-    public static interface IEditorCSS extends IDiagramBlockCSS, IEquationBlockCSS, INumberedListBlockCSS {
+        private static LocalCSS STYLES;
 
-        public String editor();
-
-        public String drag_image();
-
-        public String block();
-
-        public String content();
-
-        public String content_editable();
-
-        public String side_tool();
-
-        public String side_tool_move();
-
-        public String paragraph();
-
-        public String empty();
-
-        public String spacer();
-
-        public String active();
-
-        public String inline_tool();
-
-        public String inline_tool_show();
-
-        public String block_indent1();
-
-        public String block_indent2();
-
-        public String block_indent3();
-
-        public String block_indent4();
-
-        public String block_indent5();
-    }
-
-    /**
-     * Component CSS (standard pattern).
-     */
-    @CssResource({
-        "com/effacy/jui/text/ui/editor/Editor.css",
-        "com/effacy/jui/text/ui/editor/Editor_Override.css"
-    })
-    public static abstract class StandardEditorCSS implements IEditorCSS {
-
-        private static StandardEditorCSS STYLES;
-
-        public static IEditorCSS instance() {
+        public static ILocalCSS instance() {
             if (STYLES == null) {
-                STYLES = (StandardEditorCSS) GWT.create (StandardEditorCSS.class);
-                STYLES.ensureInjected ();
+                STYLES = (LocalCSS) GWT.create(LocalCSS.class);
+                STYLES.ensureInjected();
             }
             return STYLES;
         }

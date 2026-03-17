@@ -94,11 +94,30 @@ public class ProgressBar extends Fragment<ProgressBar> {
          */
         private Variant variant = Variant.STANDARD;
 
+        /**
+         * See {@link #barOnly(boolean)}.
+         */
+        private boolean barOnly;
+
+        /**
+         * See {@link #commentary(String)}.
+         */
         private String commentary;
 
+        /**
+         * See {@link #percentage(int)}.
+         */
         private int percentage = 0;
 
+        /**
+         * See {@link #width(Length)}.
+         */
         private Length width;
+
+        /**
+         * See {@link #barHeight(Length)}.
+         */
+        private Length barHeight;
 
         /**
          * The variant.
@@ -113,41 +132,96 @@ public class ProgressBar extends Fragment<ProgressBar> {
             return this;
         }
 
+        /**
+         * Whether to show only the bar without the percentage and commentary.
+         * 
+         * @param barOnly
+         *                whether to show only the bar.
+         * @return the fragment instance.
+         */
+        public ProgressBarFragment barOnly(boolean barOnly) {
+            this.barOnly = barOnly;
+            return this;
+        }
+
+        /**
+         * An optional commentary to show below the percentage.
+         * 
+         * @param commentary
+         *                   the commentary to show.
+         * @return the fragment instance.
+         */
         public ProgressBarFragment commentary(String commentary) {
             this.commentary = commentary;
             return this;
         }
 
+        /**
+         * The percentage to show in the bar and as text.
+         * 
+         * @param percentage
+         *                   the percentage to show.
+         * @return the fragment instance.
+         */
         public ProgressBarFragment percentage(int percentage) {
             this.percentage = percentage;
             return this;
         }
 
+        /**
+         * The maximum width to apply to the whole fragment or just the bar (see
+         * {@link Variant#widthOnBar()}).
+         * 
+         * @param width
+         *              the width to apply.
+         * @return the fragment instance.
+         */
         public ProgressBarFragment width(Length width) {
             this.width = width;
             return this;
         }
 
+        /**
+         * The height to apply to the bar.
+         * 
+         * @param height
+         *              the height to apply.
+         * @return the fragment instance.
+         */
+        public ProgressBarFragment barHeight(Length height) {
+            this.barHeight = height;
+            return this;
+        }
+
         @Override
         protected void buildInto(ElementBuilder root) {
+            // Set a bar height for the bar-only variant if not set explicitly, to avoid it
+            // being too thin.
+            if (barOnly && (barHeight == null))
+                barHeight = Length.em(1);
+            
             root.style("juiProgressBar", variant.style());
             if ((width != null) && !variant.widthOnBar())
                 root.css (CSS.MAX_WIDTH, width);
             Div.$ (root).style("juiProgressBar_bar").$ (bar -> {
                 if ((width != null) && variant.widthOnBar())
                     bar.css (CSS.MAX_WIDTH, width);
+                if (barHeight != null)
+                    bar.css(CSS.HEIGHT, barHeight);
                 Div.$ (bar).css("width: " + Math.max(0, percentage) + "%;");
             });
-            Div.$(root).style("juiProgressBar_info").$(info -> {
-                Div.$ (info).style("juiProgressBar_indicator").$ (
-                    Text.$(Math.max(0, percentage) + "%")
-                );
-                if (!StringSupport.empty(commentary)) {
-                    Div.$ (info).style("juiProgressBar_commentary").$ (
-                        Text.$(commentary)
+            if (!barOnly) {
+                Div.$(root).style("juiProgressBar_info").$(info -> {
+                    Div.$ (info).style("juiProgressBar_indicator").$ (
+                        Text.$(Math.max(0, percentage) + "%")
                     );
-                }
-            });
+                    if (!StringSupport.empty(commentary)) {
+                        Div.$ (info).style("juiProgressBar_commentary").$ (
+                            Text.$(commentary)
+                        );
+                    }
+                });
+            }
         }
     }
 

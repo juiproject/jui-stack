@@ -26,7 +26,6 @@ import com.effacy.jui.core.client.navigation.INavigationHandlerParent;
 import com.effacy.jui.core.client.navigation.NavigationSupport;
 import com.effacy.jui.platform.core.client.ApplicationEntryPoint;
 import com.effacy.jui.platform.util.client.ListSupport;
-import com.effacy.jui.text.ui.editor.DiagramBlock;
 
 import elemental2.dom.DomGlobal;
 
@@ -51,7 +50,7 @@ public class PlaygroundApp implements ApplicationEntryPoint {
         CachedDataRenderer.DEBUG = false;
 
         // Configuration.
-        DiagramBlock.BASE_URL = "/uml/";
+        //DiagramBlock.BASE_URL = "/uml/";
 
         // Setup the main application component.
         APP = new PlaygroundUI ();

@@ -33,6 +33,7 @@ public class Samples extends TabNavigator {
         tab ("containers", "Containers", new Containers ());
         tab ("interop", "Interoperability", new Interoperability ());
         tab ("remoting", "Remoting", new Remoting ());
+        tab ("markdown", "Markdown", new Markdown ());
     }
 
 }

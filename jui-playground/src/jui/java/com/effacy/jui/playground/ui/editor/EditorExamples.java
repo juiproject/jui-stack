@@ -21,9 +21,9 @@ import java.util.List;
 import com.effacy.jui.core.client.control.IControl.Value;
 import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.css.Length;
-import com.effacy.jui.text.type.markdown.MarkdownParser;
 import com.effacy.jui.text.ui.editor.Editor;
 import com.effacy.jui.text.ui.editor.EditorToolbar;
+import com.effacy.jui.text.type.FormattedText;
 import com.effacy.jui.text.ui.editor.FormattedTextEditor;
 import com.effacy.jui.text.ui.editor.LinkPanel;
 import com.effacy.jui.text.ui.editor.Tools;
@@ -271,7 +271,7 @@ x&=y         & w&=z             & a&=b+c\\\\
                        Tools.link(r -> Em.$(r).style(FontAwesome.link()), "Link", EditorExamples::filterLinks),
                        Tools.SEPARATOR,
                        Tools.variable("{}", "Variable", EditorExamples::filterVariables)))));
-        editor.setValue(Value.of(MarkdownParser.parse(SAMPLE_MARKDOWN3)));
+        editor.setValue(Value.of(FormattedText.markdown(SAMPLE_MARKDOWN3)));
     }
 
 }

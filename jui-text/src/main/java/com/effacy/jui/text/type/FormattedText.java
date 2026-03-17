@@ -23,6 +23,8 @@ import java.util.function.Function;
 
 import com.effacy.jui.json.annotation.JsonSerializable;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
+import com.effacy.jui.text.type.builder.FormattedTextBuilder;
+import com.effacy.jui.text.type.builder.markdown.MarkdownParser;
 
 /**
  * Captures text that is formatted in a rich content sense (i.e custom blocks of
@@ -52,7 +54,7 @@ public class FormattedText implements Iterable<FormattedBlock> {
      * @return the formatted text.
      */
     public static FormattedText markdown(Function<String,String> lineProcessor, String... content) {
-        return com.effacy.jui.text.type.markdown.MarkdownParser.parse(lineProcessor, content);
+        return new MarkdownParser().lineProcessor(lineProcessor).parse(new FormattedTextBuilder(), content);
     }
 
     /**

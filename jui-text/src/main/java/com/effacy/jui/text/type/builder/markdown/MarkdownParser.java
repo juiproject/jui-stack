@@ -13,94 +13,130 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
-package com.effacy.jui.text.type.markdown;
+package com.effacy.jui.text.type.builder.markdown;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
+import com.effacy.jui.text.type.builder.FormattedTextBuilder;
+import com.effacy.jui.text.type.builder.IEventBuilder;
+import com.effacy.jui.text.type.FormattedText;
 
 /**
- * Event-based markdown parser that emits structural events to an
- * {@link IMarkdownEventHandler} rather than building objects directly. This allows
- * different output representations (e.g. {@link FormattedText}, a DOM tree, an
- * HTML string) to be produced from the same parsing logic.
+ * Parses markdown content, emitting events to an {@link IEventBuilder}.
  * <p>
- * Supports the same syntax as {@link MarkdownParser}: headings, lists, tables,
- * bold, italic, strikethrough, code, links, and variables.
+ * Configure optional parameters then call {@link #parse(IEventBuilder, String...)}:
+ * <pre>
+ *   new MarkdownParser()
+ *       .partial(true)
+ *       .lineProcessor(line -&gt; line.trim())
+ *       .variableResolver(name -&gt; lookupValue(name))
+ *       .parse(handler, content);
+ * </pre>
+ * <p>
+ * Static convenience methods are provided for producing {@link FormattedText}
+ * directly:
+ * <pre>
+ *   FormattedText result = MarkdownParser.markdown("# Hello **world**");
+ * </pre>
  *
- * @see IMarkdownEventHandler
- * @see MarkdownParser
+ * @see IEventBuilder
+ * @see FormattedTextBuilder
  */
-public class MarkdownEventParser {
+public class MarkdownParser {
 
     /**
-     * Parses markdown content and emits events to the handler.
+     * Convenience to create a parser and perform a parse.
+     */
+    public static <T> T parse(Consumer<MarkdownParser> parser, IEventBuilder<T> handler, String... content) {
+        MarkdownParser markdownParser = new MarkdownParser();
+        if (parser != null)
+            parser.accept(markdownParser);
+        return markdownParser.parse(handler, content);
+    }
+
+    /************************************************************************
+     * Instance (builder) API
+     ************************************************************************/
+
+    /**
+     * See {@link #partial(boolean)}.
+     */
+    private boolean partial;
+
+    /**
+     * See {@link #lineProcessor(Function)}.
+     */
+    private Function<String, String> lineProcessor;
+
+    /**
+     * See {@link #variableResolver(Function)}.
+     */
+    private Function<String, String> variableResolver;
+
+    /**
+     * Marks the content as potentially incomplete (e.g. streaming). Unclosed
+     * format markers on the last line will be treated as formatting rather than
+     * literal text.
      *
+     * @param partial
+     *                {@code true} if the content may be incomplete.
+     * @return this parser for chaining.
+     */
+    public MarkdownParser partial(boolean partial) {
+        this.partial = partial;
+        return this;
+    }
+
+    /**
+     * Assigns a line processor that transforms each line before parsing.
+     *
+     * @param lineProcessor
+     *                      the line processor function.
+     * @return this parser for chaining.
+     */
+    public MarkdownParser lineProcessor(Function<String, String> lineProcessor) {
+        this.lineProcessor = lineProcessor;
+        return this;
+    }
+
+    /**
+     * Assigns a variable resolver that maps variable names to replacement text.
+     * When a {@code {{name}}} variable is encountered and the resolver returns a
+     * non-null value, the replacement text is emitted as plain text instead of a
+     * variable event. If the resolver returns {@code null}, the variable passes
+     * through unchanged.
+     *
+     * @param variableResolver
+     *                         the resolver function.
+     * @return this parser for chaining.
+     */
+    public MarkdownParser variableResolver(Function<String, String> variableResolver) {
+        this.variableResolver = variableResolver;
+        return this;
+    }
+
+    /**
+     * Parses the given markdown content blocks, emitting events to the handler.
+     *
+     * @param <T>
+     *                the type of the handler's result.
      * @param handler
-     *                the handler to receive events.
+     *                the handler to receive parse events.
      * @param content
      *                the markdown content blocks to parse.
+     * @return the handler's result.
      */
-    public static void parse(IMarkdownEventHandler handler, String... content) {
-        parse(handler, false, null, content);
-    }
-
-    /**
-     * Parses markdown content and emits events to the handler.
-     *
-     * @param handler
-     *                the handler to receive events.
-     * @param partial
-     *                {@code true} if the content may be incomplete (e.g. streaming).
-     *                Unclosed format markers on the last line will be treated as
-     *                formatting rather than literal text.
-     * @param content
-     *                the markdown content blocks to parse.
-     */
-    public static void parse(IMarkdownEventHandler handler, boolean partial, String... content) {
-        parse(handler, partial, null, content);
-    }
-
-    /**
-     * Parses markdown content with an optional line processor and emits events to
-     * the handler.
-     *
-     * @param handler
-     *                      the handler to receive events.
-     * @param lineProcessor
-     *                      optional function to process each line before parsing.
-     * @param content
-     *                      the markdown content blocks to parse.
-     */
-    public static void parse(IMarkdownEventHandler handler, Function<String, String> lineProcessor, String... content) {
-        parse(handler, false, lineProcessor, content);
-    }
-
-    /**
-     * Parses markdown content with an optional line processor and emits events to
-     * the handler.
-     *
-     * @param handler
-     *                      the handler to receive events.
-     * @param partial
-     *                      {@code true} if the content may be incomplete (e.g.
-     *                      streaming). Unclosed format markers on the last line will
-     *                      be treated as formatting rather than literal text.
-     * @param lineProcessor
-     *                      optional function to process each line before parsing.
-     * @param content
-     *                      the markdown content blocks to parse.
-     */
-    public static void parse(IMarkdownEventHandler handler, boolean partial, Function<String, String> lineProcessor, String... content) {
+    public <T> T parse(IEventBuilder<T> handler, String... content) {
         if ((handler == null) || (content == null) || (content.length == 0))
-            return;
-
-        // Join all content blocks with double newlines to preserve block separation.
+            return handler.result();
+        handler.commence();
         StringBuilder combined = new StringBuilder();
         for (int i = 0; i < content.length; i++) {
             if (content[i] != null) {
@@ -109,19 +145,33 @@ public class MarkdownEventParser {
                 combined.append(content[i]);
             }
         }
-
-        parseInternal(combined.toString(), lineProcessor, handler, partial);
+        parseBlocks(combined.toString(), lineProcessor, handler, partial);
+        return handler.result();
     }
 
     /************************************************************************
-     * Internal parsing.
+     * Block-level parsing.
      ************************************************************************/
 
-    private static void parseInternal(String markdown, Function<String, String> lineProcessor, IMarkdownEventHandler handler, boolean partial) {
+    private void parseBlocks(String markdown, Function<String, String> lineProcessor, IEventBuilder<?> handler, boolean partial) {
         if ((markdown == null) || markdown.isEmpty())
             return;
+        String[] rawParagraphs = markdown.split("\\n\\n+");
 
-        String[] paragraphs = markdown.split("\\n\\n+");
+        // Merge consecutive list-only paragraphs so that blank lines between
+        // list items do not restart the list numbering.
+        List<String> merged = new ArrayList<>();
+        for (String rp : rawParagraphs) {
+            if (rp.trim().isEmpty()) {
+                merged.add(rp);
+                continue;
+            }
+            if (!merged.isEmpty() && isListBlock(merged.get(merged.size() - 1).split("\\n")) && isListBlock(rp.split("\\n")))
+                merged.set(merged.size() - 1, merged.get(merged.size() - 1) + "\n" + rp);
+            else
+                merged.add(rp);
+        }
+        String[] paragraphs = merged.toArray(new String[0]);
 
         // Determine the index of the last non-empty paragraph for partial handling.
         int lastParaIndex = -1;
@@ -225,7 +275,7 @@ public class MarkdownEventParser {
      * Heading.
      ************************************************************************/
 
-    private static void emitHeading(IMarkdownEventHandler handler, String line, boolean partial) {
+    private void emitHeading(IEventBuilder<?> handler, String line, boolean partial) {
         String trimmed = line.trim();
         BlockType headingType = BlockType.PARA;
         String content = trimmed;
@@ -252,16 +302,6 @@ public class MarkdownEventParser {
      * List.
      ************************************************************************/
 
-    /**
-     * Finds the index of the first line that starts a contiguous list block
-     * within a paragraph. The list items must form an uninterrupted run —
-     * trailing non-list lines after the last list item are acceptable (they
-     * will be merged into the last item by the caller), but non-list lines
-     * interleaved among list items disqualify the match. Returns {@code -1}
-     * if no transition exists. Starts scanning at index 1 so that a block
-     * whose first line is already a list item (handled by
-     * {@link #isListBlock}) is not matched here.
-     */
     private static int findListTransition(String[] lines) {
         for (int i = 1; i < lines.length; i++) {
             if (lines[i].trim().isEmpty())
@@ -322,12 +362,25 @@ public class MarkdownEventParser {
         return false;
     }
 
-    private static void emitList(IMarkdownEventHandler handler, String[] lines, boolean partial) {
+    private void emitList(IEventBuilder<?> handler, String[] lines, boolean partial) {
         for (int l = 0; l < lines.length; l++) {
             if (lines[l].trim().isEmpty())
                 continue;
 
             boolean partialLine = partial && (l == lines.length - 1);
+
+            // Determine indent level from leading whitespace (4 spaces or 1 tab = 1 level).
+            int spaces = 0;
+            for (int i = 0; i < lines[l].length(); i++) {
+                if (lines[l].charAt(i) == ' ')
+                    spaces++;
+                else if (lines[l].charAt(i) == '\t')
+                    spaces += 4;
+                else
+                    break;
+            }
+            int indent = spaces / 4;
+
             String trimmed = lines[l].trim();
             String content = "";
             boolean ordered = false;
@@ -345,6 +398,8 @@ public class MarkdownEventParser {
 
             BlockType type = ordered ? BlockType.OLIST : BlockType.NLIST;
             handler.startBlock(type);
+            if (indent > 0)
+                handler.meta("indent", String.valueOf(indent));
             handler.startLine();
             emitLineContent(handler, content, partialLine);
             handler.endLine();
@@ -389,7 +444,7 @@ public class MarkdownEventParser {
         return trimmed.indexOf('-') >= 0;
     }
 
-    private static void emitTable(IMarkdownEventHandler handler, String[] lines, boolean partial) {
+    private void emitTable(IEventBuilder<?> handler, String[] lines, boolean partial) {
         String[] separatorCells = splitTableRow(lines[1]);
         int columns = separatorCells.length;
         String[] alignments = new String[columns];
@@ -417,10 +472,8 @@ public class MarkdownEventParser {
         }
         handler.meta("align", align.toString());
 
-        // Header row.
         emitTableRow(handler, lines[0], columns);
 
-        // Body rows (skip separator at index 1).
         for (int i = 2; i < lines.length; i++) {
             if (lines[i].trim().isEmpty())
                 continue;
@@ -430,7 +483,7 @@ public class MarkdownEventParser {
         handler.endBlock(BlockType.TABLE);
     }
 
-    private static void emitTableRow(IMarkdownEventHandler handler, String line, int columns) {
+    private void emitTableRow(IEventBuilder<?> handler, String line, int columns) {
         handler.startBlock(BlockType.TROW);
 
         String[] cells = splitTableRow(line);
@@ -463,21 +516,25 @@ public class MarkdownEventParser {
      * Inline content.
      ************************************************************************/
 
-    /**
-     * Emits inline content events for a single line of markdown text.
-     *
-     * @param handler
-     *                the handler to receive events.
-     * @param line
-     *                the line text.
-     * @param partial
-     *                {@code true} if this line may be incomplete. Unclosed format
-     *                markers will be treated as formatting rather than literal text.
-     */
-    private static void emitLineContent(IMarkdownEventHandler handler, String line, boolean partial) {
-        // Find links, variables, and format markers (same logic as MarkdownParser).
+    private void emitLineContent(IEventBuilder<?> handler, String line, boolean partial) {
         List<LinkInfo> links = findLinks(line);
         List<VariableInfo> variables = findVariables(line);
+
+        // Find *** (bold+italic) regions first and emit them directly,
+        // splitting the line into segments for normal processing.
+        List<int[]> boldItalicRegions = findBoldItalicRegions(line);
+        if (!boldItalicRegions.isEmpty()) {
+            int pos = 0;
+            for (int[] region : boldItalicRegions) {
+                if (region[0] > pos)
+                    emitLineContent(handler, line.substring(pos, region[0]), false);
+                handler.formatted(line.substring(region[0] + 3, region[1]), FormatType.BLD, FormatType.ITL);
+                pos = region[1] + 3;
+            }
+            if (pos < line.length())
+                emitLineContent(handler, line.substring(pos), partial);
+            return;
+        }
 
         List<FormatMarker> markers = new ArrayList<>();
         findMarkers(line, "**", FormatType.BLD, markers);
@@ -492,13 +549,11 @@ public class MarkdownEventParser {
 
         markers.sort((a, b) -> a.position - b.position);
 
-        // Emit events left-to-right.
         int textPos = 0;
         int i = 0;
         int linkIdx = 0;
         int varIdx = 0;
 
-        // Track the last unmatched opening marker for partial handling.
         FormatMarker lastUnmatched = null;
 
         while ((i < markers.size()) || (linkIdx < links.size()) || (varIdx < variables.size())) {
@@ -511,16 +566,18 @@ public class MarkdownEventParser {
             int varPos = (variable != null) ? variable.startPos : Integer.MAX_VALUE;
 
             if ((varPos <= startPos) && (varPos <= linkPos) && (variable != null)) {
-                // Emit text before variable.
                 if (variable.startPos > textPos)
                     handler.text(line.substring(textPos, variable.startPos));
 
-                handler.variable(variable.name, variable.meta);
+                String resolved = (variableResolver != null) ? variableResolver.apply(variable.name) : null;
+                if (resolved != null)
+                    handler.text(resolved);
+                else
+                    handler.variable(variable.name, variable.meta);
 
                 textPos = variable.endPos;
                 varIdx++;
             } else if ((linkPos <= startPos) && (link != null)) {
-                // Emit text before link.
                 if (link.startPos > textPos)
                     handler.text(line.substring(textPos, link.startPos));
 
@@ -532,11 +589,9 @@ public class MarkdownEventParser {
                 FormatMarker end = findMatchingEnd(markers, i);
 
                 if (end != null) {
-                    // Emit text before formatted region.
                     if (start.position > textPos)
                         handler.text(line.substring(textPos, start.position));
 
-                    // Emit formatted content.
                     int contentStart = start.position + start.marker.length();
                     int contentEnd = end.position;
                     handler.formatted(line.substring(contentStart, contentEnd), start.type);
@@ -544,7 +599,6 @@ public class MarkdownEventParser {
                     textPos = end.position + end.marker.length();
                     i = markers.indexOf(end) + 1;
                 } else {
-                    // No matching end — track for partial handling.
                     if (partial && (start.position >= textPos))
                         lastUnmatched = start;
                     i++;
@@ -552,13 +606,10 @@ public class MarkdownEventParser {
             }
         }
 
-        // Emit remaining text, applying partial formatting if applicable.
         if (textPos < line.length()) {
             if ((lastUnmatched != null) && (lastUnmatched.position >= textPos)) {
-                // Emit text before the unmatched marker.
                 if (lastUnmatched.position > textPos)
                     handler.text(line.substring(textPos, lastUnmatched.position));
-                // Emit content after the marker as formatted.
                 int contentStart = lastUnmatched.position + lastUnmatched.marker.length();
                 if (contentStart < line.length())
                     handler.formatted(line.substring(contentStart), lastUnmatched.type);
@@ -569,7 +620,7 @@ public class MarkdownEventParser {
     }
 
     /************************************************************************
-     * Inline helpers (same as MarkdownParser).
+     * Inline helpers.
      ************************************************************************/
 
     private static List<LinkInfo> findLinks(String line) {
@@ -651,10 +702,46 @@ public class MarkdownEventParser {
             } else if (c == '_') {
                 boolean prevUnderscore = (i > 0) && (line.charAt(i - 1) == '_');
                 boolean nextUnderscore = ((i + 1) < line.length()) && (line.charAt(i + 1) == '_');
-                if (!prevUnderscore && !nextUnderscore)
-                    markers.add(new FormatMarker(i, "_", FormatType.ITL));
+                if (prevUnderscore || nextUnderscore)
+                    continue;
+                boolean prevWord = (i > 0) && Character.isLetterOrDigit(line.charAt(i - 1));
+                boolean nextWord = ((i + 1) < line.length()) && Character.isLetterOrDigit(line.charAt(i + 1));
+                if (prevWord && nextWord)
+                    continue;
+                markers.add(new FormatMarker(i, "_", FormatType.ITL));
             }
         }
+    }
+
+    private static List<int[]> findBoldItalicRegions(String line) {
+        List<int[]> regions = new ArrayList<>();
+        int pos = 0;
+        while (pos < line.length() - 2) {
+            int start = line.indexOf("***", pos);
+            if (start == -1)
+                break;
+            boolean prevStar = (start > 0) && (line.charAt(start - 1) == '*');
+            int endRun = start + 3;
+            while ((endRun < line.length()) && (line.charAt(endRun) == '*'))
+                endRun++;
+            if (prevStar || ((endRun - start) != 3)) {
+                pos = endRun;
+                continue;
+            }
+            int close = line.indexOf("***", start + 3);
+            if (close == -1)
+                break;
+            int closeEnd = close + 3;
+            while ((closeEnd < line.length()) && (line.charAt(closeEnd) == '*'))
+                closeEnd++;
+            if ((closeEnd - close) != 3) {
+                pos = closeEnd;
+                continue;
+            }
+            regions.add(new int[] { start, close });
+            pos = close + 3;
+        }
+        return regions;
     }
 
     private static FormatMarker findMatchingEnd(List<FormatMarker> markers, int startIndex) {
@@ -745,5 +832,4 @@ public class MarkdownEventParser {
         }
         return true;
     }
-
 }

@@ -1,4 +1,4 @@
-package com.effacy.jui.text.type.markdown;
+package com.effacy.jui.text.type.builder.markdown;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -14,19 +14,19 @@ public class MarkdownParserTest {
 
     @Test
     public void testEmptyInput() {
-        FormattedText result = MarkdownParser.parse("");
+        FormattedText result = FormattedText.markdown("");
         assertTrue(result.getBlocks().isEmpty());
     }
 
     @Test
     public void testNullInput() {
-        FormattedText result = MarkdownParser.parse(null);
+        FormattedText result = FormattedText.markdown(null);
         assertTrue(result.getBlocks().isEmpty());
     }
 
     @Test
     public void testPlainText() {
-        FormattedText result = MarkdownParser.parse("Hello world");
+        FormattedText result = FormattedText.markdown("Hello world");
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
@@ -40,7 +40,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testBoldDoubleAsterisk() {
-        FormattedText result = MarkdownParser.parse("This is **bold** text");
+        FormattedText result = FormattedText.markdown("This is **bold** text");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("This is bold text", line.getText());
@@ -54,7 +54,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testBoldDoubleUnderscore() {
-        FormattedText result = MarkdownParser.parse("This is __bold__ text");
+        FormattedText result = FormattedText.markdown("This is __bold__ text");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("This is bold text", line.getText());
@@ -68,7 +68,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testItalicSingleAsterisk() {
-        FormattedText result = MarkdownParser.parse("This is *italic* text");
+        FormattedText result = FormattedText.markdown("This is *italic* text");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("This is italic text", line.getText());
@@ -82,7 +82,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testItalicSingleUnderscore() {
-        FormattedText result = MarkdownParser.parse("This is _italic_ text");
+        FormattedText result = FormattedText.markdown("This is _italic_ text");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("This is italic text", line.getText());
@@ -96,7 +96,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testStrikethrough() {
-        FormattedText result = MarkdownParser.parse("This is ~~strikethrough~~ text");
+        FormattedText result = FormattedText.markdown("This is ~~strikethrough~~ text");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("This is strikethrough text", line.getText());
@@ -110,7 +110,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testCode() {
-        FormattedText result = MarkdownParser.parse("This is `code` text");
+        FormattedText result = FormattedText.markdown("This is `code` text");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("This is code text", line.getText());
@@ -124,7 +124,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testMultipleFormatsInOneLine() {
-        FormattedText result = MarkdownParser.parse("This is **bold** and *italic* and `code`");
+        FormattedText result = FormattedText.markdown("This is **bold** and *italic* and `code`");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("This is bold and italic and code", line.getText());
@@ -151,7 +151,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testSingleNewlineWithinParagraph() {
-        FormattedText result = MarkdownParser.parse("Line one\nLine two");
+        FormattedText result = FormattedText.markdown("Line one\nLine two");
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
@@ -164,7 +164,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testDoubleNewlineCreatesParagraphs() {
-        FormattedText result = MarkdownParser.parse("Paragraph one\n\nParagraph two");
+        FormattedText result = FormattedText.markdown("Paragraph one\n\nParagraph two");
 
         assertEquals(2, result.getBlocks().size());
 
@@ -181,7 +181,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testTripleNewlineCreatesParagraphs() {
-        FormattedText result = MarkdownParser.parse("Paragraph one\n\n\nParagraph two");
+        FormattedText result = FormattedText.markdown("Paragraph one\n\n\nParagraph two");
 
         assertEquals(2, result.getBlocks().size());
         assertEquals("Paragraph one", result.getBlocks().get(0).getLines().get(0).getText());
@@ -190,7 +190,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testMultipleParagraphsWithMultipleLines() {
-        FormattedText result = MarkdownParser.parse("Line 1a\nLine 1b\n\nLine 2a\nLine 2b");
+        FormattedText result = FormattedText.markdown("Line 1a\nLine 1b\n\nLine 2a\nLine 2b");
 
         assertEquals(2, result.getBlocks().size());
 
@@ -207,7 +207,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testUnclosedBoldMarker() {
-        FormattedText result = MarkdownParser.parse("This is **unclosed");
+        FormattedText result = FormattedText.markdown("This is **unclosed");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         // Unclosed markers should be treated as literal text
@@ -217,7 +217,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testUnclosedItalicMarker() {
-        FormattedText result = MarkdownParser.parse("This is *unclosed");
+        FormattedText result = FormattedText.markdown("This is *unclosed");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("This is *unclosed", line.getText());
@@ -226,7 +226,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testEmptyBoldMarkers() {
-        FormattedText result = MarkdownParser.parse("This is **** empty");
+        FormattedText result = FormattedText.markdown("This is **** empty");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("This is  empty", line.getText());
@@ -240,7 +240,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testConsecutiveFormattedSections() {
-        FormattedText result = MarkdownParser.parse("**bold** *italic*");
+        FormattedText result = FormattedText.markdown("**bold** *italic*");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("bold italic", line.getText());
@@ -259,7 +259,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testFormattedTextAtStart() {
-        FormattedText result = MarkdownParser.parse("**bold** at start");
+        FormattedText result = FormattedText.markdown("**bold** at start");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("bold at start", line.getText());
@@ -273,7 +273,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testFormattedTextAtEnd() {
-        FormattedText result = MarkdownParser.parse("at end **bold**");
+        FormattedText result = FormattedText.markdown("at end **bold**");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("at end bold", line.getText());
@@ -287,7 +287,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testWholeLineFormatted() {
-        FormattedText result = MarkdownParser.parse("**entire line is bold**");
+        FormattedText result = FormattedText.markdown("**entire line is bold**");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("entire line is bold", line.getText());
@@ -302,7 +302,7 @@ public class MarkdownParserTest {
     @Test
     public void testMixedBoldMarkers() {
         // Markers must match - ** matches **, not __
-        FormattedText result = MarkdownParser.parse("**bold__ text");
+        FormattedText result = FormattedText.markdown("**bold__ text");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         // Should not format since markers don't match
@@ -312,7 +312,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testFormattingWithNewlines() {
-        FormattedText result = MarkdownParser.parse("**bold** text\n*italic* text");
+        FormattedText result = FormattedText.markdown("**bold** text\n*italic* text");
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
@@ -331,7 +331,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testEmptyLineWithinParagraph() {
-        FormattedText result = MarkdownParser.parse("Line one\n\nLine two");
+        FormattedText result = FormattedText.markdown("Line one\n\nLine two");
 
         // Double newline creates new paragraph, not empty line within paragraph
         assertEquals(2, result.getBlocks().size());
@@ -343,7 +343,7 @@ public class MarkdownParserTest {
                          "It has `code snippets` and ~~strikethrough~~ too.\n\n" +
                          "Second paragraph is **entirely bold**.";
 
-        FormattedText result = MarkdownParser.parse(markdown);
+        FormattedText result = FormattedText.markdown(markdown);
 
         assertEquals(2, result.getBlocks().size());
 
@@ -368,7 +368,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testOnlyWhitespace() {
-        FormattedText result = MarkdownParser.parse("   \n\n   ");
+        FormattedText result = FormattedText.markdown("   \n\n   ");
 
         // Whitespace-only paragraphs should be skipped
         assertTrue(result.getBlocks().isEmpty());
@@ -376,7 +376,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testSpecialCharactersInText() {
-        FormattedText result = MarkdownParser.parse("Text with **special & < > chars**");
+        FormattedText result = FormattedText.markdown("Text with **special & < > chars**");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("Text with special & < > chars", line.getText());
@@ -385,7 +385,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testHeadingH1() {
-        FormattedText result = MarkdownParser.parse("# Main Heading");
+        FormattedText result = FormattedText.markdown("# Main Heading");
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
@@ -396,7 +396,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testHeadingH2() {
-        FormattedText result = MarkdownParser.parse("## Section Heading");
+        FormattedText result = FormattedText.markdown("## Section Heading");
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
@@ -407,7 +407,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testHeadingH3() {
-        FormattedText result = MarkdownParser.parse("### Subsection Heading");
+        FormattedText result = FormattedText.markdown("### Subsection Heading");
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
@@ -418,7 +418,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testHeadingWithFormatting() {
-        FormattedText result = MarkdownParser.parse("# This is **bold** heading");
+        FormattedText result = FormattedText.markdown("# This is **bold** heading");
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
@@ -432,7 +432,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testMultipleHeadings() {
-        FormattedText result = MarkdownParser.parse("# Title\n\n## Section 1\n\nSome text\n\n## Section 2");
+        FormattedText result = FormattedText.markdown("# Title\n\n## Section 1\n\nSome text\n\n## Section 2");
 
         assertEquals(4, result.getBlocks().size());
 
@@ -451,7 +451,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testHeadingWithWhitespace() {
-        FormattedText result = MarkdownParser.parse("  ## Heading with leading spaces  ");
+        FormattedText result = FormattedText.markdown("  ## Heading with leading spaces  ");
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
@@ -462,7 +462,7 @@ public class MarkdownParserTest {
     @Test
     public void testInvalidHeading() {
         // Heading markers without space should not be treated as headings
-        FormattedText result = MarkdownParser.parse("#NoSpace");
+        FormattedText result = FormattedText.markdown("#NoSpace");
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
@@ -473,7 +473,7 @@ public class MarkdownParserTest {
     @Test
     public void testHashInMiddleOfLine() {
         // # in the middle of line should not create a heading
-        FormattedText result = MarkdownParser.parse("This is # not a heading");
+        FormattedText result = FormattedText.markdown("This is # not a heading");
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
@@ -483,7 +483,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testUnorderedListDash() {
-        FormattedText result = MarkdownParser.parse("- Item 1\n- Item 2\n- Item 3");
+        FormattedText result = FormattedText.markdown("- Item 1\n- Item 2\n- Item 3");
 
         // Each list item is now a separate block
         assertEquals(3, result.getBlocks().size());
@@ -506,7 +506,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testUnorderedListAsterisk() {
-        FormattedText result = MarkdownParser.parse("* First\n* Second\n* Third");
+        FormattedText result = FormattedText.markdown("* First\n* Second\n* Third");
 
         // Each list item is now a separate block
         assertEquals(3, result.getBlocks().size());
@@ -523,7 +523,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testUnorderedListPlus() {
-        FormattedText result = MarkdownParser.parse("+ Alpha\n+ Beta\n+ Gamma");
+        FormattedText result = FormattedText.markdown("+ Alpha\n+ Beta\n+ Gamma");
 
         // Each list item is now a separate block
         assertEquals(3, result.getBlocks().size());
@@ -540,7 +540,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testOrderedList() {
-        FormattedText result = MarkdownParser.parse("1. First item\n2. Second item\n3. Third item");
+        FormattedText result = FormattedText.markdown("1. First item\n2. Second item\n3. Third item");
 
         // Each list item is now a separate block
         assertEquals(3, result.getBlocks().size());
@@ -557,7 +557,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testListWithFormatting() {
-        FormattedText result = MarkdownParser.parse("- This is **bold**\n- This is *italic*\n- This is `code`");
+        FormattedText result = FormattedText.markdown("- This is **bold**\n- This is *italic*\n- This is `code`");
 
         // Each list item is now a separate block
         assertEquals(3, result.getBlocks().size());
@@ -589,7 +589,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testListSeparatedFromParagraph() {
-        FormattedText result = MarkdownParser.parse("This is a paragraph.\n\n- Item 1\n- Item 2\n\nAnother paragraph.");
+        FormattedText result = FormattedText.markdown("This is a paragraph.\n\n- Item 1\n- Item 2\n\nAnother paragraph.");
 
         // Now we have: 1 paragraph + 2 list items + 1 paragraph = 4 blocks
         assertEquals(4, result.getBlocks().size());
@@ -617,7 +617,7 @@ public class MarkdownParserTest {
                          "- Feature `three`\n\n" +
                          "Conclusion.";
 
-        FormattedText result = MarkdownParser.parse(markdown);
+        FormattedText result = FormattedText.markdown(markdown);
 
         // Now: H1 + PARA + H2 + 3 NLIST items + PARA = 7 blocks
         assertEquals(7, result.getBlocks().size());
@@ -646,7 +646,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testListItemWithMultipleWords() {
-        FormattedText result = MarkdownParser.parse("- This is a longer list item with many words");
+        FormattedText result = FormattedText.markdown("- This is a longer list item with many words");
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
@@ -657,7 +657,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testOrderedListWithDifferentNumbers() {
-        FormattedText result = MarkdownParser.parse("1. First\n5. Fifth\n10. Tenth");
+        FormattedText result = FormattedText.markdown("1. First\n5. Fifth\n10. Tenth");
 
         // Each list item is now a separate block
         assertEquals(3, result.getBlocks().size());
@@ -674,7 +674,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testVarargsWithMultipleContentBlocks() {
-        FormattedText result = MarkdownParser.parse("First block", "Second block", "Third block");
+        FormattedText result = FormattedText.markdown("First block", "Second block", "Third block");
 
         assertEquals(3, result.getBlocks().size());
         assertEquals(BlockType.PARA, result.getBlocks().get(0).getType());
@@ -689,7 +689,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testVarargsWithNullValues() {
-        FormattedText result = MarkdownParser.parse("First block", null, "Third block");
+        FormattedText result = FormattedText.markdown("First block", null, "Third block");
 
         assertEquals(2, result.getBlocks().size());
         assertEquals("First block", result.getBlocks().get(0).getLines().get(0).getText());
@@ -698,7 +698,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testLineProcessorUppercase() {
-        FormattedText result = MarkdownParser.parse(
+        FormattedText result = FormattedText.markdown(
             line -> line.toUpperCase(),
             "Hello world",
             "This is **bold**"
@@ -711,7 +711,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testLineProcessorFiltering() {
-        FormattedText result = MarkdownParser.parse(
+        FormattedText result = FormattedText.markdown(
             line -> line.startsWith("#") ? null : line,
             "Keep this line",
             "# Filter this line",
@@ -726,7 +726,7 @@ public class MarkdownParserTest {
 
     @Test
     public void testLineProcessorWithPrefixRemoval() {
-        FormattedText result = MarkdownParser.parse(
+        FormattedText result = FormattedText.markdown(
             line -> line.startsWith("> ") ? line.substring(2) : line,
             "> This is a quote",
             "> **Bold quote**"
@@ -758,7 +758,7 @@ This is *some* supporting **guidance**:
 * Guidance 2
 """;
 
-        FormattedText result = MarkdownParser.parse(markdown);
+        FormattedText result = FormattedText.markdown(markdown);
 
         // Now we have 3 blocks: 1 paragraph + 2 list items (each is a separate block)
         assertEquals(3, result.getBlocks().size());
@@ -804,7 +804,7 @@ This is *some* supporting **guidance**:
                          "* This has `code` formatting\n" +
                          "* This has ~~strikethrough~~ text";
 
-        FormattedText result = MarkdownParser.parse(markdown);
+        FormattedText result = FormattedText.markdown(markdown);
 
         // Each list item is now a separate block
         assertEquals(4, result.getBlocks().size());
@@ -848,7 +848,7 @@ This is *some* supporting **guidance**:
                          "This paragraph has `code` and ~~strikethrough~~.\n\n" +
                          "This paragraph has **bold _and_ italic** combined.";
 
-        FormattedText result = MarkdownParser.parse(markdown);
+        FormattedText result = FormattedText.markdown(markdown);
 
         assertEquals(3, result.getBlocks().size());
 
@@ -884,7 +884,7 @@ This is *some* supporting **guidance**:
                          "- Point **two**\n" +
                          "- Point `three`";
 
-        FormattedText result = MarkdownParser.parse(markdown);
+        FormattedText result = FormattedText.markdown(markdown);
 
         // Now: H2 + PARA + 3 NLIST items = 5 blocks
         assertEquals(5, result.getBlocks().size());
@@ -939,7 +939,7 @@ This is *some* supporting **guidance**:
                          "### Subsection\n\n" +
                          "More **important** details.";
 
-        FormattedText result = MarkdownParser.parse(markdown);
+        FormattedText result = FormattedText.markdown(markdown);
 
         // Now: H1 + PARA + H2 + PARA + 2 NLIST items + H3 + PARA = 8 blocks
         assertEquals(8, result.getBlocks().size());
@@ -985,7 +985,7 @@ This is *some* supporting **guidance**:
                          "* Guidance 1\n" +
                          "* Guidance 2";
 
-        FormattedText result = MarkdownParser.parse(markdown);
+        FormattedText result = FormattedText.markdown(markdown);
         String debug = result.debug();
 
         // Verify debug output contains key structural information
@@ -1018,7 +1018,7 @@ This is *some* supporting **guidance**:
         String markdown = "# Heading\n\n" +
                          "Text with **bold** and *italic* and `code`.";
 
-        FormattedText result = MarkdownParser.parse(markdown);
+        FormattedText result = FormattedText.markdown(markdown);
         String debug = result.debug();
 
         // Verify all blocks are shown
@@ -1036,7 +1036,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testSimpleLink() {
-        FormattedText result = MarkdownParser.parse("Click [here](https://example.com) for more.");
+        FormattedText result = FormattedText.markdown("Click [here](https://example.com) for more.");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("Click here for more.", line.getText());
@@ -1051,7 +1051,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testLinkAtStart() {
-        FormattedText result = MarkdownParser.parse("[Google](https://google.com) is a search engine.");
+        FormattedText result = FormattedText.markdown("[Google](https://google.com) is a search engine.");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("Google is a search engine.", line.getText());
@@ -1066,7 +1066,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testLinkAtEnd() {
-        FormattedText result = MarkdownParser.parse("Visit [our site](https://example.org)");
+        FormattedText result = FormattedText.markdown("Visit [our site](https://example.org)");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("Visit our site", line.getText());
@@ -1081,7 +1081,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testMultipleLinks() {
-        FormattedText result = MarkdownParser.parse("See [link1](http://one.com) and [link2](http://two.com).");
+        FormattedText result = FormattedText.markdown("See [link1](http://one.com) and [link2](http://two.com).");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("See link1 and link2.", line.getText());
@@ -1102,7 +1102,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testLinkWithBoldText() {
-        FormattedText result = MarkdownParser.parse("This is **bold** and [a link](http://example.com).");
+        FormattedText result = FormattedText.markdown("This is **bold** and [a link](http://example.com).");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("This is bold and a link.", line.getText());
@@ -1122,7 +1122,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testLinkBeforeBoldText() {
-        FormattedText result = MarkdownParser.parse("[link](http://example.com) and **bold**.");
+        FormattedText result = FormattedText.markdown("[link](http://example.com) and **bold**.");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("link and bold.", line.getText());
@@ -1142,7 +1142,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testLinkInListItem() {
-        FormattedText result = MarkdownParser.parse("- Check [this](http://example.com) out");
+        FormattedText result = FormattedText.markdown("- Check [this](http://example.com) out");
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
@@ -1161,7 +1161,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testLinkInHeading() {
-        FormattedText result = MarkdownParser.parse("# Check [the docs](http://docs.com)");
+        FormattedText result = FormattedText.markdown("# Check [the docs](http://docs.com)");
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
@@ -1181,7 +1181,7 @@ This is *some* supporting **guidance**:
     @Test
     public void testIncompleteLinkNotParsed() {
         // Missing closing parenthesis
-        FormattedText result = MarkdownParser.parse("This is [incomplete](http://example.com text");
+        FormattedText result = FormattedText.markdown("This is [incomplete](http://example.com text");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("This is [incomplete](http://example.com text", line.getText());
@@ -1191,7 +1191,7 @@ This is *some* supporting **guidance**:
     @Test
     public void testBracketsWithoutLinkNotParsed() {
         // Brackets not followed by parentheses
-        FormattedText result = MarkdownParser.parse("This is [not a link] here.");
+        FormattedText result = FormattedText.markdown("This is [not a link] here.");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("This is [not a link] here.", line.getText());
@@ -1200,7 +1200,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testLinkWithEmptyLabel() {
-        FormattedText result = MarkdownParser.parse("Click [](http://example.com) here.");
+        FormattedText result = FormattedText.markdown("Click [](http://example.com) here.");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("Click  here.", line.getText());
@@ -1215,7 +1215,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testLinkWithEmptyUrl() {
-        FormattedText result = MarkdownParser.parse("Click [label]() here.");
+        FormattedText result = FormattedText.markdown("Click [label]() here.");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("Click label here.", line.getText());
@@ -1230,7 +1230,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testLinkWithSpecialCharactersInUrl() {
-        FormattedText result = MarkdownParser.parse("See [docs](http://example.com/path?query=value&other=1#anchor).");
+        FormattedText result = FormattedText.markdown("See [docs](http://example.com/path?query=value&other=1#anchor).");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("See docs.", line.getText());
@@ -1242,7 +1242,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testConsecutiveLinks() {
-        FormattedText result = MarkdownParser.parse("[one](http://one.com)[two](http://two.com)");
+        FormattedText result = FormattedText.markdown("[one](http://one.com)[two](http://two.com)");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("onetwo", line.getText());
@@ -1261,7 +1261,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testLinkOnlyLine() {
-        FormattedText result = MarkdownParser.parse("[Click me](http://example.com)");
+        FormattedText result = FormattedText.markdown("[Click me](http://example.com)");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("Click me", line.getText());
@@ -1280,7 +1280,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testSimpleVariable() {
-        FormattedText result = MarkdownParser.parse("Hello {{name}}!");
+        FormattedText result = FormattedText.markdown("Hello {{name}}!");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("Hello !", line.getText());
@@ -1294,7 +1294,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testVariableAtStart() {
-        FormattedText result = MarkdownParser.parse("{{greeting}} World!");
+        FormattedText result = FormattedText.markdown("{{greeting}} World!");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals(" World!", line.getText());
@@ -1308,7 +1308,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testVariableAtEnd() {
-        FormattedText result = MarkdownParser.parse("Hello {{name}}");
+        FormattedText result = FormattedText.markdown("Hello {{name}}");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("Hello ", line.getText());
@@ -1322,7 +1322,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testMultipleVariables() {
-        FormattedText result = MarkdownParser.parse("Dear {{title}} {{name}},");
+        FormattedText result = FormattedText.markdown("Dear {{title}} {{name}},");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("Dear  ,", line.getText());
@@ -1341,7 +1341,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testVariableWithMetadata() {
-        FormattedText result = MarkdownParser.parse("Value: {{amount;format=currency;precision=2}}");
+        FormattedText result = FormattedText.markdown("Value: {{amount;format=currency;precision=2}}");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("Value: ", line.getText());
@@ -1358,7 +1358,7 @@ This is *some* supporting **guidance**:
     @Test
     public void testVariableNameWithSpecialChars() {
         // Test variable name with dashes, underscores, periods, dollar signs, and colons
-        FormattedText result = MarkdownParser.parse("{{user-name_field.value$type:id}}");
+        FormattedText result = FormattedText.markdown("{{user-name_field.value$type:id}}");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("", line.getText());
@@ -1370,7 +1370,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testVariableWithBoldText() {
-        FormattedText result = MarkdownParser.parse("This is **bold** and {{variable}} text.");
+        FormattedText result = FormattedText.markdown("This is **bold** and {{variable}} text.");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("This is bold and  text.", line.getText());
@@ -1391,7 +1391,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testVariableWithLink() {
-        FormattedText result = MarkdownParser.parse("Hello {{name}}, visit [our site](http://example.com).");
+        FormattedText result = FormattedText.markdown("Hello {{name}}, visit [our site](http://example.com).");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("Hello , visit our site.", line.getText());
@@ -1414,7 +1414,7 @@ This is *some* supporting **guidance**:
     @Test
     public void testInvalidVariableNameIgnored() {
         // Variable names cannot contain spaces
-        FormattedText result = MarkdownParser.parse("Hello {{invalid name}}!");
+        FormattedText result = FormattedText.markdown("Hello {{invalid name}}!");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         // Invalid variable should be left as literal text
@@ -1424,7 +1424,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testEmptyVariableIgnored() {
-        FormattedText result = MarkdownParser.parse("Hello {{}}!");
+        FormattedText result = FormattedText.markdown("Hello {{}}!");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         // Empty variable should be left as literal text
@@ -1434,7 +1434,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testUnclosedVariableIgnored() {
-        FormattedText result = MarkdownParser.parse("Hello {{name!");
+        FormattedText result = FormattedText.markdown("Hello {{name!");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         // Unclosed variable should be left as literal text
@@ -1444,7 +1444,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testVariableInListItem() {
-        FormattedText result = MarkdownParser.parse("- Item for {{user}}");
+        FormattedText result = FormattedText.markdown("- Item for {{user}}");
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
@@ -1460,7 +1460,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testVariableInHeading() {
-        FormattedText result = MarkdownParser.parse("# Welcome {{user}}");
+        FormattedText result = FormattedText.markdown("# Welcome {{user}}");
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
@@ -1476,7 +1476,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testVariableMetadataWithPeriodInFieldName() {
-        FormattedText result = MarkdownParser.parse("{{value;field.name=test}}");
+        FormattedText result = FormattedText.markdown("{{value;field.name=test}}");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("", line.getText());
@@ -1489,7 +1489,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testVariableMetadataWithSpecialCharsInValue() {
-        FormattedText result = MarkdownParser.parse("{{date;format=yyyy-MM-dd HH:mm:ss}}");
+        FormattedText result = FormattedText.markdown("{{date;format=yyyy-MM-dd HH:mm:ss}}");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("", line.getText());
@@ -1502,7 +1502,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testVariableSequenceReturnsVariable() {
-        FormattedText result = MarkdownParser.parse("Hello {{name}}!");
+        FormattedText result = FormattedText.markdown("Hello {{name}}!");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         var segments = line.sequence();
@@ -1526,7 +1526,7 @@ This is *some* supporting **guidance**:
     @Test
     public void testVariableWithInvalidChars() {
         // Variable names cannot contain special characters like @, #, etc.
-        FormattedText result = MarkdownParser.parse("{{invalid@name}}");
+        FormattedText result = FormattedText.markdown("{{invalid@name}}");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         // Should be treated as literal text since @ is not a valid variable character
@@ -1536,7 +1536,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testConsecutiveVariables() {
-        FormattedText result = MarkdownParser.parse("{{first}}{{second}}");
+        FormattedText result = FormattedText.markdown("{{first}}{{second}}");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("", line.getText());
@@ -1553,7 +1553,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testVariableOnlyLine() {
-        FormattedText result = MarkdownParser.parse("{{username}}");
+        FormattedText result = FormattedText.markdown("{{username}}");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("", line.getText());
@@ -1567,7 +1567,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testVariableInsideLink() {
-        FormattedText result = MarkdownParser.parse("Hello, visit [our site named {{site-name}}](http://example.com).");
+        FormattedText result = FormattedText.markdown("Hello, visit [our site named {{site-name}}](http://example.com).");
 
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         // The link label includes the variable syntax literally since variables inside links
@@ -1589,7 +1589,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testSimpleTable() {
-        FormattedText result = MarkdownParser.parse(
+        FormattedText result = FormattedText.markdown(
             "| Name | Age |\n" +
             "|------|-----|\n" +
             "| Alice | 30 |\n" +
@@ -1628,7 +1628,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testTableAlignment() {
-        FormattedText result = MarkdownParser.parse(
+        FormattedText result = FormattedText.markdown(
             "| Left | Center | Right |\n" +
             "|:-----|:------:|------:|\n" +
             "| a | b | c |"
@@ -1642,7 +1642,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testTableWithInlineFormatting() {
-        FormattedText result = MarkdownParser.parse(
+        FormattedText result = FormattedText.markdown(
             "| Header |\n" +
             "|--------|\n" +
             "| **bold** and *italic* |"
@@ -1671,7 +1671,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testTableWithEmptyCells() {
-        FormattedText result = MarkdownParser.parse(
+        FormattedText result = FormattedText.markdown(
             "| A | B | C |\n" +
             "|---|---|---|\n" +
             "| x |   | z |"
@@ -1688,7 +1688,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testTableFewerCellsThanColumns() {
-        FormattedText result = MarkdownParser.parse(
+        FormattedText result = FormattedText.markdown(
             "| A | B | C |\n" +
             "|---|---|---|\n" +
             "| x |"
@@ -1710,7 +1710,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testTableWithSurroundingContent() {
-        FormattedText result = MarkdownParser.parse(
+        FormattedText result = FormattedText.markdown(
             "Some text before.\n\n" +
             "| Col1 | Col2 |\n" +
             "|------|------|\n" +
@@ -1726,7 +1726,7 @@ This is *some* supporting **guidance**:
 
     @Test
     public void testTableWithLink() {
-        FormattedText result = MarkdownParser.parse(
+        FormattedText result = FormattedText.markdown(
             "| Link |\n" +
             "|------|\n" +
             "| [click](http://example.com) |"

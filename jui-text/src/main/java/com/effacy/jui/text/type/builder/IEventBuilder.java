@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
-package com.effacy.jui.text.type.markdown;
+package com.effacy.jui.text.type.builder;
 
 import java.util.Map;
 
@@ -21,11 +21,12 @@ import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
 
 /**
- * Receives events during markdown parsing. Implementations can use these events
- * to build any target representation (e.g. {@code FormattedText}, a DOM tree,
- * HTML string, etc.).
+ * Receives events (i.e. during markdown parsing). Implementations can use these
+ * events to build any target representation (e.g. {@code FormattedText}, a DOM
+ * tree, HTML string, etc.).
  * <p>
  * Events are emitted in a hierarchical, balanced order:
+ * 
  * <pre>
  *   startBlock(PARA)
  *     startLine()
@@ -35,7 +36,9 @@ import com.effacy.jui.text.type.FormattedLine.FormatType;
  *     endLine()
  *   endBlock(PARA)
  * </pre>
+ * 
  * For tables the hierarchy is nested:
+ * 
  * <pre>
  *   startBlock(TABLE)
  *     meta("columns", "2")
@@ -56,7 +59,24 @@ import com.effacy.jui.text.type.FormattedLine.FormatType;
  *   endBlock(TABLE)
  * </pre>
  */
-public interface IMarkdownEventHandler {
+public interface IEventBuilder<T> {
+
+    /**
+     * Called when parsing starts, before any events are emitted. Implementations
+     * can use this to reset state, allowing the handler to be reused across
+     * multiple parse invocations.
+     */
+    default void commence() {
+        // No-op by default.
+    }
+
+    /**
+     * The result of parsing, built from the events. This will only be called once,
+     * after all events have been emitted.
+     *
+     * @return the parsing result.
+     */
+    T result();
 
     /**
      * Called when a block begins.
@@ -110,10 +130,10 @@ public interface IMarkdownEventHandler {
      *
      * @param text
      *              the text content (with markers stripped).
-     * @param format
-     *              the format applied.
+     * @param formats
+     *              the formats applied (e.g. BLD, or BLD and ITL for bold-italic).
      */
-    void formatted(String text, FormatType format);
+    void formatted(String text, FormatType... formats);
 
     /**
      * Called for a link within a line.

@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
-package com.effacy.jui.text.type.markdown;
+package com.effacy.jui.text.type.builder;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -24,22 +24,22 @@ import com.effacy.jui.text.type.FormattedBlock;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
+import com.effacy.jui.text.type.builder.markdown.MarkdownParser;
 import com.effacy.jui.text.type.FormattedText;
 
 /**
- * An {@link IMarkdownEventHandler} implementation that builds a
+ * An {@link IEventBuilder} implementation that builds a
  * {@link FormattedText} from parsing events.
  * <p>
  * Usage:
  * <pre>
  * FormattedTextMarkdownHandler handler = new FormattedTextMarkdownHandler();
- * MarkdownEventParser.parse(handler, "# Title\n\nSome **bold** text.");
- * FormattedText result = handler.result();
+ * FormattedText result = new MarkdownParser().parse(handler, "# Title\n\nSome **bold** text.");
  * </pre>
  *
- * @see MarkdownEventParser
+ * @see MarkdownParser
  */
-public class FormattedTextMarkdownHandler implements IMarkdownEventHandler {
+public class FormattedTextBuilder implements IEventBuilder<FormattedText> {
 
     /**
      * Parses multiple markdown content blocks into a FormattedText object.
@@ -96,26 +96,42 @@ public class FormattedTextMarkdownHandler implements IMarkdownEventHandler {
      * @return the formatted text
      */
     public static FormattedText parse(boolean partial, Function<String, String> lineProcessor, String... content) {
-        FormattedTextMarkdownHandler handler = new FormattedTextMarkdownHandler();
-        MarkdownEventParser.parse(handler, partial, lineProcessor, content);
-        return handler.result();
+        return new MarkdownParser()
+            .partial(partial)
+            .lineProcessor(lineProcessor)
+            .parse(new FormattedTextBuilder(), content);
     }
 
     /************************************************************************
      * Implementation
      ************************************************************************/
 
+    /**
+     * The formatted text being built from the parsing events. Always
+     * non-{@code null} but initially empty until {@link #commence()} is called.
+     */
     private FormattedText text = new FormattedText();
 
+    /**
+     * Stack of open blocks. Always non-empty during parsing, with the root block at
+     * the bottom and the current innermost block at the top. Initially empty until
+     * {@link #commence()} is called.
+     */
     private Deque<FormattedBlock> blockStack = new ArrayDeque<>();
-    
-    private FormattedLine currentLine;
 
     /**
-     * Returns the built result.
-     *
-     * @return the formatted text.
+     * The current line being built from the parsing events.
      */
+    private FormattedLine currentLine;
+
+    @Override
+    public void commence() {
+        text = new FormattedText();
+        blockStack.clear();
+        currentLine = null;
+    }
+
+    @Override
     public FormattedText result() {
         return text;
     }
@@ -157,16 +173,16 @@ public class FormattedTextMarkdownHandler implements IMarkdownEventHandler {
     }
 
     @Override
-    public void formatted(String text, FormatType format) {
+    public void formatted(String text, FormatType... formats) {
         if ((text == null) || text.isEmpty()) {
             // Zero-length format (e.g. "****") — must build directly since
             // FormattedLine.append() ignores empty text.
             currentLine.getFormatting().add(
-                new FormattedLine.Format(currentLine.length(), 0, format)
+                new FormattedLine.Format(currentLine.length(), 0, formats)
             );
             return;
         }
-        currentLine.append(text, format);
+        currentLine.append(text, formats);
     }
 
     @Override

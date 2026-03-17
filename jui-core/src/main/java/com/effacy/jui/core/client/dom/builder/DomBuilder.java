@@ -557,6 +557,18 @@ public class DomBuilder {
      * @return the element.
      */
     @SafeVarargs
+    public static ElementBuilder pre(Consumer<ElementBuilder>... configurer) {
+        return custom ("pre", configurer);
+    }
+
+    /**
+     * Inserts a standard DOM element.
+     * 
+     * @param configurer
+     *                   configurer(s) for the newly created element.
+     * @return the element.
+     */
+    @SafeVarargs
     public static ElementBuilder span(Consumer<ElementBuilder>... configurer) {
         return custom ("span", configurer);
     }
@@ -722,6 +734,20 @@ public class DomBuilder {
     @SafeVarargs
     public static ElementBuilder tr(Consumer<ElementBuilder>... configurer) {
         return custom ("tr", configurer);
+    }
+
+    /**
+     * Inserts a standard DOM element.
+     * 
+     * @param configurer
+     *                   configurer(s) for the newly created element.
+     * @param nodes
+     *                   (optional) nodes to append.
+     * @return the element.
+     */
+    @SafeVarargs
+    public static ElementBuilder tt(Consumer<ElementBuilder>... configurer) {
+        return custom ("tt", configurer);
     }
 
     /**

@@ -1,6 +1,7 @@
-package com.effacy.jui.text.type.markdown;
+package com.effacy.jui.text.type.builder.markdown;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,11 +14,13 @@ import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
 import com.effacy.jui.text.type.FormattedText;
+import com.effacy.jui.text.type.builder.FormattedTextBuilder;
+import com.effacy.jui.text.type.builder.IEventBuilder;
 
 /**
- * Tests for {@link MarkdownEventParser}. Verifies both the event sequence
- * (using a recording handler) and the {@link MarkdownEventParser.FormattedTextHandler}
- * (by comparing output to {@link MarkdownParser}).
+ * Tests for {@link MarkdownParser}. Verifies both the event sequence
+ * (using a recording handler) and the {@link FormattedTextBuilder}
+ * (by comparing output to {@link MarkdownParser#parseToFormattedText(String...)}).
  */
 public class MarkdownEventParserTest {
 
@@ -134,7 +137,7 @@ public class MarkdownEventParserTest {
 
     @Test
     public void testLineProcessor() {
-        FormattedText expected = MarkdownParser.parse(line -> line.trim(), "  # Title  ");
+        FormattedText expected = FormattedText.markdown(line -> line.trim(), "  # Title  ");
         FormattedText actual = parseToFormattedText(line -> line.trim(), "  # Title  ");
         assertFormattedTextEquals(expected, actual);
     }
@@ -564,7 +567,9 @@ public class MarkdownEventParserTest {
     @Test
     public void testPartialFormattedText() {
         // Verify FormattedText output with partial mode.
-        FormattedText result = MarkdownParser.parse(true, "Hello **bold");
+        FormattedTextBuilder handler = new FormattedTextBuilder();
+        new MarkdownParser().partial(true).parse(handler, "Hello **bold");
+        FormattedText result = handler.result();
         assertEquals(1, result.getBlocks().size());
         FormattedLine line = result.getBlocks().get(0).getLines().get(0);
         assertEquals("Hello bold", line.getText());
@@ -606,19 +611,15 @@ public class MarkdownEventParserTest {
      ************************************************************************/
 
     private FormattedText parseToFormattedText(String... content) {
-        FormattedTextMarkdownHandler handler = new FormattedTextMarkdownHandler();
-        MarkdownEventParser.parse(handler, content);
-        return handler.result();
+        return new MarkdownParser().parse(new FormattedTextBuilder(), content);
     }
 
     private FormattedText parseToFormattedText(java.util.function.Function<String, String> lineProcessor, String... content) {
-        FormattedTextMarkdownHandler handler = new FormattedTextMarkdownHandler();
-        MarkdownEventParser.parse(handler, lineProcessor, content);
-        return handler.result();
+        return new MarkdownParser().lineProcessor(lineProcessor).parse(new FormattedTextBuilder(), content);
     }
 
     private void assertParityWithMarkdownParser(String markdown) {
-        FormattedText expected = MarkdownParser.parse(markdown);
+        FormattedText expected = FormattedText.markdown(markdown);
         FormattedText actual = parseToFormattedText(markdown);
         assertFormattedTextEquals(expected, actual);
     }
@@ -659,20 +660,20 @@ public class MarkdownEventParserTest {
 
     private RecordingHandler parse(String markdown) {
         RecordingHandler handler = new RecordingHandler();
-        MarkdownEventParser.parse(handler, markdown);
+        new MarkdownParser().parse(handler, markdown);
         return handler;
     }
 
     private RecordingHandler parsePartial(String markdown) {
         RecordingHandler handler = new RecordingHandler();
-        MarkdownEventParser.parse(handler, true, markdown);
+        new MarkdownParser().partial(true).parse(handler, markdown);
         return handler;
     }
 
     /**
      * Handler that records all events as strings for assertion.
      */
-    private static class RecordingHandler implements IMarkdownEventHandler {
+    private static class RecordingHandler implements IEventBuilder<List<String>> {
 
         List<String> events = new ArrayList<>();
 
@@ -707,8 +708,11 @@ public class MarkdownEventParserTest {
         }
 
         @Override
-        public void formatted(String text, FormatType format) {
-            events.add("formatted(" + text + ", " + format + ")");
+        public void formatted(String text, FormatType... formats) {
+            if (formats.length == 1)
+                events.add("formatted(" + text + ", " + formats[0] + ")");
+            else
+                events.add("formatted(" + text + ", " + java.util.Arrays.toString(formats) + ")");
         }
 
         @Override
@@ -719,6 +723,11 @@ public class MarkdownEventParserTest {
         @Override
         public void variable(String name, Map<String, String> meta) {
             events.add("variable(" + name + ", " + meta + ")");
+        }
+
+        @Override
+        public List<String> result() {
+            return events;
         }
 
         void assertEvents(String... expected) {

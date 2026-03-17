@@ -13,67 +13,53 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
-package com.effacy.jui.text.ui.type.markdown;
+package com.effacy.jui.text.ui.type.builder;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
+import java.util.function.Function;
 
-import com.effacy.jui.core.client.dom.builder.A;
-import com.effacy.jui.core.client.dom.builder.Br;
-import com.effacy.jui.core.client.dom.builder.Custom;
-import com.effacy.jui.core.client.dom.builder.ElementBuilder;
-import com.effacy.jui.core.client.dom.builder.H1;
-import com.effacy.jui.core.client.dom.builder.H2;
-import com.effacy.jui.core.client.dom.builder.H3;
-import com.effacy.jui.core.client.dom.builder.H4;
-import com.effacy.jui.core.client.dom.builder.H5;
-import com.effacy.jui.core.client.dom.builder.H6;
-import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
-import com.effacy.jui.core.client.dom.builder.P;
-import com.effacy.jui.core.client.dom.builder.Span;
-import com.effacy.jui.core.client.dom.builder.Table;
-import com.effacy.jui.core.client.dom.builder.Td;
-import com.effacy.jui.core.client.dom.builder.Text;
-import com.effacy.jui.core.client.dom.builder.Th;
-import com.effacy.jui.core.client.dom.builder.Tr;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
-import com.effacy.jui.text.type.markdown.IMarkdownEventHandler;
+import com.effacy.jui.text.type.builder.IEventBuilder;
 import com.effacy.jui.text.ui.type.FormattedTextStyles;
 
+import elemental2.dom.DomGlobal;
+import elemental2.dom.Element;
+import elemental2.dom.HTMLAnchorElement;
+import elemental2.dom.HTMLElement;
+import elemental2.dom.Node;
+
 /**
- * An {@link IMarkdownEventHandler} that builds into a JUI
- * {@link IDomInsertableContainer}. This is the builder-pattern counterpart of
- * {@link Elemental2MarkdownHandler} — it produces the same DOM structure but
- * via declarative JUI builders rather than direct Elemental2 manipulation.
+ * An {@link IEventBuilder} that builds directly into an Elemental2 DOM
+ * element. This is useful for streaming scenarios where content is parsed
+ * incrementally and rendered directly into the DOM without an intermediate
+ * model.
  * <p>
- * Typical usage inside a fragment or component build method:
+ * Usage:
  * <pre>
- * DomBuilderMarkdownHandler handler = new DomBuilderMarkdownHandler(parent)
+ * Elemental2MarkdownHandler handler = new Elemental2MarkdownHandler(rootEl)
  *     .topHeadingLevel(3);
- * MarkdownParser.parse(handler, markdownContent);
+ * MarkdownParser.parse(handler, true, streamedContent);
  * </pre>
  * <p>
- * The caller should apply the CSS class {@code juiFragFText} to the parent
- * element for block-level spacing and indent styles.
+ * The caller should add the CSS class {@code juiFragFText} to the root element
+ * for block-level spacing and indent styles.
  *
- * @see IMarkdownEventHandler
- * @see Elemental2MarkdownHandler
- * @see FText
- * @see FLine
+ * @see IEventBuilder
  */
-public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
+public class Elemental2Builder implements IEventBuilder<Element> {
 
     /**
-     * The root container to build into.
+     * The root element to build into.
      */
-    private IDomInsertableContainer<?> root;
+    private Element root;
 
     /**
-     * Stack of containers for nested block context.
+     * Stack of elements for nested block context.
      */
-    private Deque<IDomInsertableContainer<?>> stack = new ArrayDeque<>();
+    private Deque<Element> stack = new ArrayDeque<>();
 
     /**
      * The heading level that markdown H1 maps to (default 1).
@@ -121,11 +107,11 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
     private boolean semanticLists;
 
     /**
-     * Stack of list wrapper ({@code <ul>} or {@code <ol>}) builders
+     * Stack of list wrapper ({@code <ul>} or {@code <ol>}) elements
      * representing the current list nesting depth. Only used when
      * {@link #semanticLists} is enabled.
      */
-    private Deque<ElementBuilder> ulStack = new ArrayDeque<>();
+    private Deque<Element> ulStack = new ArrayDeque<>();
 
     /**
      * Current list nesting depth (0-based). {@code -1} when not inside a list.
@@ -139,17 +125,17 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
     private boolean listOrdered;
 
     /**
-     * The most recently created {@code <li>} builder. Used as the parent for
-     * nested list elements when indent increases.
+     * The most recently created {@code <li>} element. Used as the parent for
+     * nested {@code <ul>} elements when indent increases.
      */
-    private ElementBuilder lastLi;
+    private Element lastLi;
 
     /**
-     * A {@code <li>} builder that has been created but not yet inserted into a
-     * list wrapper. Set in {@link #startBlock} for NLIST/OLIST and resolved in
+     * A {@code <li>} element that has been created but not yet attached to the
+     * DOM. Set in {@link #startBlock} for NLIST and resolved in
      * {@link #startLine} once the indent is known.
      */
-    private ElementBuilder pendingLi;
+    private Element pendingLi;
 
     /**
      * The indent level for the pending list item (from meta).
@@ -162,13 +148,29 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
     private boolean pendingOrdered;
 
     /**
-     * Construct with the root container to build into.
+     * Optional URL mapper applied to link URLs before rendering. When set, the
+     * mapper receives the original URL and returns a (possibly revised) URL.
+     */
+    private Function<String, String> urlMapper;
+
+    /**
+     * Construct with the root element to build into.
      *
      * @param root
-     *             the target container.
+     *             the target element.
      */
-    public DomBuilderMarkdownHandler(IDomInsertableContainer<?> root) {
+    public Elemental2Builder(Element root) {
         this.root = root;
+    }
+
+    /**
+     * Returns the root element, which will have content appended directly to it or
+     * its descendants as events are handled.
+     *
+     * @return the root element.
+     */
+    public Element result() {
+        return root;
     }
 
     /**
@@ -179,7 +181,7 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
      *              the level (1–6).
      * @return this handler for chaining.
      */
-    public DomBuilderMarkdownHandler topHeadingLevel(int level) {
+    public Elemental2Builder topHeadingLevel(int level) {
         this.topHeadingLevel = Math.max(1, Math.min(6, level));
         return this;
     }
@@ -194,7 +196,7 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
      *                     {@code true} to use semantic tags.
      * @return this handler for chaining.
      */
-    public DomBuilderMarkdownHandler semanticTags(boolean semanticTags) {
+    public Elemental2Builder semanticTags(boolean semanticTags) {
         this.semanticTags = semanticTags;
         return this;
     }
@@ -209,8 +211,22 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
      *                      {@code true} to use semantic list elements.
      * @return this handler for chaining.
      */
-    public DomBuilderMarkdownHandler semanticLists(boolean semanticLists) {
+    public Elemental2Builder semanticLists(boolean semanticLists) {
         this.semanticLists = semanticLists;
+        return this;
+    }
+
+    /**
+     * Registers a URL mapper that is applied to link URLs before rendering.
+     * The mapper receives the original URL and returns a (possibly revised)
+     * URL which is then processed normally.
+     *
+     * @param urlMapper
+     *                  the mapper function.
+     * @return this handler for chaining.
+     */
+    public Elemental2Builder urlMapper(Function<String, String> urlMapper) {
+        this.urlMapper = urlMapper;
         return this;
     }
 
@@ -227,66 +243,68 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
             }
         }
 
-        IDomInsertableContainer<?> target = currentTarget();
-        ElementBuilder el;
+        Element el;
         switch (type) {
             case PARA:
-                el = P.$(target);
+                el = createElement("p");
                 break;
             case NLIST:
             case OLIST:
                 if (semanticLists) {
-                    // Create a detached <li> — it will be inserted into the
+                    // Create a detached <li> — it will be attached to the
                     // correct <ol>/<ul> in resolveListItem() once the indent
                     // is known (from meta).
-                    ElementBuilder li = Custom.$("li");
-                    pendingLi = li;
+                    el = createElement("li");
+                    pendingLi = el;
                     pendingIndent = 0;
                     pendingOrdered = (type == BlockType.OLIST);
-                    stack.push(li);
+                    stack.push(el);
                     firstLineInBlock = true;
                     return;
                 }
-                el = P.$(target);
+                el = createElement("p");
                 break;
             case H1:
-                el = h(target, topHeadingLevel);
+                el = createHeading(topHeadingLevel);
                 break;
             case H2:
-                el = h(target, topHeadingLevel + 1);
+                el = createHeading(topHeadingLevel + 1);
                 break;
             case H3:
-                el = h(target, topHeadingLevel + 2);
+                el = createHeading(topHeadingLevel + 2);
                 break;
             case TABLE:
-                el = Table.$(target);
+                el = createElement("table");
                 tableHeaders = 0;
                 tableAlign = null;
                 tableRowIndex = 0;
                 break;
             case TROW:
-                el = Tr.$(target);
+                el = createElement("tr");
                 tableCellIndex = 0;
                 break;
             case TCELL: {
                 boolean isHeader = (tableRowIndex < tableHeaders);
-                el = isHeader ? Th.$(target) : Td.$(target);
+                el = createElement(isHeader ? "th" : "td");
                 if ((tableAlign != null) && (tableCellIndex < tableAlign.length)) {
                     String align = tableAlign[tableCellIndex];
                     if ("C".equals(align))
-                        el.css("text-align", "center");
+                        ((HTMLElement) el).style.set("text-align", "center");
                     else if ("R".equals(align))
-                        el.css("text-align", "right");
+                        ((HTMLElement) el).style.set("text-align", "right");
                 }
                 break;
             }
             default:
-                el = Span.$(target);
+                el = createElement("div");
                 break;
         }
         String[] styles = FormattedTextStyles.BLOCK_STYLES.get(type);
-        if (styles != null)
-            el.style(styles);
+        if (styles != null) {
+            for (String s : styles)
+                el.classList.add(s);
+        }
+        currentTarget().appendChild(el);
         stack.push(el);
         firstLineInBlock = true;
     }
@@ -295,9 +313,9 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
     public void endBlock(BlockType type) {
         if (pendingLi != null)
             resolveListItem();
-        if (type == BlockType.TROW)
+        if (type == TROW)
             tableRowIndex++;
-        if (type == BlockType.TCELL)
+        if (type == TCELL)
             tableCellIndex++;
         stack.pop();
     }
@@ -317,8 +335,8 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
                 int indent = Integer.parseInt(value);
                 if (pendingLi != null) {
                     pendingIndent = indent;
-                } else if ((indent > 0) && (stack.peek() instanceof ElementBuilder)) {
-                    ((ElementBuilder) stack.peek()).style("indent" + indent);
+                } else if (indent > 0) {
+                    stack.peek().classList.add("indent" + indent);
                 }
             } catch (NumberFormatException e) {
                 // Ignore.
@@ -330,8 +348,10 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
     public void startLine() {
         if (pendingLi != null)
             resolveListItem();
-        if (!firstLineInBlock)
-            Br.$(currentTarget());
+        if (!firstLineInBlock) {
+            Element br = createElement("br");
+            currentTarget().appendChild(br);
+        }
         firstLineInBlock = false;
     }
 
@@ -342,86 +362,100 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
 
     @Override
     public void text(String text) {
-        Text.$(currentTarget(), text);
+        currentTarget().appendChild(DomGlobal.document.createTextNode(text));
     }
 
     @Override
-    public void formatted(String text, FormatType format) {
-        // Try semantic tag first when enabled.
+    public void formatted(String text, FormatType... formats) {
         if (semanticTags) {
-            String tag = FormattedTextStyles.SEMANTIC_TAGS.get(format);
-            if (tag != null) {
-                ElementBuilder el = Custom.$(currentTarget(), tag);
+            // Build nested semantic tags for each format.
+            Node target = currentTarget();
+            boolean handled = false;
+            for (FormatType format : formats) {
+                String tag = FormattedTextStyles.SEMANTIC_TAGS.get(format);
+                if (tag != null) {
+                    Element el = createElement(tag);
+                    target.appendChild(el);
+                    target = el;
+                    handled = true;
+                }
+            }
+            if (handled) {
                 if ((text != null) && !text.isEmpty())
-                    el.text(text);
+                    target.appendChild(DomGlobal.document.createTextNode(text));
                 return;
             }
         }
-        // Fall back to <span> with CSS class.
-        String css = FormattedTextStyles.LINE_STYLES.get(format);
-        if (css == null) {
+        // Fall back to <span> with CSS classes.
+        boolean hasStyle = false;
+        Element span = null;
+        for (FormatType format : formats) {
+            String css = FormattedTextStyles.LINE_STYLES.get(format);
+            if (css != null) {
+                if (span == null)
+                    span = createElement("span");
+                span.classList.add("fmt_" + css);
+                hasStyle = true;
+            }
+        }
+        if (!hasStyle) {
             text(text);
             return;
         }
-        ElementBuilder span = Span.$(currentTarget());
-        span.style("fmt_" + css);
         if ((text != null) && !text.isEmpty())
-            span.text(text);
+            span.appendChild(DomGlobal.document.createTextNode(text));
+        currentTarget().appendChild(span);
     }
 
     @Override
     public void link(String label, String url) {
-        IDomInsertableContainer<?> target = currentTarget();
-        if ((url == null) || url.isEmpty()) {
-            ElementBuilder a = A.$(target);
-            if ((label != null) && !label.isEmpty())
-                a.text(label);
-        } else if (url.startsWith("http")) {
-            ElementBuilder a = A.$(target, url);
-            a.attr("target", "_blank");
-            if ((label != null) && !label.isEmpty())
-                a.text(label);
-        } else {
-            ElementBuilder a = A.$(target, url);
-            if ((label != null) && !label.isEmpty())
-                a.text(label);
+        HTMLAnchorElement a = (HTMLAnchorElement) createElement("a");
+        if ((url != null) && !url.isEmpty()) {
+            if (urlMapper != null)
+                url = urlMapper.apply(url);
+            a.href = url;
+            if (!url.startsWith("#"))
+                a.target = "_blank";
         }
+        if ((label != null) && !label.isEmpty())
+            a.appendChild(DomGlobal.document.createTextNode(label));
+        currentTarget().appendChild(a);
     }
 
     @Override
     public void variable(String name, Map<String, String> meta) {
-        Text.$(currentTarget(), name);
+        currentTarget().appendChild(DomGlobal.document.createTextNode(name));
     }
 
     /************************************************************************
      * Internal helpers
      ************************************************************************/
 
+    private static final BlockType TROW = BlockType.TROW;
+    private static final BlockType TCELL = BlockType.TCELL;
+
     /**
-     * Returns the current target container for appending content.
+     * Returns the current target element for appending content.
      */
-    private IDomInsertableContainer<?> currentTarget() {
+    private Element currentTarget() {
         if (stack.isEmpty())
             return root;
         return stack.peek();
     }
 
     /**
-     * Creates a heading element for the given level (capped at 6) and inserts
-     * it into the given parent.
+     * Creates a heading element for the given level (capped at 6).
      */
-    private ElementBuilder h(IDomInsertableContainer<?> parent, int level) {
-        if (level <= 1)
-            return H1.$(parent);
-        if (level == 2)
-            return H2.$(parent);
-        if (level == 3)
-            return H3.$(parent);
-        if (level == 4)
-            return H4.$(parent);
-        if (level == 5)
-            return H5.$(parent);
-        return H6.$(parent);
+    private Element createHeading(int level) {
+        int capped = Math.min(6, Math.max(1, level));
+        return createElement("h" + capped);
+    }
+
+    /**
+     * Creates an element by tag name.
+     */
+    private Element createElement(String tag) {
+        return (Element) DomGlobal.document.createElement(tag);
     }
 
     /************************************************************************
@@ -429,16 +463,16 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
      ************************************************************************/
 
     /**
-     * Attaches the pending {@code <li>} to the correct list wrapper based on
-     * the indent level. Creates or removes nesting as needed.
+     * Attaches the pending {@code <li>} to the correct {@code <ul>} based on
+     * the indent level. Creates or removes {@code <ul>} nesting as needed.
      */
     private void resolveListItem() {
         String listTag = pendingOrdered ? "ol" : "ul";
         if (ulStack.isEmpty()) {
-            // First item — create the root <ol>/<ul> and insert into parent.
-            ElementBuilder ul = Custom.$(listTag);
-            IDomInsertableContainer<?> li = stack.pop();
-            currentTarget().insert(ul);
+            // First item — create the root <ol>/<ul> and append to parent.
+            Element ul = createElement(listTag);
+            Element li = stack.pop();
+            currentTarget().appendChild(ul);
             stack.push(li);
             ulStack.push(ul);
             listDepth = 0;
@@ -447,11 +481,11 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
 
         // Increase nesting: create nested <ol>/<ul> inside the last <li>.
         while (listDepth < pendingIndent) {
-            ElementBuilder ul = Custom.$(listTag);
+            Element ul = createElement(listTag);
             if (lastLi != null)
-                lastLi.insert(ul);
+                lastLi.appendChild(ul);
             else
-                ulStack.peek().insert(ul);
+                ulStack.peek().appendChild(ul);
             ulStack.push(ul);
             listDepth++;
         }
@@ -463,7 +497,7 @@ public class DomBuilderMarkdownHandler implements IMarkdownEventHandler {
         }
 
         // Attach <li> to the current <ul>.
-        ulStack.peek().insert(pendingLi);
+        ulStack.peek().appendChild(pendingLi);
         lastLi = pendingLi;
         pendingLi = null;
     }

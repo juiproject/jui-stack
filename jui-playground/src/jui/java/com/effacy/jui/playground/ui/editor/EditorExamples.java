@@ -269,6 +269,7 @@ x&=y         & w&=z             & a&=b+c\\\\
                        Tools.SEPARATOR,
                        Tools.TABLE, Tools.EQUATION, Tools.DIAGRAM, Tools.SEPARATOR,
                        Tools.link(r -> Em.$(r).style(FontAwesome.link()), "Link", EditorExamples::filterLinks),
+                       Tools.image(r -> Em.$(r).style(FontAwesome.image()), "Image", null, 0) ,
                        Tools.SEPARATOR,
                        Tools.variable("{}", "Variable", EditorExamples::filterVariables)))));
         editor.setValue(Value.of(FormattedText.markdown(SAMPLE_MARKDOWN3)));

@@ -91,4 +91,24 @@ public interface IEditorCommands {
      *             the display label for the variable.
      */
     void applyVariable(String name, String label);
+
+    /**
+     * Returns the image src at the current cursor position, or {@code null}
+     * if the cursor is not inside an image. Call {@link #syncSelection()}
+     * first to ensure the selection is up to date.
+     */
+    String currentImage();
+
+    /**
+     * Applies an inline image at the current selection.
+     *
+     * @param src
+     *            the image source URL.
+     */
+    void applyImage(String src);
+
+    /**
+     * Removes the image at the current selection.
+     */
+    void removeImage();
 }

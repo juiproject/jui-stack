@@ -388,6 +388,22 @@ public class Editor extends Component<Editor.Config> {
                 syncSelectionFromDom();
                 applyTransaction(Commands.insertVariable(state, name, label));
             }
+
+            @Override
+            public String currentImage() {
+                syncSelectionFromDom();
+                return extractImageSrc(state.selection());
+            }
+
+            @Override
+            public void applyImage(String src) {
+                applyTransaction(Commands.insertImage(state, src));
+            }
+
+            @Override
+            public void removeImage() {
+                applyTransaction(Commands.removeImage(state));
+            }
         };
     }
 
@@ -436,6 +452,18 @@ public class Editor extends Component<Editor.Config> {
                 parent.appendChild(DomGlobal.document.createTextNode(""));
             } else if (segment.formatting().length == 0) {
                 parent.appendChild(DomGlobal.document.createTextNode(segment.text()));
+            } else if (segment.image()) {
+                Element img = DomGlobal.document.createElement("img");
+                String src = segment.meta().get(FormattedLine.META_IMAGE);
+                if ((src != null) && !src.isEmpty())
+                    img.setAttribute("src", src);
+                String alt = segment.text();
+                if ((alt != null) && !alt.isEmpty())
+                    img.setAttribute("alt", alt);
+                img.setAttribute("contenteditable", "false");
+                img.classList.add(styles().inlineImage());
+                parent.appendChild(img);
+                parent.appendChild(DomGlobal.document.createTextNode(""));
             } else if (segment.contains(FormatType.A)) {
                 Element a = DomGlobal.document.createElement("a");
                 String href = segment.link();
@@ -621,6 +649,27 @@ public class Editor extends Component<Editor.Config> {
         return null;
     }
 
+    private String extractImageSrc(Selection sel) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int blockIdx = sel.anchorBlock();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+        FormattedBlock blk = blocks.get(blockIdx);
+        int target = sel.anchorOffset();
+        int lineStart = 0;
+        for (FormattedLine line : blk.getLines()) {
+            for (FormattedLine.Format fmt : line.getFormatting()) {
+                int absStart = lineStart + fmt.getIndex();
+                if ((absStart == target) && fmt.getFormats().contains(FormatType.IMG)) {
+                    if (fmt.getMeta() != null)
+                        return fmt.getMeta().get(FormattedLine.META_IMAGE);
+                }
+            }
+            lineStart += line.length() + 1;
+        }
+        return null;
+    }
+
     /**
      * Applies a transaction, pushes inverse to history, and re-renders.
      * Calls {@link IBlockHandler#beforeApplyTransaction} on all handlers first
@@ -791,9 +840,14 @@ public class Editor extends Component<Editor.Config> {
                     applyTransaction(Commands.forceJoinWithPrevious(state));
                     break;
                 }
-                // Atomic variable deletion: if cursor is inside or at the
-                // end of a variable, delete the entire variable as a unit.
                 if (sel2.isCursor()) {
+                    // Atomic image deletion: if cursor is at an image, remove it.
+                    if (findImageAt(sel2.anchorBlock(), sel2.anchorOffset())) {
+                        applyTransaction(Commands.removeImage(state));
+                        break;
+                    }
+                    // Atomic variable deletion: if cursor is inside or at the
+                    // end of a variable, delete the entire variable as a unit.
                     int[] varRange = findVariableContaining(sel2.anchorBlock(), sel2.anchorOffset());
                     if (varRange != null) {
                         state.setSelection(Selection.range(sel2.anchorBlock(), varRange[0], sel2.anchorBlock(), varRange[1]));
@@ -805,10 +859,15 @@ public class Editor extends Component<Editor.Config> {
                 break;
             }
             case "deleteContentForward": {
-                // Atomic variable deletion: if cursor is inside or at the
-                // start of a variable, delete the entire variable as a unit.
                 Selection selFwd = state.selection();
                 if (selFwd.isCursor()) {
+                    // Atomic image deletion: if cursor is at an image, remove it.
+                    if (findImageAt(selFwd.anchorBlock(), selFwd.anchorOffset())) {
+                        applyTransaction(Commands.removeImage(state));
+                        break;
+                    }
+                    // Atomic variable deletion: if cursor is inside or at the
+                    // start of a variable, delete the entire variable as a unit.
                     int[] varRange = findVariableAt(selFwd.anchorBlock(), selFwd.anchorOffset());
                     if (varRange != null) {
                         state.setSelection(Selection.range(selFwd.anchorBlock(), varRange[0], selFwd.anchorBlock(), varRange[1]));
@@ -930,6 +989,26 @@ public class Editor extends Component<Editor.Config> {
         return null;
     }
 
+    /**
+     * Returns {@code true} if there is a zero-length IMG format at the given
+     * offset in the block.
+     */
+    private boolean findImageAt(int blockIdx, int offset) {
+        FormattedBlock blk = state.doc().getBlocks().get(blockIdx);
+        int lineStart = 0;
+        for (FormattedLine line : blk.getLines()) {
+            for (FormattedLine.Format fmt : line.getFormatting()) {
+                if (!fmt.getFormats().contains(FormatType.IMG))
+                    continue;
+                int absStart = lineStart + fmt.getIndex();
+                if (absStart == offset)
+                    return true;
+            }
+            lineStart += line.length() + 1;
+        }
+        return false;
+    }
+
     /************************************************************************
      * Handler registry helpers.
      ************************************************************************/
@@ -1047,6 +1126,8 @@ public class Editor extends Component<Editor.Config> {
 
         String variable();
 
+        String inlineImage();
+
     }
 
     @CssResource(value = {
@@ -1136,6 +1217,13 @@ public class Editor extends Component<Editor.Config> {
             font-weight: 500;
             display: inline;
             user-select: all;
+            cursor: default;
+        }
+        .component .inlineImage {
+            max-width: 100%;
+            height: auto;
+            vertical-align: middle;
+            border-radius: 4px;
             cursor: default;
         }
     """)

@@ -45,6 +45,11 @@ public class FormattedLine {
     public static final String META_VARIABLE = "variable";
 
     /**
+     * Meta-data key for image source URL.
+     */
+    public static final String META_IMAGE = "src";
+
+    /**
      * Various format types that can be applied in the line.
      */
     public enum FormatType {
@@ -358,6 +363,17 @@ public class FormattedLine {
         }
 
         /**
+         * Determines if this segment represents an inline image. When
+         * {@code true}, the image source URL is available via
+         * {@code meta().get(META_IMAGE)}.
+         *
+         * @return {@code true} if this is an image segment.
+         */
+        public boolean image() {
+            return contains(FormatType.IMG);
+        }
+
+        /**
          * Meta-data associated with the segment.
          * 
          * @return any metadata.
@@ -535,12 +551,17 @@ public class FormattedLine {
                 if (fmt.index > idx)
                     result.add (new TextSegment (text.substring(idx, fmt.index), null, null));
                 TextSegment segment;
+                String imageSrc = (fmt.getMeta() != null) ? fmt.getMeta().get(META_IMAGE) : null;
                 if ((variable != null) && !variable.isEmpty()) {
                     // Variable segment: use underlying line text if present (label-as-text
                     // convention), otherwise fall back to the variable name (zero-length
                     // convention from the variable() builder method).
                     String varText = (fmt.length > 0) ? text.substring(fmt.index, fmt.index + fmt.length) : variable;
                     segment = new TextSegment (varText, fmt.formats, link, true);
+                } else if ((imageSrc != null) && !imageSrc.isEmpty()) {
+                    // Image segment: use underlying line text as alt text if present.
+                    String altText = (fmt.length > 0) ? text.substring(fmt.index, fmt.index + fmt.length) : "";
+                    segment = new TextSegment (altText, fmt.formats, link);
                 } else {
                     segment = new TextSegment (text.substring (fmt.index, fmt.index + fmt.length), fmt.formats, link);
                 }
@@ -608,7 +629,7 @@ public class FormattedLine {
                 } else if (format.index >= end) {
                     format.index -= len;
                 }
-                if (format.length <= 0)
+                if ((format.length <= 0) && !format.getFormats().contains(FormatType.IMG))
                     getFormatting ().remove (format);
             }
         }

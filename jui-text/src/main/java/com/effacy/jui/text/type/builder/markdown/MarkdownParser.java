@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -81,6 +82,27 @@ public class MarkdownParser {
     private Function<String, String> variableResolver;
 
     /**
+     * The type of URL being resolved.
+     */
+    public enum UrlType {
+
+        /**
+         * A link URL ({@code [label](url)}).
+         */
+        LINK,
+
+        /**
+         * An image source URL ({@code ![alt](url)}).
+         */
+        IMAGE;
+    }
+
+    /**
+     * See {@link #urlResolver(BiFunction)}.
+     */
+    private BiFunction<String, UrlType, String> urlResolver;
+
+    /**
      * Marks the content as potentially incomplete (e.g. streaming). Unclosed
      * format markers on the last line will be treated as formatting rather than
      * literal text.
@@ -119,6 +141,23 @@ public class MarkdownParser {
      */
     public MarkdownParser variableResolver(Function<String, String> variableResolver) {
         this.variableResolver = variableResolver;
+        return this;
+    }
+
+    /**
+     * Assigns a URL resolver that transforms link and image URLs. When a link
+     * {@code [label](url)} or image {@code ![alt](url)} is encountered, the
+     * resolver is called with the URL and a {@link UrlType} indicating whether
+     * it is a link or an image. If it returns a non-null value, that value
+     * replaces the original URL. If it returns {@code null}, the original URL
+     * is used unchanged.
+     *
+     * @param urlResolver
+     *                    the resolver function (url, type) → mapped url.
+     * @return this parser for chaining.
+     */
+    public MarkdownParser urlResolver(BiFunction<String, UrlType, String> urlResolver) {
+        this.urlResolver = urlResolver;
         return this;
     }
 
@@ -581,7 +620,16 @@ public class MarkdownParser {
                 if (link.startPos > textPos)
                     handler.text(line.substring(textPos, link.startPos));
 
-                handler.link(link.label, link.url);
+                String resolvedUrl = link.url;
+                if (urlResolver != null) {
+                    String mapped = urlResolver.apply(resolvedUrl, link.image ? UrlType.IMAGE : UrlType.LINK);
+                    if (mapped != null)
+                        resolvedUrl = mapped;
+                }
+                if (link.image)
+                    handler.image(link.label, resolvedUrl);
+                else
+                    handler.link(link.label, resolvedUrl);
 
                 textPos = link.endPos;
                 linkIdx++;
@@ -694,7 +742,9 @@ public class MarkdownParser {
                 int urlStart = labelEnd + 2;
                 int urlEnd = line.indexOf(')', urlStart);
                 if (urlEnd != -1) {
-                    links.add(new LinkInfo(labelStart, urlEnd + 1, line.substring(labelStart + 1, labelEnd), line.substring(urlStart, urlEnd)));
+                    boolean isImage = (labelStart > 0) && (line.charAt(labelStart - 1) == '!');
+                    int startPos = isImage ? (labelStart - 1) : labelStart;
+                    links.add(new LinkInfo(startPos, urlEnd + 1, line.substring(labelStart + 1, labelEnd), line.substring(urlStart, urlEnd), isImage));
                     pos = urlEnd + 1;
                     continue;
                 }
@@ -811,7 +861,7 @@ public class MarkdownParser {
         return null;
     }
 
-    private record LinkInfo(int startPos, int endPos, String label, String url) {}
+    private record LinkInfo(int startPos, int endPos, String label, String url, boolean image) {}
 
     private record FormatMarker(int position, String marker, FormatType type) {}
 

@@ -92,7 +92,12 @@ public class FormattedLine {
         /**
          * Anchor (expects {@code link} metadata).
          */
-        A;
+        A,
+
+        /**
+         * Image (expects {@code src} metadata, text is alt text).
+         */
+        IMG;
 
         public boolean is(FormatType... types) {
             for (FormatType type : types) {

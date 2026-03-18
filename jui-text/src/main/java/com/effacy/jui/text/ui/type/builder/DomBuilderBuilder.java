@@ -417,6 +417,17 @@ public class DomBuilderBuilder implements IEventBuilder<IDomInsertableContainer<
     }
 
     @Override
+    public void image(String alt, String src) {
+        IDomInsertableContainer<?> target = currentTarget();
+        ElementBuilder img = Custom.$("img");
+        target.insert(img);
+        if ((src != null) && !src.isEmpty())
+            img.attr("src", src);
+        if ((alt != null) && !alt.isEmpty())
+            img.attr("alt", alt);
+    }
+
+    @Override
     public void variable(String name, Map<String, String> meta) {
         Text.$(currentTarget(), name);
     }

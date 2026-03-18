@@ -146,6 +146,18 @@ public interface IEventBuilder<T> {
     void link(String label, String url);
 
     /**
+     * Called for an inline image within a line.
+     *
+     * @param alt
+     *            the alt text for the image.
+     * @param src
+     *            the image source URL.
+     */
+    default void image(String alt, String src) {
+        // Default no-op for backwards compatibility.
+    }
+
+    /**
      * Called for a variable placeholder within a line.
      *
      * @param name

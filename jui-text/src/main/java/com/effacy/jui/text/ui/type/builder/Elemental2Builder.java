@@ -421,6 +421,16 @@ public class Elemental2Builder implements IEventBuilder<Element> {
     }
 
     @Override
+    public void image(String alt, String src) {
+        Element img = createElement("img");
+        if ((src != null) && !src.isEmpty())
+            img.setAttribute("src", src);
+        if ((alt != null) && !alt.isEmpty())
+            img.setAttribute("alt", alt);
+        currentTarget().appendChild(img);
+    }
+
+    @Override
     public void variable(String name, Map<String, String> meta) {
         currentTarget().appendChild(DomGlobal.document.createTextNode(name));
     }

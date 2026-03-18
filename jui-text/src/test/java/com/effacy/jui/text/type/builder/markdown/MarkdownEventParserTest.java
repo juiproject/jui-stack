@@ -2160,6 +2160,160 @@ public class MarkdownEventParserTest {
     }
 
     /************************************************************************
+     * Image tests.
+     ************************************************************************/
+
+    @Test
+    public void testSimpleImageEvents() {
+        RecordingHandler handler = parse("Here is an image: ![alt text](http://example.com/img.png)");
+        handler.assertEvents(
+            "startBlock(PARA)",
+            "startLine()",
+            "text(Here is an image: )",
+            "image(alt text, http://example.com/img.png)",
+            "endLine()",
+            "endBlock(PARA)"
+        );
+    }
+
+    @Test
+    public void testImageAtStartEvents() {
+        RecordingHandler handler = parse("![logo](http://example.com/logo.png) Company Name");
+        handler.assertEvents(
+            "startBlock(PARA)",
+            "startLine()",
+            "image(logo, http://example.com/logo.png)",
+            "text( Company Name)",
+            "endLine()",
+            "endBlock(PARA)"
+        );
+    }
+
+    @Test
+    public void testImageWithEmptyAltEvents() {
+        RecordingHandler handler = parse("![](http://example.com/img.png)");
+        handler.assertEvents(
+            "startBlock(PARA)",
+            "startLine()",
+            "image(, http://example.com/img.png)",
+            "endLine()",
+            "endBlock(PARA)"
+        );
+    }
+
+    @Test
+    public void testImageWithLinkEvents() {
+        RecordingHandler handler = parse("![photo](http://example.com/photo.jpg) and [link](http://example.com)");
+        handler.assertEvents(
+            "startBlock(PARA)",
+            "startLine()",
+            "image(photo, http://example.com/photo.jpg)",
+            "text( and )",
+            "link(link, http://example.com)",
+            "endLine()",
+            "endBlock(PARA)"
+        );
+    }
+
+    @Test
+    public void testImageInListEvents() {
+        RecordingHandler handler = parse("- ![icon](icon.png) Item text");
+        handler.assertEvents(
+            "startBlock(NLIST)",
+            "startLine()",
+            "image(icon, icon.png)",
+            "text( Item text)",
+            "endLine()",
+            "endBlock(NLIST)"
+        );
+    }
+
+    @Test
+    public void testLinkNotConfusedWithImageEvents() {
+        // A regular link should not be treated as an image.
+        RecordingHandler handler = parse("[not an image](http://example.com)");
+        handler.assertEvents(
+            "startBlock(PARA)",
+            "startLine()",
+            "link(not an image, http://example.com)",
+            "endLine()",
+            "endBlock(PARA)"
+        );
+    }
+
+    /************************************************************************
+     * URL resolver tests.
+     ************************************************************************/
+
+    @Test
+    public void testUrlResolverMapsLinkUrl() {
+        RecordingHandler handler = parseWithUrlResolver(
+            (url, type) -> url.replace("/api/", "/v2/api/"),
+            "Click [here](/api/docs) for docs."
+        );
+        handler.assertEvents(
+            "startBlock(PARA)",
+            "startLine()",
+            "text(Click )",
+            "link(here, /v2/api/docs)",
+            "text( for docs.)",
+            "endLine()",
+            "endBlock(PARA)"
+        );
+    }
+
+    @Test
+    public void testUrlResolverMapsImageSrc() {
+        RecordingHandler handler = parseWithUrlResolver(
+            (url, type) -> "https://cdn.example.com" + url,
+            "![photo](/images/photo.jpg)"
+        );
+        handler.assertEvents(
+            "startBlock(PARA)",
+            "startLine()",
+            "image(photo, https://cdn.example.com/images/photo.jpg)",
+            "endLine()",
+            "endBlock(PARA)"
+        );
+    }
+
+    @Test
+    public void testUrlResolverReturnsNullKeepsOriginal() {
+        RecordingHandler handler = parseWithUrlResolver(
+            (url, type) -> null,
+            "[link](http://example.com)"
+        );
+        handler.assertEvents(
+            "startBlock(PARA)",
+            "startLine()",
+            "link(link, http://example.com)",
+            "endLine()",
+            "endBlock(PARA)"
+        );
+    }
+
+    @Test
+    public void testUrlResolverDifferentiatesLinkAndImage() {
+        RecordingHandler handler = parseWithUrlResolver(
+            (url, type) -> {
+                if (type == MarkdownParser.UrlType.IMAGE)
+                    return "https://cdn.example.com" + url;
+                return "https://www.example.com" + url;
+            },
+            "![img](/a.png) and [link](/b)"
+        );
+        handler.assertEvents(
+            "startBlock(PARA)",
+            "startLine()",
+            "image(img, https://cdn.example.com/a.png)",
+            "text( and )",
+            "link(link, https://www.example.com/b)",
+            "endLine()",
+            "endBlock(PARA)"
+        );
+    }
+
+    /************************************************************************
      * Variable edge cases.
      ************************************************************************/
 
@@ -2816,6 +2970,12 @@ public class MarkdownEventParserTest {
         return handler;
     }
 
+    private RecordingHandler parseWithUrlResolver(java.util.function.BiFunction<String, MarkdownParser.UrlType, String> urlResolver, String markdown) {
+        RecordingHandler handler = new RecordingHandler();
+        new MarkdownParser().urlResolver(urlResolver).parse(handler, markdown);
+        return handler;
+    }
+
     /**
      * Handler that records all events as strings for assertion.
      */
@@ -2864,6 +3024,11 @@ public class MarkdownEventParserTest {
         @Override
         public void link(String label, String url) {
             events.add("link(" + label + ", " + url + ")");
+        }
+
+        @Override
+        public void image(String alt, String src) {
+            events.add("image(" + alt + ", " + src + ")");
         }
 
         @Override

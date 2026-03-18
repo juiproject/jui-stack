@@ -69,6 +69,34 @@ public class Markdown extends SimpleComponent {
                         .semanticTags(true)
                         .semanticLists(true), TEXT5);
             });
+            
+            Div.$(root).css("margin: 2em 0; padding: 1em 1.25em; background: #f1f1f1; border-radius: 0.75rem;").$(body -> {
+                Pre.$(body).text(TEXT6);
+            });
+            Div.$(root).css("margin: 2em 0;").$(body -> {
+                MarkdownParser.parse(p -> {}, new DomBuilderBuilder(body)
+                        .topHeadingLevel(1)
+                        .semanticTags(true)
+                        .semanticLists(true), TEXT6);
+            });
+            
+            Div.$(root).css("margin: 2em 0; padding: 1em 1.25em; background: #f1f1f1; border-radius: 0.75rem;").$(body -> {
+                Pre.$(body).text(TEXT7);
+            });
+            Div.$(root).css("margin: 2em 0;").$(body -> {
+                MarkdownParser.parse(p -> {
+                    p.urlResolver((url,type) -> {
+                        if (url.startsWith("images:")) {
+                            String imageName = url.substring("images:".length());
+                            return "/images/" + imageName;
+                        }
+                        return url;
+                    });
+                }, new DomBuilderBuilder(body)
+                        .topHeadingLevel(1)
+                        .semanticTags(true)
+                        .semanticLists(true), TEXT7);
+            });
         });
     }
 
@@ -116,5 +144,13 @@ Here is a list.
 
     public static final String TEXT5 = """
 *Here is a sentance in italcis with **some bold text** in the middle.*
+""";
+
+    public static final String TEXT6 = """
+Here is an embeded image: ![my image](https://juiproject.github.io/jui-stack/images/logo.png).
+""";
+
+    public static final String TEXT7 = """
+Here is a mapped image: ![my image](images:logo.png).
 """;
 }

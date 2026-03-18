@@ -208,6 +208,15 @@ public class FormattedTextBuilder implements IEventBuilder<FormattedText> {
     }
 
     @Override
+    public void image(String alt, String src) {
+        FormattedLine.Format fmt = new FormattedLine.Format(currentLine.length(), (alt != null) ? alt.length() : 0, FormatType.IMG);
+        fmt.getMeta().put("src", (src != null) ? src : "");
+        currentLine.getFormatting().add(fmt);
+        if ((alt != null) && !alt.isEmpty())
+            currentLine.append(alt);
+    }
+
+    @Override
     public void variable(String name, Map<String, String> meta) {
         FormattedLine.Format format = new FormattedLine.Format(currentLine.length(), 0);
         format.getMeta().put(FormattedLine.META_VARIABLE, name);

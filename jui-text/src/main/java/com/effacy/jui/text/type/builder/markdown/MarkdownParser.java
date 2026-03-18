@@ -369,17 +369,17 @@ public class MarkdownParser {
 
             boolean partialLine = partial && (l == lines.length - 1);
 
-            // Determine indent level from leading whitespace (4 spaces or 1 tab = 1 level).
+            // Determine indent level from leading whitespace (2+ spaces or 1 tab = 1 level).
             int spaces = 0;
             for (int i = 0; i < lines[l].length(); i++) {
                 if (lines[l].charAt(i) == ' ')
                     spaces++;
                 else if (lines[l].charAt(i) == '\t')
-                    spaces += 4;
+                    spaces += 3;
                 else
                     break;
             }
-            int indent = spaces / 4;
+            int indent = (spaces + 1) / 3;
 
             String trimmed = lines[l].trim();
             String content = "";
@@ -594,10 +594,11 @@ public class MarkdownParser {
 
                     int contentStart = start.position + start.marker.length();
                     int contentEnd = end.position;
-                    handler.formatted(line.substring(contentStart, contentEnd), start.type);
+                    int endIndex = markers.indexOf(end);
+                    emitFormattedSpan(handler, line, contentStart, contentEnd, markers, i + 1, endIndex, start.type);
 
                     textPos = end.position + end.marker.length();
-                    i = markers.indexOf(end) + 1;
+                    i = endIndex + 1;
                 } else {
                     if (partial && (start.position >= textPos))
                         lastUnmatched = start;
@@ -616,6 +617,62 @@ public class MarkdownParser {
             } else {
                 handler.text(line.substring(textPos));
             }
+        }
+    }
+
+    /**
+     * Emits a formatted span, checking for nested marker pairs inside the
+     * region and splitting into segments when found. For example, the italic
+     * span in {@code *text **bold** more*} emits three formatted events:
+     * {@code formatted("text ", ITL)}, {@code formatted("bold", ITL, BLD)},
+     * {@code formatted(" more", ITL)}.
+     */
+    private void emitFormattedSpan(IEventBuilder<?> handler, String line, int start, int end, List<FormatMarker> markers, int fromIdx, int toIdx, FormatType outerType) {
+        // Look for matched pairs among markers between fromIdx and toIdx.
+        int pos = start;
+        int idx = fromIdx;
+        boolean foundNested = false;
+        while (idx < toIdx) {
+            FormatMarker innerStart = markers.get(idx);
+            if ((innerStart.position < start) || (innerStart.position >= end)) {
+                idx++;
+                continue;
+            }
+            FormatMarker innerEnd = null;
+            for (int j = idx + 1; j < toIdx; j++) {
+                FormatMarker candidate = markers.get(j);
+                if ((candidate.type == innerStart.type) && candidate.marker.equals(innerStart.marker)) {
+                    innerEnd = candidate;
+                    break;
+                }
+            }
+            if (innerEnd == null) {
+                idx++;
+                continue;
+            }
+
+            foundNested = true;
+
+            // Text before inner pair — formatted with outer type only.
+            if (innerStart.position > pos) {
+                handler.formatted(line.substring(pos, innerStart.position), outerType);
+            }
+
+            // Inner content — formatted with both types.
+            int innerContentStart = innerStart.position + innerStart.marker.length();
+            int innerContentEnd = innerEnd.position;
+            handler.formatted(line.substring(innerContentStart, innerContentEnd), outerType, innerStart.type);
+
+            pos = innerEnd.position + innerEnd.marker.length();
+            idx = markers.indexOf(innerEnd) + 1;
+        }
+
+        if (!foundNested) {
+            // No nested markers — emit as a single formatted event.
+            handler.formatted(line.substring(start, end), outerType);
+        } else if (pos < end) {
+            // Remaining text after the last nested pair.
+            handler.formatted(line.substring(pos, end), outerType);
         }
     }
 

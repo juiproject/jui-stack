@@ -1,5 +1,7 @@
 package com.effacy.jui.playground.ui.samples;
 
+import java.util.Set;
+
 import com.effacy.jui.core.client.component.SimpleComponent;
 import com.effacy.jui.core.client.dom.builder.Div;
 import com.effacy.jui.core.client.dom.builder.Pre;
@@ -19,6 +21,7 @@ public class Markdown extends SimpleComponent {
                     .semanticTags(true)
                     .semanticLists(true), TEXT1);
             });
+
             Div.$(root).css("margin: 2em 0; padding: 1em 1.25em; background: #f1f1f1; border-radius: 0.75rem;").$(body -> {
                 Pre.$(body).text(TEXT2);
             });
@@ -35,6 +38,36 @@ public class Markdown extends SimpleComponent {
                         .topHeadingLevel(1)
                         .semanticTags(true)
                         .semanticLists(true), TEXT2);
+            });
+            
+            Div.$(root).css("margin: 2em 0; padding: 1em 1.25em; background: #f1f1f1; border-radius: 0.75rem;").$(body -> {
+                Pre.$(body).text(TEXT3);
+            });
+            Div.$(root).css("margin: 2em 0;").$(body -> {
+                MarkdownParser.parse(p -> {}, new DomBuilderBuilder(body)
+                        .topHeadingLevel(1)
+                        .semanticTags(true)
+                        .semanticLists(true), TEXT3);
+            });
+            
+            Div.$(root).css("margin: 2em 0; padding: 1em 1.25em; background: #f1f1f1; border-radius: 0.75rem;").$(body -> {
+                Pre.$(body).text(TEXT4);
+            });
+            Div.$(root).css("margin: 2em 0;").$(body -> {
+                MarkdownParser.parse(p -> {}, new DomBuilderBuilder(body)
+                        .topHeadingLevel(1)
+                        .semanticTags(true)
+                        .semanticLists(true), TEXT4);
+            });
+            
+            Div.$(root).css("margin: 2em 0; padding: 1em 1.25em; background: #f1f1f1; border-radius: 0.75rem;").$(body -> {
+                Pre.$(body).text(TEXT5);
+            });
+            Div.$(root).css("margin: 2em 0;").$(body -> {
+                MarkdownParser.parse(p -> {}, new DomBuilderBuilder(body)
+                        .topHeadingLevel(1)
+                        .semanticTags(true)
+                        .semanticLists(true), TEXT5);
             });
         });
     }
@@ -60,4 +93,28 @@ Hello {{name}},
 
 This is also being emailed to you at {{email}}.
     """;
+
+    public static final String TEXT3 = """
+Here is a list:
+- item 1
+- item 2
+- item 3
+   - sub-item 1
+   - sub-item 2
+   - sub-item 3
+""";
+
+    public static final String TEXT4 = """
+Here is a list.
+
+- Item 1.  
+
+- Item 2:
+  - sub-item 1  
+  - sub-item 2
+""";
+
+    public static final String TEXT5 = """
+*Here is a sentance in italcis with **some bold text** in the middle.*
+""";
 }

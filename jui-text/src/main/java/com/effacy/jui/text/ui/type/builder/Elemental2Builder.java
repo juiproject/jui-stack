@@ -114,15 +114,15 @@ public class Elemental2Builder implements IEventBuilder<Element> {
     private Deque<Element> ulStack = new ArrayDeque<>();
 
     /**
+     * Parallel stack tracking whether each wrapper in {@link #ulStack} is
+     * ordered ({@code true}) or unordered ({@code false}).
+     */
+    private Deque<Boolean> ulTypeStack = new ArrayDeque<>();
+
+    /**
      * Current list nesting depth (0-based). {@code -1} when not inside a list.
      */
     private int listDepth = -1;
-
-    /**
-     * Whether the current list context is ordered ({@code <ol>}) or unordered
-     * ({@code <ul>}). Only meaningful when {@link #ulStack} is non-empty.
-     */
-    private boolean listOrdered;
 
     /**
      * The most recently created {@code <li>} element. Used as the parent for
@@ -232,15 +232,13 @@ public class Elemental2Builder implements IEventBuilder<Element> {
 
     @Override
     public void startBlock(BlockType type) {
-        // Close any active list context when a non-list block starts, or
-        // when the list type changes (unordered → ordered or vice versa).
+        // Close any active list context when a non-list block starts.
+        // Type changes between ordered and unordered are handled in
+        // resolveListItem() where the indent level is known.
         if (semanticLists) {
             boolean isList = (type == BlockType.NLIST) || (type == BlockType.OLIST);
-            if (!isList) {
+            if (!isList)
                 closeListContext();
-            } else if (!ulStack.isEmpty() && (listOrdered != (type == BlockType.OLIST))) {
-                closeListContext();
-            }
         }
 
         Element el;
@@ -423,6 +421,20 @@ public class Elemental2Builder implements IEventBuilder<Element> {
     }
 
     @Override
+    public void image(String alt, String src, int width, int height) {
+        Element img = createElement("img");
+        if ((src != null) && !src.isEmpty())
+            img.setAttribute("src", src);
+        if ((alt != null) && !alt.isEmpty())
+            img.setAttribute("alt", alt);
+        if (width > 0)
+            img.setAttribute("width", String.valueOf(width));
+        if (height > 0)
+            img.setAttribute("height", String.valueOf(height));
+        currentTarget().appendChild(img);
+    }
+
+    @Override
     public void variable(String name, Map<String, String> meta) {
         currentTarget().appendChild(DomGlobal.document.createTextNode(name));
     }
@@ -475,8 +487,37 @@ public class Elemental2Builder implements IEventBuilder<Element> {
             currentTarget().appendChild(ul);
             stack.push(li);
             ulStack.push(ul);
+            ulTypeStack.push(pendingOrdered);
             listDepth = 0;
-            listOrdered = pendingOrdered;
+        }
+
+        // Decrease nesting: pop back to the target depth.
+        while (listDepth > pendingIndent) {
+            ulStack.pop();
+            ulTypeStack.pop();
+            listDepth--;
+        }
+
+        // At target depth: if the list type doesn't match, close this level
+        // and create a new wrapper of the correct type.
+        if ((listDepth == pendingIndent) && !ulTypeStack.isEmpty() && (ulTypeStack.peek() != pendingOrdered)) {
+            ulStack.pop();
+            ulTypeStack.pop();
+            Element ul = createElement(listTag);
+            if (ulStack.isEmpty()) {
+                // Root level — insert as sibling of previous list.
+                Element li = stack.pop();
+                currentTarget().appendChild(ul);
+                stack.push(li);
+            } else {
+                // Nested — insert inside the parent <li>.
+                if (lastLi != null)
+                    lastLi.appendChild(ul);
+                else
+                    ulStack.peek().appendChild(ul);
+            }
+            ulStack.push(ul);
+            ulTypeStack.push(pendingOrdered);
         }
 
         // Increase nesting: create nested <ol>/<ul> inside the last <li>.
@@ -487,16 +528,11 @@ public class Elemental2Builder implements IEventBuilder<Element> {
             else
                 ulStack.peek().appendChild(ul);
             ulStack.push(ul);
+            ulTypeStack.push(pendingOrdered);
             listDepth++;
         }
 
-        // Decrease nesting: pop back to the target depth.
-        while (listDepth > pendingIndent) {
-            ulStack.pop();
-            listDepth--;
-        }
-
-        // Attach <li> to the current <ul>.
+        // Attach <li> to the current wrapper.
         ulStack.peek().appendChild(pendingLi);
         lastLi = pendingLi;
         pendingLi = null;
@@ -507,8 +543,8 @@ public class Elemental2Builder implements IEventBuilder<Element> {
      */
     private void closeListContext() {
         ulStack.clear();
+        ulTypeStack.clear();
         listDepth = -1;
-        listOrdered = false;
         lastLi = null;
         pendingLi = null;
     }

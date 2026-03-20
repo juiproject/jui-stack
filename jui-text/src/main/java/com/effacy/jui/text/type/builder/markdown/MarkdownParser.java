@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -81,6 +82,27 @@ public class MarkdownParser {
     private Function<String, String> variableResolver;
 
     /**
+     * The type of URL being resolved.
+     */
+    public enum UrlType {
+
+        /**
+         * A link URL ({@code [label](url)}).
+         */
+        LINK,
+
+        /**
+         * An image source URL ({@code ![alt](url)}).
+         */
+        IMAGE;
+    }
+
+    /**
+     * See {@link #urlResolver(BiFunction)}.
+     */
+    private BiFunction<String, UrlType, String> urlResolver;
+
+    /**
      * Marks the content as potentially incomplete (e.g. streaming). Unclosed
      * format markers on the last line will be treated as formatting rather than
      * literal text.
@@ -119,6 +141,23 @@ public class MarkdownParser {
      */
     public MarkdownParser variableResolver(Function<String, String> variableResolver) {
         this.variableResolver = variableResolver;
+        return this;
+    }
+
+    /**
+     * Assigns a URL resolver that transforms link and image URLs. When a link
+     * {@code [label](url)} or image {@code ![alt](url)} is encountered, the
+     * resolver is called with the URL and a {@link UrlType} indicating whether
+     * it is a link or an image. If it returns a non-null value, that value
+     * replaces the original URL. If it returns {@code null}, the original URL
+     * is used unchanged.
+     *
+     * @param urlResolver
+     *                    the resolver function (url, type) → mapped url.
+     * @return this parser for chaining.
+     */
+    public MarkdownParser urlResolver(BiFunction<String, UrlType, String> urlResolver) {
+        this.urlResolver = urlResolver;
         return this;
     }
 
@@ -369,17 +408,17 @@ public class MarkdownParser {
 
             boolean partialLine = partial && (l == lines.length - 1);
 
-            // Determine indent level from leading whitespace (4 spaces or 1 tab = 1 level).
+            // Determine indent level from leading whitespace (2+ spaces or 1 tab = 1 level).
             int spaces = 0;
             for (int i = 0; i < lines[l].length(); i++) {
                 if (lines[l].charAt(i) == ' ')
                     spaces++;
                 else if (lines[l].charAt(i) == '\t')
-                    spaces += 4;
+                    spaces += 3;
                 else
                     break;
             }
-            int indent = spaces / 4;
+            int indent = (spaces + 1) / 3;
 
             String trimmed = lines[l].trim();
             String content = "";
@@ -581,7 +620,16 @@ public class MarkdownParser {
                 if (link.startPos > textPos)
                     handler.text(line.substring(textPos, link.startPos));
 
-                handler.link(link.label, link.url);
+                String resolvedUrl = link.url;
+                if (urlResolver != null) {
+                    String mapped = urlResolver.apply(resolvedUrl, link.image ? UrlType.IMAGE : UrlType.LINK);
+                    if (mapped != null)
+                        resolvedUrl = mapped;
+                }
+                if (link.image)
+                    handler.image(link.label, resolvedUrl, link.width, link.height);
+                else
+                    handler.link(link.label, resolvedUrl);
 
                 textPos = link.endPos;
                 linkIdx++;
@@ -594,10 +642,11 @@ public class MarkdownParser {
 
                     int contentStart = start.position + start.marker.length();
                     int contentEnd = end.position;
-                    handler.formatted(line.substring(contentStart, contentEnd), start.type);
+                    int endIndex = markers.indexOf(end);
+                    emitFormattedSpan(handler, line, contentStart, contentEnd, markers, i + 1, endIndex, start.type);
 
                     textPos = end.position + end.marker.length();
-                    i = markers.indexOf(end) + 1;
+                    i = endIndex + 1;
                 } else {
                     if (partial && (start.position >= textPos))
                         lastUnmatched = start;
@@ -619,6 +668,62 @@ public class MarkdownParser {
         }
     }
 
+    /**
+     * Emits a formatted span, checking for nested marker pairs inside the
+     * region and splitting into segments when found. For example, the italic
+     * span in {@code *text **bold** more*} emits three formatted events:
+     * {@code formatted("text ", ITL)}, {@code formatted("bold", ITL, BLD)},
+     * {@code formatted(" more", ITL)}.
+     */
+    private void emitFormattedSpan(IEventBuilder<?> handler, String line, int start, int end, List<FormatMarker> markers, int fromIdx, int toIdx, FormatType outerType) {
+        // Look for matched pairs among markers between fromIdx and toIdx.
+        int pos = start;
+        int idx = fromIdx;
+        boolean foundNested = false;
+        while (idx < toIdx) {
+            FormatMarker innerStart = markers.get(idx);
+            if ((innerStart.position < start) || (innerStart.position >= end)) {
+                idx++;
+                continue;
+            }
+            FormatMarker innerEnd = null;
+            for (int j = idx + 1; j < toIdx; j++) {
+                FormatMarker candidate = markers.get(j);
+                if ((candidate.type == innerStart.type) && candidate.marker.equals(innerStart.marker)) {
+                    innerEnd = candidate;
+                    break;
+                }
+            }
+            if (innerEnd == null) {
+                idx++;
+                continue;
+            }
+
+            foundNested = true;
+
+            // Text before inner pair — formatted with outer type only.
+            if (innerStart.position > pos) {
+                handler.formatted(line.substring(pos, innerStart.position), outerType);
+            }
+
+            // Inner content — formatted with both types.
+            int innerContentStart = innerStart.position + innerStart.marker.length();
+            int innerContentEnd = innerEnd.position;
+            handler.formatted(line.substring(innerContentStart, innerContentEnd), outerType, innerStart.type);
+
+            pos = innerEnd.position + innerEnd.marker.length();
+            idx = markers.indexOf(innerEnd) + 1;
+        }
+
+        if (!foundNested) {
+            // No nested markers — emit as a single formatted event.
+            handler.formatted(line.substring(start, end), outerType);
+        } else if (pos < end) {
+            // Remaining text after the last nested pair.
+            handler.formatted(line.substring(pos, end), outerType);
+        }
+    }
+
     /************************************************************************
      * Inline helpers.
      ************************************************************************/
@@ -637,7 +742,32 @@ public class MarkdownParser {
                 int urlStart = labelEnd + 2;
                 int urlEnd = line.indexOf(')', urlStart);
                 if (urlEnd != -1) {
-                    links.add(new LinkInfo(labelStart, urlEnd + 1, line.substring(labelStart + 1, labelEnd), line.substring(urlStart, urlEnd)));
+                    boolean isImage = (labelStart > 0) && (line.charAt(labelStart - 1) == '!');
+                    int startPos = isImage ? (labelStart - 1) : labelStart;
+                    String rawUrl = line.substring(urlStart, urlEnd);
+                    int imgWidth = -1;
+                    int imgHeight = -1;
+                    if (isImage) {
+                        // Parse optional dimensions: "url =WxH", "url =W", "url =xH".
+                        int eqIdx = rawUrl.lastIndexOf(" =");
+                        if (eqIdx >= 0) {
+                            String dims = rawUrl.substring(eqIdx + 2);
+                            rawUrl = rawUrl.substring(0, eqIdx);
+                            int xIdx = dims.indexOf('x');
+                            if (xIdx < 0) {
+                                // Width only: "=300"
+                                imgWidth = parsePixelValue(dims);
+                            } else if (xIdx == 0) {
+                                // Height only: "=x200"
+                                imgHeight = parsePixelValue(dims.substring(1));
+                            } else {
+                                // Both: "=300x200"
+                                imgWidth = parsePixelValue(dims.substring(0, xIdx));
+                                imgHeight = parsePixelValue(dims.substring(xIdx + 1));
+                            }
+                        }
+                    }
+                    links.add(new LinkInfo(startPos, urlEnd + 1, line.substring(labelStart + 1, labelEnd), rawUrl, isImage, imgWidth, imgHeight));
                     pos = urlEnd + 1;
                     continue;
                 }
@@ -754,7 +884,7 @@ public class MarkdownParser {
         return null;
     }
 
-    private record LinkInfo(int startPos, int endPos, String label, String url) {}
+    private record LinkInfo(int startPos, int endPos, String label, String url, boolean image, int width, int height) {}
 
     private record FormatMarker(int position, String marker, FormatType type) {}
 
@@ -831,5 +961,20 @@ public class MarkdownParser {
                 return false;
         }
         return true;
+    }
+
+    /**
+     * Parses a pixel dimension value from a string. Returns {@code -1} if the
+     * string is empty or not a valid positive integer.
+     */
+    private static int parsePixelValue(String value) {
+        if ((value == null) || value.isEmpty())
+            return -1;
+        try {
+            int v = Integer.parseInt(value);
+            return (v > 0) ? v : -1;
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 }

@@ -374,6 +374,57 @@ public class Tools {
     }
 
     /**
+     * Creates an image tool with a text label.
+     *
+     * @see #image(Consumer, String, Function, int)
+     */
+    public static ITool image(String label, String tooltip, Function<String, List<ImagePanel.ImageItem>> options, int columns) {
+        return image(btn -> btn.text(label), tooltip, options, columns);
+    }
+
+    /**
+     * Creates an image tool with custom button content. The button freezes
+     * the selection, then opens an {@link ImagePanel} for selecting or
+     * entering an image URL.
+     *
+     * @param content
+     *              populates the button's inner content.
+     * @param tooltip
+     *              the button tooltip.
+     * @param options
+     *              function returning image items for the typed text.
+     * @param columns
+     *              number of grid columns (1 for list layout).
+     */
+    public static ITool image(Consumer<ElementBuilder> content, String tooltip, Function<String, List<ImagePanel.ImageItem>> options, int columns) {
+        return ctx -> {
+            Element[] btn = new Element[1];
+            Button.$(ctx.parent()).style(ctx.styles().tbtn()).$(content).attr("title", tooltip)
+                .use(n -> btn[0] = (Element) n)
+                .on(e -> {
+                    e.stopEvent();
+                    if (ctx.commands() == null)
+                        return;
+                    ctx.commands().syncSelection();
+                    String currentSrc = ctx.commands().currentImage();
+                    ImagePanel.show(btn[0], currentSrc, options, columns, new ImagePanel.IImagePanelCallback() {
+
+                        @Override
+                        public void onApply(String src) {
+                            ctx.commands().applyImage(src);
+                        }
+
+                        @Override
+                        public void onRemove() {
+                            ctx.commands().removeImage();
+                        }
+                    });
+                }, UIEventType.ONMOUSEDOWN);
+            return null;
+        };
+    }
+
+    /**
      * Creates a variable tool with a text label.
      *
      * @see #variable(Consumer, String, Function)

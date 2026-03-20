@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2026 Jeremy Buckley
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * <p>
+ * <a href= "http://www.apache.org/licenses/LICENSE-2.0">Apache License v2</a>
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ ******************************************************************************/
 package com.effacy.jui.text.type.edit;
 
 import java.util.List;
@@ -1547,6 +1562,115 @@ public final class Commands {
         tr.step(new ReplaceBlockStep(block, result));
         tr.setSelection(Selection.cursor(block, offset + label.length()));
         return tr;
+    }
+
+    /************************************************************************
+     * Image commands.
+     ************************************************************************/
+
+    /**
+     * Inserts an inline image at the current selection. The image is
+     * represented as a zero-length {@link FormatType#IMG} format with
+     * {@code src} metadata.
+     */
+    public static Transaction insertImage(EditorState state, String src) {
+        if ((src == null) || src.isEmpty())
+            return null;
+        Selection sel = state.selection();
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        Transaction tr = Transaction.create();
+
+        int block, offset;
+        FormattedBlock result;
+
+        if (sel.isCursor()) {
+            block = sel.anchorBlock();
+            offset = sel.anchorOffset();
+            result = blocks.get(block).clone();
+        } else if (sel.fromBlock() == sel.toBlock()) {
+            block = sel.fromBlock();
+            offset = sel.fromOffset();
+            result = blocks.get(block).clone();
+            result.remove(offset, sel.toOffset() - offset);
+        } else {
+            block = sel.fromBlock();
+            offset = sel.fromOffset();
+            int toBlock = sel.toBlock();
+            int toOffset = sel.toOffset();
+
+            FormattedBlock leftPart = blocks.get(block).clone();
+            leftPart.split(offset);
+
+            FormattedBlock lastClone = blocks.get(toBlock).clone();
+            FormattedBlock rightPart = lastClone.split(toOffset);
+
+            mergeBlockContent(leftPart, rightPart);
+            result = leftPart;
+
+            for (int i = toBlock; i > block; i--)
+                tr.step(new DeleteBlockStep(i));
+        }
+
+        // Find the correct line for the block-level offset.
+        int remaining = offset;
+        FormattedLine targetLine = null;
+        for (FormattedLine line : result.getLines()) {
+            if (remaining <= line.length()) {
+                targetLine = line;
+                break;
+            }
+            remaining -= line.length() + 1;
+        }
+        if (targetLine == null) {
+            targetLine = result.getLines().get(result.getLines().size() - 1);
+            remaining = targetLine.length();
+        }
+
+        // Add a zero-length IMG format at the cursor position.
+        FormattedLine.Format imgFmt = new FormattedLine.Format(remaining, 0, FormatType.IMG);
+        imgFmt.getMeta().put(FormattedLine.META_IMAGE, src);
+        List<FormattedLine.Format> fmts = targetLine.getFormatting();
+        int insertPos = fmts.size();
+        for (int i = 0; i < fmts.size(); i++) {
+            if (fmts.get(i).getIndex() > remaining) {
+                insertPos = i;
+                break;
+            }
+        }
+        fmts.add(insertPos, imgFmt);
+
+        tr.step(new ReplaceBlockStep(block, result));
+        tr.setSelection(Selection.cursor(block, offset));
+        return tr;
+    }
+
+    /**
+     * Removes the inline image at the current cursor position.
+     */
+    public static Transaction removeImage(EditorState state) {
+        Selection sel = state.selection();
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int blockIdx = sel.anchorBlock();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+        FormattedBlock clone = blocks.get(blockIdx).clone();
+        int target = sel.anchorOffset();
+        int lineStart = 0;
+        for (FormattedLine line : clone.getLines()) {
+            for (int i = line.getFormatting().size() - 1; i >= 0; i--) {
+                FormattedLine.Format fmt = line.getFormatting().get(i);
+                int absStart = lineStart + fmt.getIndex();
+                if ((absStart == target) && fmt.getFormats().contains(FormatType.IMG)) {
+                    line.getFormatting().remove(i);
+                    Transaction tr = Transaction.create();
+                    tr.step(new ReplaceBlockStep(blockIdx, clone));
+                    tr.setSelection(sel);
+                    return tr;
+                }
+            }
+            lineStart += line.length() + 1;
+        }
+        return null;
     }
 
     /************************************************************************

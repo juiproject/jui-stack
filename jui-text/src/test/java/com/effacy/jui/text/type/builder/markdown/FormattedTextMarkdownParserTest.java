@@ -10,7 +10,7 @@ import com.effacy.jui.text.type.FormattedText;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
 
-public class MarkdownParserTest {
+public class FormattedTextMarkdownParserTest {
 
     @Test
     public void testEmptyInput() {
@@ -673,6 +673,243 @@ public class MarkdownParserTest {
     }
 
     @Test
+    public void testOrderedListWithIntroLine() {
+        // Introductory non-list line followed by ordered items (single
+        // newlines) splits into a PARA for the intro and OLIST items.
+        FormattedText result = FormattedText.markdown(
+            "To construct a proper Hegelian triad for your thesis defense:\n" +
+            "1.  Begin with the abstract universal as your thesis statement.\n" +
+            "2.  Identify the negation that reveals the internal contradiction of the thesis.\n" +
+            "3.  Optionally, synthesize the aufhebung.\n\n" +
+            "**Further reading:** [The Phenomenology of Spirit](/hegel/phenom_spirit)"
+        );
+
+        assertEquals(5, result.getBlocks().size());
+
+        // Intro paragraph.
+        assertEquals(BlockType.PARA, result.getBlocks().get(0).getType());
+        assertEquals("To construct a proper Hegelian triad for your thesis defense:",
+            result.getBlocks().get(0).getLines().get(0).getText());
+
+        // Three ordered list items.
+        assertEquals(BlockType.OLIST, result.getBlocks().get(1).getType());
+        assertEquals("Begin with the abstract universal as your thesis statement.",
+            result.getBlocks().get(1).getLines().get(0).getText());
+
+        assertEquals(BlockType.OLIST, result.getBlocks().get(2).getType());
+        assertEquals("Identify the negation that reveals the internal contradiction of the thesis.",
+            result.getBlocks().get(2).getLines().get(0).getText());
+
+        assertEquals(BlockType.OLIST, result.getBlocks().get(3).getType());
+        assertEquals("Optionally, synthesize the aufhebung.",
+            result.getBlocks().get(3).getLines().get(0).getText());
+
+        // Trailing paragraph.
+        assertEquals(BlockType.PARA, result.getBlocks().get(4).getType());
+    }
+
+    @Test
+    public void testOrderedListWithTrailingContinuation() {
+        // Single newline after the last list item — the trailing text is
+        // part of the second list item (no blank line to break the block).
+        FormattedText result = FormattedText.markdown(
+            "To prepare a proper cup of tea:\n" +
+            "1.  Boil fresh water.\n" +
+            "2.  Steep for **five** minutes.\n" +
+            "Removing the leaves too early produces a weak brew.\n"
+        );
+
+        assertEquals(3, result.getBlocks().size());
+
+        assertEquals(BlockType.PARA, result.getBlocks().get(0).getType());
+        assertEquals(BlockType.OLIST, result.getBlocks().get(1).getType());
+        assertEquals(BlockType.OLIST, result.getBlocks().get(2).getType());
+
+        // Second list item includes the continuation text.
+        FormattedLine line2 = result.getBlocks().get(2).getLines().get(0);
+        assertEquals("Steep for five minutes. Removing the leaves too early produces a weak brew.",
+            line2.getText());
+    }
+
+    @Test
+    public void testOrderedListWithTrailingParagraph() {
+        // Double newline after the last list item — the trailing text
+        // becomes a separate paragraph.
+        FormattedText result = FormattedText.markdown(
+            "To prepare a proper cup of tea:\n" +
+            "1.  Boil fresh water.\n" +
+            "2.  Steep for **five** minutes.\n\n" +
+            "Removing the leaves too early produces a weak brew.\n"
+        );
+
+        assertEquals(4, result.getBlocks().size());
+
+        assertEquals(BlockType.PARA, result.getBlocks().get(0).getType());
+        assertEquals(BlockType.OLIST, result.getBlocks().get(1).getType());
+        assertEquals(BlockType.OLIST, result.getBlocks().get(2).getType());
+
+        // Trailing text is a separate paragraph.
+        assertEquals(BlockType.PARA, result.getBlocks().get(3).getType());
+        assertEquals("Removing the leaves too early produces a weak brew.",
+            result.getBlocks().get(3).getLines().get(0).getText());
+    }
+
+    @Test
+    public void testNestedListWithBlankLines() {
+        // Numbered items with blank lines between them and indented bullet
+        // sub-items. The blank lines must not split the list.
+        String markdown = """
+                The following is a nested list of items:
+
+                1.  **First item:** Here is a sub-item
+                    *   **Subitem:** this is a sub-item.
+
+                1.  **Second item:**
+                    *   sub-item 1.
+                    *   sub-item 2.
+                    *   sub-item 3.
+
+                1.  **Select Reviewees:**
+                    *   sub-item 1.
+                    *   sub-item 2.""";
+        FormattedText result = FormattedText.markdown(markdown);
+
+        // 1 PARA + 3 OLIST + 6 NLIST = 10 blocks.
+        assertEquals(10, result.getBlocks().size());
+
+        // Intro paragraph.
+        assertEquals(BlockType.PARA, result.getBlocks().get(0).getType());
+        assertEquals("The following is a nested list of items:",
+            result.getBlocks().get(0).getLines().get(0).getText());
+
+        // First ordered item — no indent meta.
+        FormattedBlock olist1 = result.getBlocks().get(1);
+        assertEquals(BlockType.OLIST, olist1.getType());
+        assertNull(olist1.meta("indent"));
+        FormattedLine olist1Line = olist1.getLines().get(0);
+        assertTrue(olist1Line.getText().contains("First item:"));
+
+        // Nested unordered sub-item — indent "1".
+        FormattedBlock nlist1 = result.getBlocks().get(2);
+        assertEquals(BlockType.NLIST, nlist1.getType());
+        assertEquals("1", nlist1.meta("indent"));
+
+        // Second ordered item — no indent.
+        FormattedBlock olist2 = result.getBlocks().get(3);
+        assertEquals(BlockType.OLIST, olist2.getType());
+        assertNull(olist2.meta("indent"));
+
+        // Three nested sub-items — all indent "1".
+        for (int i = 4; i <= 6; i++) {
+            FormattedBlock nlist = result.getBlocks().get(i);
+            assertEquals(BlockType.NLIST, nlist.getType());
+            assertEquals("1", nlist.meta("indent"));
+        }
+
+        // Third ordered item — no indent.
+        FormattedBlock olist3 = result.getBlocks().get(7);
+        assertEquals(BlockType.OLIST, olist3.getType());
+        assertNull(olist3.meta("indent"));
+
+        // Two nested sub-items — indent "1".
+        for (int i = 8; i <= 9; i++) {
+            FormattedBlock nlist = result.getBlocks().get(i);
+            assertEquals(BlockType.NLIST, nlist.getType());
+            assertEquals("1", nlist.meta("indent"));
+        }
+    }
+
+    @Test
+    public void testNestedListThreeSpaceIndent() {
+        // Sub-items with 3-space indentation must be recognised as indent
+        // level 1, not flattened to level 0.
+        String markdown = "Here is a list:\n" +
+            "- item 1\n" +
+            "- item 2\n" +
+            "- item 3\n" +
+            "   - sub-item 1\n" +
+            "   - sub-item 2\n" +
+            "   - sub-item 3";
+        FormattedText result = FormattedText.markdown(markdown);
+
+        // 1 PARA + 3 NLIST (top-level) + 3 NLIST (indent 1) = 7 blocks.
+        assertEquals(7, result.getBlocks().size());
+
+        assertEquals(BlockType.PARA, result.getBlocks().get(0).getType());
+
+        // Top-level items — no indent.
+        for (int i = 1; i <= 3; i++) {
+            assertEquals(BlockType.NLIST, result.getBlocks().get(i).getType());
+            assertNull(result.getBlocks().get(i).meta("indent"));
+        }
+
+        // Sub-items — indent "1".
+        for (int i = 4; i <= 6; i++) {
+            FormattedBlock sub = result.getBlocks().get(i);
+            assertEquals(BlockType.NLIST, sub.getType());
+            assertEquals("1", sub.meta("indent"));
+        }
+
+        assertEquals("sub-item 1", result.getBlocks().get(4).getLines().get(0).getText());
+        assertEquals("sub-item 2", result.getBlocks().get(5).getLines().get(0).getText());
+        assertEquals("sub-item 3", result.getBlocks().get(6).getLines().get(0).getText());
+    }
+
+    @Test
+    public void testSeparateOrderedListsWithProse() {
+        // Two ordered lists separated by prose paragraphs must remain
+        // distinct — the merge step only merges consecutive list-only
+        // paragraphs.
+        FormattedText result = FormattedText.markdown(
+            "First list:\n\n1. Alpha\n2. Beta\n\nSecond list:\n\n1. Gamma\n2. Delta"
+        );
+
+        assertEquals(6, result.getBlocks().size());
+
+        assertEquals(BlockType.PARA, result.getBlocks().get(0).getType());
+        assertEquals("First list:", result.getBlocks().get(0).getLines().get(0).getText());
+
+        assertEquals(BlockType.OLIST, result.getBlocks().get(1).getType());
+        assertEquals("Alpha", result.getBlocks().get(1).getLines().get(0).getText());
+
+        assertEquals(BlockType.OLIST, result.getBlocks().get(2).getType());
+        assertEquals("Beta", result.getBlocks().get(2).getLines().get(0).getText());
+
+        assertEquals(BlockType.PARA, result.getBlocks().get(3).getType());
+        assertEquals("Second list:", result.getBlocks().get(3).getLines().get(0).getText());
+
+        assertEquals(BlockType.OLIST, result.getBlocks().get(4).getType());
+        assertEquals("Gamma", result.getBlocks().get(4).getLines().get(0).getText());
+
+        assertEquals(BlockType.OLIST, result.getBlocks().get(5).getType());
+        assertEquals("Delta", result.getBlocks().get(5).getLines().get(0).getText());
+    }
+
+    @Test
+    public void testBackToBackOrderedLists() {
+        // Two ordered lists back to back with only blank lines are merged
+        // into a single continuous list by the parser's merge step. This
+        // documents the current behaviour.
+        FormattedText result = FormattedText.markdown(
+            "1. First\n2. Second\n\n1. Alpha\n2. Beta"
+        );
+
+        assertEquals(4, result.getBlocks().size());
+
+        assertEquals(BlockType.OLIST, result.getBlocks().get(0).getType());
+        assertEquals("First", result.getBlocks().get(0).getLines().get(0).getText());
+
+        assertEquals(BlockType.OLIST, result.getBlocks().get(1).getType());
+        assertEquals("Second", result.getBlocks().get(1).getLines().get(0).getText());
+
+        assertEquals(BlockType.OLIST, result.getBlocks().get(2).getType());
+        assertEquals("Alpha", result.getBlocks().get(2).getLines().get(0).getText());
+
+        assertEquals(BlockType.OLIST, result.getBlocks().get(3).getType());
+        assertEquals("Beta", result.getBlocks().get(3).getLines().get(0).getText());
+    }
+
+    @Test
     public void testVarargsWithMultipleContentBlocks() {
         FormattedText result = FormattedText.markdown("First block", "Second block", "Third block");
 
@@ -870,10 +1107,13 @@ This is *some* supporting **guidance**:
         FormattedBlock para3 = result.getBlocks().get(2);
         assertEquals(BlockType.PARA, para3.getType());
         FormattedLine line3 = para3.getLines().get(0);
-        assertEquals("This paragraph has bold _and_ italic combined.", line3.getText());
-        // Should have bold formatting (the _and_ is inside the bold markers)
-        assertEquals(1, line3.getFormatting().size());
+        assertEquals("This paragraph has bold and italic combined.", line3.getText());
+        // "bold " and " italic" are BLD, "and" is BLD+ITL.
+        assertEquals(3, line3.getFormatting().size());
         assertTrue(line3.getFormatting().get(0).getFormats().contains(FormatType.BLD));
+        assertTrue(line3.getFormatting().get(1).getFormats().contains(FormatType.BLD));
+        assertTrue(line3.getFormatting().get(1).getFormats().contains(FormatType.ITL));
+        assertTrue(line3.getFormatting().get(2).getFormats().contains(FormatType.BLD));
     }
 
     @Test

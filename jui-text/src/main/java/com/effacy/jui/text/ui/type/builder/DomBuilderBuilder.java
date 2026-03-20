@@ -417,7 +417,7 @@ public class DomBuilderBuilder implements IEventBuilder<IDomInsertableContainer<
     }
 
     @Override
-    public void image(String alt, String src) {
+    public void image(String alt, String src, int width, int height) {
         IDomInsertableContainer<?> target = currentTarget();
         ElementBuilder img = Custom.$("img");
         target.insert(img);
@@ -425,6 +425,10 @@ public class DomBuilderBuilder implements IEventBuilder<IDomInsertableContainer<
             img.attr("src", src);
         if ((alt != null) && !alt.isEmpty())
             img.attr("alt", alt);
+        if (width > 0)
+            img.attr("width", String.valueOf(width));
+        if (height > 0)
+            img.attr("height", String.valueOf(height));
     }
 
     @Override

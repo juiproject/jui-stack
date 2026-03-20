@@ -627,7 +627,7 @@ public class MarkdownParser {
                         resolvedUrl = mapped;
                 }
                 if (link.image)
-                    handler.image(link.label, resolvedUrl);
+                    handler.image(link.label, resolvedUrl, link.width, link.height);
                 else
                     handler.link(link.label, resolvedUrl);
 
@@ -744,7 +744,30 @@ public class MarkdownParser {
                 if (urlEnd != -1) {
                     boolean isImage = (labelStart > 0) && (line.charAt(labelStart - 1) == '!');
                     int startPos = isImage ? (labelStart - 1) : labelStart;
-                    links.add(new LinkInfo(startPos, urlEnd + 1, line.substring(labelStart + 1, labelEnd), line.substring(urlStart, urlEnd), isImage));
+                    String rawUrl = line.substring(urlStart, urlEnd);
+                    int imgWidth = -1;
+                    int imgHeight = -1;
+                    if (isImage) {
+                        // Parse optional dimensions: "url =WxH", "url =W", "url =xH".
+                        int eqIdx = rawUrl.lastIndexOf(" =");
+                        if (eqIdx >= 0) {
+                            String dims = rawUrl.substring(eqIdx + 2);
+                            rawUrl = rawUrl.substring(0, eqIdx);
+                            int xIdx = dims.indexOf('x');
+                            if (xIdx < 0) {
+                                // Width only: "=300"
+                                imgWidth = parsePixelValue(dims);
+                            } else if (xIdx == 0) {
+                                // Height only: "=x200"
+                                imgHeight = parsePixelValue(dims.substring(1));
+                            } else {
+                                // Both: "=300x200"
+                                imgWidth = parsePixelValue(dims.substring(0, xIdx));
+                                imgHeight = parsePixelValue(dims.substring(xIdx + 1));
+                            }
+                        }
+                    }
+                    links.add(new LinkInfo(startPos, urlEnd + 1, line.substring(labelStart + 1, labelEnd), rawUrl, isImage, imgWidth, imgHeight));
                     pos = urlEnd + 1;
                     continue;
                 }
@@ -861,7 +884,7 @@ public class MarkdownParser {
         return null;
     }
 
-    private record LinkInfo(int startPos, int endPos, String label, String url, boolean image) {}
+    private record LinkInfo(int startPos, int endPos, String label, String url, boolean image, int width, int height) {}
 
     private record FormatMarker(int position, String marker, FormatType type) {}
 
@@ -938,5 +961,20 @@ public class MarkdownParser {
                 return false;
         }
         return true;
+    }
+
+    /**
+     * Parses a pixel dimension value from a string. Returns {@code -1} if the
+     * string is empty or not a valid positive integer.
+     */
+    private static int parsePixelValue(String value) {
+        if ((value == null) || value.isEmpty())
+            return -1;
+        try {
+            int v = Integer.parseInt(value);
+            return (v > 0) ? v : -1;
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 }

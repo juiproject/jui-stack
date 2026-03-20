@@ -359,6 +359,24 @@ public class DomBuilderFormattedTextRenderer {
             return;
         }
 
+        // Image — render as <img> element.
+        if (segment.image()) {
+            String src = segment.hasMeta() ? segment.meta().get(FormattedLine.META_IMAGE) : null;
+            String width = segment.hasMeta() ? segment.meta().get(FormattedLine.META_WIDTH) : null;
+            String height = segment.hasMeta() ? segment.meta().get(FormattedLine.META_HEIGHT) : null;
+            ElementBuilder img = Custom.$("img");
+            target.insert(img);
+            if ((src != null) && !src.isEmpty())
+                img.attr("src", src);
+            if ((text != null) && !text.isEmpty())
+                img.attr("alt", text);
+            if ((width != null) && !width.isEmpty())
+                img.attr("width", width);
+            if ((height != null) && !height.isEmpty())
+                img.attr("height", height);
+            return;
+        }
+
         FormatType[] formats = segment.formatting();
         String link = segment.link();
 

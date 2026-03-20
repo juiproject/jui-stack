@@ -2241,6 +2241,54 @@ public class MarkdownEventParserTest {
         );
     }
 
+    @Test
+    public void testImageWithWidthAndHeight() {
+        RecordingHandler handler = parse("![photo](img.png =300x200)");
+        handler.assertEvents(
+            "startBlock(PARA)",
+            "startLine()",
+            "image(photo, img.png, w=300, h=200)",
+            "endLine()",
+            "endBlock(PARA)"
+        );
+    }
+
+    @Test
+    public void testImageWithWidthOnly() {
+        RecordingHandler handler = parse("![photo](img.png =300)");
+        handler.assertEvents(
+            "startBlock(PARA)",
+            "startLine()",
+            "image(photo, img.png, w=300)",
+            "endLine()",
+            "endBlock(PARA)"
+        );
+    }
+
+    @Test
+    public void testImageWithHeightOnly() {
+        RecordingHandler handler = parse("![photo](img.png =x200)");
+        handler.assertEvents(
+            "startBlock(PARA)",
+            "startLine()",
+            "image(photo, img.png, h=200)",
+            "endLine()",
+            "endBlock(PARA)"
+        );
+    }
+
+    @Test
+    public void testImageDimensionsWithFullUrl() {
+        RecordingHandler handler = parse("![logo](http://example.com/logo.png =150x50)");
+        handler.assertEvents(
+            "startBlock(PARA)",
+            "startLine()",
+            "image(logo, http://example.com/logo.png, w=150, h=50)",
+            "endLine()",
+            "endBlock(PARA)"
+        );
+    }
+
     /************************************************************************
      * URL resolver tests.
      ************************************************************************/
@@ -3027,8 +3075,14 @@ public class MarkdownEventParserTest {
         }
 
         @Override
-        public void image(String alt, String src) {
-            events.add("image(" + alt + ", " + src + ")");
+        public void image(String alt, String src, int width, int height) {
+            StringBuilder sb = new StringBuilder("image(").append(alt).append(", ").append(src);
+            if (width > 0)
+                sb.append(", w=").append(width);
+            if (height > 0)
+                sb.append(", h=").append(height);
+            sb.append(")");
+            events.add(sb.toString());
         }
 
         @Override

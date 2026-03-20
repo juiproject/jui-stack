@@ -421,12 +421,16 @@ public class Elemental2Builder implements IEventBuilder<Element> {
     }
 
     @Override
-    public void image(String alt, String src) {
+    public void image(String alt, String src, int width, int height) {
         Element img = createElement("img");
         if ((src != null) && !src.isEmpty())
             img.setAttribute("src", src);
         if ((alt != null) && !alt.isEmpty())
             img.setAttribute("alt", alt);
+        if (width > 0)
+            img.setAttribute("width", String.valueOf(width));
+        if (height > 0)
+            img.setAttribute("height", String.valueOf(height));
         currentTarget().appendChild(img);
     }
 

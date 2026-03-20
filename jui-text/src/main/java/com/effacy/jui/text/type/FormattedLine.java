@@ -50,6 +50,16 @@ public class FormattedLine {
     public static final String META_IMAGE = "src";
 
     /**
+     * Meta-data key for image width (in pixels).
+     */
+    public static final String META_WIDTH = "width";
+
+    /**
+     * Meta-data key for image height (in pixels).
+     */
+    public static final String META_HEIGHT = "height";
+
+    /**
      * Various format types that can be applied in the line.
      */
     public enum FormatType {

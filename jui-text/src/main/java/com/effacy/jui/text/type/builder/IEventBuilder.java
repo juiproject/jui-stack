@@ -152,8 +152,12 @@ public interface IEventBuilder<T> {
      *            the alt text for the image.
      * @param src
      *            the image source URL.
+     * @param width
+     *            the image width in pixels ({@code -1} if not specified).
+     * @param height
+     *            the image height in pixels ({@code -1} if not specified).
      */
-    default void image(String alt, String src) {
+    default void image(String alt, String src, int width, int height) {
         // Default no-op for backwards compatibility.
     }
 

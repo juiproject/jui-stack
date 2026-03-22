@@ -1014,8 +1014,11 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
                                 Th.$ (tr).$ (th -> {
                                     th.attr ("item", "" + c.index ());
                                     th.css ("width", (h.width == null) ? null : h.width.value ());
-                                    if (h.minWidth != null)
+                                    if (h.minWidth != null) {
                                         th.css ("min-width", h.minWidth.value ());
+                                        // We need auto to ensure that min-width is respected.
+                                        table.css("table-layout: auto;");
+                                    }
                                     if (h.sortable) {
                                         th.style (styles ().sortable ());
                                         th.on (e -> handleHeaderClick (e), UIEventType.ONCLICK);

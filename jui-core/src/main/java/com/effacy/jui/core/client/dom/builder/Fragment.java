@@ -265,7 +265,29 @@ public class Fragment<T extends Fragment<T>> implements IDomInsertable {
             target.use (use);
         if (adornments != null)
             adornments.forEach (adornment -> adornment.adorn (target));
+        if (styles() != null)
+            target.css (styles().fragment());
         return target;
+    }
+
+    /************************************************************************
+     * For CSS.
+     ************************************************************************/
+
+    /**
+     * Any CSS styles to associated with the fragment. The
+     * {@link IFragmentCSS#fragment()} style is applied to the root element (if
+     * created) and any other styles are made available for selection within the
+     * fragment.
+     * <p>
+     * Note that application of the styles is performed by
+     * {@link #adorn(ElementBuilder)} which makes it available to the range of build
+     * types.
+     * 
+     * @return the styles (or {@code null} if none).
+     */
+    protected IFragmentCSS styles() {
+        return null;
     }
     
     /************************************************************************

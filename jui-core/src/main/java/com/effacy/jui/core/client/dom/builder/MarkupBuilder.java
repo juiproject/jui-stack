@@ -21,7 +21,7 @@ import com.effacy.jui.core.client.MarkupParser;
 
 import elemental2.dom.DomGlobal;
 import elemental2.dom.Node;
-import elemental2.dom.Text;
+
 
 /**
  * A very simple mechanism for displaying marked up content.
@@ -69,30 +69,41 @@ public class MarkupBuilder extends NodeBuilder<MarkupBuilder> {
         if (text == null)
             return DomGlobal.document.createTextNode ("");
         if (!text.contains("*")) {
-            Text node = DomGlobal.document.createTextNode (text);
-            parent.appendChild (node);
-            return node;
+            appendTextWithNewlines(parent, text);
+            return DomGlobal.document.createTextNode ("");
         }
         for (MarkupParser.Block blk : MarkupParser.parse(text)) {
             if (blk.isPlain()) {
-                parent.appendChild (DomGlobal.document.createTextNode (blk.text()));
+                appendTextWithNewlines(parent, blk.text());
             } else {
                 Node p = parent;
                 if (blk.bold()) {
-                    Node node = DomGlobal.document.createElement("strong");
-                    node.textContent = blk.text();
-                    p.appendChild(node);
-                    p = node;
+                    p = DomGlobal.document.createElement("strong");
+                    parent.appendChild(p);
                 }
                 if (blk.italic()) {
-                    Node node = DomGlobal.document.createElement("i");
-                    node.textContent = blk.text();
-                    p.appendChild(node);
-                    p = node;
+                    Node i = DomGlobal.document.createElement("i");
+                    p.appendChild(i);
+                    p = i;
                 }
+                appendTextWithNewlines(p, blk.text());
             }
         }
-        return DomGlobal.document.createTextNode (""); 
+        return DomGlobal.document.createTextNode ("");
+    }
+
+    /**
+     * Appends text to the given parent node, replacing newline characters with
+     * {@code <br>} elements.
+     */
+    private void appendTextWithNewlines(Node parent, String text) {
+        String[] lines = text.split("\n", -1);
+        for (int i = 0; i < lines.length; i++) {
+            if (i > 0)
+                parent.appendChild(DomGlobal.document.createElement("br"));
+            if (!lines[i].isEmpty())
+                parent.appendChild(DomGlobal.document.createTextNode(lines[i]));
+        }
     }
 
 }

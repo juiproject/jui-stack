@@ -271,6 +271,12 @@ public class Elemental2Builder implements IEventBuilder<Element> {
             case H3:
                 el = createHeading(topHeadingLevel + 2);
                 break;
+            case H4:
+                el = createHeading(topHeadingLevel + 3);
+                break;
+            case H5:
+                el = createHeading(topHeadingLevel + 4);
+                break;
             case TABLE:
                 el = createElement("table");
                 tableHeaders = 0;

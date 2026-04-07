@@ -812,7 +812,7 @@ public class Editor extends Component<Editor.Config> {
                 if (splitTr != null) {
                     // Heading at end → new block becomes paragraph.
                     if (config().paragraphAfterHeading
-                            && blk.getType().is(BlockType.H1, BlockType.H2, BlockType.H3)
+                            && blk.getType().is(BlockType.H1, BlockType.H2, BlockType.H3, BlockType.H4, BlockType.H5)
                             && (offset >= Positions.contentSize(blk))) {
                         splitTr.step(new SetBlockTypeStep(blockIdx + 1, BlockType.PARA));
                     }

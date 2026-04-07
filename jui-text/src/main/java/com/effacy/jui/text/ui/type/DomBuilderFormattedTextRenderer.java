@@ -226,6 +226,16 @@ public class DomBuilderFormattedTextRenderer {
                 applyBlockStyles(el, type);
                 renderLines(block, el);
                 break;
+            case H4:
+                el = h(root, topHeadingLevel + 3);
+                applyBlockStyles(el, type);
+                renderLines(block, el);
+                break;
+            case H5:
+                el = h(root, topHeadingLevel + 4);
+                applyBlockStyles(el, type);
+                renderLines(block, el);
+                break;
             case NLIST:
             case OLIST:
                 if (semanticLists) {

@@ -269,6 +269,12 @@ public class DomBuilderBuilder implements IEventBuilder<IDomInsertableContainer<
             case H3:
                 el = h(target, topHeadingLevel + 2);
                 break;
+            case H4:
+                el = h(target, topHeadingLevel + 3);
+                break;
+            case H5:
+                el = h(target, topHeadingLevel + 4);
+                break;
             case TABLE:
                 el = Table.$(target);
                 tableHeaders = 0;

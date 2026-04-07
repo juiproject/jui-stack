@@ -89,7 +89,17 @@ public class FormattedBlock {
          * Header level 3.
          */
         H3(BlockTypeConstraint.LINES),
-        
+
+        /**
+         * Header level 4.
+         */
+        H4(BlockTypeConstraint.LINES),
+
+        /**
+         * Header level 5.
+         */
+        H5(BlockTypeConstraint.LINES),
+
         /**
          * Unordered (bullet) list.
          */

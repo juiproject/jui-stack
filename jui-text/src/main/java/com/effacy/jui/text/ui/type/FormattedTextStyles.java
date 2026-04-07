@@ -24,6 +24,8 @@ public class FormattedTextStyles {
         BLOCK_STYLES.put (BlockType.H1, new String[] { "block" });
         BLOCK_STYLES.put (BlockType.H2, new String[] { "block" });
         BLOCK_STYLES.put (BlockType.H3, new String[] { "block" });
+        BLOCK_STYLES.put (BlockType.H4, new String[] { "block" });
+        BLOCK_STYLES.put (BlockType.H5, new String[] { "block" });
         BLOCK_STYLES.put (BlockType.TCELL, new String[] { "block" });
     }
 

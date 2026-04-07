@@ -319,7 +319,13 @@ public class MarkdownParser {
         BlockType headingType = BlockType.PARA;
         String content = trimmed;
 
-        if (trimmed.startsWith("### ")) {
+        if (trimmed.startsWith("##### ")) {
+            headingType = BlockType.H5;
+            content = trimmed.substring(6);
+        } else if (trimmed.startsWith("#### ")) {
+            headingType = BlockType.H4;
+            content = trimmed.substring(5);
+        } else if (trimmed.startsWith("### ")) {
             headingType = BlockType.H3;
             content = trimmed.substring(4);
         } else if (trimmed.startsWith("## ")) {

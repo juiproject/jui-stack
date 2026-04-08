@@ -266,7 +266,7 @@ public class Fragment<T extends Fragment<T>> implements IDomInsertable {
         if (adornments != null)
             adornments.forEach (adornment -> adornment.adorn (target));
         if (styles() != null)
-            target.css (styles().fragment());
+            target.style (styles().fragment());
         return target;
     }
 

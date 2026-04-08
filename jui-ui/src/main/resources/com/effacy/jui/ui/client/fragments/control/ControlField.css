@@ -1,0 +1,19 @@
+.fragment {
+    --jui-frag-controlmessages-size: 1em;
+    --jui-frag-controlmessages-color: var(--jui-ctl-err-focus);
+    --jui-frag-controlmessages-margin: 0.75em;
+    --jui-frag-controlmessages-padding: 0;
+    --jui-frag-controlmessages-required-weight: 600;
+}
+
+.fragment > label.required {
+    font-weight: var(--jui-frag-controlmessages-required-weight);
+}
+
+.fragment .messages {
+    color: var(--jui-frag-controlmessages-color);
+    list-style: none;
+    margin-top: var(--jui-frag-controlmessages-margin);
+    padding: var(--jui-frag-controlmessages-padding);
+    font-size: var(--jui-frag-controlmessages-size);
+}

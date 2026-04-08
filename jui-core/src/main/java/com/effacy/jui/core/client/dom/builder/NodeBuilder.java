@@ -124,7 +124,7 @@ public abstract class NodeBuilder<T extends NodeBuilder<T>> implements IDomInser
          */
         public void forEachLodgement(Consumer<Object> processor) {
             if (ctx != null)
-                ctx.forEachLodgement (processor);
+                ctx.lodgements().forEach(processor);
         }
 
         /**
@@ -350,14 +350,25 @@ public abstract class NodeBuilder<T extends NodeBuilder<T>> implements IDomInser
         }
 
         /**
-         * Processes each lodgement.
+         * The number of lodged objects.
          * 
-         * @param processor
-         *                  to process a lodgement.
+         * @return the number.
          */
-        public void forEachLodgement(Consumer<Object> processor) {
-            if (lodgements != null)
-                lodgements.forEach (processor);
+        public int lodgementCount() {
+            if (lodgements == null)
+                return 0;
+            return lodgements.size();
+        }
+
+        /**
+         * Obtains the list of lodged objects as a mutable list.
+         * 
+         * @return the lodged objects.
+         */
+        public List<Object> lodgements() {
+            if (lodgements == null)
+                return new ArrayList<> ();
+            return new ArrayList<>(lodgements);
         }
 
         /**

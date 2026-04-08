@@ -15,7 +15,11 @@
  ******************************************************************************/
 package com.effacy.jui.core.client.control;
 
+import java.util.List;
+import java.util.function.Consumer;
+
 import com.effacy.jui.core.client.IResetable;
+import com.effacy.jui.core.client.Invoker;
 import com.effacy.jui.core.client.component.IComponent;
 import com.effacy.jui.validation.model.IInvalidator;
 import com.effacy.jui.validation.model.IValidatable;
@@ -312,6 +316,30 @@ public interface IControl<V> extends IComponent, IControlValue<V>, IResetable, I
      */
     default public boolean validate(boolean clearIfValid) {
         return invalidator ().validate (clearIfValid);
+    }
+
+    /**
+     * Convenience to handle invalidation events with the given handlers.
+     * 
+     * @param onInvalid
+     *                  handles when the control is invalidated with the list of
+     *                  messages.
+     * @param onClear
+     *                  handles when the control is cleared of invalidation.
+     */
+    default void handleInvalidation(Consumer<List<String>> onInvalid, Invoker onClear) {
+        addListener(new IInvalidListener() {
+            @Override
+            public void onInvalidated(IControl<?> ctl, List<String> messages) {
+                if (onInvalid != null)
+                    onInvalid.accept(messages);
+            }
+            @Override
+            public void onClearInvalidated(IControl<?> ctl) {
+                if (onClear != null)
+                    onClear.invoke();
+            }
+        });
     }
 
 }

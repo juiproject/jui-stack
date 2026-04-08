@@ -26,6 +26,12 @@ import jsinterop.base.Js;
 
 public class Fragment<T extends Fragment<T>> implements IDomInsertable {
 
+    /**
+     * Used to apply an adornment to a fragment. This is used to apply styles and
+     * other attributes to the root element of the fragment (if created) and is also
+     * available for application to any element within the fragment (e.g. to apply a
+     * style to a specific element within the fragment).
+     */
     @FunctionalInterface
     public interface IFragmentAdornment {
 
@@ -36,6 +42,21 @@ public class Fragment<T extends Fragment<T>> implements IDomInsertable {
          *             the target element.
          */
         public void adorn(ElementBuilder target);
+    }
+
+    /**
+     * Used to provide standard variants of a fragment.
+     */
+    @FunctionalInterface
+    public interface IFragmentVariant<T> {
+
+        /**
+         * Configures the fragment for the variant.
+         * 
+         * @param fragment
+         *                 the fragment to configure.
+         */
+        public void configure(T fragment);
     }
 
     /**
@@ -57,6 +78,20 @@ public class Fragment<T extends Fragment<T>> implements IDomInsertable {
      * See {@link #iff(boolean)}.
      */
     protected Supplier<Boolean> conditional;
+
+    /**
+     * Applies the given variant to the fragment.
+     * 
+     * @param variant
+     *                the variant to apply.
+     * @return this fragment.
+     */
+    @SuppressWarnings("unchecked")
+    public T variant(IFragmentVariant<T> variant) {
+        if (variant != null)
+            variant.configure((T)this);
+        return (T) this;
+    }
 
     /**
      * Can be used to conditionally display the fragment.

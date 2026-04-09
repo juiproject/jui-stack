@@ -90,6 +90,39 @@ public class MyCard extends Component<MyCard.Config> {
 }
 ```
 
+### Configuration variants
+
+Often you will need to capture variants of a component which is a state of configuration (an may include a specific set of styles or re-styling via CSS variable assignment). This can be handled using a variant functional interface:
+
+```java
+...
+public static class Config extends Component.Config {
+    
+    @FunctionalInterface
+    public interface Variant {
+
+        public static Variant ALT = config -> {
+            config.css("...");
+            ...
+        };
+
+        void configure(Config config);
+    }
+
+    public Config variant(Variant variant) {
+        if (variant != null)
+            variant.configure(this);
+        return this;
+    }
+
+    ...
+
+}
+...
+```
+
+You can also declare variants elsewhere (i.e. application specific). A similar pattern can apply to fragments.
+
 ### Record-Based Configuration
 
 For simpler configuration using records:

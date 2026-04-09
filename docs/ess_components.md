@@ -253,7 +253,6 @@ Now the configuration class for a custom component must extend `Component.Config
 |`styles(String...)`|CSS style classes to apply to the root element of the component when it is rendered. These are in addition to the styles that are applied internally by the component itself.|
 |`adorn(Consumer<Element)`|Invoked when the component is first rendered (i.e. not invoked on re-rendering). Intended to all for the application of non-style based CSS to the root element of the component (i.e. `adorn (e -> CSS.MIN_WIDTH.apply (e, Length.em (6)))`)|
 
-
 ### Rendering
 
 *Here we limit ourselves to the rendering of the DOM associated directly with the component. Rendering of children is a more comprehensive and is deferred to [Child components](#child-components).*

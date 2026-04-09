@@ -17,3 +17,15 @@
     padding: var(--jui-frag-controlmessages-padding);
     font-size: var(--jui-frag-controlmessages-size);
 }
+
+.fragment ul {
+    display: none;
+}
+
+.fragment.error ul {
+    display: block;
+}
+
+.fragment.error > label {
+    color: var(--jui-frag-controlmessages-color);
+}

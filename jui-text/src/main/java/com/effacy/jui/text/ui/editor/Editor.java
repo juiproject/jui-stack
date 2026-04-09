@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.core.client.component.Component;
+import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.platform.css.client.CssResource;
@@ -23,8 +23,6 @@ import com.effacy.jui.text.type.edit.Positions;
 import com.effacy.jui.text.type.edit.Selection;
 import com.effacy.jui.text.type.edit.Transaction;
 import com.effacy.jui.text.type.edit.step.SetBlockTypeStep;
-import com.effacy.jui.text.ui.editor.IEditorCommands;
-import com.effacy.jui.text.ui.editor.IEditorContext;
 import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.DomGlobal;
@@ -290,6 +288,15 @@ public class Editor extends Component<Editor.Config> {
          *                      selection.
          */
         void onCellStateUpdate(Set<FormatType> activeFormats);
+
+        /**
+         * Called when the editor content has been mutated (e.g. text
+         * insertion, deletion, format change, undo/redo). The containing
+         * control should use this to propagate modification events.
+         */
+        default void onContentChanged() {
+            // Default no-op for backward compatibility.
+        }
     }
 
     /**
@@ -684,6 +691,8 @@ public class Editor extends Component<Editor.Config> {
         if (config().debugLog)
             debugLogState("applyTransaction");
         render();
+        if (stateListener != null)
+            stateListener.onContentChanged();
     }
 
     /**
@@ -696,6 +705,8 @@ public class Editor extends Component<Editor.Config> {
             return;
         Transaction inverse = state.apply(tr);
         history.push(inverse);
+        if (stateListener != null)
+            stateListener.onContentChanged();
     }
 
     /************************************************************************
@@ -727,15 +738,21 @@ public class Editor extends Component<Editor.Config> {
         // Undo / redo.
         if (ctrl && "z".equals(ke.key) && !shift) {
             ke.preventDefault();
-            if (history.undo(state))
+            if (history.undo(state)) {
                 render();
+                if (stateListener != null)
+                    stateListener.onContentChanged();
+            }
             return;
         }
         if ((ctrl && shift && ("z".equals(ke.key) || "Z".equals(ke.key)))
                 || (ctrl && "y".equals(ke.key))) {
             ke.preventDefault();
-            if (history.redo(state))
+            if (history.redo(state)) {
                 render();
+                if (stateListener != null)
+                    stateListener.onContentChanged();
+            }
             return;
         }
 

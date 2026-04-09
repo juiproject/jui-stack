@@ -100,6 +100,11 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
              */
             public static final Style STANDARD = create(StandardLocalCSS.instance ());
 
+            /**
+             * Transparent style.
+             */
+            public static final Style TRANSPARENT = create(TransparentLocalCSS.instance ());
+
         }
 
         /**
@@ -735,6 +740,41 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
         public static ILocalCSS instance() {
             if (STYLES == null) {
                 STYLES = (StandardLocalCSS) GWT.create (StandardLocalCSS.class);
+                STYLES.ensureInjected ();
+            }
+            return STYLES;
+        }
+    }
+
+    /**
+     * Component CSS (horizontal).
+     */
+    @CssResource(value = {
+        IComponentCSS.COMPONENT_CSS,
+        "com/effacy/jui/ui/client/control/Control.css",
+        "com/effacy/jui/ui/client/control/TextAreaControl.css",
+        "com/effacy/jui/ui/client/control/TextAreaControl_Override.css"
+    }, stylesheet = """
+        .component {
+            --jui-textareactl-bg: transparent;
+            --jui-textareactl-border: transparent;
+            --jui-textareactl-padding: 0.55em 0.25em;
+            --jui-ctl-bg-disabled: transparent;
+        }
+        .component:hover {
+            --jui-textareactl-border: #eaeaea;
+        }
+        .component textarea::placeholder {
+            font-style: italic;
+        }
+    """)
+    public static abstract class TransparentLocalCSS implements ILocalCSS {
+
+        private static TransparentLocalCSS STYLES;
+
+        public static ILocalCSS instance() {
+            if (STYLES == null) {
+                STYLES = (TransparentLocalCSS) GWT.create (TransparentLocalCSS.class);
                 STYLES.ensureInjected ();
             }
             return STYLES;

@@ -60,8 +60,14 @@ public class ControlField {
          */
         private ILocalCSS styles = STANDARD;
 
+        /**
+         * See {@link #label(String)}.
+         */
         private String label;
 
+        /**
+         * See {@link #required(boolean)}.
+         */
         private boolean required;
 
         public ControlFieldFragment label(String label) {
@@ -107,15 +113,17 @@ public class ControlField {
                 main.handleLodgements(ctx -> {
                     ctx.forEach(l -> {
                         if (l instanceof IControl) {
-                        IControl<?> control = (IControl<?>) l;
-                        control.handleInvalidation(msg -> {
-                            Wrap.$(messagesEl.get()).$ (errors -> {
-                                msg.forEach (error -> Li.$ (errors).text (error));
-                            }).build ();
-                        }, () -> {
-                            DomSupport.removeAllChildren (messagesEl.get());
-                        });
-                    }
+                            IControl<?> control = (IControl<?>) l;
+                            control.handleInvalidation(msg -> {
+                                Wrap.$(messagesEl.get()).$ (errors -> {
+                                    msg.forEach (error -> Li.$ (errors).text (error));
+                                }).build ();
+                                messagesEl.get().parentElement.classList.add(styles().error());
+                            }, () -> {
+                                DomSupport.removeAllChildren (messagesEl.get());
+                                messagesEl.get().parentElement.classList.remove(styles().error());
+                            });
+                        }
                     });
                 });
             });
@@ -138,6 +146,7 @@ public class ControlField {
      ********************************************************************/
 
     public static interface ILocalCSS extends IFragmentCSS {
+        String error();
         String required();
         String messages();
     }

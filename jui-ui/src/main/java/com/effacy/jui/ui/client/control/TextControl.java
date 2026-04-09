@@ -92,6 +92,11 @@ public class TextControl extends Control<String, TextControl.Config> {
              */
             public static final Style STANDARD = Style.create (StandardLocalCSS.instance ());
 
+            /**
+             * Transparent style.
+             */
+            public static final Style TRANSPARENT = Style.create (TransparentLocalCSS.instance ());
+
         }
 
         /**
@@ -357,8 +362,8 @@ public class TextControl extends Control<String, TextControl.Config> {
      */
     @Override
     protected INodeProvider buildNode(Element el, Config data) {
-        return Wrap.$ (el).$ (
-            Div.$ ().style (styles ().inner ()).$ (
+        return Wrap.$ (el).$ (root -> {
+            Div.$ (root).style (styles ().inner ()).$ (
                 Em.$ ()
                     .style (styles ().read_only (), FontAwesome.lock ()),
                 Em.$ ().iff (!StringSupport.empty (data.iconLeft))
@@ -389,8 +394,8 @@ public class TextControl extends Control<String, TextControl.Config> {
                     }, UIEventType.ONCLICK),
                 Em.$ ().iff (!StringSupport.empty (data.iconRight))
                     .style (styles ().right (), data.iconRight)
-            )
-        ).build (tree -> {
+            );
+        }).build (tree -> {
             // Register the input as the focus element (we only have one).
             inputEl = (HTMLInputElement) manageFocusEl (tree.first ("input"));
         });
@@ -453,7 +458,7 @@ public class TextControl extends Control<String, TextControl.Config> {
     }
 
     /**
-     * Component CSS (horizontal).
+     * Component CSS.
      */
     @CssResource({
         IComponentCSS.COMPONENT_CSS,
@@ -468,6 +473,43 @@ public class TextControl extends Control<String, TextControl.Config> {
         public static ILocalCSS instance() {
             if (STYLES == null) {
                 STYLES = (StandardLocalCSS) GWT.create (StandardLocalCSS.class);
+                STYLES.ensureInjected ();
+            }
+            return STYLES;
+        }
+    }
+
+
+
+    /**
+     * Component CSS.
+     */
+    @CssResource(value = {
+        IComponentCSS.COMPONENT_CSS,
+        "com/effacy/jui/ui/client/control/Control.css",
+        "com/effacy/jui/ui/client/control/TextControl.css",
+        "com/effacy/jui/ui/client/control/TextControl_Override.css"
+    }, stylesheet = """
+        .component {
+            --jui-textctl-bg: transparent;
+            --jui-textctl-border: transparent;
+            --jui-ctl-bg-disabled: transparent;
+            --jui-textctl-padding: 0 0.25em;
+        }
+        .component:hover {
+            --jui-textctl-border: #eaeaea;
+        }
+        .component input::placeholder {
+            font-style: italic;
+        }
+    """)
+    public static abstract class TransparentLocalCSS implements ILocalCSS {
+
+        private static TransparentLocalCSS STYLES;
+
+        public static ILocalCSS instance() {
+            if (STYLES == null) {
+                STYLES = (TransparentLocalCSS) GWT.create (TransparentLocalCSS.class);
                 STYLES.ensureInjected ();
             }
             return STYLES;

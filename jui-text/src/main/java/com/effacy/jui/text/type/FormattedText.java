@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.effacy.jui.json.annotation.JsonSerializable;
+import com.effacy.jui.rpc.handler.client.command.V;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.builder.FormattedTextBuilder;
 import com.effacy.jui.text.type.builder.markdown.MarkdownParser;
@@ -32,6 +33,11 @@ import com.effacy.jui.text.type.builder.markdown.MarkdownParser;
  */
 @JsonSerializable
 public class FormattedText implements Iterable<FormattedBlock> {
+
+    /**
+     * RPC value type.
+     */
+    public static class VFormattedText extends V<FormattedText> {} 
 
     /************************************************************************
      * Construction
@@ -186,19 +192,21 @@ public class FormattedText implements Iterable<FormattedBlock> {
         int h = 0;
         if (blocks != null) {
             for (FormattedBlock block : blocks) {
-                h = 31 * h + block.getType().hashCode();
-                h = 31 * h + block.getIndent();
+                // The (h << 5) - h pattern accommodates overflow (<< in JavaScrip truncates to
+                // 32 bits) and provides a good distribution.
+                h = (h << 5) - h + block.getType().hashCode();
+                h = (h << 5) - h + block.getIndent();
                 if (block.getMeta() != null)
-                    h = 31 * h + block.getMeta().hashCode();
+                    h = (h << 5) - h + block.getMeta().hashCode();
                 for (FormattedLine line : block.getLines()) {
-                    h = 31 * h + line.getText().hashCode();
+                    h = (h << 5) - h + line.getText().hashCode();
                     if (line.getFormatting() != null) {
                         for (FormattedLine.Format fmt : line.getFormatting()) {
-                            h = 31 * h + fmt.getIndex();
-                            h = 31 * h + fmt.getLength();
-                            h = 31 * h + fmt.getFormats().hashCode();
+                            h = (h << 5) - h + fmt.getIndex();
+                            h = (h << 5) - h + fmt.getLength();
+                            h = (h << 5) - h + fmt.getFormats().hashCode();
                             if (fmt.getMeta() != null)
-                                h = 31 * h + fmt.getMeta().hashCode();
+                                h = (h << 5) - h + fmt.getMeta().hashCode();
                         }
                     }
                 }

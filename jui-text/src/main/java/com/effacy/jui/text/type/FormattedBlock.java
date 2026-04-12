@@ -109,6 +109,11 @@ public class FormattedBlock {
          * Ordered (numbered) list.
          */
         OLIST(BlockTypeConstraint.LINES),
+
+        /**
+         * Fenced code block.
+         */
+        CODE(BlockTypeConstraint.LINES),
         
         /**
          * Equation.

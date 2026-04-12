@@ -78,6 +78,11 @@ public class DomBuilderBuilder implements IEventBuilder<IDomInsertableContainer<
     private Deque<IDomInsertableContainer<?>> stack = new ArrayDeque<>();
 
     /**
+     * Stack of block types matching {@link #stack}.
+     */
+    private Deque<BlockType> blockTypeStack = new ArrayDeque<>();
+
+    /**
      * The heading level that markdown H1 maps to (default 1).
      */
     private int topHeadingLevel = 1;
@@ -184,6 +189,24 @@ public class DomBuilderBuilder implements IEventBuilder<IDomInsertableContainer<
         return root;
     }
 
+    @Override
+    public void commence() {
+        stack.clear();
+        blockTypeStack.clear();
+        ulStack.clear();
+        ulTypeStack.clear();
+        firstLineInBlock = false;
+        tableHeaders = 0;
+        tableAlign = null;
+        tableRowIndex = 0;
+        tableCellIndex = 0;
+        listDepth = -1;
+        lastLi = null;
+        pendingLi = null;
+        pendingIndent = 0;
+        pendingOrdered = false;
+    }
+
     /**
      * Assigns the top heading level. Markdown H1 maps to
      * {@code <h{level}>}, H2 to {@code <h{level+1}>}, etc., capped at H6.
@@ -255,11 +278,23 @@ public class DomBuilderBuilder implements IEventBuilder<IDomInsertableContainer<
                     pendingIndent = 0;
                     pendingOrdered = (type == BlockType.OLIST);
                     stack.push(li);
+                    blockTypeStack.push(type);
                     firstLineInBlock = true;
                     return;
                 }
                 el = P.$(target);
                 break;
+            case CODE: {
+                ElementBuilder pre = Custom.$(target, "pre");
+                String[] styles = FormattedTextStyles.BLOCK_STYLES.get(type);
+                if (styles != null)
+                    pre.style(styles);
+                el = Custom.$(pre, "code");
+                stack.push(el);
+                blockTypeStack.push(type);
+                firstLineInBlock = true;
+                return;
+            }
             case H1:
                 el = h(target, topHeadingLevel);
                 break;
@@ -305,6 +340,7 @@ public class DomBuilderBuilder implements IEventBuilder<IDomInsertableContainer<
         if (styles != null)
             el.style(styles);
         stack.push(el);
+        blockTypeStack.push(type);
         firstLineInBlock = true;
     }
 
@@ -317,6 +353,7 @@ public class DomBuilderBuilder implements IEventBuilder<IDomInsertableContainer<
         if (type == BlockType.TCELL)
             tableCellIndex++;
         stack.pop();
+        blockTypeStack.pop();
     }
 
     @Override
@@ -340,6 +377,11 @@ public class DomBuilderBuilder implements IEventBuilder<IDomInsertableContainer<
             } catch (NumberFormatException e) {
                 // Ignore.
             }
+        } else if (("lang".equals(name) || "language".equals(name)) && !stack.isEmpty() && (currentBlockType() == BlockType.CODE) && (stack.peek() instanceof ElementBuilder)) {
+            ElementBuilder code = (ElementBuilder) stack.peek();
+            code.attr("data-lang", value);
+            if ((value != null) && !value.isEmpty())
+                code.style("language-" + value);
         }
     }
 
@@ -347,8 +389,12 @@ public class DomBuilderBuilder implements IEventBuilder<IDomInsertableContainer<
     public void startLine() {
         if (pendingLi != null)
             resolveListItem();
-        if (!firstLineInBlock)
-            Br.$(currentTarget());
+        if (!firstLineInBlock) {
+            if (currentBlockType() == BlockType.CODE)
+                Text.$(currentTarget(), "\n");
+            else
+                Br.$(currentTarget());
+        }
         firstLineInBlock = false;
     }
 
@@ -453,6 +499,10 @@ public class DomBuilderBuilder implements IEventBuilder<IDomInsertableContainer<
         if (stack.isEmpty())
             return root;
         return stack.peek();
+    }
+
+    private BlockType currentBlockType() {
+        return blockTypeStack.isEmpty() ? null : blockTypeStack.peek();
     }
 
     /**

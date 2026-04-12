@@ -1,15 +1,13 @@
-package com.effacy.jui.ui.client.chat;
+package com.effacy.jui.text.ui.chat;
 
 import java.util.List;
 
 import org.gwtproject.json.client.JSONArray;
-import org.gwtproject.json.client.JSONNumber;
 import org.gwtproject.json.client.JSONObject;
 import org.gwtproject.json.client.JSONParser;
 import org.gwtproject.json.client.JSONString;
 
 import com.effacy.jui.core.client.component.Component;
-import com.effacy.jui.ui.client.chat.IChatPanelHost.ContextEntry;
 import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.core.client.component.layout.LayoutData;
 import com.effacy.jui.core.client.dom.INodeProvider;
@@ -21,11 +19,12 @@ import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.core.client.dom.jquery.JQuery;
 import com.effacy.jui.core.client.dom.sse.SSEPostConnector;
 import com.effacy.jui.platform.css.client.CssResource;
-import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.text.type.builder.markdown.MarkdownParser;
+import com.effacy.jui.text.ui.chat.IChatPanelHost.ContextEntry;
 import com.effacy.jui.text.ui.type.FormattedTextStyles;
 import com.effacy.jui.text.ui.type.builder.Elemental2Builder;
+import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.DomGlobal;

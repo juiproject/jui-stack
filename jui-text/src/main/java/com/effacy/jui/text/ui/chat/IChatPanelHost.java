@@ -1,4 +1,4 @@
-package com.effacy.jui.ui.client.chat;
+package com.effacy.jui.text.ui.chat;
 
 import java.util.List;
 

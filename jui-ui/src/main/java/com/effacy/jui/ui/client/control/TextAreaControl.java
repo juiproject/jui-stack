@@ -617,12 +617,15 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
      *                 assignment of value.
      */
     protected void _resize(boolean assigned) {
+        // Reset to minimum so scrollHeight reflects the actual content height
+        // (allows shrinking when text reflows to fewer lines).
+        int minHeight = 16;
+        if (sizeAfterAssignment > minHeight)
+            minHeight = sizeAfterAssignment;
+        CSS.HEIGHT.apply(inputEl, Length.px(minHeight));
         if (assigned)
             sizeAfterAssignment = inputEl.clientHeight;
-        int minHeight = 16; // Math.max(16, 16 * config().rows);
-        if (sizeAfterAssignment < minHeight)
-            sizeAfterAssignment = minHeight;
-        if (inputEl.scrollHeight > sizeAfterAssignment)
+        if (inputEl.scrollHeight > minHeight)
             CSS.HEIGHT.apply(inputEl, Length.px(inputEl.scrollHeight));
     }
 
@@ -668,6 +671,14 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
 
         if (config ().resizable)
             getRoot ().classList.add (styles ().resizable ());
+        if (config ().expandOnContent)
+            setMonitorWindowResize (true);
+    }
+
+    @Override
+    protected void onWindowResize(int width, int height) {
+        if (config ().expandOnContent)
+            _resize (false);
     }
 
     /**

@@ -225,7 +225,6 @@ public abstract class Serializer {
      * @throws SerializationException
      *             If there was a problem de-serializing
      */
-    @SuppressWarnings("unchecked")
     public <T> T deSerializeWithDefault(JSONValue jsonValue, String... defaultClassNames) throws SerializationException {
         String message = "";
         try {

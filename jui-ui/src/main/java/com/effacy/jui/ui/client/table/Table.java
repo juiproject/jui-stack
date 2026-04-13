@@ -255,6 +255,11 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
             private Length width;
 
             /**
+             * See {@link #minWidth(Length)}.
+             */
+            private Length minWidth;
+
+            /**
              * See {@link #renderer(Function, ITableCellRenderer)}.
              */
             private ITableCellRenderer<R> renderer;
@@ -355,6 +360,18 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
              */
             public Header width(Length width) {
                 this.width = width;
+                return this;
+            }
+
+            /**
+             * The minimum width of the column.
+             * 
+             * @param minWidth
+             *                 the minimum width.
+             * @return this header instance.
+             */
+            public Header minWidth(Length minWidth) {
+                this.minWidth = minWidth;
                 return this;
             }
 
@@ -997,6 +1014,11 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
                                 Th.$ (tr).$ (th -> {
                                     th.attr ("item", "" + c.index ());
                                     th.css ("width", (h.width == null) ? null : h.width.value ());
+                                    if (h.minWidth != null) {
+                                        th.css ("min-width", h.minWidth.value ());
+                                        // We need auto to ensure that min-width is respected.
+                                        table.css("table-layout: auto;");
+                                    }
                                     if (h.sortable) {
                                         th.style (styles ().sortable ());
                                         th.on (e -> handleHeaderClick (e), UIEventType.ONCLICK);

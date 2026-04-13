@@ -195,42 +195,21 @@ public class MarkdownParser {
     private void parseBlocks(String markdown, Function<String, String> lineProcessor, IEventBuilder<?> handler, boolean partial) {
         if ((markdown == null) || markdown.isEmpty())
             return;
-        String[] rawParagraphs = markdown.split("\\n\\n+");
+        List<ParsedBlock> blocks = splitBlocks(markdown);
 
-        // Merge consecutive list-only paragraphs so that blank lines between
-        // list items do not restart the list numbering.
-        List<String> merged = new ArrayList<>();
-        for (String rp : rawParagraphs) {
-            if (rp.trim().isEmpty()) {
-                merged.add(rp);
+        // Determine the index of the last non-empty block for partial handling.
+        int lastBlockIndex = partial ? (blocks.size() - 1) : -1;
+
+        for (int p = 0; p < blocks.size(); p++) {
+            ParsedBlock block = blocks.get(p);
+            boolean partialBlock = (p == lastBlockIndex);
+
+            if (block.code) {
+                emitCodeBlock(handler, block, partialBlock);
                 continue;
             }
-            if (!merged.isEmpty() && isListBlock(merged.get(merged.size() - 1).split("\\n")) && isListBlock(rp.split("\\n")))
-                merged.set(merged.size() - 1, merged.get(merged.size() - 1) + "\n" + rp);
-            else
-                merged.add(rp);
-        }
-        String[] paragraphs = merged.toArray(new String[0]);
 
-        // Determine the index of the last non-empty paragraph for partial handling.
-        int lastParaIndex = -1;
-        if (partial) {
-            for (int p = paragraphs.length - 1; p >= 0; p--) {
-                if (!paragraphs[p].trim().isEmpty()) {
-                    lastParaIndex = p;
-                    break;
-                }
-            }
-        }
-
-        for (int p = 0; p < paragraphs.length; p++) {
-            String para = paragraphs[p];
-            if (para.trim().isEmpty())
-                continue;
-
-            boolean partialBlock = (p == lastParaIndex);
-
-            String[] lines = para.split("\\n");
+            String[] lines = block.lines.toArray(new String[0]);
 
             // Apply line processor if provided.
             if (lineProcessor != null) {
@@ -310,6 +289,92 @@ public class MarkdownParser {
         }
     }
 
+    private List<ParsedBlock> splitBlocks(String markdown) {
+        String[] rawLines = markdown.split("\\n", -1);
+        List<ParsedBlock> blocks = new ArrayList<>();
+        int i = 0;
+        while (i < rawLines.length) {
+            while ((i < rawLines.length) && rawLines[i].trim().isEmpty())
+                i++;
+            if (i >= rawLines.length)
+                break;
+
+            String trimmed = rawLines[i].trim();
+            if (trimmed.startsWith("```")) {
+                ParsedBlock block = new ParsedBlock();
+                block.code = true;
+                block.lang = trimmed.substring(3).trim();
+                i++;
+                while (i < rawLines.length) {
+                    if (rawLines[i].trim().startsWith("```")) {
+                        i++;
+                        break;
+                    }
+                    block.lines.add(rawLines[i]);
+                    i++;
+                }
+                blocks.add(block);
+                continue;
+            }
+
+            ParsedBlock block = new ParsedBlock();
+            while (i < rawLines.length) {
+                if (rawLines[i].trim().startsWith("```"))
+                    break;
+                if (rawLines[i].trim().isEmpty())
+                    break;
+                block.lines.add(rawLines[i]);
+                i++;
+            }
+            if (!block.lines.isEmpty())
+                blocks.add(block);
+        }
+
+        // Merge consecutive list-only blocks so that blank lines between list
+        // items do not restart the list numbering.
+        List<ParsedBlock> merged = new ArrayList<>();
+        for (ParsedBlock block : blocks) {
+            if (block.code) {
+                merged.add(block);
+                continue;
+            }
+            if (!merged.isEmpty() && !merged.get(merged.size() - 1).code
+                && isListBlock(merged.get(merged.size() - 1).lines.toArray(new String[0]))
+                && isListBlock(block.lines.toArray(new String[0]))) {
+                merged.get(merged.size() - 1).lines.addAll(block.lines);
+            } else {
+                merged.add(block);
+            }
+        }
+        return merged;
+    }
+
+    private static boolean isFenceLine(String line) {
+        return (line != null) && line.trim().startsWith("```");
+    }
+
+    private void emitCodeBlock(IEventBuilder<?> handler, ParsedBlock block, boolean partial) {
+        handler.startBlock(BlockType.CODE);
+        if ((block.lang != null) && !block.lang.isEmpty())
+            handler.meta("lang", block.lang);
+        for (int i = 0; i < block.lines.size(); i++) {
+            boolean partialLine = partial && (i == (block.lines.size() - 1));
+            handler.startLine();
+            if (!block.lines.get(i).isEmpty())
+                handler.text(block.lines.get(i));
+            else if (partialLine && partial)
+                handler.text("");
+            handler.endLine();
+        }
+        handler.endBlock(BlockType.CODE);
+    }
+
+    private static class ParsedBlock {
+        boolean code;
+        String lang;
+        List<String> lines = new ArrayList<>();
+    }
+
     /************************************************************************
      * Heading.
      ************************************************************************/
@@ -319,7 +384,13 @@ public class MarkdownParser {
         BlockType headingType = BlockType.PARA;
         String content = trimmed;
 
-        if (trimmed.startsWith("### ")) {
+        if (trimmed.startsWith("##### ")) {
+            headingType = BlockType.H5;
+            content = trimmed.substring(6);
+        } else if (trimmed.startsWith("#### ")) {
+            headingType = BlockType.H4;
+            content = trimmed.substring(5);
+        } else if (trimmed.startsWith("### ")) {
             headingType = BlockType.H3;
             content = trimmed.substring(4);
         } else if (trimmed.startsWith("## ")) {

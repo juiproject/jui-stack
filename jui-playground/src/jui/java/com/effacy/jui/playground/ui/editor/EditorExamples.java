@@ -21,14 +21,14 @@ import java.util.List;
 import com.effacy.jui.core.client.control.IControl.Value;
 import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.css.Length;
+import com.effacy.jui.text.type.FormattedText;
 import com.effacy.jui.text.ui.editor.Editor;
 import com.effacy.jui.text.ui.editor.EditorToolbar;
-import com.effacy.jui.text.type.FormattedText;
 import com.effacy.jui.text.ui.editor.FormattedTextEditor;
+import com.effacy.jui.text.ui.editor.FormattedTextEditor.Position;
 import com.effacy.jui.text.ui.editor.LinkPanel;
 import com.effacy.jui.text.ui.editor.Tools;
 import com.effacy.jui.text.ui.editor.VariablePanel;
-import com.effacy.jui.text.ui.editor.IEditorToolbar.Position;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.effacy.jui.ui.client.panel.Panel;
 

@@ -59,6 +59,8 @@ public class Tools {
     public static final ITool H1 = block(BlockType.H1, "H1", "Heading 1");
     public static final ITool H2 = block(BlockType.H2, "H2", "Heading 2");
     public static final ITool H3 = block(BlockType.H3, "H3", "Heading 3");
+    public static final ITool H4 = block(BlockType.H4, "H4", "Heading 4");
+    public static final ITool H5 = block(BlockType.H5, "H5", "Heading 5");
     public static final ITool PARAGRAPH = block(BlockType.PARA, r -> Em.$(r).style(FontAwesome.paragraph()), "Paragraph");
 
     /************************************************************************
@@ -94,7 +96,7 @@ public class Tools {
         return new ITool[] {
             BOLD, ITALIC, UNDERLINE, STRIKETHROUGH, SUBSCRIPT, SUPERSCRIPT, CODE, HIGHLIGHT,
             SEPARATOR,
-            H1, H2, H3, PARAGRAPH,
+            H1, H2, H3, H4, H5, PARAGRAPH,
             SEPARATOR,
             BULLET_LIST, NUMBERED_LIST,
             SEPARATOR,

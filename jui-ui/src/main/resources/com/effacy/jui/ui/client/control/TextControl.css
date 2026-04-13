@@ -1,4 +1,6 @@
 .component {
+	--jui-textctl-size: 1em;
+	--jui-textctl-padding: 0 0.75em;
     --jui-textctl-height: var(--jui-ctl-height);
     --jui-textctl-border: var(--jui-ctl-border);
     --jui-textctl-border-radius: var(--jui-ctl-border-radius);
@@ -17,7 +19,7 @@
 	border: 1px solid var(--jui-textctl-border);
 	border-radius: var(--jui-textctl-border-radius);
 	box-sizing: content-box;
-	padding: 0 0.75em;
+	padding: var(--jui-textctl-padding);
 	background: var(--jui-textctl-bg);
 	display: flex;
 	flex-direction: row;
@@ -40,12 +42,14 @@
 }
 
 .component input {
+	padding: 0;
+	margin: 0;
 	background: inherit;
 	color: inherit;
 	outline: none;
 	border: none;
 	width: 100%;
-    font-size: 1em;
+    font-size: var(--jui-textctl-size);
 }
 
 .component.disabled input {

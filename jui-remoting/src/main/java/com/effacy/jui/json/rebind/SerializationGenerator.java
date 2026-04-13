@@ -556,7 +556,7 @@ public class SerializationGenerator extends Generator {
      */
     protected void deserializeMap(TypeOracle typeOracle, SourceWriter sw, JClassType fieldClassType, JMethod setter) throws UnableToCompleteException, NotFoundException {
         // Return null if JSON object is null
-        sw.println ("if (fieldJsonValue == null) {");
+        sw.println ("if ((fieldJsonValue == null) || (fieldJsonValue instanceof JSONNull)) {");
         sw.indent ();
         sw.println ("result." + setter.getName () + " (null);");
         sw.outdent ();
@@ -646,7 +646,7 @@ public class SerializationGenerator extends Generator {
         sw.println (fieldTypeQualifiedName + " " + fieldColName + " = new " + getImplementingClass (fieldTypeQualifiedName) + " ();");
 
         // Check if the value being set is null.
-        sw.println ("if (fieldJsonValue != null) {");
+        sw.println ("if ((fieldJsonValue != null) && !(fieldJsonValue instanceof JSONNull)) {");
         sw.indent ();
 
         // If it is not null, then check that it is an array.

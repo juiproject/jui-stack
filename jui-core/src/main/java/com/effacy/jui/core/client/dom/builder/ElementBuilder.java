@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.gwtproject.safehtml.shared.SafeHtml;
 import org.gwtproject.safehtml.shared.SafeHtmlBuilder;
@@ -506,6 +507,26 @@ public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
     private String innerHTML;
 
     /**
+     * See {@link #handleLodgements(Consumer)}.
+     */
+    private Consumer<List<Object>> handleLodgements;
+
+    /**
+     * This is called immediately after the element has been built and added to
+     * the DOM. It can be used to handle any lodgements that have been made during
+     * the construction process.
+     * 
+     * @param handleLodgements
+     *                         the handler to call with any lodgements that have
+     *                         been made.
+     * @return this element instance.
+     */
+    public ElementBuilder handleLodgements(Consumer<List<Object>> handleLodgements) {
+        this.handleLodgements = handleLodgements;
+        return this;
+    }
+
+    /**
      * {@inheritDoc}
      *
      * @see com.effacy.jui.core.client.dom.builder.NodeBuilder#build()
@@ -514,9 +535,12 @@ public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
     protected Node _nodeImpl(Node parent, BuildContext ctx) {
         // There is a special case here where the tag is null. In that case we assume
         // that we are actually wrapping the parent as our own.
+        int lodgementCount = (handleLodgements != null) ? ctx.lodgements().size() : 0;
         Element element = (tag == null) ? (Element) parent : DomGlobal.document.createElement (tag);
         __nodeImpl (element);
         super._nodeImpl (element, ctx);
+        if (handleLodgements != null)
+            handleLodgements.accept (ctx.lodgements().subList(lodgementCount, ctx.lodgements().size()));
         return element;
     }
 

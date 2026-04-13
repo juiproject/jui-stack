@@ -21,14 +21,6 @@ import com.effacy.jui.text.type.FormattedLine.FormatType;
 public interface IEditorToolbar extends IComponent {
 
     /**
-     * Toolbar position relative to the editor area. Used by the containing
-     * control to decide layout; the toolbar itself does not use this.
-     */
-    public enum Position {
-        TOP, BOTTOM, FLOATING
-    }
-
-    /**
      * Binds this toolbar to the editor's command interface. Called once
      * during rendering.
      *

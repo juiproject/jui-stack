@@ -15,7 +15,7 @@ public class Markup {
      */
     public static NodeBuilder<?> $(String text) {
         if (!text.contains("*"))
-            return Text.$(text);
+            return Text.$(text).split();
         return new MarkupBuilder (text);
     }
     

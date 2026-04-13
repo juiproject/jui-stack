@@ -62,6 +62,11 @@ public class Elemental2Builder implements IEventBuilder<Element> {
     private Deque<Element> stack = new ArrayDeque<>();
 
     /**
+     * Stack of block types matching {@link #stack}.
+     */
+    private Deque<BlockType> blockTypeStack = new ArrayDeque<>();
+
+    /**
      * The heading level that markdown H1 maps to (default 1).
      */
     private int topHeadingLevel = 1;
@@ -173,6 +178,24 @@ public class Elemental2Builder implements IEventBuilder<Element> {
         return root;
     }
 
+    @Override
+    public void commence() {
+        stack.clear();
+        blockTypeStack.clear();
+        ulStack.clear();
+        ulTypeStack.clear();
+        firstLineInBlock = false;
+        tableHeaders = 0;
+        tableAlign = null;
+        tableRowIndex = 0;
+        tableCellIndex = 0;
+        listDepth = -1;
+        lastLi = null;
+        pendingLi = null;
+        pendingIndent = 0;
+        pendingOrdered = false;
+    }
+
     /**
      * Assigns the top heading level. Markdown H1 maps to
      * {@code <h{level}>}, H2 to {@code <h{level+1}>}, etc., capped at H6.
@@ -257,11 +280,27 @@ public class Elemental2Builder implements IEventBuilder<Element> {
                     pendingIndent = 0;
                     pendingOrdered = (type == BlockType.OLIST);
                     stack.push(el);
+                    blockTypeStack.push(type);
                     firstLineInBlock = true;
                     return;
                 }
                 el = createElement("p");
                 break;
+            case CODE: {
+                Element pre = createElement("pre");
+                String[] styles = FormattedTextStyles.BLOCK_STYLES.get(type);
+                if (styles != null) {
+                    for (String s : styles)
+                        pre.classList.add(s);
+                }
+                el = createElement("code");
+                pre.appendChild(el);
+                currentTarget().appendChild(pre);
+                stack.push(el);
+                blockTypeStack.push(type);
+                firstLineInBlock = true;
+                return;
+            }
             case H1:
                 el = createHeading(topHeadingLevel);
                 break;
@@ -270,6 +309,12 @@ public class Elemental2Builder implements IEventBuilder<Element> {
                 break;
             case H3:
                 el = createHeading(topHeadingLevel + 2);
+                break;
+            case H4:
+                el = createHeading(topHeadingLevel + 3);
+                break;
+            case H5:
+                el = createHeading(topHeadingLevel + 4);
                 break;
             case TABLE:
                 el = createElement("table");
@@ -304,6 +349,7 @@ public class Elemental2Builder implements IEventBuilder<Element> {
         }
         currentTarget().appendChild(el);
         stack.push(el);
+        blockTypeStack.push(type);
         firstLineInBlock = true;
     }
 
@@ -316,6 +362,7 @@ public class Elemental2Builder implements IEventBuilder<Element> {
         if (type == TCELL)
             tableCellIndex++;
         stack.pop();
+        blockTypeStack.pop();
     }
 
     @Override
@@ -339,6 +386,10 @@ public class Elemental2Builder implements IEventBuilder<Element> {
             } catch (NumberFormatException e) {
                 // Ignore.
             }
+        } else if (("lang".equals(name) || "language".equals(name)) && !stack.isEmpty() && (currentBlockType() == BlockType.CODE)) {
+            setAttribute(stack.peek(), "data-lang", value);
+            if ((value != null) && !value.isEmpty())
+                stack.peek().classList.add("language-" + value);
         }
     }
 
@@ -347,8 +398,12 @@ public class Elemental2Builder implements IEventBuilder<Element> {
         if (pendingLi != null)
             resolveListItem();
         if (!firstLineInBlock) {
-            Element br = createElement("br");
-            currentTarget().appendChild(br);
+            if (currentBlockType() == BlockType.CODE)
+                currentTarget().appendChild(createTextNode("\n"));
+            else {
+                Element br = createElement("br");
+                currentTarget().appendChild(br);
+            }
         }
         firstLineInBlock = false;
     }
@@ -360,7 +415,7 @@ public class Elemental2Builder implements IEventBuilder<Element> {
 
     @Override
     public void text(String text) {
-        currentTarget().appendChild(DomGlobal.document.createTextNode(text));
+        currentTarget().appendChild(createTextNode(text));
     }
 
     @Override
@@ -380,7 +435,7 @@ public class Elemental2Builder implements IEventBuilder<Element> {
             }
             if (handled) {
                 if ((text != null) && !text.isEmpty())
-                    target.appendChild(DomGlobal.document.createTextNode(text));
+                    target.appendChild(createTextNode(text));
                 return;
             }
         }
@@ -401,7 +456,7 @@ public class Elemental2Builder implements IEventBuilder<Element> {
             return;
         }
         if ((text != null) && !text.isEmpty())
-            span.appendChild(DomGlobal.document.createTextNode(text));
+            span.appendChild(createTextNode(text));
         currentTarget().appendChild(span);
     }
 
@@ -416,7 +471,7 @@ public class Elemental2Builder implements IEventBuilder<Element> {
                 a.target = "_blank";
         }
         if ((label != null) && !label.isEmpty())
-            a.appendChild(DomGlobal.document.createTextNode(label));
+            a.appendChild(createTextNode(label));
         currentTarget().appendChild(a);
     }
 
@@ -424,13 +479,13 @@ public class Elemental2Builder implements IEventBuilder<Element> {
     public void image(String alt, String src, int width, int height) {
         Element img = createElement("img");
         if ((src != null) && !src.isEmpty())
-            img.setAttribute("src", src);
+            setAttribute(img, "src", src);
         if ((alt != null) && !alt.isEmpty())
-            img.setAttribute("alt", alt);
+            setAttribute(img, "alt", alt);
         if (width > 0)
-            img.setAttribute("width", String.valueOf(width));
+            setAttribute(img, "width", String.valueOf(width));
         if (height > 0)
-            img.setAttribute("height", String.valueOf(height));
+            setAttribute(img, "height", String.valueOf(height));
         currentTarget().appendChild(img);
     }
 
@@ -455,6 +510,10 @@ public class Elemental2Builder implements IEventBuilder<Element> {
         return stack.peek();
     }
 
+    private BlockType currentBlockType() {
+        return blockTypeStack.isEmpty() ? null : blockTypeStack.peek();
+    }
+
     /**
      * Creates a heading element for the given level (capped at 6).
      */
@@ -466,8 +525,22 @@ public class Elemental2Builder implements IEventBuilder<Element> {
     /**
      * Creates an element by tag name.
      */
-    private Element createElement(String tag) {
+    protected Element createElement(String tag) {
         return (Element) DomGlobal.document.createElement(tag);
+    }
+
+    /**
+     * Creates a text node.
+     */
+    protected Node createTextNode(String text) {
+        return DomGlobal.document.createTextNode(text);
+    }
+
+    /**
+     * Sets an attribute on an element.
+     */
+    protected void setAttribute(Element element, String name, String value) {
+        element.setAttribute(name, value);
     }
 
     /************************************************************************

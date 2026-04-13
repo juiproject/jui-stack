@@ -89,7 +89,17 @@ public class FormattedBlock {
          * Header level 3.
          */
         H3(BlockTypeConstraint.LINES),
-        
+
+        /**
+         * Header level 4.
+         */
+        H4(BlockTypeConstraint.LINES),
+
+        /**
+         * Header level 5.
+         */
+        H5(BlockTypeConstraint.LINES),
+
         /**
          * Unordered (bullet) list.
          */
@@ -99,6 +109,11 @@ public class FormattedBlock {
          * Ordered (numbered) list.
          */
         OLIST(BlockTypeConstraint.LINES),
+
+        /**
+         * Fenced code block.
+         */
+        CODE(BlockTypeConstraint.LINES),
         
         /**
          * Equation.

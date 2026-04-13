@@ -66,6 +66,20 @@ public class MarkdownEventParserTest {
     }
 
     @Test
+    public void testFencedCodeBlock() {
+        assertParityWithMarkdownParser(
+            "```yaml\n" +
+            "Allocation:\n" +
+            "  relationships:\n" +
+            "    shareholders:\n" +
+            "      fields:\n" +
+            "        order:\n" +
+            "          type: integer\n" +
+            "```"
+        );
+    }
+
+    @Test
     public void testLink() {
         assertParityWithMarkdownParser("Visit [our site](http://example.com) now");
     }
@@ -181,6 +195,27 @@ public class MarkdownEventParserTest {
             "link(click, http://x.com)",
             "endLine()",
             "endBlock(PARA)"
+        );
+    }
+
+    @Test
+    public void testFencedCodeBlockEvents() {
+        RecordingHandler handler = parse(
+            "```yaml\n" +
+            "Allocation:\n" +
+            "  relationships:\n" +
+            "```"
+        );
+        handler.assertEvents(
+            "startBlock(CODE)",
+            "meta(lang, yaml)",
+            "startLine()",
+            "text(Allocation:)",
+            "endLine()",
+            "startLine()",
+            "text(  relationships:)",
+            "endLine()",
+            "endBlock(CODE)"
         );
     }
 

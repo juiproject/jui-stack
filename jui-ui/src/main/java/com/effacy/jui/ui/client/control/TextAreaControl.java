@@ -100,6 +100,11 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
              */
             public static final Style STANDARD = create(StandardLocalCSS.instance ());
 
+            /**
+             * Transparent style.
+             */
+            public static final Style TRANSPARENT = create(TransparentLocalCSS.instance ());
+
         }
 
         /**
@@ -612,12 +617,15 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
      *                 assignment of value.
      */
     protected void _resize(boolean assigned) {
+        // Reset to minimum so scrollHeight reflects the actual content height
+        // (allows shrinking when text reflows to fewer lines).
+        int minHeight = 16;
+        if (sizeAfterAssignment > minHeight)
+            minHeight = sizeAfterAssignment;
+        CSS.HEIGHT.apply(inputEl, Length.px(minHeight));
         if (assigned)
             sizeAfterAssignment = inputEl.clientHeight;
-        int minHeight = 16; // Math.max(16, 16 * config().rows);
-        if (sizeAfterAssignment < minHeight)
-            sizeAfterAssignment = minHeight;
-        if (inputEl.scrollHeight > sizeAfterAssignment)
+        if (inputEl.scrollHeight > minHeight)
             CSS.HEIGHT.apply(inputEl, Length.px(inputEl.scrollHeight));
     }
 
@@ -663,6 +671,14 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
 
         if (config ().resizable)
             getRoot ().classList.add (styles ().resizable ());
+        if (config ().expandOnContent)
+            setMonitorWindowResize (true);
+    }
+
+    @Override
+    protected void onWindowResize(int width, int height) {
+        if (config ().expandOnContent)
+            _resize (false);
     }
 
     /**
@@ -735,6 +751,41 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
         public static ILocalCSS instance() {
             if (STYLES == null) {
                 STYLES = (StandardLocalCSS) GWT.create (StandardLocalCSS.class);
+                STYLES.ensureInjected ();
+            }
+            return STYLES;
+        }
+    }
+
+    /**
+     * Component CSS (horizontal).
+     */
+    @CssResource(value = {
+        IComponentCSS.COMPONENT_CSS,
+        "com/effacy/jui/ui/client/control/Control.css",
+        "com/effacy/jui/ui/client/control/TextAreaControl.css",
+        "com/effacy/jui/ui/client/control/TextAreaControl_Override.css"
+    }, stylesheet = """
+        .component {
+            --jui-textareactl-bg: transparent;
+            --jui-textareactl-border: transparent;
+            --jui-textareactl-padding: 0.55em 0.25em;
+            --jui-ctl-bg-disabled: transparent;
+        }
+        .component:hover {
+            --jui-textareactl-border: #eaeaea;
+        }
+        .component textarea::placeholder {
+            font-style: italic;
+        }
+    """)
+    public static abstract class TransparentLocalCSS implements ILocalCSS {
+
+        private static TransparentLocalCSS STYLES;
+
+        public static ILocalCSS instance() {
+            if (STYLES == null) {
+                STYLES = (TransparentLocalCSS) GWT.create (TransparentLocalCSS.class);
                 STYLES.ensureInjected ();
             }
             return STYLES;

@@ -139,7 +139,6 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
     @Override
     protected INodeProvider buildNode(Element el) {
         return Wrap.$(el).$(root -> {
-            root.style(styles().toolbar());
             ITool.Context ctx = new ITool.Context() {
 
                 @Override
@@ -176,8 +175,6 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
 
     public static interface ILocalCSS extends IComponentCSS {
 
-        String toolbar();
-
         String tbtn();
 
         String tbtnActive();
@@ -189,7 +186,7 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
         IComponentCSS.COMPONENT_CSS
     }, stylesheet = """
         .component {
-            --jui-toolbar-bg: #fafafa;
+            --jui-toolbar-bg: transparent;
             --jui-toolbar-gap: 2px;
             --jui-toolbar-padding: 4px 6px;
             --jui-toolbar-border: #ddd;
@@ -203,7 +200,7 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
             --jui-toolbar-btn-active-color: #1d4ed8;
             --jui-toolbar-sep-color: #ccc;
         }
-        .toolbar {
+        .component {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
@@ -212,7 +209,7 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
             background: var(--jui-toolbar-bg);
             flex-shrink: 0;
         }
-        .tbtn {
+        .component .tbtn {
             border: none;
             background: none;
             cursor: pointer;
@@ -223,14 +220,14 @@ public class EditorToolbar extends Component<EditorToolbar.Config> implements IE
             color: var(--jui-toolbar-btn-color);
             line-height: var(--jui-toolbar-btn-lineheight);
         }
-        .tbtn:hover {
+        .component .tbtn:hover {
             background: var(--jui-toolbar-btn-hover-bg);
         }
-        .tbtnActive {
+        .component .tbtnActive {
             background: var(--jui-toolbar-btn-active-bg);
             color: var(--jui-toolbar-btn-active-color);
         }
-        .tbtnSep {
+        .component .tbtnSep {
             width: 1px;
             height: 1.2em;
             background: var(--jui-toolbar-sep-color);

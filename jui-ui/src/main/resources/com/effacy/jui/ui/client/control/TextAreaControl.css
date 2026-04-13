@@ -1,32 +1,34 @@
 .component {
+	--jui-textareactl-size: 1em;
+    --jui-textareactl-padding: 0.55em;
     --jui-textareactl-counter-limit: var(--jui-color-error70);
     --jui-textareactl-counter-text-color: var(--jui-ctl-text);
-    --jui-testareactl-bg: var(--jui-ctl-bg);
-    --jui-testareactl-text: var(--jui-ctl-text);
-    --jui-testareactl-text-size: 1em;
-    --jui-testareactl-border: var(--jui-ctl-border);
-    --jui-testareactl-border-radius: var(--jui-ctl-border-radius);
-    --jui-testareactl-margin: 0.4em;
-    --jui-testareactl-disabled-text: var(--jui-ctl-text-disabled);
-    --jui-testareactl-readonly-text: var(--jui-ctl-text-readonly);
-    --jui-testareactl-counter-text-size: 0.9em;
+    --jui-textareactl-bg: var(--jui-ctl-bg);
+    --jui-textareactl-text: var(--jui-ctl-text);
+    --jui-textareactl-border: var(--jui-ctl-border);
+    --jui-textareactl-border-radius: var(--jui-ctl-border-radius);
+    --jui-textareactl-disabled-text: var(--jui-ctl-text-disabled);
+    --jui-textareactl-readonly-text: var(--jui-ctl-text-readonly);
+    --jui-textareactl-counter-text-size: 0.9em;
 }
 
 .component .inner {
-	border: 1px solid var(--jui-testareactl-border);
-	border-radius: var(--jui-testareactl-border-radius);
+	padding: var(--jui-textareactl-padding);
+	border: 1px solid var(--jui-textareactl-border);
+	border-radius: var(--jui-textareactl-border-radius);
 	box-sizing: content-box;
-	background: var(--jui-testareactl-bg);
+	background: var(--jui-textareactl-bg);
 	display: flex;
 	flex-direction: column;
 	gap: 0.5em;
 	align-items: normal;
-	color: var(--jui-testareactl-text);
+	color: var(--jui-textareactl-text);
     overflow: hidden;
 }
 
 .component textarea {
-	margin: var(--jui-testareactl-margin);
+	padding: 0;
+	margin: 0;
 	background: inherit;
 	color: inherit;
 	outline: none;
@@ -34,7 +36,7 @@
 	resize: none;
     transition: min-height 0.2s ease;
     min-height: 0;
-    font-size: var(--jui-testareactl-text-size);
+    font-size: var(--jui-textareactl-size);
 }
 
 .component.resizable textarea {
@@ -42,18 +44,18 @@
 }
 
 .component.disabled textarea {
-	color: var(--jui-testareactl-disabled-text);
+	color: var(--jui-textareactl-disabled-text);
 	cursor: not-allowed;
 }
 
 .component.read_only textarea {
-	color: var(--jui-testareactl-readonly-text);
+	color: var(--jui-textareactl-readonly-text);
 	cursor: not-allowed;
 }
 
 .component .counter {
     text-align: right;
-    font-size: var(--jui-testareactl-counter-text-size);
+    font-size: var(--jui-textareactl-counter-text-size);
     margin-top: 0.25em;
     color: var(--jui-textareactl-counter-text-color);
 }

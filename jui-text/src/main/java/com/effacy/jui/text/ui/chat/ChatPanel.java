@@ -13,6 +13,7 @@ import com.effacy.jui.core.client.component.layout.LayoutData;
 import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.UIEventType;
 import com.effacy.jui.core.client.dom.builder.Div;
+import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.builder.P;
 import com.effacy.jui.core.client.dom.builder.Text;
 import com.effacy.jui.core.client.dom.builder.Wrap;
@@ -77,6 +78,7 @@ public class ChatPanel extends Component<ChatPanel.Config> {
 
         private IChatPanelHost host;
         private boolean showAgentName = true;
+        private boolean allowStop;
         private String baseEndpoint = "/app/chat";
 
         public Config() {
@@ -127,6 +129,23 @@ public class ChatPanel extends Component<ChatPanel.Config> {
         }
 
         /**
+         * Whether to show a stop button that allows the user to cancel a
+         * streaming response.
+         *
+         * @param allowStop
+         *                  {@code true} to show the stop button during streaming.
+         * @return this for chaining.
+         */
+        public Config allowStop(boolean allowStop) {
+            this.allowStop = allowStop;
+            return this;
+        }
+
+        public boolean isAllowStop() {
+            return allowStop;
+        }
+
+        /**
          * The base endpoint path for chat API calls.
          *
          * @param baseEndpoint
@@ -174,6 +193,10 @@ public class ChatPanel extends Component<ChatPanel.Config> {
     private Element conversationEl;
     private Element messagesEl;
     private HTMLTextAreaElement inputEl;
+    private Element stopBtnEl;
+
+    // Active SSE connection (for abort).
+    private SSEPostConnector activeConnector;
 
     // Streaming state
     private Element currentStreamEl;
@@ -257,7 +280,13 @@ public class ChatPanel extends Component<ChatPanel.Config> {
                                 .on(e -> handleComposerKey(e), UIEventType.ONKEYDOWN);
                             Div.$(bar).style(styles().inputFooter()).$(footer -> {
                                 Div.$(footer).style(styles().inputHint()).text("Enter to send");
-                                Div.$(footer).style(styles().sendBtn()).text("Send").onclick(e -> sendFromInput());
+                                Div.$(footer).style(styles().inputActions()).$(actions -> {
+                                    Div.$(actions).style(styles().sendBtn()).text("Send").onclick(e -> sendFromInput());
+                                    if (config().isAllowStop())
+                                        Div.$(actions).by("stopBtn").style(styles().stopBtn()).$(
+                                            Em.$().style(FontAwesome.stop())
+                                        ).onclick(e -> stopStreaming());
+                                });
                             });
                         });
                     });
@@ -273,6 +302,7 @@ public class ChatPanel extends Component<ChatPanel.Config> {
             conversationEl = tree.first("conversation");
             messagesEl = tree.first("messages");
             inputEl = tree.first("input");
+            stopBtnEl = tree.first("stopBtn");
             welcomeEl.classList.add(styles().show());
             refreshConversationTrigger();
             refresh();
@@ -553,7 +583,10 @@ public class ChatPanel extends Component<ChatPanel.Config> {
             body.put("actions", actionsArr);
         }
 
-        new SSEPostConnector()
+        if (stopBtnEl != null)
+            stopBtnEl.classList.add(styles().show());
+        activeConnector = new SSEPostConnector();
+        activeConnector
             .onEvent((eventName, data) -> handleEvent(eventName, data))
             .onError((status, msg) -> {
                 appendSystemMessage("Connection error: " + msg);
@@ -900,6 +933,16 @@ public class ChatPanel extends Component<ChatPanel.Config> {
         }
     }
 
+    private void stopStreaming() {
+        if (!streaming)
+            return;
+        if (activeConnector != null) {
+            activeConnector.abort();
+            activeConnector = null;
+        }
+        finishStreaming();
+    }
+
     private void finishStreaming() {
         stopThinkingIndicator();
         if ((currentStreamEl != null) && (streamBuffer != null) && (streamBuffer.length() > 0)) {
@@ -914,9 +957,12 @@ public class ChatPanel extends Component<ChatPanel.Config> {
                 wrapper.parentElement.removeChild(wrapper);
         }
         streaming = false;
+        activeConnector = null;
         currentStreamEl = null;
         streamBuffer = null;
         collapseToolGroup();
+        if (stopBtnEl != null)
+            stopBtnEl.classList.remove(styles().show());
         if (inputEl != null) {
             inputEl.disabled = false;
             inputEl.focus();
@@ -1186,7 +1232,9 @@ public class ChatPanel extends Component<ChatPanel.Config> {
         String textarea();
         String inputFooter();
         String inputHint();
+        String inputActions();
         String sendBtn();
+        String stopBtn();
 
         /* Agent header */
         String agentHeader();
@@ -1471,6 +1519,11 @@ public class ChatPanel extends Component<ChatPanel.Config> {
             font-size: 0.688rem;
             color: var(--jui-chatpanel-color-text-hint);
         }
+        .component .inputActions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
         .component .sendBtn {
             padding: 6px 12px;
             background: var(--jui-chatpanel-color-primary);
@@ -1479,6 +1532,24 @@ public class ChatPanel extends Component<ChatPanel.Config> {
             cursor: pointer;
             font-size: 0.75rem;
             font-weight: 600;
+        }
+        .component .stopBtn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: var(--jui-chatpanel-color-error, #dc3545);
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+        .component .stopBtn.show {
+            display: inline-flex;
+        }
+        .component .stopBtn:hover {
+            opacity: 0.8;
         }
 
         /* Agent header */

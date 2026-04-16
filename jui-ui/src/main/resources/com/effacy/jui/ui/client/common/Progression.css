@@ -1,0 +1,99 @@
+.component {
+    --cpt-progression-size: 1em;
+    --cpt-progression-weight: 500;
+    --cpt-progression-color: var(--jui-color-neutral60);
+    --cpt-progression-hover-color: var(--jui-color-neutral90);
+    --cpt-progression-neutral-color: var(--jui-color-neutral30);
+    --cpt-progression-description-color: var(--jui-color-neutral40);
+    --cpt-progression-description-size: 0.9em;
+    --cpt-progression-description-weight: 400;
+    --cpt-progression-step-size: 1.8em;
+    --cpt-progression-step-hgap: 1em;
+    --cpt-progression-step-vgap: 1em;
+}
+
+.component > .step {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--cpt-progression-step-hgap);
+    font-size: var(--cpt-progression-size);
+}
+
+.component > .step.connected {
+    padding-bottom: var(--cpt-progression-step-vgap);
+}
+
+.component > .step.connected::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--cpt-progression-step-size) / 2 - 1px);
+    top: calc(var(--cpt-progression-step-size) + 4px);
+    bottom: 4px;
+    border-left: 2px solid var(--cpt-progression-color);
+}
+
+.component > .step.connected.next::after {
+    border-color: var(--cpt-progression-neutral-color);
+}
+
+.component > .step > em {
+    min-width: var(--cpt-progression-step-size);
+    min-height: var(--cpt-progression-step-size);
+    border-radius: 100%;
+    font-style: normal;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 700;
+    padding: 1px 0 0 1px;
+}
+
+.component > .step.prior > em {
+    background: var(--cpt-progression-color);
+    color: #fff;
+}
+
+.component.navigable > .step.navigable:hover {
+    cursor: pointer;
+}
+
+.component.navigable > .step.navigable:hover > .labels > span:first-child {
+    color: var(--cpt-progression-hover-color);
+}
+
+.component > .step.current > em {
+    border: 1px solid var(--cpt-progression-color);
+    color: var(--cpt-progression-color);
+    font-weight: 600;
+}
+
+.component > .step.next > em {
+    border: 1px solid var(--cpt-progression-neutral-color);
+    color: var(--cpt-progression-neutral-color);
+    font-weight: 600;
+}
+
+.component > .step > .labels {
+    display: flex;
+    flex-direction: column;
+    padding-top: 0.25em;
+}
+
+.component > .step > span,
+.component > .step > .labels > span {
+    color: var(--cpt-progression-color);
+    font-weight: var(--cpt-progression-weight);
+}
+
+.component > .step > .labels > span.description {
+    color: var(--cpt-progression-description-color);
+    font-weight: var(--cpt-progression-description-weight);
+    font-size: var(--cpt-progression-description-size);
+}
+
+.component > .step.next > span,
+.component > .step.next > .labels > span {
+    color: var(--cpt-progression-neutral-color);
+}

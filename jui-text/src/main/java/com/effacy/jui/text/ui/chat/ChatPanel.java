@@ -667,6 +667,13 @@ public class ChatPanel extends Component<ChatPanel.Config> {
                     host().onChatAction(action, payload);
                 }
             }
+        } else if ("suggest".equals(eventName)) {
+            JSONObject obj = JSONParser.parseStrict(data).isObject();
+            if (obj != null) {
+                JSONArray opts = (obj.get("options") != null) ? obj.get("options").isArray() : null;
+                if (opts != null)
+                    appendSuggestions(opts);
+            }
         } else if ("notice".equals(eventName)) {
             JSONObject obj = JSONParser.parseStrict(data).isObject();
             stopThinkingIndicator();
@@ -897,6 +904,39 @@ public class ChatPanel extends Component<ChatPanel.Config> {
         bubble.classList.remove(FormattedTextStyles.styles().standard());
         bubble.classList.add(styles().error());
         bubble.textContent = message;
+    }
+
+    private void appendSuggestions(JSONArray options) {
+        if ((options == null) || (options.size() == 0) || (messagesEl == null))
+            return;
+
+        HTMLElement rowEl = (HTMLElement) DomGlobal.document.createElement("div");
+        rowEl.setAttribute("style", "display: flex; flex-wrap: wrap; gap: 8px; padding: 6px 0 2px 18px;");
+
+        for (int i = 0; i < options.size(); i++) {
+            JSONObject opt = options.get(i).isObject();
+            if (opt == null)
+                continue;
+            String label = jsonString(opt, "label");
+            String value = jsonString(opt, "value");
+            if (label == null || value == null)
+                continue;
+
+            HTMLElement chip = (HTMLElement) DomGlobal.document.createElement("div");
+            chip.setAttribute("style",
+                "padding: 6px 14px; border: 1px solid #d8d2c6; border-radius: 999px; background: #fbfaf7; " +
+                "color: #173327; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;");
+            chip.textContent = label;
+            String sendValue = value;
+            chip.addEventListener("click", e -> {
+                rowEl.remove();
+                doSend(sendValue);
+            });
+            rowEl.appendChild(chip);
+        }
+
+        messagesEl.appendChild(rowEl);
+        scrollToBottom();
     }
 
     /************************************************************************

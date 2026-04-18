@@ -1,5 +1,5 @@
 .component {
-	--cpt-btn-bg: var(--jui-btn-warning-bg);
-    --cpt-btn-bg-hover: var(--jui-btn-warning-bg-hover);
-    --cpt-btn-border: var(--jui-btn-warning-border);
+    --cpt-btn-bg: var(--jui-comp-button-warning-surface);
+    --cpt-btn-bg-hover: var(--jui-comp-button-warning-surface-hover);
+    --cpt-btn-border: var(--jui-comp-button-warning-border);
 }

@@ -1,54 +1,60 @@
-.component  {
-    --cpt-navigator-bg: var(--jui-tabset-bg-02);
+.component {
+    --cpt-navigator-bg: var(--jui-comp-tabset-surface);
+    --cpt-tabbedpanel-outline: var(--jui-comp-tabset-border);
     --cpt-tabbedpanel-bg-tab-inactive: transparent;
-    --cpt-tabbedpanel-bg-tab-active: var(--jui-tabset-bg-05);
-    --cpt-tabbedpanel-bg-tab-hover: var(--jui-tabset-bg-03);
-    --cpt-tabbedpanel-text-active: var(--jui-tabset-text-alt);
+    --cpt-tabbedpanel-bg-tab-active: var(--jui-comp-tabset-surface-active);
+    --cpt-tabbedpanel-bg-tab-hover: var(--jui-comp-tabset-surface-hover);
+    --cpt-tabbedpanel-text: var(--jui-comp-tabset-text-muted);
+    --cpt-tabbedpanel-text-hover: var(--jui-comp-tabset-text);
+    --cpt-tabbedpanel-text-active: var(--jui-comp-tabset-text-active);
+    --cpt-tabbedpanel-radius: var(--jui-radius-lg);
+    --cpt-tabbedpanel-item-radius: var(--jui-radius-sm);
 }
 
-.component .tabs  {
-  position: relative;
-  border: 1px solid var(--cpt-tabbedpanel-outline);
-  border-radius: 8px;
-  margin: 1em;
-  background: var(--cpt-navigator-bg);
+.component .tabs {
+    position: relative;
+    border: 1px solid var(--cpt-tabbedpanel-outline);
+    border-radius: var(--cpt-tabbedpanel-radius);
+    margin: var(--jui-space-4);
+    background: var(--cpt-navigator-bg);
 }
 
-.component .tabs  ul {
-  list-style: none;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
+.component .tabs ul {
+    list-style: none;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
 }
 
-.component .tabs  ul li {
-  padding: 0.5em 1em;
-  border-radius: 4px;
-  margin: 4px;
-  box-sizing: border-box;
-  display: inline-block;
-  cursor: pointer;
-  font-weight: 600;
-  position: relative;
-  user-select: none;
-  color: #666;
-  background: var(--cpt-tabbedpanel-bg-tab-inactive);
+.component .tabs ul li {
+    padding: var(--jui-space-2) var(--jui-space-4);
+    border-radius: var(--cpt-tabbedpanel-item-radius);
+    margin: 4px;
+    box-sizing: border-box;
+    display: inline-block;
+    cursor: pointer;
+    font-weight: var(--jui-font-weight-semibold);
+    position: relative;
+    user-select: none;
+    color: var(--cpt-tabbedpanel-text);
+    background: var(--cpt-tabbedpanel-bg-tab-inactive);
 }
 
-.component .tabs  ul li em {
-  margin-right: 0.75em;
+.component .tabs ul li em {
+    margin-right: var(--jui-space-3);
 }
 
-.component .tabs  ul li span {
-  font-weight: 600;
+.component .tabs ul li span {
+    font-weight: var(--jui-font-weight-semibold);
 }
 
-.component .tabs  ul li:hover {
-  background: var(--cpt-tabbedpanel-bg-tab-hover);
+.component .tabs ul li:hover {
+    background: var(--cpt-tabbedpanel-bg-tab-hover);
+    color: var(--cpt-tabbedpanel-text-hover);
 }
 
-.component .tabs  ul li.active {
-  background: var(--cpt-tabbedpanel-bg-tab-active);
-  color: var(--cpt-tabbedpanel-text-active);
+.component .tabs ul li.active {
+    background: var(--cpt-tabbedpanel-bg-tab-active);
+    color: var(--cpt-tabbedpanel-text-active);
 }

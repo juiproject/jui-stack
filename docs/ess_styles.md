@@ -17,7 +17,58 @@ Each of above is described within. In addition we include the following related 
 
 Finally, as noted at the beginning of this section, [Patterns](#patterns) provides summary guidance and template code that can get you started.
 
+## Understanding the styling concerns
+
+*Before choosing a CSS technique it helps to separate the different concerns that arise in a JUI application. These concerns build on one another rather than compete with one another.*
+
+In practice there are three broad styling concerns to keep in mind:
+
+1. **Theming JUI itself** concerns the overall colour and structural language of the application as expressed through JUI's theme tokens.
+2. **Styling existing JUI components** concerns adapting standard components to a particular use-case, page, or visual variant.
+3. **Styling custom components** concerns the CSS you write for DOM and components that are specific to your application.
+
+These are related, but they are not the same thing, and it is useful to treat them in that order.
+
+### 1. Token-based theming of JUI
+
+JUI standard components are built around a token-based theming model. At the base of that model are theme files that define *reference*, *role*, *scale*, and *component* tokens. Components then consume those tokens and, where appropriate, expose additional `--cpt-*` component variables.
+
+The expectation is that most applications will override the JUI theme to some degree, particularly around colour, accent, surface treatment, spacing emphasis, and component defaults. The standard way to do that is to supply application-owned global CSS, commonly in a file such as `theme.css`, `common.css`, or `jui.css`, and load it at the application level. The setup for that is described under [Global CSS](#global-css) and the theme-specific mechanism is described under [Themes](#themes).
+
+At this level the aim is broad, systemic theming. You are changing the default visual language of existing JUI components through tokens rather than by writing component-specific selectors. This is the lightest-touch and most maintainable form of restyling and should generally be your first step.
+
+### 2. Deeper styling of existing JUI components
+
+Once the global theme is in place there is often a need to adjust particular uses of standard components. In JUI this is commonly done through component variants and component-level variables rather than by immediately reaching for bespoke selectors.
+
+That deeper styling can often be handled by:
+
+1. selecting or defining a component variant;
+2. overriding tokens or `--cpt-*` variables for that variant or instance; and
+3. only using direct CSS overrides when the component contract does not already expose the control you need.
+
+This is still theming existing JUI components, but at a narrower scope. Rather than redefining the whole system, you are tailoring a button, dialog, table, navigator, or form presentation for a specific context while staying inside the component's intended styling contract.
+
+### 3. Styling custom components and custom DOM
+
+The final concern is styling components or layouts that are specific to your application. This is where [Global CSS](#global-css), [Injected CSS](#injected-css), [Localised CSS](#localised-css), and [Inline styles](#inline-styles) come into play.
+
+Here you are no longer just re-skinning existing JUI components. You are defining the CSS structure for your own sections, fragments, and reusable application components. Even in this case it is recommended that you continue to use the JUI theme tokens where possible, including when assigning inline CSS variables, so that your custom components remain visually aligned with the rest of the application and respond naturally to theme changes.
+
+### How to navigate these concerns
+
+A practical way to approach styling in JUI is:
+
+1. start by establishing the application's global theme and token overrides;
+2. use component variants and `--cpt-*` variables to tailor existing JUI components where needed; and
+3. introduce application CSS for truly custom components and layouts, while still consuming JUI tokens where possible.
+
+Put another way: use tokens first, component contracts second, and custom selectors third. This keeps the styling model coherent and reduces the amount of CSS that has to know about the internal structure of existing JUI components.
+
+
 ## Global CSS
+
+There are two concerns here: adjusting the existing JUI theme (see [Themes](#themes)) and providing styles for custom components. This section is pertinent to the latter.
 
 *Most applications will have a global CSS file (or files) to style the HTML in the entry-point page. This CSS can be extended to declare CSS styles for use within components, however this is not recommended except for the smallest of applications.*
 
@@ -376,22 +427,61 @@ We describe each separately.
 
 JUI makes use of a collection of globally declared [CSS variables](https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties) to implement a standard (and parameterised) colour and structural model. Auxillary to these are a handful of CSS styles that implement some common behaviours (such a transitions and loading).
 
-These are declared in `Theme.css` and initalised via the `Theme` class (in `com.effacy.jui.ui.client` of the **jui-ui** module and initialised in the modules initialiser entry point). It too follows the override pattern described in [stylesheet override](#stylesheet-overrides) and you can provide your own variable overrides in `com/effacy/jui/ui/client/Theme_Override.css`.
+These are declared in the split theme resources `Theme.Reference.css`, `Theme.Role.css`, `Theme.Scale.css`, `Theme.Component.css`, and `Theme.Legacy.css`, and initialised via the `Theme` class (in `com.effacy.jui.ui.client` of the **jui-ui** module and initialised in the modules initialiser entry point). The final override hook remains `com/effacy/jui/ui/client/Theme_Override.css`.
+
+#### External palettes and application-owned CSS
+
+JUI does **not** require alternate palettes to be registered inside `ThemeCSS`.
+
+The practical model for a JUI application is:
+
+1. Let JUI initialise the base theme through `Theme.init()`.
+2. Load your own stylesheet in the application module (for example `common.css`, `theme.css`, or `jui.css`).
+3. Define your palette overrides in that stylesheet against the stable body attributes set by `Theme.init()`.
+4. Activate the palette by name with `Theme.palette(String)`.
+
+The important detail is that application CSS should **not** target the generated theme class name, because that name comes from a CSS resource and is not a stable selector for external stylesheets. Instead, JUI now marks the body with `data-jui-theme="true"` and uses `data-palette="<name>"` for palette activation.
+
+An application-owned palette can therefore be written as:
+
+```css
+body[data-jui-theme][data-palette="knowledgevibe"] {
+    --jui-palette-primary-hue: 250;
+    --jui-palette-secondary-hue: 210;
+    --jui-palette-chroma-peak: 0.11;
+}
+```
+
+and activated with:
+
+```java
+Theme.palette ("knowledgevibe");
+```
+
+If you want to return to the default palette, call:
+
+```java
+Theme.palette ((String) null);
+```
+
+The enum-based `Theme.Palette` remains a convenience for built-in JUI palettes, but application code should generally prefer `Theme.palette(String)` for palettes defined in external CSS.
 
 #### Global variables
 
-The global variable mainly declare colour palettes. Broadly speaking the variables declared fall into the following categories:
+The global variables declare colour palettes. The palettes are **derived from a small set of axes** — typically 7 hue values plus 4 chroma values — via `oklch()` + `calc()` in `Theme.Reference.css`. Every `-XX` step across every family targets the same OKLCH lightness (ladder: 05=0.97, 10=0.94, 20=0.88, 30=0.80, 40=0.70, 50=0.58, 60=0.48, 70=0.38, 80=0.28, 90=0.20). Alternate palettes override only the axes. See the package README in `jui-ui/src/main/java/com/effacy/jui/ui/client/README.md` for the full axis list and authoring guide.
 
 |Category|Description|
 |--------|-----------|
-|`--jui-color-primaryXX`|The primary colour palette in shade gradations.|
-|`--jui-color-secondaryXX`|The secondary colour palette in shade gradations.|
-|`--jui-color-tertiaryXX`|The tertiary colour palette in shade gradations.|
-|`--jui-color-neutralXX`|The neutral (gray-like) colour palette in shade gradations.|
-|`--jui-color-errorXX`|The error colour palette in shade gradations.|
-|`--jui-color-warningXX`|The warning colour palette in shade gradations.|
-|`--jui-color-successXX`|The success colour palette in shade gradations.|
-|`--jui-color-aux-XX`|Auxilliary colour for common purposes.|
+|`--jui-palette-*-hue`, `--jui-palette-*-chroma-peak`|Palette axes — the authoring surface for a palette. Changing these re-derives the full `--jui-color-*` ramp.|
+|`--jui-color-primaryXX`|The primary (brand) colour family, derived from `--jui-palette-primary-hue` and `--jui-palette-chroma-peak`. Teal by default.|
+|`--jui-color-secondaryXX`|The secondary brand colour family. Teal-green by default.|
+|`--jui-color-inkXX`|The ink (cool neutral) family, derived from `--jui-palette-ink-*`. Used for text and chrome. Formerly named `tertiary`.|
+|`--jui-color-neutralXX`|The neutral family, derived from `--jui-palette-neutral-*`. Pure gray by default; palettes may tint it but doing so affects every surface.|
+|`--jui-color-errorXX`|Error colour family. Uses its own `--jui-palette-error-chroma-peak` so it stays alarming in muted palettes.|
+|`--jui-color-warningXX`|Warning (amber) family.|
+|`--jui-color-successXX`|Success family.|
+|`--jui-color-infoXX`|Info (clear blue) family. Absorbs the former `aux-blue` and `aux-focus1/2` tokens.|
+|`--jui-color-aux-white` / `--jui-color-aux-black`|Absolute white and black. Palettes must not override these.|
 |`--jui-border-radius-XX`|Common radii.|
 |`--jui-state--XX`|Common component states.|
 |`--jui-line-XX`|Common lines.|
@@ -400,7 +490,7 @@ The global variable mainly declare colour palettes. Broadly speaking the variabl
 |`--jui-ctl-XX`|Common control.|
 |`--jui-btn-XX`|Common button.|
 
-Others may be present (see `Theme.css` for details) but there are the main ones.
+Others may be present (see the `Theme.*.css` resources for details) but these are the main ones.
 
 #### Global styles
 
@@ -877,3 +967,450 @@ public class MyComponent extends SimpleComponent {
 ```
 
 This includes the default `IComponentCSS.COMPONENT_CSS` styles (declaration only, so you don't need to worry about them).
+### Design-system token tiers
+
+The current theme is structured as four tiers that should be overridden in order of intent:
+
+1. `reference` tokens such as `--jui-color-*` provide raw palette values.
+2. `role` tokens such as `--jui-role-*` provide semantic colours and states.
+3. `scale` tokens such as `--jui-space-*`, `--jui-font-*`, and `--jui-radius-*` provide shared rhythm.
+4. `component` tokens such as `--jui-comp-*` provide family-level defaults.
+
+The preferred public component tuning layer is now `--cpt-*`. Component styles should consume `--cpt-*`, with those values sourcing from `--jui-comp-*`, `--jui-role-*`, and `--jui-scale-*` tokens. Downstream applications should prefer `--jui-role-*`, then `--jui-comp-*`, then `--cpt-*`, and use stylesheet overrides only when a structural exception is needed.
+
+See also:
+
+- [CSS component contracts](css_component_contracts.md)
+- [CSS upgrade notes](css_upgrade_2026_04.md)
+
+# Appendix
+
+## Token reference
+
+This appendix is the companion reference for the design-system tokens introduced in [the *Design-system token tiers* note above](#design-system-token-tiers). It covers three things in order:
+
+1. the **tier structure** — which layer does what, and which tier you should reach for when overriding;
+2. **creating a palette** — the axes-first authoring model and the Palette Studio tool;
+3. a **token catalogue** — every token JUI ships, grouped by tier, with how each one should be used.
+
+### Tier structure
+
+The theme is organised as a cascade. Later tiers consume earlier tiers; consumers should usually override at the highest tier that still carries their intent.
+
+```
+reference  →  role  →  scale  →  component  →  --cpt-*  →  component selectors
+(palette)     (semantic)   (rhythm)    (family defaults)   (per-component knobs)
+```
+
+Each tier lives in its own CSS file, injected in this order:
+
+| # | File | Tier | Purpose |
+|---|---|---|---|
+| 1 | `Theme.Reference.css` | **reference (+ palette axes)** | The palette itself — axes and the 80+ `--jui-color-*` ramp tokens derived from them. |
+| 2 | `Theme.Reference.<Name>.css` | **reference** | Alternate palettes (e.g. `Theme.Reference.Editorial.css`). Overrides only the axes it wants. |
+| 3 | `Theme.Role.css` | **role** | Semantic names independent of palette. `--jui-role-surface-*`, `--jui-role-text-*`, `--jui-role-interactive-*`, etc. |
+| 4 | `Theme.Scale.css` | **scale** | Shared rhythm: spacing, type, radius, elevation, motion. |
+| 5 | `Theme.Component.css` | **component** | Family-level defaults for every component group. `--jui-comp-button-*`, `--jui-comp-dialog-*`, etc. |
+| 6 | `Theme.Legacy.css` | **legacy** | Compatibility shims for retired token names (`--jui-text`, `--jui-btn-*`, `--jui-color-tertiary*`, `--jui-color-aux-focus1/2`, `--jui-color-aux-blue`). Not a design surface. |
+| 7 | `Theme_Override.css` | **override** | Final hook for project-level last-mile tweaks. |
+
+And within each component's own stylesheet there is a seventh layer:
+
+- **`--cpt-*`** — declared at the component's root selector (typically `.component`), sourced from `--jui-comp-*` and scale tokens. This is the preferred *public* tuning surface for an individual component or variant.
+
+#### Which tier should I override?
+
+Pick the tier that matches the *intent* of the change. Going finer than you need creates more work and more drift; going coarser than you need spreads the change further than intended.
+
+| I want to … | Override at |
+|---|---|
+| Retint the brand hue across the app | `--jui-palette-*-hue` axis (reference) |
+| Change dark/light surface hierarchy | `--jui-role-surface-*` |
+| Swap a single component's link colour | `--cpt-*` on that component |
+| Tune all buttons consistently | `--jui-comp-button-*` |
+| Widen base spacing everywhere | `--jui-space-*` (scale) |
+| Change focus ring colour | `--jui-role-focus-ring` |
+| A one-off structural exception | stylesheet override in `Theme_Override.css` |
+
+The default rule of thumb:
+
+> Prefer **role** → **component** → **`--cpt-*`** → stylesheet. Reach for stylesheet overrides only when no token can carry the change.
+
+### Creating a palette
+
+A palette is not a set of 80+ hand-picked colours. It is a compact set of **axes** — hues and chroma peaks — from which JUI derives the full ramp via `oklch()` + `calc()`. The derivations live in `Theme.Reference.css`; a new palette only overrides the axes.
+
+Two contracts apply to every palette:
+
+- **Lightness ladder** — fixed for every family: `-05` L=0.97, `-10` L=0.94, `-20` L=0.88, `-30` L=0.80, `-40` L=0.70, `-50` L=0.58, `-60` L=0.48, `-70` L=0.38, `-80` L=0.28, `-90` L=0.20.
+- **Chroma curve** — a bell around `-50`, ratios of the family's chroma-peak: `-05` 0.12, `-10` 0.27, `-20` 0.46, `-30` 0.65, `-40` 0.85, `-50` 1.00, `-60` 0.96, `-70` 0.81, `-80` 0.58, `-90` 0.38.
+
+Neutral is the exception — its chroma is constant across steps.
+
+#### Palette Studio
+
+The easiest way to build a palette is the **[Palette Studio](tools/palette-studio.html)** tool that lets you:
+
+- Paste a brand palette as hex values. The studio extracts the hue of each and re-targets to JUI's shared ladder.
+- Tune chroma-peak sliders to hit muted / balanced / vivid characters.
+- Tint the neutral stack subtly (see "Neutrals should carry a trace of the palette's temperature", below).
+- Tint the page canvas without disturbing bounded surfaces.
+- Live-preview the effect on mock JUI components — buttons, inputs, tabs, toggles, a dialog, cards.
+- Copy a complete `.theme[data-palette="..."]` block, with both axis values and resolved ramps, ready to save as `Theme.Reference.<Name>.css`.
+
+See also the "Adding an alternate palette" section of `jui-ui/src/main/java/com/effacy/jui/ui/client/README.md` for the hand-authoring path and the structural rules (registering in `Theme.java`, adding to the `Theme.Palette` enum, runtime switching via `Theme.palette(...)`).
+
+#### Key palette rules
+
+- **Keep hue constant across a family** — don't drift the hue between light and dark steps.
+- **Pick hues at least 25–30° apart** from other families so they stay visually distinct at low chroma.
+- **Tune neutral chroma to match the palette's temperature.** Pure-gray neutrals (`chroma: 0`) against warm Ink text or Bone canvas will clash. A small `--jui-palette-neutral-chroma` (0.005–0.015) at the palette's hue harmonises surfaces. Keep neutral chroma well below any dedicated page-tint colour.
+- **Page canvas is an optional override** (`--jui-role-surface-canvas`). Bounded areas — dialogs, panels, control fields — should stay white-anchored; only the outer canvas needs tinting for an editorial feel.
+
+### Token catalogue
+
+Every token JUI ships. Grouped by tier. Descriptions explain *how the token should be used*, not just what it is.
+
+#### Palette axes (reference-tier authoring surface)
+
+Declared in `Theme.Reference.css`. These are the authoring knobs for a palette — change them (or override them in an alternate palette) and the full `--jui-color-*` ramp re-derives.
+
+| Token | Default | Purpose |
+|---|---|---|
+| `--jui-palette-primary-hue` | 210 | OKLCH hue (0–360°) for the `primary` family. |
+| `--jui-palette-secondary-hue` | 170 | Hue for the `secondary` family. |
+| `--jui-palette-ink-hue` | 255 | Hue for the `ink` (text/chrome) family. |
+| `--jui-palette-neutral-hue` | 0 | Hue for the `neutral` family. Only matters when neutral chroma > 0. |
+| `--jui-palette-error-hue` | 25 | Hue for the `error` family. |
+| `--jui-palette-warning-hue` | 65 | Hue for the `warning` family. |
+| `--jui-palette-success-hue` | 145 | Hue for the `success` family. |
+| `--jui-palette-info-hue` | 240 | Hue for the `info` family. |
+| `--jui-palette-chroma-peak` | 0.15 | Chroma at step -50 for primary, secondary, warning, success, info. Drop to 0.03–0.05 for muted palettes. |
+| `--jui-palette-ink-chroma-peak` | 0.035 | Chroma at step -50 for ink. Always low. |
+| `--jui-palette-error-chroma-peak` | 0.18 | Chroma at step -50 for error. Kept separate so destructive reads alarming in muted palettes. |
+| `--jui-palette-neutral-chroma` | 0 | Constant chroma across all neutral steps. `0` = pure gray. Raise to 0.005–0.015 to harmonise neutrals with a warm/cool palette temperature. |
+
+#### Reference tokens (colour ramps)
+
+Declared in `Theme.Reference.css`. Derived from the axes above. Ten steps per family (`-05` lightest through `-90` darkest). Component CSS should not normally consume these directly — prefer role tokens.
+
+| Family | Tokens | Purpose |
+|---|---|---|
+| `primary` | `--jui-color-primary05` through `-primary90` | Brand accent. Step `-50` is the canonical "brand colour"; step `-70` is a strong variant. |
+| `secondary` | `--jui-color-secondary05` through `-secondary90` | Second brand accent. Use when a UI needs two distinct brand tones (e.g. two-toned visualisations, header + accent). |
+| `ink` | `--jui-color-ink05` through `-ink90` | Text and chrome family — low-chroma but *not* pure gray so text reads as slightly warmer or cooler than neutrals. Formerly `tertiary`. |
+| `neutral` | `--jui-color-neutral05` through `-neutral90` | Surface backgrounds, borders, dividers, disabled states. Tinted per palette via `--jui-palette-neutral-chroma`; pure gray by default. |
+| `error` | `--jui-color-error05` through `-error90` | Destructive / error feedback. High chroma even in muted palettes. |
+| `warning` | `--jui-color-warning05` through `-warning90` | Caution / warning feedback. |
+| `success` | `--jui-color-success05` through `-success90` | Positive / success feedback. |
+| `info` | `--jui-color-info05` through `-info90` | Informational feedback; also used for focus rings (`info40`/`info20`). |
+| `aux` | `--jui-color-aux-white`, `--jui-color-aux-black` | Absolute white and black. Palettes must not override these. Use `-aux-white` for text on dark accents (guaranteed contrast) and `-aux-black` only where a true black is needed. |
+
+#### Role tokens (semantic)
+
+Declared in `Theme.Role.css`. Describe intent independent of palette. This is the preferred layer for consumer overrides: restyle the app by changing roles, not by overriding the palette.
+
+**Surfaces** — the painted backgrounds of containers.
+
+| Token | Purpose |
+|---|---|
+| `--jui-role-surface-canvas` | Outermost page background. Usually pure white (`aux-white`), but palettes may tint it (e.g. Bone). |
+| `--jui-role-surface-overlay` | Floating-above-the-page surfaces — dialogs, popovers, toasts. Usually pure white. |
+| `--jui-role-surface-raised` | Standard content surfaces — cards, panels, control fields. Slightly lower-lightness than overlay so controls feel sunken into paper. |
+| `--jui-role-surface-muted` | Chrome surfaces — dialog header/footer, tab bars, table headings. Pale and clearly chrome-like. |
+| `--jui-role-surface-sunken` | Disabled control backgrounds, tab-hover states. Noticeably darker than muted. |
+| `--jui-role-surface-accent` | Accent-tinted surface for hero cards, featured sections. Pale tint of the primary hue. |
+| `--jui-role-surface-info` | Background for info notifications. Pale info tint. |
+| `--jui-role-surface-success` | Background for success notifications. Pale success tint. |
+| `--jui-role-surface-warning` | Background for warning notifications. Pale warning tint. |
+| `--jui-role-surface-error` | Background for error notifications and error-state surfaces. Pale error tint. |
+
+**Borders** — 1-px stroke colours for dividers and edges.
+
+| Token | Purpose |
+|---|---|
+| `--jui-role-border-subtle` | Row separators, dividers between related items. Barely visible. |
+| `--jui-role-border-default` | Default component edge — control fields, dialog outlines, card borders. |
+| `--jui-role-border-strong` | Emphasised edges — active tab underline, selected item border. |
+| `--jui-role-border-contrast` | High-contrast border or text-helper colour, used when a darker label-like shade is needed on a muted surface. |
+
+**Text** — foreground colours.
+
+| Token | Purpose |
+|---|---|
+| `--jui-role-text-default` | Body text and primary reading colour. |
+| `--jui-role-text-muted` | Secondary text: captions, helper text, placeholders. |
+| `--jui-role-text-heading` | Headings h1–h6. Often same as `text-default` but palettes may diverge. |
+| `--jui-role-text-heading-subtle` | Subheadings / kickers. Slightly softer than headings. |
+| `--jui-role-text-disabled` | Disabled labels and read-only text. |
+| `--jui-role-text-inverse` | Text on dark or accent surfaces (e.g. filled primary button label). |
+| `--jui-role-text-link` | Link text. |
+| `--jui-role-text-link-hover` | Link hover state. |
+
+**Interactive** — the colour signature of actionable elements.
+
+| Token | Purpose |
+|---|---|
+| `--jui-role-interactive-primary` | Filled primary button / active state accent. |
+| `--jui-role-interactive-primary-hover` | Hover state of primary. |
+| `--jui-role-interactive-primary-strong` | Stronger variant — pressed state, emphasis. |
+| `--jui-role-interactive-primary-on` | Text/icon colour drawn *on top of* a primary-filled surface. |
+| `--jui-role-interactive-secondary` | Secondary brand accent equivalent. |
+| `--jui-role-interactive-secondary-hover` | Hover of secondary. |
+
+**Feedback** — semantic status colours.
+
+| Token | Purpose |
+|---|---|
+| `--jui-role-feedback-info` | Info accent (dots, badges, strokes). |
+| `--jui-role-feedback-success` | Success accent. |
+| `--jui-role-feedback-warning` | Warning accent. |
+| `--jui-role-feedback-error` | Error / destructive accent. |
+
+**State** — focus, disabled, and selection.
+
+| Token | Purpose |
+|---|---|
+| `--jui-role-focus-ring` | Keyboard-focus outline colour. Usually derived from the info family. |
+| `--jui-role-focus-shadow` | Outer glow of the focus ring. |
+| `--jui-role-disabled` | Disabled element fill / muted foreground marker. |
+| `--jui-role-disabled-strong` | Disabled element stroke or deeper disabled state. |
+| `--jui-role-selection` | Selected text background / selected row accent. |
+| `--jui-role-selection-muted` | Softer selection indicator — hover-to-select previews. |
+| `--jui-role-selection-active` | Active selection during a gesture (e.g. drag). |
+
+#### Scale tokens (rhythm)
+
+Declared in `Theme.Scale.css`. Shared across all components so layouts stay rhythmic without each component inventing its own units.
+
+**Spacing** — all padding / gap / margin values should pick from this scale.
+
+| Token | Value | Rough use |
+|---|---|---|
+| `--jui-space-0` | 0 | No space. |
+| `--jui-space-1` | 0.25rem | Tight gap (e.g. icon + label). |
+| `--jui-space-2` | 0.5rem | Small gap inside a control. |
+| `--jui-space-3` | 0.75rem | Between tight siblings (label + input). |
+| `--jui-space-4` | 1rem | Default block padding. |
+| `--jui-space-5` | 1.25rem | Comfortable block padding. |
+| `--jui-space-6` | 1.5rem | Between sibling blocks (rows in a form). |
+| `--jui-space-8` | 2rem | Section-level gaps. |
+| `--jui-space-10` | 2.5rem | Large separator. |
+| `--jui-space-12` | 3rem | Group-level indent / deep separation. |
+
+**Typography** — family, size, weight, line height.
+
+| Token | Value / example | Purpose |
+|---|---|---|
+| `--jui-font-family-sans` | Arial, sans-serif | Default UI font. |
+| `--jui-font-family-mono` | ui-monospace, monospace | Code / monospace contexts. |
+| `--jui-font-size-xs` | 0.75rem | Captions, micro-labels. |
+| `--jui-font-size-sm` | 0.875rem | Secondary text. |
+| `--jui-font-size-md` | 1rem | Body default. |
+| `--jui-font-size-lg` | 1.125rem | Lead paragraphs, emphasised body. |
+| `--jui-font-size-xl` | 1.25rem | Subheadings. |
+| `--jui-font-size-2xl` | 1.5rem | Section headings / dialog titles. |
+| `--jui-font-weight-regular` | 400 | Default body weight. |
+| `--jui-font-weight-medium` | 500 | Buttons, labels, mild emphasis. |
+| `--jui-font-weight-semibold` | 600 | Headings, strong labels. |
+| `--jui-font-weight-bold` | 700 | Strong emphasis. |
+| `--jui-line-height-tight` | 1.2 | Headings, short labels. |
+| `--jui-line-height-normal` | 1.5 | Body paragraphs. |
+
+**Radius** — corner rounding.
+
+| Token | Value | Use |
+|---|---|---|
+| `--jui-radius-none` | 0 | Hard edges. |
+| `--jui-radius-xs` | 2px | Almost-square controls. |
+| `--jui-radius-sm` | 4px | Standard control radius (inputs, small buttons). |
+| `--jui-radius-md` | 6px | Cards, panels. |
+| `--jui-radius-lg` | 10px | Dialogs, popovers. |
+| `--jui-radius-pill` | 999px | Fully-rounded pills (segmented controls, badges). |
+
+**Control height** — base height for form controls and buttons.
+
+| Token | Value | Use |
+|---|---|---|
+| `--jui-control-height` | 2.35em | Keeps all control-like components (`input`, `button`, `select`) at a consistent baseline height. |
+
+**Elevation** — box-shadow presets for floating surfaces.
+
+| Token | Purpose |
+|---|---|
+| `--jui-elevation-0` | `none`. Flat. |
+| `--jui-elevation-1` | Subtle raise — cards on canvas, hover lifts. |
+| `--jui-elevation-2` | Dialogs, popovers. |
+| `--jui-elevation-3` | Top-level overlays (toasts, dropped-on-everything menus). |
+
+**Motion** — shared animation durations and easings.
+
+| Token | Value | Use |
+|---|---|---|
+| `--jui-duration-fast` | 150ms | Hover states, small state transitions. |
+| `--jui-duration-standard` | 240ms | Open/close of disclosures, tab transitions. |
+| `--jui-duration-slow` | 400ms | Page-scale transitions, route changes. |
+| `--jui-ease-standard` | cubic-bezier(0.2, 0, 0, 1) | Default entrance/exit curve. |
+| `--jui-ease-emphasis` | cubic-bezier(0.4, 0, 0.1, 1) | Sharper emphasis curve for attention-drawing motion. |
+
+#### Component-family tokens (`--jui-comp-*`)
+
+Declared in `Theme.Component.css`. Family-level defaults sourced from role and scale tokens. Use when you want to retune a component family consistently (all buttons, all controls) without editing every component stylesheet. Component stylesheets typically expose `--cpt-*` tokens that source from these.
+
+**Control** — shared defaults for form controls.
+
+| Token | Purpose |
+|---|---|
+| `--jui-comp-control-font-family` | Font family for control text. |
+| `--jui-comp-control-height` | Control height baseline. |
+| `--jui-comp-control-surface` | Control field background (enabled). |
+| `--jui-comp-control-surface-disabled` | Control field background (disabled). |
+| `--jui-comp-control-surface-readonly` | Control field background (read-only). |
+| `--jui-comp-control-surface-offset` | Inner offset / alternative surface (e.g. inline trailing-icon backdrop). |
+| `--jui-comp-control-surface-waiting` | Waiting/loading placeholder surface. |
+| `--jui-comp-control-border` | Default control border colour. |
+| `--jui-comp-control-radius` | Corner radius. |
+| `--jui-comp-control-text` | Entered text colour. |
+| `--jui-comp-control-text-placeholder` | Placeholder text colour. |
+| `--jui-comp-control-text-disabled` | Disabled text colour. |
+| `--jui-comp-control-text-readonly` | Read-only text colour. |
+| `--jui-comp-control-text-header` | Heading-adjacent label colour. |
+| `--jui-comp-control-text-subtle` | Secondary label / hint text. |
+| `--jui-comp-control-text-link` | Inline link colour inside a control area. |
+| `--jui-comp-control-text-offset` | Offset label colour for compound controls. |
+| `--jui-comp-control-action` | Trailing-action icon / toggle colour. |
+| `--jui-comp-control-action-disabled` | Trailing action when disabled. |
+| `--jui-comp-control-action-readonly` | Trailing action when read-only. |
+| `--jui-comp-control-action-hover` | Trailing action hover. |
+| `--jui-comp-control-active` | Active-state accent (selected toggle, radio fill). |
+| `--jui-comp-control-active-bg` | Active-state background tint. |
+| `--jui-comp-control-focus` | Focus ring colour. |
+| `--jui-comp-control-focus-offset` | Outer focus glow. |
+| `--jui-comp-control-error-focus` | Focus ring colour in error state. |
+| `--jui-comp-control-error-focus-offset` | Outer glow in error-focus state. |
+| `--jui-comp-control-opacity-disabled` | Opacity used for disabled appearance. |
+| `--jui-comp-control-opacity-readonly` | Opacity used for read-only appearance. |
+
+**Button** — shared defaults for buttons. Variant-specific surfaces follow the `-danger`, `-warning`, `-success`, `-outline`, `-link` naming convention.
+
+| Token | Purpose |
+|---|---|
+| `--jui-comp-button-height` | Button height baseline. |
+| `--jui-comp-button-surface` | Primary button fill. |
+| `--jui-comp-button-surface-hover` | Primary button hover. |
+| `--jui-comp-button-surface-disabled` | Button fill when disabled. |
+| `--jui-comp-button-border` | Default button border. |
+| `--jui-comp-button-border-disabled` | Button border when disabled. |
+| `--jui-comp-button-radius` | Corner radius. |
+| `--jui-comp-button-text` | Label colour on a filled button. |
+| `--jui-comp-button-text-disabled` | Disabled label colour. |
+| `--jui-comp-button-waiting-text` | Waiting/loading label colour. |
+| `--jui-comp-button-focus-border` | Focus ring colour. |
+| `--jui-comp-button-focus-shadow` | Outer focus glow. |
+| `--jui-comp-button-danger-surface` / `-hover` / `-border` | Danger (destructive) variant. |
+| `--jui-comp-button-warning-surface` / `-hover` / `-border` | Warning variant. |
+| `--jui-comp-button-success-surface` / `-hover` / `-border` | Success variant. |
+| `--jui-comp-button-outline-surface` / `-hover` / `-text` / `-border` | Outlined variant. |
+| `--jui-comp-button-link-text` / `-hover` | Link-styled button. |
+
+**Tabset** — tab bars.
+
+| Token | Purpose |
+|---|---|
+| `--jui-comp-tabset-surface` | Tab bar background. |
+| `--jui-comp-tabset-surface-alt` | Alternate surface (e.g. active tab contrast background). |
+| `--jui-comp-tabset-surface-hover` | Tab hover background. |
+| `--jui-comp-tabset-surface-active` | Active tab fill / bottom-border colour. |
+| `--jui-comp-tabset-border` | Tabset boundary. |
+| `--jui-comp-tabset-text` | Tab label. |
+| `--jui-comp-tabset-text-muted` | Inactive tab label colour. |
+| `--jui-comp-tabset-text-active` | Active tab label (on contrast background). |
+| `--jui-comp-tabset-warn` | Warning indicator colour on a tab. |
+| `--jui-comp-tabset-shadow` | Drop shadow below selected tab. |
+
+**Container** — panels, sections, groups.
+
+| Token | Purpose |
+|---|---|
+| `--jui-comp-container-surface` | Panel / section background. |
+| `--jui-comp-container-surface-offset` | Subtly-differentiated inner region (e.g. aside within a panel). |
+
+**Dialog** — modal dialogs.
+
+| Token | Purpose |
+|---|---|
+| `--jui-comp-dialog-surface` | Dialog body background. |
+| `--jui-comp-dialog-border` | Dialog outline. |
+| `--jui-comp-dialog-radius` | Dialog corner radius. |
+| `--jui-comp-dialog-shadow` | Dialog drop shadow (typically `--jui-elevation-2`). |
+| `--jui-comp-dialog-chrome` | Header/footer chrome fill. |
+| `--jui-comp-dialog-header-surface` | Dialog header background. Use this in application `theme.css` when you want a default header surface for all dialogs. |
+| `--jui-comp-dialog-header-divider` | Dialog header bottom divider. |
+| `--jui-comp-dialog-footer-surface` | Dialog footer background. Use this in application `theme.css` when you want a default footer surface for all dialogs. |
+| `--jui-comp-dialog-footer-divider` | Dialog footer top divider. |
+| `--jui-comp-dialog-heading` | Dialog title text. |
+| `--jui-comp-dialog-subheading` | Subtitle / secondary header text. |
+| `--jui-comp-dialog-icon` | Header icon colour. |
+| `--jui-comp-dialog-link` | Inline link colour inside a dialog. |
+| `--jui-comp-dialog-close` | Close-button colour. |
+
+**Table** — data tables.
+
+| Token | Purpose |
+|---|---|
+| `--jui-comp-table-header-surface` | Header row background. |
+| `--jui-comp-table-border` | Outer table border. |
+| `--jui-comp-table-row-border` | Between-row divider. |
+| `--jui-comp-table-heading-text` | Header cell text. |
+| `--jui-comp-table-heading-icon` | Sort / helper icon colour. |
+
+**Notification** — info/success/warning/error banners and toasts.
+
+| Token | Purpose |
+|---|---|
+| `--jui-comp-notification-radius` | Corner radius. |
+| `--jui-comp-notification-info-accent` / `-border` / `-surface` | Info variant accent, left-edge border, fill. |
+| `--jui-comp-notification-success-accent` / `-border` / `-surface` | Success variant. |
+| `--jui-comp-notification-error-accent` / `-border` / `-surface` | Error variant. |
+
+**Form** — standard form layout and affordances.
+
+| Token | Purpose |
+|---|---|
+| `--jui-comp-form-header` | Form heading text. |
+| `--jui-comp-form-instruction` | Instruction text below heading. |
+| `--jui-comp-form-footer` | Footer / guidance text. |
+| `--jui-comp-form-text` | Default form text. |
+| `--jui-comp-form-text-error` | Error-message text. |
+| `--jui-comp-form-text-disabled` | Disabled text. |
+| `--jui-comp-form-help-surface` / `-text` / `-radius` | Help tooltip background, text, radius. |
+| `--jui-comp-form-error-surface` / `-icon` / `-text` / `-radius` | Block-level error indicator. |
+| `--jui-comp-form-separator` | Divider between form groups. |
+
+#### Component-local `--cpt-*` tokens
+
+Declared inside individual component stylesheets, at the component's root selector. They source from `--jui-comp-*`, role tokens, and scale tokens. Consumers should prefer overriding `--cpt-*` for component-specific tweaks.
+
+Common prefixes include `--cpt-btn-*`, `--cpt-textctl-*`, `--cpt-checkctl-*`, `--cpt-form-*`, `--cpt-modaldialog-*`, `--cpt-table-*`, `--cpt-notification-*`. The complete list is documented per-component in each component's stylesheet and in [css_component_contracts.md](css_component_contracts.md).
+
+#### Legacy tokens
+
+Declared in `Theme.Legacy.css`. Aliases for retired tokens, kept so older downstream code keeps working.
+
+| Prefix | Replaced by |
+|---|---|
+| `--jui-text`, `--jui-text-*` | `--jui-role-text-*` |
+| `--jui-line`, `--jui-line-*` | `--jui-role-border-*` |
+| `--jui-selection`, `--jui-selection-*` | `--jui-role-selection-*` |
+| `--jui-ctl-*` | `--jui-comp-control-*` |
+| `--jui-btn-*` | `--jui-comp-button-*` |
+| `--jui-tabset-*` | `--jui-comp-tabset-*` |
+| `--jui-container-*` | `--jui-comp-container-*` |
+| `--jui-state-*` | `--jui-role-focus-*`, `--jui-role-disabled*`, `--jui-role-feedback-error`, surface-error, etc. |
+| `--jui-border-radius`, `-soft`, `-hard` | `--jui-radius-*` |
+| `--jui-color-tertiary*` | `--jui-color-ink*` |
+| `--jui-color-aux-focus1` / `-focus2` | `--jui-color-info40` / `-info20` (or the `--jui-role-focus-*` tokens) |
+| `--jui-color-aux-blue` | `--jui-color-info50` |
+| `--jui-frag-card-outlined-*` | deprecated; migrate to the card component's `--cpt-*` tokens |
+
+These exist for compatibility only. Do not add new tokens here, and don't build new features on legacy names.

@@ -1,0 +1,125 @@
+.theme {
+    /* Transitional compatibility layer.
+       Maps retired reference and global tokens onto the new structure so
+       existing downstream code continues to resolve. Do not extend this file
+       with new tokens — it is a shim, not a design surface. */
+
+    /* Palette aliases — tertiary was renamed to ink, and the aux-focus /
+       aux-blue one-offs were absorbed into a proper info ramp. */
+    --jui-color-tertiary05: var(--jui-color-ink05);
+    --jui-color-tertiary10: var(--jui-color-ink10);
+    --jui-color-tertiary20: var(--jui-color-ink20);
+    --jui-color-tertiary30: var(--jui-color-ink30);
+    --jui-color-tertiary40: var(--jui-color-ink40);
+    --jui-color-tertiary50: var(--jui-color-ink50);
+    --jui-color-tertiary60: var(--jui-color-ink60);
+    --jui-color-tertiary70: var(--jui-color-ink70);
+    --jui-color-tertiary80: var(--jui-color-ink80);
+    --jui-color-tertiary90: var(--jui-color-ink90);
+
+    --jui-color-aux-focus1: var(--jui-color-info40);
+    --jui-color-aux-focus2: var(--jui-color-info20);
+    --jui-color-aux-blue: var(--jui-color-info50);
+
+    --jui-border-radius: var(--jui-radius-sm);
+    --jui-border-radius-soft: var(--jui-radius-xs);
+    --jui-border-radius-hard: var(--jui-radius-md);
+
+    --jui-state-focus: var(--jui-role-focus-ring);
+    --jui-state-focus-offset: var(--jui-role-focus-shadow);
+    --jui-state-disabled: var(--jui-role-disabled);
+    --jui-state-disabled-bg: var(--jui-role-surface-sunken);
+    --jui-state-disabled-offset: var(--jui-role-disabled-strong);
+    --jui-state-error: var(--jui-role-feedback-error);
+    --jui-state-error-bg: var(--jui-role-surface-error);
+    --jui-state-error-offset: var(--jui-color-error30);
+    --jui-state-waiting: var(--jui-role-border-default);
+    --jui-state-waiting-bg: var(--jui-role-surface-muted);
+    --jui-state-waiting-bg-offset: var(--jui-role-surface-raised);
+
+    --jui-line: var(--jui-role-border-default);
+    --jui-line-light: var(--jui-role-border-subtle);
+    --jui-line-medium: var(--jui-role-surface-sunken);
+    --jui-line-dark: var(--jui-role-border-contrast);
+
+    --jui-text: var(--jui-role-text-default);
+    --jui-text-offset: var(--jui-role-text-muted);
+    --jui-text-header: var(--jui-role-text-heading);
+    --jui-text-header-sub: var(--jui-role-text-heading-subtle);
+    --jui-text-subtle: var(--jui-role-text-muted);
+    --jui-text-link: var(--jui-role-text-link);
+    --jui-text-link-hover: var(--jui-role-text-link-hover);
+    --jui-text-error: var(--jui-role-feedback-error);
+    --jui-text-disabled: var(--jui-role-text-disabled);
+
+    --jui-selection: var(--jui-role-selection);
+    --jui-selection-offset: var(--jui-role-selection-muted);
+    --jui-selection-active: var(--jui-role-selection-active);
+
+    --jui-ctl-height: var(--jui-comp-control-height);
+    --jui-ctl-font: var(--jui-comp-control-font-family);
+    --jui-ctl-active: var(--jui-comp-control-active);
+    --jui-ctl-active-bg: var(--jui-comp-control-active-bg);
+    --jui-ctl-opacity-readonly: var(--jui-comp-control-opacity-readonly);
+    --jui-ctl-opacity-disabled: var(--jui-comp-control-opacity-disabled);
+    --jui-ctl-bg: var(--jui-comp-control-surface);
+    --jui-ctl-bg-disabled: var(--jui-comp-control-surface-disabled);
+    --jui-ctl-bg-readonly: var(--jui-comp-control-surface-readonly);
+    --jui-ctl-bg-offset: var(--jui-comp-control-surface-offset);
+    --jui-ctl-bg-wait: var(--jui-comp-control-surface-waiting);
+    --jui-ctl-border: var(--jui-comp-control-border);
+    --jui-ctl-border-radius: var(--jui-comp-control-radius);
+    --jui-ctl-text: var(--jui-comp-control-text);
+    --jui-ctl-text-placeholder: var(--jui-comp-control-text-placeholder);
+    --jui-ctl-text-disabled: var(--jui-comp-control-text-disabled);
+    --jui-ctl-text-readonly: var(--jui-comp-control-text-readonly);
+    --jui-ctl-text-header: var(--jui-comp-control-text-header);
+    --jui-ctl-text-subtle: var(--jui-comp-control-text-subtle);
+    --jui-ctl-text-link: var(--jui-comp-control-text-link);
+    --jui-ctl-text-offset: var(--jui-comp-control-text-offset);
+    --jui-ctl-action: var(--jui-comp-control-action);
+    --jui-ctl-action-disabled: var(--jui-comp-control-action-disabled);
+    --jui-ctl-action-readonly: var(--jui-comp-control-action-readonly);
+    --jui-ctl-action-hover: var(--jui-comp-control-action-hover);
+    --jui-ctl-focus: var(--jui-comp-control-focus);
+    --jui-ctl-focus-offset: var(--jui-comp-control-focus-offset);
+    --jui-ctl-err-focus: var(--jui-comp-control-error-focus);
+    --jui-ctl-err-focus-offset: var(--jui-comp-control-error-focus-offset);
+
+    --jui-btn-bg: var(--jui-comp-button-surface);
+    --jui-btn-bg-hover: var(--jui-comp-button-surface-hover);
+    --jui-btn-bg-disabled: var(--jui-comp-button-surface-disabled);
+    --jui-btn-bg-disabled-offset: var(--jui-comp-button-border-disabled);
+    --jui-btn-border: var(--jui-comp-button-border);
+    --jui-btn-border-radius: var(--jui-comp-button-radius);
+    --jui-btn-text: var(--jui-comp-button-text);
+    --jui-btn-danger-bg: var(--jui-comp-button-danger-surface);
+    --jui-btn-danger-bg-hover: var(--jui-comp-button-danger-surface-hover);
+    --jui-btn-danger-border: var(--jui-comp-button-danger-border);
+    --jui-btn-warning-bg: var(--jui-comp-button-warning-surface);
+    --jui-btn-warning-bg-hover: var(--jui-comp-button-warning-surface-hover);
+    --jui-btn-warning-border: var(--jui-comp-button-warning-border);
+    --jui-btn-success-bg: var(--jui-comp-button-success-surface);
+    --jui-btn-success-bg-hover: var(--jui-comp-button-success-surface-hover);
+    --jui-btn-success-border: var(--jui-comp-button-success-border);
+
+    --jui-tabset-line: var(--jui-comp-tabset-border);
+    --jui-tabset-line-light: var(--jui-role-border-subtle);
+    --jui-tabset-text: var(--jui-comp-tabset-text);
+    --jui-tabset-text-alt: var(--jui-comp-tabset-text-active);
+    --jui-tabset-icon: var(--jui-comp-tabset-text);
+    --jui-tabset-warn: var(--jui-comp-tabset-warn);
+    --jui-tabset-bg-01: var(--jui-comp-tabset-surface-alt);
+    --jui-tabset-bg-02: var(--jui-comp-tabset-surface);
+    --jui-tabset-bg-03: var(--jui-comp-tabset-surface-hover);
+    --jui-tabset-bg-04: var(--jui-role-border-strong);
+    --jui-tabset-bg-05: var(--jui-comp-tabset-surface-active);
+    --jui-tabset-shadow: var(--jui-comp-tabset-shadow);
+
+    --jui-container-bg: var(--jui-comp-container-surface);
+    --jui-container-bg-offset: var(--jui-comp-container-surface-offset);
+
+    --jui-frag-card-outlined-bg: var(--jui-role-surface-overlay);
+    --jui-frag-card-outlined-border: var(--jui-role-border-subtle);
+    --jui-frag-card-outlined-border-radius: var(--jui-radius-sm);
+}

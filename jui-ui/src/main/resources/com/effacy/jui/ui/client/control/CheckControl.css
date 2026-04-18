@@ -1,8 +1,11 @@
 .component {
-    --jui-checkctl-text: var(--jui-ctl-text);
-    --jui-checkctl-description: var(--jui-ctl-text);
-    --jui-checkctl-labelgap: 0.75em;
-    --jui-checkctl-size: 1rem;
+    --cpt-checkctl-text: var(--jui-checkctl-text, var(--jui-comp-control-text));
+    --cpt-checkctl-description: var(--jui-checkctl-description, var(--jui-comp-control-text));
+    --cpt-checkctl-labelgap: var(--jui-checkctl-labelgap, var(--jui-space-3));
+    --cpt-checkctl-size: var(--jui-checkctl-size, var(--jui-font-size-md));
+    --cpt-checkctl-toggle-track: var(--jui-comp-control-surface-offset);
+    --cpt-checkctl-toggle-track-active: var(--jui-comp-control-active);
+    --cpt-checkctl-toggle-thumb: var(--jui-comp-control-surface);
 }
 
 /**************************************
@@ -10,30 +13,30 @@
 */
 
 .component .inner {
-    font-size: var(--jui-checkctl-size);
-	display: flex;
-	flex-direction: column;
-	gap: var(--jui-checkctl-labelgap);
-	color: var(--jui-checkctl-text);
+    font-size: var(--cpt-checkctl-size);
+    display: flex;
+    flex-direction: column;
+    gap: var(--cpt-checkctl-labelgap);
+    color: var(--cpt-checkctl-text);
 }
 
 .component .inner .item {
-	display: flex;
-	flex-direction: row;
+    display: flex;
+    flex-direction: row;
     align-items: flex-start;
 }
 
 .component .inner .item.reverse {
-	flex-direction: row-reverse;
+    flex-direction: row-reverse;
 }
 
 .component .inner .item span.spacer {
-	display: inline-block;
-	width: var(--jui-checkctl-labelgap);
+    display: inline-block;
+    width: var(--cpt-checkctl-labelgap);
 }
 
 .component .inner .item.expand span.spacer {
-	flex-grow: 1;
+    flex-grow: 1;
 }
 
 /**************************************
@@ -41,63 +44,63 @@
 */
 
 .component .inner .item.toggle label {
-    color: var(--jui-checkctl-text);
+    color: var(--cpt-checkctl-text);
 }
 
 .component .inner .item.toggle label.toggle {
-	margin: 0;
-	display: block;
-	position: relative;
-	width: 38px;
-	height: 20px;
-	background-color: var(--jui-ctl-bg-offset);
-	border-radius: 20px;
-	transition: all 300ms ease;
-	cursor: pointer;
+    margin: 0;
+    display: block;
+    position: relative;
+    width: 38px;
+    height: 20px;
+    background-color: var(--cpt-checkctl-toggle-track);
+    border-radius: 20px;
+    transition: all 300ms ease;
+    cursor: pointer;
 }
 
 .component.active .inner .item.toggle label.toggle {
-	display: block;
-	position: relative;
-	width: 38px;
-	height: 20px;
-	border-radius: 20px;
-	transition: all 300ms ease;
-	cursor: pointer;
-	background-color: var(--jui-ctl-active);
+    display: block;
+    position: relative;
+    width: 38px;
+    height: 20px;
+    border-radius: 20px;
+    transition: all 300ms ease;
+    cursor: pointer;
+    background-color: var(--cpt-checkctl-toggle-track-active);
 }
 
 .component .inner .item.toggle label.toggle::after {
-	content: ' ';
-	position: absolute;
-	top: 4px;
-	left: 4px;
-	height: 12px;
-	width: 12px;
-	background-color: var(--jui-ctl-bg);
-	border-radius: 50%;
-	box-shadow:  0px 0px 3px inset var(--jui-ctl-action);
-	transition: all 300ms ease;
+    content: ' ';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    height: 12px;
+    width: 12px;
+    background-color: var(--cpt-checkctl-toggle-thumb);
+    border-radius: 50%;
+    box-shadow: 0 0 3px inset var(--jui-ctl-action);
+    transition: all 300ms ease;
 }
 
 .component.active .inner .item.toggle label.toggle::after {
-	left: 22px;
-	background-color: #fff;
-	box-shadow: none;
+    left: 22px;
+    background-color: var(--cpt-checkctl-toggle-thumb);
+    box-shadow: none;
 }
 
 .component .inner .item label.toggle input {
-	cursor: pointer;
+    cursor: pointer;
     top: -1px;
 }
 
 .component .inner .item.toggle label.toggle input {
-	position: absolute;
-	top: 0px;
-	left: 0px;
-	opacity: 0;
-	width: 1px;
-	height: 1px;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
 }
 
 /**************************************
@@ -105,67 +108,67 @@
 */
 
 .component .inner .item label {
-	user-select: none;
-	cursor: pointer;
+    user-select: none;
+    cursor: pointer;
     display: flex;
     flex-direction: column;
-	font-weight: 500;
+    font-weight: var(--jui-font-weight-medium);
 }
 
 .component.disabled .inner .item label {
-	color: var(--jui-ctl-text-disabled) !important;
+    color: var(--jui-ctl-text-disabled) !important;
     opacity: var(--jui-ctl-opacity-disabled);
-	cursor: not-allowed;
+    cursor: not-allowed;
 }
 
 .component .inner .item.bold > span label {
-	font-weight: 600;
+    font-weight: var(--jui-font-weight-semibold);
 }
 
 .component .inner .item label > span.description {
-    font-weight: 400;
+    font-weight: var(--jui-font-weight-regular);
     font-size: 0.95em;
-    color: var(--jui-checkctl-description);
+    color: var(--cpt-checkctl-description);
 }
 
 .component.invalid .inner input {
-	border-color: var(--jui-ctl-focus);
+    border-color: var(--jui-ctl-focus);
     box-shadow: 0 0 0 1px var(--jui-ctl-focus-offset);
 }
 
 .component.disabled .inner input {
-	color: var(--jui-ctl-text-disabled);
-	cursor: not-allowed;
+    color: var(--jui-ctl-text-disabled);
+    cursor: not-allowed;
 }
 
 .component.read_only .inner input {
-	background: var(--jui-ctl-bg-disabled);
-	color: var(--jui-ctl-text-disabled);
-	cursor: not-allowed;
+    background: var(--jui-ctl-bg-disabled);
+    color: var(--jui-ctl-text-disabled);
+    cursor: not-allowed;
 }
 
 .component input {
-	background: inherit;
-	color: inherit;
-	outline: none;
-	border: none;
-	width: 1em;
-	height: 1em;
+    background: inherit;
+    color: inherit;
+    outline: none;
+    border: none;
+    width: 1em;
+    height: 1em;
     position: relative;
     font-size: 1em;
 }
 
 .component input:focus {
-	box-shadow: 0 0 0 2px var(--jui-ctl-focus-offset);
+    box-shadow: 0 0 0 2px var(--jui-ctl-focus-offset);
 }
 
 .component.focus .item.toggle label.toggle {
-	border-color: var(--jui-ctl-focus);
+    border-color: var(--jui-ctl-focus);
     box-shadow: 0 0 0 2px var(--jui-ctl-focus-offset);
 }
 
 .component.invalid .inner input:focus {
-	box-shadow: 0 0 3px 1px var(--jui-ctl-err-focus-offset);
+    box-shadow: 0 0 3px 1px var(--jui-ctl-err-focus-offset);
 }
 
 /**************************************
@@ -173,11 +176,11 @@
 */
 
 .component.waiting .inner .item {
-	animation: jui-animation-waiting 1s infinite;
-	border-color: transparent;
+    animation: jui-animation-waiting 1s infinite;
+    border-color: transparent;
     background-color: var(--jui-ctl-bg-wait);
 }
 
 .component.waiting .inner .item * {
-	visibility: hidden;
+    visibility: hidden;
 }

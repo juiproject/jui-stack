@@ -38,7 +38,7 @@ import com.effacy.jui.ui.client.control.builder.ControlForm;
 import com.effacy.jui.ui.client.control.builder.ControlFormCreator;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.effacy.jui.ui.client.modal.Modal.Type;
-import com.effacy.jui.ui.client.modal.ModalDialog.Config.ModalStyle;
+import com.effacy.jui.ui.client.modal.ModalDialog;
 import com.effacy.jui.ui.client.modal.ModalDialogCreator;
 import com.effacy.jui.ui.client.modal.ModalDialogCreator.IDialogOpener;
 import com.effacy.jui.ui.client.panel.Panel;
@@ -191,7 +191,7 @@ public class Lesson5b extends Panel implements INavigationAware, IResetable {
         public static void open(Consumer<Optional<Object>> cb) {
             if (DIALOG == null)
                 DIALOG = ModalDialogCreator.<Void, Object, SimpleFormPanel3>dialog (new SimpleFormPanel3 (), cfg -> {
-                    cfg.style (ModalStyle.UNIFORM)
+                    cfg.variant (ModalDialog.Config.Variant.UNIFORM)
                         .title ("Create project")
                         .type (Type.CENTER)
                         .width (Length.px(500));

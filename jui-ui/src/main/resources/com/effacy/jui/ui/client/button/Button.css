@@ -1,41 +1,45 @@
 .component {
-    --cpt-btn-height: var(--jui-ctl-height);
-    --cpt-btn-bg: var(--jui-btn-bg);
-    --cpt-btn-bg-hover: var(--jui-btn-bg-hover);
-    --cpt-btn-border: var(--jui-btn-border);
+    --cpt-btn-height: var(--jui-comp-button-height);
+    --cpt-btn-bg: var(--jui-comp-button-surface);
+    --cpt-btn-bg-hover: var(--jui-comp-button-surface-hover);
+    --cpt-btn-border: var(--jui-comp-button-border);
     --cpt-btn-border-width: 1px;
-    --cpt-btn-border-radius: var(--jui-btn-border-radius);
-	--cpt-btn-text: var(--jui-btn-text);
-    --cpt-btn-text-size: 1em;
+    --cpt-btn-border-radius: var(--jui-comp-button-radius);
+    --cpt-btn-text: var(--jui-comp-button-text);
+    --cpt-btn-text-size: var(--jui-font-size-md);
     --cpt-btn-text-lineheight: 1.8em;
-    --cpt-btn-disabled-bg: var(--jui-state-disabled-bg);
-    --cpt-btn-disabled-border: var(--jui-state-disabled);
-    --cpt-btn-disabled-text: var(--cpt-btn-disabled-border);
+    --cpt-btn-font-weight: var(--jui-font-weight-medium);
+    --cpt-btn-disabled-bg: var(--jui-comp-button-surface-disabled);
+    --cpt-btn-disabled-border: var(--jui-comp-button-border-disabled);
+    --cpt-btn-disabled-text: var(--jui-comp-button-text-disabled);
     --cpt-btn-disabled-opacity: 0.8;
-    --cpt-btn-waiting-bg: var(--jui-state-disabled-bg);
-    --cpt-btn-waiting-border: var(--jui-state-disabled);
-    --cpt-btn-waiting-text: var(--jui-state-disabled-offset);
-    --cpt-btn-padding-lr: 1em;
-    --cpt-btn-padding: 3px 2px;
+    --cpt-btn-waiting-bg: var(--jui-comp-button-surface-disabled);
+    --cpt-btn-waiting-border: var(--jui-comp-button-border-disabled);
+    --cpt-btn-waiting-text: var(--jui-comp-button-waiting-text);
+    --cpt-btn-focus-border: var(--jui-comp-button-focus-border);
+    --cpt-btn-focus-shadow: var(--jui-comp-button-focus-shadow);
+    --cpt-btn-padding-inline: var(--jui-space-4);
+    --cpt-btn-padding-block: 3px;
+    --cpt-btn-gap: var(--jui-space-3);
     --cpt-btn-margin: 2px 4px;
 }
 
 .component {
-	position: relative;
-	display: inline-flex;
-	border-radius: var(--cpt-btn-border-radius);
-	border: var(--cpt-btn-border-width) solid var(--cpt-btn-border);
+    position: relative;
+    display: inline-flex;
+    border-radius: var(--cpt-btn-border-radius);
+    border: var(--cpt-btn-border-width) solid var(--cpt-btn-border);
     overflow: hidden;
     margin: var(--cpt-btn-margin);
     align-items: center;
     background: var(--cpt-btn-bg);
-    font-size: var(--cpt-btn-text-size);Ø
-} 
+    font-size: var(--cpt-btn-text-size);
+}
 
 .component .outer {
-	margin: 0;
-	padding: var(--cpt-btn-padding);
-	background: var(--cpt-btn-bg);
+    margin: 0;
+    padding: var(--cpt-btn-padding-block) 2px;
+    background: var(--cpt-btn-bg);
     width: 100%;
     height: var(--cpt-btn-height);
     display: flex;
@@ -44,11 +48,11 @@
 }
 
 .component:not(.disabled):not(.waiting) .outer:hover {
-	background: var(--cpt-btn-bg-hover);
+    background: var(--cpt-btn-bg-hover);
 }
 
 .component.disabled {
-	border-color: var(--cpt-btn-disabled-border) !important;
+    border-color: var(--cpt-btn-disabled-border) !important;
 }
 
 .component.disabled * {
@@ -56,30 +60,30 @@
 }
 
 .component.disabled .outer {
-	background: var(--cpt-btn-disabled-bg) !important;
+    background: var(--cpt-btn-disabled-bg) !important;
 }
 
 .component a {
-	display: flex;
-	flex-direction: row;
-    gap: 0.7em;
-	align-items: center;
+    display: flex;
+    flex-direction: row;
+    gap: var(--cpt-btn-gap);
+    align-items: center;
     justify-content: center;
-	position: relative;
-	padding-left: var(--cpt-btn-padding-lr);
-	padding-right: var(--cpt-btn-padding-lr);
-	text-align: center;
-	text-decoration: none;
-	outline: none;
-	cursor: pointer;
+    position: relative;
+    padding-left: var(--cpt-btn-padding-inline);
+    padding-right: var(--cpt-btn-padding-inline);
+    text-align: center;
+    text-decoration: none;
+    outline: none;
+    cursor: pointer;
 }
 
 .component.icon_right a {
-	flex-direction: row-reverse;
+    flex-direction: row-reverse;
 }
 
 .component a * {
-	color: var(--cpt-btn-text);
+    color: var(--cpt-btn-text);
 }
 
 .component.disabled a * {
@@ -87,63 +91,60 @@
 }
 
 .component a span {
-	line-height: var(--cpt-btn-text-lineheight);
-	font-size: 1em;
-	white-space: nowrap;
-	font-weight: 400;
-	-webkit-font-smoothing: auto;
+    line-height: var(--cpt-btn-text-lineheight);
+    font-size: 1em;
+    white-space: nowrap;
+    font-weight: var(--cpt-btn-font-weight);
+    -webkit-font-smoothing: auto;
 }
 
 .component a em {
-	text-shadow: none;
+    text-shadow: none;
 }
 
 .component a i {
-	display: none;
-	position: absolute;
-	left: 50%;
-	top: 50%;
-	margin-top: -0.5em;
-	margin-left: -0.5em;
-	font-size: 1.4em;
+    display: none;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin-top: -0.5em;
+    margin-left: -0.5em;
+    font-size: 1.4em;
 }
 
 .component.waiting {
-	border-color: var(--cpt-btn-waiting-border);
+    border-color: var(--cpt-btn-waiting-border);
 }
 
 .component.waiting .outer {
-	background: var(--cpt-btn-waiting-bg);
+    background: var(--cpt-btn-waiting-bg);
 }
 
 .component.waiting a {
-	opacity: 0.6;
-	cursor: default;
+    opacity: 0.6;
+    cursor: default;
 }
 
-.component.waiting a span {
-	visibility: hidden;
-}
-
+.component.waiting a span,
 .component.waiting a em {
-	visibility: hidden;
+    visibility: hidden;
 }
 
 .component.waiting a i {
-	display: block;
+    display: block;
     color: var(--cpt-btn-waiting-text);
 }
 
 .component.disabled a {
-	opacity: var(--cpt-btn-disabled-opacity);
-	cursor: default;
+    opacity: var(--cpt-btn-disabled-opacity);
+    cursor: default;
 }
 
 .component.focus .outer {
-	border-color: transparent !important;
+    border-color: transparent !important;
 }
 
 .component.focus {
-	border-color: var(--jui-state-focus);
-	box-shadow: 0 0 0 2px var(--jui-state-focus-offset);
+    border-color: var(--cpt-btn-focus-border);
+    box-shadow: 0 0 0 2px var(--cpt-btn-focus-shadow);
 }

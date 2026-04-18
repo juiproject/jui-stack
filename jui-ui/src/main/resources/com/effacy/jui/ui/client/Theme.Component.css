@@ -1,0 +1,223 @@
+.theme {
+    /* Component-family defaults */
+    --jui-comp-control-font-family: var(--jui-font-family-sans);
+    --jui-comp-control-height: var(--jui-control-height);
+    --jui-comp-control-surface: var(--jui-role-surface-raised);
+    --jui-comp-control-surface-disabled: var(--jui-role-surface-sunken);
+    --jui-comp-control-surface-readonly: var(--jui-role-disabled);
+    --jui-comp-control-surface-offset: var(--jui-role-border-strong);
+    --jui-comp-control-surface-waiting: var(--jui-role-surface-muted);
+    --jui-comp-control-border: var(--jui-role-border-default);
+    --jui-comp-control-radius: var(--jui-radius-sm);
+    --jui-comp-control-text: var(--jui-role-text-default);
+    --jui-comp-control-text-placeholder: var(--jui-role-text-muted);
+    --jui-comp-control-text-disabled: var(--jui-role-border-contrast);
+    --jui-comp-control-text-readonly: var(--jui-role-border-contrast);
+    --jui-comp-control-text-header: var(--jui-role-text-heading);
+    --jui-comp-control-text-subtle: var(--jui-role-text-muted);
+    --jui-comp-control-text-link: var(--jui-role-text-link);
+    --jui-comp-control-text-offset: var(--jui-role-surface-muted);
+    --jui-comp-control-action: var(--jui-role-border-contrast);
+    --jui-comp-control-action-disabled: var(--jui-role-disabled);
+    --jui-comp-control-action-readonly: var(--jui-role-border-contrast);
+    --jui-comp-control-action-hover: var(--jui-role-text-default);
+    --jui-comp-control-active: var(--jui-role-interactive-primary);
+    --jui-comp-control-active-bg: var(--jui-role-surface-accent);
+    --jui-comp-control-focus: var(--jui-role-focus-ring);
+    --jui-comp-control-focus-offset: var(--jui-role-focus-shadow);
+    --jui-comp-control-error-focus: var(--jui-role-feedback-error);
+    --jui-comp-control-error-focus-offset: var(--jui-color-error30);
+    --jui-comp-control-opacity-disabled: 0.5;
+    --jui-comp-control-opacity-readonly: 0.5;
+
+    --jui-comp-button-height: var(--jui-control-height);
+    --jui-comp-button-surface: var(--jui-role-interactive-primary);
+    --jui-comp-button-surface-hover: var(--jui-role-interactive-primary-hover);
+    --jui-comp-button-surface-disabled: var(--jui-role-surface-sunken);
+    --jui-comp-button-border: var(--jui-role-interactive-primary);
+    --jui-comp-button-border-disabled: var(--jui-role-disabled);
+    --jui-comp-button-radius: var(--jui-radius-sm);
+    --jui-comp-button-text: var(--jui-role-interactive-primary-on);
+    --jui-comp-button-text-disabled: var(--jui-role-disabled-strong);
+    --jui-comp-button-waiting-text: var(--jui-role-disabled-strong);
+    --jui-comp-button-focus-border: var(--jui-role-focus-ring);
+    --jui-comp-button-focus-shadow: var(--jui-role-focus-shadow);
+    --jui-comp-button-danger-surface: var(--jui-role-feedback-error);
+    --jui-comp-button-danger-surface-hover: var(--jui-color-error60);
+    --jui-comp-button-danger-border: var(--jui-role-feedback-error);
+    --jui-comp-button-warning-surface: var(--jui-color-warning50);
+    --jui-comp-button-warning-surface-hover: var(--jui-color-warning60);
+    --jui-comp-button-warning-border: var(--jui-color-warning50);
+    --jui-comp-button-success-surface: var(--jui-color-success60);
+    --jui-comp-button-success-surface-hover: var(--jui-color-success70);
+    --jui-comp-button-success-border: var(--jui-color-success60);
+    --jui-comp-button-outline-surface: var(--jui-role-surface-canvas);
+    --jui-comp-button-outline-surface-hover: var(--jui-role-surface-accent);
+    --jui-comp-button-outline-text: var(--jui-role-interactive-primary);
+    --jui-comp-button-outline-border: var(--jui-role-interactive-primary);
+    --jui-comp-button-link-text: var(--jui-role-text-link);
+    --jui-comp-button-link-text-hover: var(--jui-role-text-link-hover);
+
+    --jui-comp-tabset-surface: var(--jui-role-surface-muted);
+    --jui-comp-tabset-surface-alt: var(--jui-role-surface-canvas);
+    --jui-comp-tabset-surface-hover: var(--jui-role-surface-sunken);
+    --jui-comp-tabset-surface-active: var(--jui-role-border-strong);
+    --jui-comp-tabset-border: var(--jui-role-border-default);
+    --jui-comp-tabset-text: var(--jui-role-text-default);
+    --jui-comp-tabset-text-muted: var(--jui-role-border-contrast);
+    --jui-comp-tabset-text-active: var(--jui-role-text-inverse);
+    --jui-comp-tabset-warn: var(--jui-role-feedback-warning);
+    --jui-comp-tabset-shadow: rgba(0, 0, 0, 0.2);
+
+    --jui-comp-container-surface: var(--jui-role-surface-raised);
+    --jui-comp-container-surface-offset: var(--jui-role-surface-muted);
+
+    --jui-comp-dialog-surface: var(--jui-role-surface-overlay);
+    --jui-comp-dialog-border: var(--jui-role-border-default);
+    --jui-comp-dialog-radius: var(--jui-radius-lg);
+    --jui-comp-dialog-shadow: var(--jui-elevation-2);
+    --jui-comp-dialog-chrome: var(--jui-role-surface-muted);
+    --jui-comp-dialog-header-surface: var(--jui-comp-dialog-chrome);
+    --jui-comp-dialog-header-divider: var(--jui-comp-dialog-border);
+    --jui-comp-dialog-footer-surface: var(--jui-comp-dialog-chrome);
+    --jui-comp-dialog-footer-divider: var(--jui-comp-dialog-border);
+    --jui-comp-dialog-heading: var(--jui-role-text-heading);
+    --jui-comp-dialog-subheading: var(--jui-role-border-contrast);
+    --jui-comp-dialog-icon: var(--jui-role-text-muted);
+    --jui-comp-dialog-link: var(--jui-role-text-link);
+    --jui-comp-dialog-close: var(--jui-role-text-default);
+
+    --jui-comp-table-header-surface: var(--jui-role-surface-muted);
+    --jui-comp-table-border: var(--jui-role-border-default);
+    --jui-comp-table-row-border: var(--jui-role-border-subtle);
+    --jui-comp-table-heading-text: var(--jui-role-text-default);
+    --jui-comp-table-heading-icon: var(--jui-role-text-muted);
+
+    --jui-comp-notification-radius: var(--jui-radius-xs);
+    --jui-comp-notification-info-accent: var(--jui-role-feedback-info);
+    --jui-comp-notification-info-border: var(--jui-color-info40);
+    --jui-comp-notification-info-surface: var(--jui-role-surface-overlay);
+    --jui-comp-notification-success-accent: var(--jui-role-feedback-success);
+    --jui-comp-notification-success-border: var(--jui-color-success40);
+    --jui-comp-notification-success-surface: var(--jui-role-surface-overlay);
+    --jui-comp-notification-error-accent: var(--jui-role-feedback-error);
+    --jui-comp-notification-error-border: var(--jui-color-error40);
+    --jui-comp-notification-error-surface: var(--jui-role-surface-error);
+
+    --jui-comp-form-header: var(--jui-role-text-heading);
+    --jui-comp-form-instruction: var(--jui-role-border-contrast);
+    --jui-comp-form-footer: var(--jui-role-text-muted);
+    --jui-comp-form-text: var(--jui-role-text-default);
+    --jui-comp-form-text-error: var(--jui-role-feedback-error);
+    --jui-comp-form-text-disabled: var(--jui-role-text-disabled);
+    --jui-comp-form-help-surface: var(--jui-role-text-default);
+    --jui-comp-form-help-text: var(--jui-role-text-inverse);
+    --jui-comp-form-help-radius: var(--jui-radius-sm);
+    --jui-comp-form-error-surface: var(--jui-role-surface-error);
+    --jui-comp-form-error-icon: var(--jui-color-error30);
+    --jui-comp-form-error-text: var(--jui-role-border-contrast);
+    --jui-comp-form-error-radius: var(--jui-radius-md);
+    --jui-comp-form-separator: var(--jui-role-border-subtle);
+}
+
+@keyframes eff-waiting-bg {
+    from {
+        background-color: var(--jui-role-surface-muted);
+    }
+    to {
+        background-color: var(--jui-role-surface-raised);
+    }
+}
+
+@keyframes eff-open {
+    0% {
+        display: none;
+        opacity: 0;
+    }
+    1% {
+        display: block;
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes jui-animation-loader {
+    0%,
+    80%,
+    100% {
+        box-shadow: 0 0;
+        height: 4em;
+    }
+    40% {
+        box-shadow: 0 -2em;
+        height: 5em;
+    }
+}
+
+@keyframes jui-animation-fade {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes jui-animation-waiting {
+    from {
+        background-color: var(--jui-role-surface-muted);
+    }
+    to {
+        background-color: var(--jui-role-surface-raised);
+    }
+}
+
+::placeholder {
+    color: var(--jui-ctl-text-placeholder);
+}
+
+input,
+textarea {
+    font-family: var(--jui-ctl-font);
+}
+
+.loader,
+.loader:before,
+.loader:after {
+    background: var(--jui-state-waiting);
+    animation: jui-animation-loader 1s infinite ease-in-out;
+    width: 1em;
+    height: 4em;
+    border-radius: 1em;
+}
+
+.loader {
+    animation-delay: 0.16s;
+    color: var(--jui-state-waiting);
+    text-indent: -9999em;
+    margin: 2em;
+    position: relative;
+    transform: translateZ(0);
+}
+
+.loader:before,
+.loader:after {
+    position: absolute;
+    top: 0;
+    content: '';
+}
+
+.loader:before {
+    animation-delay: 0.32s;
+    left: -1.5em;
+}
+
+.loader:after {
+    left: 1.5em;
+}
+
+.fade {
+    animation: jui-animation-fade 0.2s ease-in;
+}

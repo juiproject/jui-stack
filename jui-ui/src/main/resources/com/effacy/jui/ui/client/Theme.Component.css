@@ -51,13 +51,10 @@
     --jui-comp-button-success-surface: var(--jui-color-success60);
     --jui-comp-button-success-surface-hover: var(--jui-color-success70);
     --jui-comp-button-success-border: var(--jui-color-success60);
-    /* Outlined defaults to a neutral "secondary" look — slate border, slate */
-    /* text, white fill. Apps wanting brand-toned outlined can use           */
-    /* OUTLINED_BRAND or override --jui-comp-button-outline-* directly.      */
-    --jui-comp-button-outline-surface: var(--jui-role-surface-raised);
-    --jui-comp-button-outline-surface-hover: var(--jui-role-surface-muted);
-    --jui-comp-button-outline-text: var(--jui-role-text-default);
-    --jui-comp-button-outline-border: var(--jui-role-border-default);
+    --jui-comp-button-outline-surface: var(--jui-role-surface-canvas);
+    --jui-comp-button-outline-surface-hover: var(--jui-role-surface-accent);
+    --jui-comp-button-outline-text: var(--jui-role-interactive-primary);
+    --jui-comp-button-outline-border: var(--jui-role-interactive-primary);
     --jui-comp-button-link-text: var(--jui-role-text-link);
     --jui-comp-button-link-text-hover: var(--jui-role-text-link-hover);
 

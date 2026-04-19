@@ -1202,8 +1202,11 @@ Declared in `Theme.Scale.css`. Shared across all components so layouts stay rhyt
 
 | Token | Value / example | Purpose |
 |---|---|---|
-| `--jui-font-family-sans` | Arial, sans-serif | Default UI font. |
-| `--jui-font-family-mono` | ui-monospace, monospace | Code / monospace contexts. |
+| `--jui-font-family` | Arial, sans-serif | Base font — the default for `body` and the fallback for every other font slot. Override this alone to change the app's default face. Applied at `body`; native `button`/`select`/`optgroup`/`option` are forced to `inherit` so they follow too. |
+| `--jui-font-family-heading` | `var(--jui-font-family)` | Applied to `h1`–`h6`. Defaults to the base so apps see no change; override to pair a display face (e.g. a serif) with the body font. |
+| `--jui-font-family-control` | `var(--jui-font-family)` | Font for form controls. Flows through `--jui-comp-control-font-family` to `input`/`textarea`/`SelectionControl`. Override if controls need a distinct family (e.g. a narrow face for dense forms). |
+| `--jui-font-family-mono` | ui-monospace, monospace | Code / monospace contexts. Intentionally standalone — does **not** fall back to the base. |
+| `--jui-font-family-sans` | legacy alias for `--jui-font-family` | Kept in `Theme.Legacy.css` for backward compatibility. New code should use `--jui-font-family`. |
 | `--jui-font-size-xs` | 0.75rem | Captions, micro-labels. |
 | `--jui-font-size-sm` | 0.875rem | Secondary text. |
 | `--jui-font-size-md` | 1rem | Body default. |

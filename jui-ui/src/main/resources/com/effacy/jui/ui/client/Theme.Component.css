@@ -1,6 +1,6 @@
 .theme {
     /* Component-family defaults */
-    --jui-comp-control-font-family: var(--jui-font-family-sans);
+    --jui-comp-control-font-family: var(--jui-font-family-control);
     --jui-comp-control-height: var(--jui-control-height);
     --jui-comp-control-surface: var(--jui-role-surface-raised);
     --jui-comp-control-surface-disabled: var(--jui-role-surface-sunken);
@@ -176,6 +176,23 @@
 
 ::placeholder {
     color: var(--jui-ctl-text-placeholder);
+}
+
+body {
+    font-family: var(--jui-font-family);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--jui-font-family-heading);
+}
+
+/* Native button and select do not inherit font-family per the CSS spec; */
+/* make them follow the parent so the body/heading family cascades.      */
+button,
+select,
+optgroup,
+option {
+    font-family: inherit;
 }
 
 input,

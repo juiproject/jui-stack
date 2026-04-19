@@ -11,8 +11,14 @@
     --jui-space-10: 2.5rem;
     --jui-space-12: 3rem;
 
-    --jui-font-family-sans: Arial, sans-serif;
-    --jui-font-family-mono: ui-monospace, monospace;
+    /* Base font — the default for body and the fallback for every other */
+    /* font slot. Override this alone to change the app's default face.   */
+    --jui-font-family:         Avenir Next W02, Avenir Next, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    /* Heading / control slots fall back to the base unless overridden. */
+    --jui-font-family-heading: var(--jui-font-family);
+    --jui-font-family-control: var(--jui-font-family);
+    /* Monospace stands alone — the one intentional exception. */
+    --jui-font-family-mono:    ui-monospace, monospace;
     --jui-font-size-xs: 0.75rem;
     --jui-font-size-sm: 0.875rem;
     --jui-font-size-md: 1rem;

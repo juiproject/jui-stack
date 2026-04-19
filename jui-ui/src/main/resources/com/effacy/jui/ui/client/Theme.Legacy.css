@@ -56,6 +56,9 @@
     --jui-selection-offset: var(--jui-role-selection-muted);
     --jui-selection-active: var(--jui-role-selection-active);
 
+    /* Font slot renamed: -sans is now just "the base family". */
+    --jui-font-family-sans: var(--jui-font-family);
+
     --jui-ctl-height: var(--jui-comp-control-height);
     --jui-ctl-font: var(--jui-comp-control-font-family);
     --jui-ctl-active: var(--jui-comp-control-active);

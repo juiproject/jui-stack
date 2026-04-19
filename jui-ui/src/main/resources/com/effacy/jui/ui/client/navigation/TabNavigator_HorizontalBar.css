@@ -12,7 +12,11 @@
 }
 
 .component .tabs {
-    position: relative;
+    height: auto;
+    max-height: none;
+    display: block;
+    padding-top: 0;
+    transition: none;
     border: 1px solid var(--cpt-tabbedpanel-outline);
     border-radius: var(--cpt-tabbedpanel-radius);
     margin: var(--jui-space-4);
@@ -20,7 +24,9 @@
 }
 
 .component .tabs ul {
-    list-style: none;
+    overflow: visible;
+    padding-left: 0;
+    border-bottom: none;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
@@ -28,15 +34,12 @@
 }
 
 .component .tabs ul li {
-    padding: var(--jui-space-2) var(--jui-space-4);
+    border: none;
     border-radius: var(--cpt-tabbedpanel-item-radius);
+    top: 0;
+    padding: var(--jui-space-2) var(--jui-space-4);
     margin: 4px;
-    box-sizing: border-box;
-    display: inline-block;
-    cursor: pointer;
     font-weight: var(--jui-font-weight-semibold);
-    position: relative;
-    user-select: none;
     color: var(--cpt-tabbedpanel-text);
     background: var(--cpt-tabbedpanel-bg-tab-inactive);
 }
@@ -55,6 +58,8 @@
 }
 
 .component .tabs ul li.active {
+    box-shadow: none;
+    border-bottom: none;
     background: var(--cpt-tabbedpanel-bg-tab-active);
     color: var(--cpt-tabbedpanel-text-active);
 }

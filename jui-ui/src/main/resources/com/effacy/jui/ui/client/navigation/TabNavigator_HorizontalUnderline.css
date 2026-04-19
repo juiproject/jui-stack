@@ -1,11 +1,16 @@
 .component {
     --cpt-tabbedpanel-hu-height: 4em;
     --cpt-tabbedpanel-hu-indent: var(--jui-space-6);
-    --cpt-tabbedpanel-hu-lift: var(--jui-space-3);
+    --cpt-tabbedpanel-hu-inline: var(--jui-space-3);
+    --cpt-tabbedpanel-hu-lift: var(--jui-space-4);
+    --cpt-tabbedpanel-hu-underline-width: 3px;
     --cpt-tabbedpanel-hu-line: var(--jui-comp-tabset-border);
     --cpt-tabbedpanel-hu-text: var(--jui-comp-tabset-text-muted);
     --cpt-tabbedpanel-hu-text-hover: var(--jui-comp-tabset-text);
-    --cpt-tabbedpanel-hu-text-active: var(--jui-comp-tabset-text);
+    --cpt-tabbedpanel-hu-text-active: var(--jui-role-interactive-primary);
+    --cpt-tabbedpanel-hu-icon: var(--jui-comp-tabset-text-muted);
+    --cpt-tabbedpanel-hu-icon-hover: var(--jui-comp-tabset-text);
+    --cpt-tabbedpanel-hu-icon-active: var(--jui-role-interactive-primary);
     --cpt-tabbedpanel-hu-underline-hover: var(--jui-role-border-default);
     --cpt-tabbedpanel-hu-underline-active: var(--jui-role-interactive-primary);
     --cpt-tabnavigator-indicator-top: -6px;
@@ -29,25 +34,34 @@
 }
 
 .component .tabs ul li {
-    padding: var(--jui-space-2) var(--jui-space-1) var(--cpt-tabbedpanel-hu-lift) var(--jui-space-1);
+    padding: var(--jui-space-3) var(--cpt-tabbedpanel-hu-inline) var(--cpt-tabbedpanel-hu-lift) var(--cpt-tabbedpanel-hu-inline);
     box-sizing: border-box;
     display: inline-block;
-    margin: 0 var(--jui-space-3) 0 var(--jui-space-3);
+    margin: 0 var(--jui-space-4) 0 0;
     cursor: pointer;
     font-weight: var(--jui-font-weight-semibold);
     position: relative;
     top: 1px;
     user-select: none;
-    border-bottom: 3px solid transparent;
+    border-bottom: var(--cpt-tabbedpanel-hu-underline-width) solid transparent;
     color: var(--cpt-tabbedpanel-hu-text);
+    transition: color 0.15s ease, border-bottom-color 0.15s ease;
+}
+
+.component .tabs ul li div {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--jui-space-3);
 }
 
 .component .tabs ul li em {
-    margin-right: var(--jui-space-3);
+    margin-right: 0;
+    color: var(--cpt-tabbedpanel-hu-icon);
 }
 
 .component .tabs ul li span {
     font-weight: var(--jui-font-weight-semibold);
+    line-height: 1.2;
 }
 
 .component .tabs ul li:hover {
@@ -55,7 +69,15 @@
     color: var(--cpt-tabbedpanel-hu-text-hover);
 }
 
+.component .tabs ul li:hover em {
+    color: var(--cpt-tabbedpanel-hu-icon-hover);
+}
+
 .component .tabs ul li.active {
     border-bottom-color: var(--cpt-tabbedpanel-hu-underline-active);
     color: var(--cpt-tabbedpanel-hu-text-active);
+}
+
+.component .tabs ul li.active em {
+    color: var(--cpt-tabbedpanel-hu-icon-active);
 }

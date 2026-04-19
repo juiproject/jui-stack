@@ -1856,6 +1856,8 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         IComponentCSS.COMPONENT_CSS,
         ILocalCSS.CSS,
         ILocalCSS.CSS_OVERRIDE,
+        "com/effacy/jui/ui/client/navigation/TabNavigator_Horizontal.css",
+        "com/effacy/jui/ui/client/navigation/TabNavigator_Horizontal_Override.css",
         "com/effacy/jui/ui/client/navigation/TabNavigator_HorizontalBar.css",
         "com/effacy/jui/ui/client/navigation/TabNavigator_HorizontalBar_Override.css"
     })
@@ -1902,6 +1904,7 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         ILocalCSS.CSS,
         ILocalCSS.CSS_OVERRIDE,
         "com/effacy/jui/ui/client/navigation/TabNavigator_Vertical.css",
+        "com/effacy/jui/ui/client/navigation/TabNavigator_Vertical_Override.css",
         "com/effacy/jui/ui/client/navigation/TabNavigator_VerticalAlt.css",
         "com/effacy/jui/ui/client/navigation/TabNavigator_VerticalAlt_Override.css"
     })

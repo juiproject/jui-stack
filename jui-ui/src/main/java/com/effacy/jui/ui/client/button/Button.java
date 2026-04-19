@@ -49,63 +49,95 @@ public class Button extends Component<Button.Config> implements IButton {
     public static class Config extends Component.Config {
 
         /**
-         * Style direction for the component.
+         * Variant for the component.
          */
-        public interface Style {
+        @FunctionalInterface
+        public interface Variant {
 
             /**
              * The CSS styles.
-             * 
-             * @return the styles.
              */
-            public ILocalCSS styles();
-
-            /**
-             * Convenience to create a styles instance from the given data.
-             * 
-             * @param styles
-             *               the styles.
-             * @return the style instance.
-             */
-            public static Style create(final ILocalCSS styles) {
-                return new Style () {
-
-                    @Override
-                    public ILocalCSS styles() {
-                        return styles;
-                    }
-                };
-            }
+            void configure(Config cfg);
 
             /**
              * Normal visual style (box-like with solid color body).
              */
-            public static final Style NORMAL = create (NormalCSS.instance ());
+            public static final Variant NORMAL = config -> {
+                config.styles (NormalCSS.instance ());
+            };
 
             /**
              * Normal visual style but colored for success.
              */
-            public static final Style NORMAL_SUCCESS = create (NormalSuccessCSS.instance ());
+            public static final Variant NORMAL_SUCCESS = config -> {
+                config.styles (NormalSuccessCSS.instance ());
+            };
 
             /**
              * Normal visual style but colored for warning.
              */
-            public static final Style NORMAL_WARNING = create (NormalWarningCSS.instance ());
+            public static final Variant NORMAL_WARNING = config -> {
+                config.styles (NormalWarningCSS.instance ());
+            };
 
             /**
              * Normal visual style but colored for danger.
              */
-            public static final Style NORMAL_DANGER = create (NormalDangerCSS.instance ());
+            public static final Variant NORMAL_DANGER = config -> {
+                config.styles (NormalDangerCSS.instance ());
+            };
 
             /**
              * Outlined visual style (box-like with inverted body color and text).
              */
-            public static final Style OUTLINED = create (OutlinedCSS.instance ());
+            public static final Variant OUTLINED = config -> {
+                config.styles (OutlinedCSS.instance ());
+            };
 
             /**
              * Link visual style.
              */
-            public static final Style LINK = create (LinkCSS.instance ());
+            public static final Variant LINK = config -> {
+                config.styles (LinkCSS.instance ());
+            };
+        }
+
+        /**
+         * Backward compatibility layer around {@link Variant}.
+         */
+        @Deprecated
+        public enum Style implements Variant {
+            @Deprecated NORMAL,
+            @Deprecated NORMAL_SUCCESS,
+            @Deprecated NORMAL_WARNING,
+            @Deprecated NORMAL_DANGER,
+            @Deprecated OUTLINED,
+            @Deprecated LINK;
+
+            @Deprecated
+            @Override
+            public void configure(Config cfg) {
+                switch (this) {
+                    case NORMAL:
+                        Variant.NORMAL.configure (cfg);
+                        break;
+                    case NORMAL_SUCCESS:
+                        Variant.NORMAL_SUCCESS.configure (cfg);
+                        break;
+                    case NORMAL_WARNING:
+                        Variant.NORMAL_WARNING.configure (cfg);
+                        break;
+                    case NORMAL_DANGER:
+                        Variant.NORMAL_DANGER.configure (cfg);
+                        break;
+                    case OUTLINED:
+                        Variant.OUTLINED.configure (cfg);
+                        break;
+                    case LINK:
+                        Variant.LINK.configure (cfg);
+                        break;
+                }
+            }
         }
 
         /**
@@ -154,9 +186,9 @@ public class Button extends Component<Button.Config> implements IButton {
         private boolean iconOnRight;
 
         /**
-         * See {@link #style(Style)}.
+         * See {@link #styles(ILocalCSS)}.
          */
-        private Style style = Style.NORMAL;
+        private ILocalCSS styles = NormalCSS.instance ();
 
         /**
          * See {@link #behaviour(Behaviour)}.
@@ -171,14 +203,53 @@ public class Button extends Component<Button.Config> implements IButton {
         }
 
         /**
+         * Construct with a specific variant.
+         * 
+         * @param variant
+         *                the variant.
+         */
+        public Config(Variant variant) {
+            super ();
+            variant (variant);
+        }
+
+        /**
          * Construct with a specific style.
          * 
          * @param style
          *              the style.
          */
+        @Deprecated
         public Config(Style style) {
             super ();
             style (style);
+        }
+
+        /**
+         * Assigns a presentation variant.
+         * 
+         * @param variant
+         *                the variant (default is {@link Variant#NORMAL}).
+         * @return this configuration instance.
+         */
+        public Button.Config variant(Variant variant) {
+            if (variant != null)
+                variant.configure (this);
+            return this;
+        }
+
+        /**
+         * Assigns a presentation style.
+         * 
+         * @param style
+         *              the style (default is {@link Style#NORMAL}).
+         * @return this configuration instance.
+         */
+        @Deprecated
+        public Button.Config style(Style style) {
+            if (style != null)
+                style.configure (this);
+            return this;
         }
 
         /**
@@ -281,16 +352,25 @@ public class Button extends Component<Button.Config> implements IButton {
         }
 
         /**
-         * Assigns a presentation style.
+         * Assigns the styles to use for the button.
          * 
-         * @param style
-         *              the style (default is {@link Style#NORMAL}).
+         * @param styles
+         *               the styles.
          * @return this configuration instance.
          */
-        public Button.Config style(Style style) {
-            if (style != null)
-                this.style = style;
+        public Button.Config styles(ILocalCSS styles) {
+            if (styles != null)
+                this.styles = styles;
             return this;
+        }
+
+        /**
+         * Getter for {@link #styles(ILocalCSS)}.
+         */
+        public ILocalCSS getStyles() {
+            if (styles == null)
+                styles = NormalCSS.instance ();
+            return styles;
         }
 
         /**
@@ -551,7 +631,7 @@ public class Button extends Component<Button.Config> implements IButton {
      */
     @Override
     protected ILocalCSS styles() {
-        return config ().style.styles ();
+        return config ().getStyles ();
     }
 
     public static interface ILocalCSS extends IComponentCSS {

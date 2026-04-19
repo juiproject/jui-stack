@@ -60,13 +60,6 @@ public class Button extends Component<Button.Config> implements IButton {
             void configure(Config cfg);
 
             /**
-             * Convenience to create a variant from CSS tokens.
-             */
-            public static Variant create(String css) {
-                return cfg -> cfg.css (css);
-            }
-
-            /**
              * Standard visual style (box-like with solid color body).
              */
             public static final Variant STANDARD = config -> {
@@ -76,61 +69,71 @@ public class Button extends Component<Button.Config> implements IButton {
             /**
              * Outlined visual style (box-like with inverted body color and text).
              */
-            public static final Variant OUTLINED = create ("""
-                --cpt-btn-bg: var(--jui-comp-button-outline-surface);
-                --cpt-btn-bg-hover: var(--jui-comp-button-outline-surface-hover);
-                --cpt-btn-text: var(--jui-comp-button-outline-text);
-                --cpt-btn-text-hover: var(--jui-comp-button-outline-text);
-                --cpt-btn-border: var(--jui-comp-button-outline-border);
-                --cpt-btn-disabled-bg: transparent;
-            """);
+            public static final Variant OUTLINED = config -> {
+                config.css("""
+                    --cpt-btn-bg: var(--jui-comp-button-outline-surface);
+                    --cpt-btn-bg-hover: var(--jui-comp-button-outline-surface-hover);
+                    --cpt-btn-text: var(--jui-comp-button-outline-text);
+                    --cpt-btn-text-hover: var(--jui-comp-button-outline-text);
+                    --cpt-btn-border: var(--jui-comp-button-outline-border);
+                    --cpt-btn-disabled-bg: transparent;
+                """);
+            };
 
             /**
              * Link visual style.
              */
-            public static final Variant LINK = create ("""
-                --cpt-btn-bg: transparent;
-                --cpt-btn-bg-hover: transparent;
-                --cpt-btn-text: var(--jui-comp-button-link-text);
-                --cpt-btn-text-hover: var(--jui-comp-button-link-text-hover);
-                --cpt-btn-border: transparent;
-                --cpt-btn-border-width: 0;
-                --cpt-btn-padding-block: 0;
-                --cpt-btn-text-lineheight: 1.2;
-                --cpt-btn-margin: 0;
-                --cpt-btn-waiting-bg: transparent;
-                --cpt-btn-disabled-bg: transparent;
-                --cpt-btn-disabled-border: transparent;
-                --cpt-btn-disabled-text: var(--jui-state-disabled);
-                --cpt-btn-hover-text-decoration: underline;
-            """);
+            public static final Variant LINK = config -> {
+                config.css("""
+                    --cpt-btn-bg: transparent;
+                    --cpt-btn-bg-hover: transparent;
+                    --cpt-btn-text: var(--jui-comp-button-link-text);
+                    --cpt-btn-text-hover: var(--jui-comp-button-link-text-hover);
+                    --cpt-btn-border: transparent;
+                    --cpt-btn-border-width: 0;
+                    --cpt-btn-padding-block: 0;
+                    --cpt-btn-text-lineheight: 1.2;
+                    --cpt-btn-margin: 0;
+                    --cpt-btn-waiting-bg: transparent;
+                    --cpt-btn-disabled-bg: transparent;
+                    --cpt-btn-disabled-border: transparent;
+                    --cpt-btn-disabled-text: var(--jui-state-disabled);
+                    --cpt-btn-hover-text-decoration: underline;
+                """);
+            };
 
             /**
              * Success color overlay.
              */
-            public static final Variant SUCCESS = create ("""
-                --cpt-btn-bg: var(--jui-comp-button-success-surface);
-                --cpt-btn-bg-hover: var(--jui-comp-button-success-surface-hover);
-                --cpt-btn-border: var(--jui-comp-button-success-border);
-            """);
+            public static final Variant SUCCESS = config -> {
+                config.css("""
+                    --cpt-btn-bg: var(--jui-comp-button-success-surface);
+                    --cpt-btn-bg-hover: var(--jui-comp-button-success-surface-hover);
+                    --cpt-btn-border: var(--jui-comp-button-success-border);
+                """);
+            };
 
             /**
              * Warning color overlay.
              */
-            public static final Variant WARNING = create ("""
-                --cpt-btn-bg: var(--jui-comp-button-warning-surface);
-                --cpt-btn-bg-hover: var(--jui-comp-button-warning-surface-hover);
-                --cpt-btn-border: var(--jui-comp-button-warning-border);
-            """);
+            public static final Variant WARNING = config -> {
+                config.css("""
+                    --cpt-btn-bg: var(--jui-comp-button-warning-surface);
+                    --cpt-btn-bg-hover: var(--jui-comp-button-warning-surface-hover);
+                    --cpt-btn-border: var(--jui-comp-button-warning-border);
+                """);
+            };
 
             /**
              * Danger color overlay.
              */
-            public static final Variant DANGER = create ("""
-                --cpt-btn-bg: var(--jui-comp-button-danger-surface);
-                --cpt-btn-bg-hover: var(--jui-comp-button-danger-surface-hover);
-                --cpt-btn-border: var(--jui-comp-button-danger-border);
-            """);
+            public static final Variant DANGER = config -> {
+                config.css("""
+                    --cpt-btn-bg: var(--jui-comp-button-danger-surface);
+                    --cpt-btn-bg-hover: var(--jui-comp-button-danger-surface-hover);
+                    --cpt-btn-border: var(--jui-comp-button-danger-border);
+                """);
+            };
         }
 
         /**

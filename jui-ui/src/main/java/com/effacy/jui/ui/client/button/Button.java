@@ -134,6 +134,108 @@ public class Button extends Component<Button.Config> implements IButton {
                     --cpt-btn-border: var(--jui-comp-button-danger-border);
                 """);
             };
+
+            /**
+             * Outlined visual style preserving the brand-toned colour scheme
+             * (teal text + border on white). Provided for backward compatibility
+             * with the pre-rework {@link #OUTLINED} behaviour.
+             */
+            public static final Variant OUTLINED_BRAND = config -> {
+                config.css("""
+                    --cpt-btn-bg: var(--jui-role-surface-raised);
+                    --cpt-btn-bg-hover: var(--jui-role-surface-accent);
+                    --cpt-btn-text: var(--jui-role-interactive-primary);
+                    --cpt-btn-text-hover: var(--jui-role-interactive-primary);
+                    --cpt-btn-border: var(--jui-role-interactive-primary);
+                    --cpt-btn-disabled-bg: transparent;
+                """);
+            };
+
+            /**
+             * Outlined button with the danger accent (red text + border on
+             * white). Use when the action is destructive but the emphasis
+             * should stay low — e.g. "Remove assessment" in a toolbar.
+             */
+            public static final Variant OUTLINED_DANGER = config -> {
+                config.css("""
+                    --cpt-btn-bg: var(--jui-role-surface-raised);
+                    --cpt-btn-bg-hover: var(--jui-color-error05);
+                    --cpt-btn-text: var(--jui-color-error60);
+                    --cpt-btn-text-hover: var(--jui-color-error60);
+                    --cpt-btn-border: var(--jui-color-error30);
+                    --cpt-btn-disabled-bg: transparent;
+                """);
+            };
+
+            /**
+             * Outlined button with the success accent.
+             */
+            public static final Variant OUTLINED_SUCCESS = config -> {
+                config.css("""
+                    --cpt-btn-bg: var(--jui-role-surface-raised);
+                    --cpt-btn-bg-hover: var(--jui-color-success05);
+                    --cpt-btn-text: var(--jui-color-success60);
+                    --cpt-btn-text-hover: var(--jui-color-success60);
+                    --cpt-btn-border: var(--jui-color-success30);
+                    --cpt-btn-disabled-bg: transparent;
+                """);
+            };
+
+            /**
+             * Outlined button with the warning accent.
+             */
+            public static final Variant OUTLINED_WARNING = config -> {
+                config.css("""
+                    --cpt-btn-bg: var(--jui-role-surface-raised);
+                    --cpt-btn-bg-hover: var(--jui-color-warning05);
+                    --cpt-btn-text: var(--jui-color-warning60);
+                    --cpt-btn-text-hover: var(--jui-color-warning60);
+                    --cpt-btn-border: var(--jui-color-warning30);
+                    --cpt-btn-disabled-bg: transparent;
+                """);
+            };
+
+            /**
+             * Icon-only button — square-ish affordance used in toolbars and
+             * overflow menus. Typically paired with an icon-only label
+             * ({@link Config#icon(String)} without a {@link Config#label(String)}).
+             * Composes with any other variant to inherit its colour scheme.
+             */
+            public static final Variant ICON_ONLY = config -> {
+                config.css("""
+                    --cpt-btn-padding-inline: var(--jui-space-2);
+                    --cpt-btn-gap: 0;
+                    --cpt-btn-margin: 0;
+                """);
+            };
+
+            /**
+             * Compact size modifier. Composes with any visual/semantic variant
+             * to produce a denser button — intended for toolbars, filter rows,
+             * and secondary contexts where the standard height feels heavy.
+             */
+            public static final Variant COMPACT = config -> {
+                config.css("""
+                    --cpt-btn-height: 1.85em;
+                    --cpt-btn-text-size: var(--jui-font-size-sm);
+                    --cpt-btn-text-lineheight: 1.4em;
+                    --cpt-btn-padding-inline: var(--jui-space-3);
+                    --cpt-btn-padding-block: 2px;
+                """);
+            };
+
+            /**
+             * Large size modifier. Composes with any visual/semantic variant
+             * for hero CTAs and primary onboarding actions.
+             */
+            public static final Variant LARGE = config -> {
+                config.css("""
+                    --cpt-btn-height: 2.75em;
+                    --cpt-btn-text-size: var(--jui-font-size-lg);
+                    --cpt-btn-padding-inline: var(--jui-space-5);
+                    --cpt-btn-padding-block: 4px;
+                """);
+            };
         }
 
         /**

@@ -1067,6 +1067,74 @@ See also the "Adding an alternate palette" section of `jui-ui/src/main/java/com/
 - **Tune neutral chroma to match the palette's temperature.** Pure-gray neutrals (`chroma: 0`) against warm Ink text or Bone canvas will clash. A small `--jui-palette-neutral-chroma` (0.005–0.015) at the palette's hue harmonises surfaces. Keep neutral chroma well below any dedicated page-tint colour.
 - **Page canvas is an optional override** (`--jui-role-surface-canvas`). Bounded areas — dialogs, panels, control fields — should stay white-anchored; only the outer canvas needs tinting for an editorial feel.
 
+### Extending with app-specific grammars
+
+JUI ships with nine reference families (primary, secondary, ink, neutral, error, warning, success, info, aux). These are *feedback* and *chrome* semantics — what the UI is telling you, and what it looks like. They are deliberately generic so the same palette serves any application.
+
+Applications often need additional colour families that are **domain semantic rather than feedback semantic** — properties of the data being displayed rather than transient UI state. Examples:
+
+- A risk-management app with severity levels (severe / moderate / low / unassessed).
+- An assessment app with maturity ratings (incomplete / progressing / managing / maturing).
+- A compliance app with status states (approved / pending / rejected / expired).
+
+The reflex is to reuse warning/success/error for these — but that overloads the feedback families with data meaning. If the warning palette is retuned for toast notifications later, every risk badge in the app silently changes colour. That coupling is wrong.
+
+The correct pattern is to **add an app-specific family per level of the grammar**, authored by axis exactly like a JUI reference family, but living in the application's own stylesheet (not inside JUI) and namespaced under the application prefix (e.g. `--iar-*`).
+
+#### Authoring pattern
+
+Each grammar is a set of families — one family per level — each declaring a hue axis and a derived 10-step ramp:
+
+```css
+body[data-jui-theme][data-palette="iar"] {
+
+    /* Risk grammar — one family per level. Shared chroma-peak of 0.10. */
+    --iar-palette-risk-severe-hue:     38;
+    --iar-palette-risk-moderate-hue:   75;
+    --iar-palette-risk-low-hue:        150;
+    --iar-palette-risk-unassessed-hue: 15;
+
+    /* Risk · severe (derived via the same L-ladder and chroma-curve as
+       JUI reference families). */
+    --iar-color-risk-severe05: oklch(0.970 0.0120 38);
+    --iar-color-risk-severe10: oklch(0.940 0.0270 38);
+    /* … steps 20 through 90 … */
+
+    /* Repeat for moderate / low / unassessed, and again for the next grammar. */
+}
+```
+
+Each family still follows JUI's two contracts:
+
+- **Lightness ladder** — `-05` L=0.97 through `-90` L=0.20 (see [Creating a palette](#creating-a-palette) for the full table).
+- **Chroma curve** — bell around `-50`, ratios 0.12 / 0.27 / 0.46 / 0.65 / 0.85 / 1.00 / 0.96 / 0.81 / 0.58 / 0.38 of the chroma-peak.
+
+That gives fragments a full range of tints and shades per level, and keeps the authoring surface compact — four axis hues and one chroma-peak per grammar.
+
+#### Consuming from fragments
+
+Fragments bind to the full token name in component-level CSS:
+
+```css
+.jui-riskbadge--severe {
+    --cpt-riskbadge-surface: var(--iar-color-risk-severe10);
+    --cpt-riskbadge-text:    var(--iar-color-risk-severe70);
+    --cpt-riskbadge-border:  var(--iar-color-risk-severe20);
+}
+```
+
+The typical step convention for a chip is `-10` surface / `-70` text / `-20` border / `-50` accent marker. Same pattern as applying JUI's feedback families.
+
+For call-site ergonomics, expose domain-specific fragments (`RiskBadge.of(SEVERE)`) rather than overloading a generic `Badge` with a sprawling tone enum. The fragment name carries the ontology.
+
+#### Rules of thumb
+
+- **One family per level**, not one family for the whole grammar. A grammar spans multiple hues; a family owns one hue.
+- **Prefix app-specific tokens** (`--iar-*`, `--acme-*`) so they never collide with JUI's `--jui-*` surface.
+- **Stay inside the application's theme CSS.** Do not extend `Theme.Reference.css` in JUI itself; grammars are app-owned.
+- **Prefer extending over overloading.** If you catch yourself writing "severe-risk binds to warning50", that's the signal a new grammar is due.
+- **Skip the ramp only if the grammar truly uses one shade per level.** Even then, author the full ramp — it costs little and leaves room for tints (hover, row highlight, empty-state wash) later without forcing a rewrite.
+
 ### Token catalogue
 
 Every token JUI ships. Grouped by tier. Descriptions explain *how the token should be used*, not just what it is.

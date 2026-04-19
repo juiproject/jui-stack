@@ -613,34 +613,107 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
     /**
      * Re-sizes the text area if needed.
      * <p>
-     * When the {@code rows} attribute is set on the textarea, the browser
-     * derives a natural height from it. To preserve this as a lower bound the
-     * resize temporarily removes the explicit height, lets the browser apply the
-     * rows-based height, captures it, then sets the height to whichever is
-     * larger: the rows-based height or the content's scroll height.
+     * The floor for the textarea's height is the rows-based natural size.
+     * Reading that via {@code clientHeight} is unreliable on initial render:
+     * the stylesheet sets {@code min-height: 0} on the textarea so that the
+     * {@code height()} method's transition can animate, but this subverts the
+     * browser's rows→height resolution inside the flex-column parent before
+     * font metrics have loaded. The result is a textarea reporting a small,
+     * wrong {@code clientHeight} (~16px) at measurement time, with no retry
+     * path back to correctness until a subsequent window resize.
+     * <p>
+     * So the floor is computed directly from the textarea's {@code rows}
+     * attribute and its computed line-height, which are both available
+     * synchronously and resolve correctly even before custom fonts finish
+     * loading (the fallback font's metrics are used).
      *
      * @param assigned
      *                 {@code true} if the resize is being applied after an
      *                 assignment of value.
      */
     protected void _resize(boolean assigned) {
-        // Remove explicit height so the browser applies the rows attribute.
+        // Remove any explicit height so scrollHeight measures content only.
         inputEl.style.removeProperty("height");
 
-        // Capture the rows-based height (clientHeight with rows but no explicit
-        // height). This is the floor.
-        int minHeight = inputEl.clientHeight;
-        if (minHeight <= 0)
-            minHeight = 16;
+        // Rows-based floor, computed from font metrics rather than measured
+        // via clientHeight (see javadoc for why).
+        int minHeight = rowsFloorPx ();
+        if (minHeight <= 0) {
+            // No rows attribute — fall back to whatever the browser gives us.
+            minHeight = inputEl.clientHeight;
+            if (minHeight <= 0)
+                minHeight = 16;
+        }
         if (sizeAfterAssignment > minHeight)
             minHeight = sizeAfterAssignment;
 
-        // Set to the floor so scrollHeight reflects actual content.
+        // Apply the floor so scrollHeight reflects actual content against it.
         CSS.HEIGHT.apply(inputEl, Length.px(minHeight));
         if (assigned)
             sizeAfterAssignment = inputEl.clientHeight;
         if (inputEl.scrollHeight > minHeight)
             CSS.HEIGHT.apply(inputEl, Length.px(inputEl.scrollHeight));
+    }
+
+    /**
+     * Computes the pixel height of {@code rows} lines at the textarea's
+     * current font size and line height. Returns {@code 0} if no {@code rows}
+     * attribute is set.
+     */
+    private int rowsFloorPx() {
+        int rows = inputEl.rows;
+        if (rows <= 0)
+            return 0;
+        String fs = computedProperty (inputEl, "font-size");
+        String lh = computedProperty (inputEl, "line-height");
+        double fontSizePx = parseFirstNumber (fs, 16);
+        if (lh == null || lh.isEmpty ())
+            lh = "normal";
+        double lineHeightPx;
+        if ("normal".equalsIgnoreCase (lh)) {
+            // CSS "normal" is font-dependent but typically ~1.2× font-size.
+            lineHeightPx = fontSizePx * 1.2;
+        } else if (lh.endsWith ("px")) {
+            lineHeightPx = parseFirstNumber (lh, fontSizePx * 1.2);
+        } else {
+            // Unitless multiplier (e.g. "1.5") or em/percent — treat as ratio
+            // on font size.
+            double ratio = parseFirstNumber (lh, 1.2);
+            lineHeightPx = ratio < 3 ? fontSizePx * ratio : ratio;
+        }
+        return (int) Math.ceil (rows * lineHeightPx);
+    }
+
+    /**
+     * JSNI read of a single computed style property. Returns an empty string
+     * if the property is not set.
+     */
+    private static native String computedProperty(Element el, String prop) /*-{
+        return $wnd.getComputedStyle(el).getPropertyValue(prop);
+    }-*/;
+
+    /**
+     * Parses the leading numeric portion of a CSS length string (e.g. "16px",
+     * "1.5"). Returns {@code fallback} if parsing fails.
+     */
+    private static double parseFirstNumber(String value, double fallback) {
+        if (value == null)
+            return fallback;
+        int i = 0, n = value.length ();
+        while (i < n && (value.charAt (i) == ' ' || value.charAt (i) == '\t'))
+            i++;
+        int start = i;
+        if (i < n && (value.charAt (i) == '-' || value.charAt (i) == '+'))
+            i++;
+        while (i < n && (Character.isDigit (value.charAt (i)) || value.charAt (i) == '.'))
+            i++;
+        if (i == start)
+            return fallback;
+        try {
+            return Double.parseDouble (value.substring (start, i));
+        } catch (NumberFormatException ex) {
+            return fallback;
+        }
     }
 
     @Override

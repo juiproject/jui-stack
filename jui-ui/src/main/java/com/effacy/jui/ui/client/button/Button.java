@@ -55,51 +55,82 @@ public class Button extends Component<Button.Config> implements IButton {
         public interface Variant {
 
             /**
-             * The CSS styles.
+             * Applies variant configuration.
              */
             void configure(Config cfg);
 
             /**
-             * Normal visual style (box-like with solid color body).
+             * Convenience to create a variant from CSS tokens.
              */
-            public static final Variant NORMAL = config -> {
-                config.styles (NormalCSS.instance ());
-            };
+            public static Variant create(String css) {
+                return cfg -> cfg.css (css);
+            }
 
             /**
-             * Normal visual style but colored for success.
+             * Standard visual style (box-like with solid color body).
              */
-            public static final Variant NORMAL_SUCCESS = config -> {
-                config.styles (NormalSuccessCSS.instance ());
-            };
-
-            /**
-             * Normal visual style but colored for warning.
-             */
-            public static final Variant NORMAL_WARNING = config -> {
-                config.styles (NormalWarningCSS.instance ());
-            };
-
-            /**
-             * Normal visual style but colored for danger.
-             */
-            public static final Variant NORMAL_DANGER = config -> {
-                config.styles (NormalDangerCSS.instance ());
+            public static final Variant STANDARD = config -> {
+                config.styles (StandardCSS.instance ());
             };
 
             /**
              * Outlined visual style (box-like with inverted body color and text).
              */
-            public static final Variant OUTLINED = config -> {
-                config.styles (OutlinedCSS.instance ());
-            };
+            public static final Variant OUTLINED = create ("""
+                --cpt-btn-bg: var(--jui-comp-button-outline-surface);
+                --cpt-btn-bg-hover: var(--jui-comp-button-outline-surface-hover);
+                --cpt-btn-text: var(--jui-comp-button-outline-text);
+                --cpt-btn-text-hover: var(--jui-comp-button-outline-text);
+                --cpt-btn-border: var(--jui-comp-button-outline-border);
+                --cpt-btn-disabled-bg: transparent;
+            """);
 
             /**
              * Link visual style.
              */
-            public static final Variant LINK = config -> {
-                config.styles (LinkCSS.instance ());
-            };
+            public static final Variant LINK = create ("""
+                --cpt-btn-bg: transparent;
+                --cpt-btn-bg-hover: transparent;
+                --cpt-btn-text: var(--jui-comp-button-link-text);
+                --cpt-btn-text-hover: var(--jui-comp-button-link-text-hover);
+                --cpt-btn-border: transparent;
+                --cpt-btn-border-width: 0;
+                --cpt-btn-padding-block: 0;
+                --cpt-btn-text-lineheight: 1.2;
+                --cpt-btn-margin: 0;
+                --cpt-btn-waiting-bg: transparent;
+                --cpt-btn-disabled-bg: transparent;
+                --cpt-btn-disabled-border: transparent;
+                --cpt-btn-disabled-text: var(--jui-state-disabled);
+                --cpt-btn-hover-text-decoration: underline;
+            """);
+
+            /**
+             * Success color overlay.
+             */
+            public static final Variant SUCCESS = create ("""
+                --cpt-btn-bg: var(--jui-comp-button-success-surface);
+                --cpt-btn-bg-hover: var(--jui-comp-button-success-surface-hover);
+                --cpt-btn-border: var(--jui-comp-button-success-border);
+            """);
+
+            /**
+             * Warning color overlay.
+             */
+            public static final Variant WARNING = create ("""
+                --cpt-btn-bg: var(--jui-comp-button-warning-surface);
+                --cpt-btn-bg-hover: var(--jui-comp-button-warning-surface-hover);
+                --cpt-btn-border: var(--jui-comp-button-warning-border);
+            """);
+
+            /**
+             * Danger color overlay.
+             */
+            public static final Variant DANGER = create ("""
+                --cpt-btn-bg: var(--jui-comp-button-danger-surface);
+                --cpt-btn-bg-hover: var(--jui-comp-button-danger-surface-hover);
+                --cpt-btn-border: var(--jui-comp-button-danger-border);
+            """);
         }
 
         /**
@@ -119,16 +150,19 @@ public class Button extends Component<Button.Config> implements IButton {
             public void configure(Config cfg) {
                 switch (this) {
                     case NORMAL:
-                        Variant.NORMAL.configure (cfg);
+                        Variant.STANDARD.configure (cfg);
                         break;
                     case NORMAL_SUCCESS:
-                        Variant.NORMAL_SUCCESS.configure (cfg);
+                        Variant.STANDARD.configure (cfg);
+                        Variant.SUCCESS.configure (cfg);
                         break;
                     case NORMAL_WARNING:
-                        Variant.NORMAL_WARNING.configure (cfg);
+                        Variant.STANDARD.configure (cfg);
+                        Variant.WARNING.configure (cfg);
                         break;
                     case NORMAL_DANGER:
-                        Variant.NORMAL_DANGER.configure (cfg);
+                        Variant.STANDARD.configure (cfg);
+                        Variant.DANGER.configure (cfg);
                         break;
                     case OUTLINED:
                         Variant.OUTLINED.configure (cfg);
@@ -188,7 +222,7 @@ public class Button extends Component<Button.Config> implements IButton {
         /**
          * See {@link #styles(ILocalCSS)}.
          */
-        private ILocalCSS styles = NormalCSS.instance ();
+        private ILocalCSS styles = StandardCSS.instance ();
 
         /**
          * See {@link #behaviour(Behaviour)}.
@@ -229,12 +263,27 @@ public class Button extends Component<Button.Config> implements IButton {
          * Assigns a presentation variant.
          * 
          * @param variant
-         *                the variant (default is {@link Variant#NORMAL}).
+         *                the variant (default is {@link Variant#STANDARD}).
          * @return this configuration instance.
          */
         public Button.Config variant(Variant variant) {
             if (variant != null)
                 variant.configure (this);
+            return this;
+        }
+
+        /**
+         * Assigns a set of presentation variants.
+         * 
+         * @param variants
+         *                 the variants to apply in order.
+         * @return this configuration instance.
+         */
+        public Button.Config variant(Variant... variants) {
+            if (variants != null) {
+                for (Variant variant : variants)
+                    variant (variant);
+            }
             return this;
         }
 
@@ -369,7 +418,7 @@ public class Button extends Component<Button.Config> implements IButton {
          */
         public ILocalCSS getStyles() {
             if (styles == null)
-                styles = NormalCSS.instance ();
+                styles = StandardCSS.instance ();
             return styles;
         }
 
@@ -661,126 +710,17 @@ public class Button extends Component<Button.Config> implements IButton {
         "com/effacy/jui/ui/client/button/Button.css",
         "com/effacy/jui/ui/client/button/Button_Override.css"
     })
-    public static abstract class NormalCSS implements ILocalCSS {
+    public static abstract class StandardCSS implements ILocalCSS {
 
-        private static NormalCSS STYLES;
+        private static StandardCSS STYLES;
 
         public static ILocalCSS instance() {
             if (STYLES == null) {
-                STYLES = (NormalCSS) GWT.create (NormalCSS.class);
+                STYLES = (StandardCSS) GWT.create (StandardCSS.class);
                 STYLES.ensureInjected ();
             }
             return STYLES;
         }
     }
 
-    /**
-     * Component CSS (standard pattern).
-     */
-    @CssResource({
-        IComponentCSS.COMPONENT_CSS,
-        "com/effacy/jui/ui/client/button/Button.css",
-        "com/effacy/jui/ui/client/button/Button_Override.css",
-        "com/effacy/jui/ui/client/button/Button_Success.css"
-    })
-    public static abstract class NormalSuccessCSS implements ILocalCSS {
-
-        private static NormalSuccessCSS STYLES;
-
-        public static ILocalCSS instance() {
-            if (STYLES == null) {
-                STYLES = (NormalSuccessCSS) GWT.create (NormalSuccessCSS.class);
-                STYLES.ensureInjected ();
-            }
-            return STYLES;
-        }
-    }
-
-    /**
-     * Component CSS (standard pattern).
-     */
-    @CssResource({
-        IComponentCSS.COMPONENT_CSS,
-        "com/effacy/jui/ui/client/button/Button.css",
-        "com/effacy/jui/ui/client/button/Button_Warning.css",
-        "com/effacy/jui/ui/client/button/Button_Override.css"
-    })
-    public static abstract class NormalWarningCSS implements ILocalCSS {
-
-        private static NormalWarningCSS STYLES;
-
-        public static ILocalCSS instance() {
-            if (STYLES == null) {
-                STYLES = (NormalWarningCSS) GWT.create (NormalWarningCSS.class);
-                STYLES.ensureInjected ();
-            }
-            return STYLES;
-        }
-    }
-
-    /**
-     * Component CSS (standard pattern).
-     */
-    @CssResource({
-        IComponentCSS.COMPONENT_CSS,
-        "com/effacy/jui/ui/client/button/Button.css",
-        "com/effacy/jui/ui/client/button/Button_Override.css",
-        "com/effacy/jui/ui/client/button/Button_Danger.css"
-    })
-    public static abstract class NormalDangerCSS implements ILocalCSS {
-
-        private static NormalDangerCSS STYLES;
-
-        public static ILocalCSS instance() {
-            if (STYLES == null) {
-                STYLES = (NormalDangerCSS) GWT.create (NormalDangerCSS.class);
-                STYLES.ensureInjected ();
-            }
-            return STYLES;
-        }
-    }
-
-    /**
-     * Component CSS (standard pattern).
-     */
-    @CssResource({
-        IComponentCSS.COMPONENT_CSS,
-        "com/effacy/jui/ui/client/button/Button.css",
-        "com/effacy/jui/ui/client/button/Button_Outlined.css",
-        "com/effacy/jui/ui/client/button/Button_Outlined_Override.css"
-    })
-    public static abstract class OutlinedCSS implements ILocalCSS {
-
-        private static OutlinedCSS STYLES;
-
-        public static ILocalCSS instance() {
-            if (STYLES == null) {
-                STYLES = (OutlinedCSS) GWT.create (OutlinedCSS.class);
-                STYLES.ensureInjected ();
-            }
-            return STYLES;
-        }
-    }
-
-    /**
-     * Component CSS (standard pattern).
-     */
-    @CssResource({
-        IComponentCSS.COMPONENT_CSS,
-        "com/effacy/jui/ui/client/button/Button.css",
-        "com/effacy/jui/ui/client/button/Button_Link.css",
-        "com/effacy/jui/ui/client/button/Button_Link_Override.css"
-    })
-    public static abstract class LinkCSS implements ILocalCSS {
-
-        private static LinkCSS STYLES;
-
-        public static ILocalCSS instance() {
-            if (STYLES == null) {
-                STYLES = (LinkCSS) GWT.create (LinkCSS.class);
-                STYLES.ensureInjected ();
-            }
-            return STYLES;
-        }
-    }
 }

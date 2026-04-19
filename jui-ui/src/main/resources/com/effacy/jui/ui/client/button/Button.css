@@ -16,6 +16,8 @@
     --cpt-btn-waiting-bg: var(--jui-comp-button-surface-disabled);
     --cpt-btn-waiting-border: var(--jui-comp-button-border-disabled);
     --cpt-btn-waiting-text: var(--jui-comp-button-waiting-text);
+    --cpt-btn-text-hover: var(--cpt-btn-text);
+    --cpt-btn-hover-text-decoration: none;
     --cpt-btn-focus-border: var(--jui-comp-button-focus-border);
     --cpt-btn-focus-shadow: var(--jui-comp-button-focus-shadow);
     --cpt-btn-padding-inline: var(--jui-space-4);
@@ -49,6 +51,14 @@
 
 .component:not(.disabled):not(.waiting) .outer:hover {
     background: var(--cpt-btn-bg-hover);
+}
+
+.component:not(.disabled):not(.waiting) .outer:hover a * {
+    color: var(--cpt-btn-text-hover);
+}
+
+.component:not(.disabled):not(.waiting) .outer:hover a span {
+    text-decoration: var(--cpt-btn-hover-text-decoration);
 }
 
 .component.disabled {

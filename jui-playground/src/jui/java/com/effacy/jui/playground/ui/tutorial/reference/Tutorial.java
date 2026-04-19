@@ -20,7 +20,7 @@ import com.effacy.jui.core.client.dom.css.CSSInjector;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.effacy.jui.ui.client.navigation.TabNavigator;
-import com.effacy.jui.ui.client.navigation.TabNavigator.Config.Style;
+import com.effacy.jui.ui.client.navigation.TabNavigator.Config.Orientation;
 import com.effacy.jui.ui.client.navigation.TabNavigatorCreator;
 import com.effacy.jui.ui.client.panel.PanelCreator;
 import com.google.gwt.core.client.GWT;
@@ -32,7 +32,7 @@ public class Tutorial extends TabNavigator {
     }
 
     public Tutorial() {
-        super (TabNavigatorCreator.config ().color ("#f0f0f0").style (ROUNDED_TABSET));
+        super (TabNavigatorCreator.config ().color ("#f0f0f0").variant(ROUNDED_TABSET));
 
         tab ("dashboard", "Dashboard", new Dashboard ()).icon (FontAwesome.gauge ());
         tab ("inbox", "Inbox", PanelCreator.build ()).icon (FontAwesome.envelope ());
@@ -43,7 +43,10 @@ public class Tutorial extends TabNavigator {
      * Tab set style
      *******************************************************************************/
 
-    private static final Style ROUNDED_TABSET = Style.create (RoundTabSetLocalCSS.instance (), true, FontAwesome.minus (), FontAwesome.plus ());
+    private static final TabNavigator.Config.Variant ROUNDED_TABSET = config -> {
+        config.styles (RoundTabSetLocalCSS.instance ());
+        config.orientation(Orientation.VERTICAL);
+    };    
 
     @CssResource({
         IComponentCSS.COMPONENT_CSS,

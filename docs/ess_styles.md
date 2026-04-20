@@ -468,7 +468,7 @@ The enum-based `Theme.Palette` remains a convenience for built-in JUI palettes, 
 
 #### Global variables
 
-The global variables declare colour palettes. The palettes are **derived from a small set of axes** — typically 7 hue values plus 4 chroma values — via `oklch()` + `calc()` in `Theme.Reference.css`. Every `-XX` step across every family targets the same OKLCH lightness (ladder: 05=0.97, 10=0.94, 20=0.88, 30=0.80, 40=0.70, 50=0.58, 60=0.48, 70=0.38, 80=0.28, 90=0.20). Alternate palettes override only the axes. See the package README in `jui-ui/src/main/java/com/effacy/jui/ui/client/README.md` for the full axis list and authoring guide.
+The global variables declare colour palettes. The palettes are **derived from a small set of axes** — typically 7 hue values plus 4 chroma values — via `oklch()` + `calc()` in `Theme.Reference.css`. Every `-XX` step across every family targets the same OKLCH lightness (ladder: 05=0.98, 10=0.97, 20=0.88, 30=0.80, 40=0.70, 50=0.58, 60=0.48, 70=0.38, 80=0.28, 90=0.20 — the tight `-05`/`-10` gap is intentional, see [Creating a palette](#creating-a-palette)). Alternate palettes override only the axes. See the package README in `jui-ui/src/main/java/com/effacy/jui/ui/client/README.md` for the full axis list and authoring guide.
 
 |Category|Description|
 |--------|-----------|
@@ -1042,7 +1042,7 @@ A palette is not a set of 80+ hand-picked colours. It is a compact set of **axes
 
 Two contracts apply to every palette:
 
-- **Lightness ladder** — fixed for every family: `-05` L=0.97, `-10` L=0.94, `-20` L=0.88, `-30` L=0.80, `-40` L=0.70, `-50` L=0.58, `-60` L=0.48, `-70` L=0.38, `-80` L=0.28, `-90` L=0.20.
+- **Lightness ladder** — fixed for every family: `-05` L=0.98, `-10` L=0.97, `-20` L=0.88, `-30` L=0.80, `-40` L=0.70, `-50` L=0.58, `-60` L=0.48, `-70` L=0.38, `-80` L=0.28, `-90` L=0.20. The compressed `-05`/`-10` gap (1% vs 10% elsewhere) is deliberate — it gives a pair of near-white tints so a page/strip/card hierarchy can be built on top of pure white, with `-05` as "barely tinted strip" and `-10` as "page canvas offset".
 - **Chroma curve** — a bell around `-50`, ratios of the family's chroma-peak: `-05` 0.12, `-10` 0.27, `-20` 0.46, `-30` 0.65, `-40` 0.85, `-50` 1.00, `-60` 0.96, `-70` 0.81, `-80` 0.58, `-90` 0.38.
 
 Neutral is the exception — its chroma is constant across steps.
@@ -1096,8 +1096,8 @@ body[data-jui-theme][data-palette="iar"] {
 
     /* Risk · severe (derived via the same L-ladder and chroma-curve as
        JUI reference families). */
-    --iar-color-risk-severe05: oklch(0.970 0.0120 38);
-    --iar-color-risk-severe10: oklch(0.940 0.0270 38);
+    --iar-color-risk-severe05: oklch(0.980 0.0120 38);
+    --iar-color-risk-severe10: oklch(0.970 0.0270 38);
     /* … steps 20 through 90 … */
 
     /* Repeat for moderate / low / unassessed, and again for the next grammar. */
@@ -1106,7 +1106,7 @@ body[data-jui-theme][data-palette="iar"] {
 
 Each family still follows JUI's two contracts:
 
-- **Lightness ladder** — `-05` L=0.97 through `-90` L=0.20 (see [Creating a palette](#creating-a-palette) for the full table).
+- **Lightness ladder** — `-05` L=0.98 through `-90` L=0.20 (see [Creating a palette](#creating-a-palette) for the full table).
 - **Chroma curve** — bell around `-50`, ratios 0.12 / 0.27 / 0.46 / 0.65 / 0.85 / 1.00 / 0.96 / 0.81 / 0.58 / 0.38 of the chroma-peak.
 
 That gives fragments a full range of tints and shades per level, and keeps the authoring surface compact — four axis hues and one chroma-peak per grammar.

@@ -10,8 +10,12 @@
        Two contracts apply to every palette:
 
          Lightness ladder (shared, non-negotiable):
-           -05 L 0.97   -10 L 0.94   -20 L 0.88   -30 L 0.80   -40 L 0.70
+           -05 L 0.98   -10 L 0.97   -20 L 0.88   -30 L 0.80   -40 L 0.70
            -50 L 0.58   -60 L 0.48   -70 L 0.38   -80 L 0.28   -90 L 0.20
+
+         The compressed -05/-10 gap (1% vs 10% elsewhere) is deliberate:
+         both sit at the very-light end where a single pair of surface
+         tints is needed for page/strip/card layering against pure white.
 
          Chroma curve — bell around step -50, using these ratios of the
          family's chroma-peak axis:
@@ -51,8 +55,8 @@
        ======================================================================= */
 
     /* Primary */
-    --jui-color-primary05: oklch(0.97 calc(var(--jui-palette-chroma-peak) * 0.12) var(--jui-palette-primary-hue));
-    --jui-color-primary10: oklch(0.94 calc(var(--jui-palette-chroma-peak) * 0.27) var(--jui-palette-primary-hue));
+    --jui-color-primary05: oklch(0.98 calc(var(--jui-palette-chroma-peak) * 0.12) var(--jui-palette-primary-hue));
+    --jui-color-primary10: oklch(0.97 calc(var(--jui-palette-chroma-peak) * 0.27) var(--jui-palette-primary-hue));
     --jui-color-primary20: oklch(0.88 calc(var(--jui-palette-chroma-peak) * 0.46) var(--jui-palette-primary-hue));
     --jui-color-primary30: oklch(0.80 calc(var(--jui-palette-chroma-peak) * 0.65) var(--jui-palette-primary-hue));
     --jui-color-primary40: oklch(0.70 calc(var(--jui-palette-chroma-peak) * 0.85) var(--jui-palette-primary-hue));
@@ -63,8 +67,8 @@
     --jui-color-primary90: oklch(0.20 calc(var(--jui-palette-chroma-peak) * 0.38) var(--jui-palette-primary-hue));
 
     /* Secondary */
-    --jui-color-secondary05: oklch(0.97 calc(var(--jui-palette-chroma-peak) * 0.12) var(--jui-palette-secondary-hue));
-    --jui-color-secondary10: oklch(0.94 calc(var(--jui-palette-chroma-peak) * 0.27) var(--jui-palette-secondary-hue));
+    --jui-color-secondary05: oklch(0.98 calc(var(--jui-palette-chroma-peak) * 0.12) var(--jui-palette-secondary-hue));
+    --jui-color-secondary10: oklch(0.97 calc(var(--jui-palette-chroma-peak) * 0.27) var(--jui-palette-secondary-hue));
     --jui-color-secondary20: oklch(0.88 calc(var(--jui-palette-chroma-peak) * 0.46) var(--jui-palette-secondary-hue));
     --jui-color-secondary30: oklch(0.80 calc(var(--jui-palette-chroma-peak) * 0.65) var(--jui-palette-secondary-hue));
     --jui-color-secondary40: oklch(0.70 calc(var(--jui-palette-chroma-peak) * 0.85) var(--jui-palette-secondary-hue));
@@ -75,8 +79,8 @@
     --jui-color-secondary90: oklch(0.20 calc(var(--jui-palette-chroma-peak) * 0.38) var(--jui-palette-secondary-hue));
 
     /* Ink — text and chrome (formerly "tertiary") */
-    --jui-color-ink05: oklch(0.97 calc(var(--jui-palette-ink-chroma-peak) * 0.12) var(--jui-palette-ink-hue));
-    --jui-color-ink10: oklch(0.94 calc(var(--jui-palette-ink-chroma-peak) * 0.27) var(--jui-palette-ink-hue));
+    --jui-color-ink05: oklch(0.98 calc(var(--jui-palette-ink-chroma-peak) * 0.12) var(--jui-palette-ink-hue));
+    --jui-color-ink10: oklch(0.97 calc(var(--jui-palette-ink-chroma-peak) * 0.27) var(--jui-palette-ink-hue));
     --jui-color-ink20: oklch(0.88 calc(var(--jui-palette-ink-chroma-peak) * 0.46) var(--jui-palette-ink-hue));
     --jui-color-ink30: oklch(0.80 calc(var(--jui-palette-ink-chroma-peak) * 0.65) var(--jui-palette-ink-hue));
     --jui-color-ink40: oklch(0.70 calc(var(--jui-palette-ink-chroma-peak) * 0.85) var(--jui-palette-ink-hue));
@@ -87,8 +91,8 @@
     --jui-color-ink90: oklch(0.20 calc(var(--jui-palette-ink-chroma-peak) * 0.38) var(--jui-palette-ink-hue));
 
     /* Neutral — constant chroma, not a bell. Pure gray when neutral-chroma=0. */
-    --jui-color-neutral05: oklch(0.97 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
-    --jui-color-neutral10: oklch(0.94 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
+    --jui-color-neutral05: oklch(0.98 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
+    --jui-color-neutral10: oklch(0.97 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
     --jui-color-neutral20: oklch(0.88 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
     --jui-color-neutral30: oklch(0.80 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
     --jui-color-neutral40: oklch(0.70 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
@@ -99,8 +103,8 @@
     --jui-color-neutral90: oklch(0.20 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
 
     /* Error — uses its own chroma-peak so it stays alarming in muted palettes */
-    --jui-color-error05: oklch(0.97 calc(var(--jui-palette-error-chroma-peak) * 0.12) var(--jui-palette-error-hue));
-    --jui-color-error10: oklch(0.94 calc(var(--jui-palette-error-chroma-peak) * 0.27) var(--jui-palette-error-hue));
+    --jui-color-error05: oklch(0.98 calc(var(--jui-palette-error-chroma-peak) * 0.12) var(--jui-palette-error-hue));
+    --jui-color-error10: oklch(0.97 calc(var(--jui-palette-error-chroma-peak) * 0.27) var(--jui-palette-error-hue));
     --jui-color-error20: oklch(0.88 calc(var(--jui-palette-error-chroma-peak) * 0.46) var(--jui-palette-error-hue));
     --jui-color-error30: oklch(0.80 calc(var(--jui-palette-error-chroma-peak) * 0.65) var(--jui-palette-error-hue));
     --jui-color-error40: oklch(0.70 calc(var(--jui-palette-error-chroma-peak) * 0.85) var(--jui-palette-error-hue));
@@ -111,8 +115,8 @@
     --jui-color-error90: oklch(0.20 calc(var(--jui-palette-error-chroma-peak) * 0.38) var(--jui-palette-error-hue));
 
     /* Warning */
-    --jui-color-warning05: oklch(0.97 calc(var(--jui-palette-chroma-peak) * 0.12) var(--jui-palette-warning-hue));
-    --jui-color-warning10: oklch(0.94 calc(var(--jui-palette-chroma-peak) * 0.27) var(--jui-palette-warning-hue));
+    --jui-color-warning05: oklch(0.98 calc(var(--jui-palette-chroma-peak) * 0.12) var(--jui-palette-warning-hue));
+    --jui-color-warning10: oklch(0.97 calc(var(--jui-palette-chroma-peak) * 0.27) var(--jui-palette-warning-hue));
     --jui-color-warning20: oklch(0.88 calc(var(--jui-palette-chroma-peak) * 0.46) var(--jui-palette-warning-hue));
     --jui-color-warning30: oklch(0.80 calc(var(--jui-palette-chroma-peak) * 0.65) var(--jui-palette-warning-hue));
     --jui-color-warning40: oklch(0.70 calc(var(--jui-palette-chroma-peak) * 0.85) var(--jui-palette-warning-hue));
@@ -123,8 +127,8 @@
     --jui-color-warning90: oklch(0.20 calc(var(--jui-palette-chroma-peak) * 0.38) var(--jui-palette-warning-hue));
 
     /* Success */
-    --jui-color-success05: oklch(0.97 calc(var(--jui-palette-chroma-peak) * 0.12) var(--jui-palette-success-hue));
-    --jui-color-success10: oklch(0.94 calc(var(--jui-palette-chroma-peak) * 0.27) var(--jui-palette-success-hue));
+    --jui-color-success05: oklch(0.98 calc(var(--jui-palette-chroma-peak) * 0.12) var(--jui-palette-success-hue));
+    --jui-color-success10: oklch(0.97 calc(var(--jui-palette-chroma-peak) * 0.27) var(--jui-palette-success-hue));
     --jui-color-success20: oklch(0.88 calc(var(--jui-palette-chroma-peak) * 0.46) var(--jui-palette-success-hue));
     --jui-color-success30: oklch(0.80 calc(var(--jui-palette-chroma-peak) * 0.65) var(--jui-palette-success-hue));
     --jui-color-success40: oklch(0.70 calc(var(--jui-palette-chroma-peak) * 0.85) var(--jui-palette-success-hue));
@@ -135,8 +139,8 @@
     --jui-color-success90: oklch(0.20 calc(var(--jui-palette-chroma-peak) * 0.38) var(--jui-palette-success-hue));
 
     /* Info */
-    --jui-color-info05: oklch(0.97 calc(var(--jui-palette-chroma-peak) * 0.12) var(--jui-palette-info-hue));
-    --jui-color-info10: oklch(0.94 calc(var(--jui-palette-chroma-peak) * 0.27) var(--jui-palette-info-hue));
+    --jui-color-info05: oklch(0.98 calc(var(--jui-palette-chroma-peak) * 0.12) var(--jui-palette-info-hue));
+    --jui-color-info10: oklch(0.97 calc(var(--jui-palette-chroma-peak) * 0.27) var(--jui-palette-info-hue));
     --jui-color-info20: oklch(0.88 calc(var(--jui-palette-chroma-peak) * 0.46) var(--jui-palette-info-hue));
     --jui-color-info30: oklch(0.80 calc(var(--jui-palette-chroma-peak) * 0.65) var(--jui-palette-info-hue));
     --jui-color-info40: oklch(0.70 calc(var(--jui-palette-chroma-peak) * 0.85) var(--jui-palette-info-hue));

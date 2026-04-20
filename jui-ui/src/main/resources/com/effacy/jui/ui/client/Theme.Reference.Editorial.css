@@ -33,8 +33,8 @@ body[data-jui-theme][data-palette="editorial"] {
        ================================================================== */
 
     /* Primary */
-    --jui-color-primary05: oklch(0.970 0.0048 122.3);
-    --jui-color-primary10: oklch(0.940 0.0108 122.3);
+    --jui-color-primary05: oklch(0.980 0.0048 122.3);
+    --jui-color-primary10: oklch(0.970 0.0108 122.3);
     --jui-color-primary20: oklch(0.880 0.0184 122.3);
     --jui-color-primary30: oklch(0.800 0.0260 122.3);
     --jui-color-primary40: oklch(0.700 0.0340 122.3);
@@ -45,8 +45,8 @@ body[data-jui-theme][data-palette="editorial"] {
     --jui-color-primary90: oklch(0.200 0.0152 122.3);
 
     /* Secondary */
-    --jui-color-secondary05: oklch(0.970 0.0048 271.9);
-    --jui-color-secondary10: oklch(0.940 0.0108 271.9);
+    --jui-color-secondary05: oklch(0.980 0.0048 271.9);
+    --jui-color-secondary10: oklch(0.970 0.0108 271.9);
     --jui-color-secondary20: oklch(0.880 0.0184 271.9);
     --jui-color-secondary30: oklch(0.800 0.0260 271.9);
     --jui-color-secondary40: oklch(0.700 0.0340 271.9);
@@ -57,8 +57,8 @@ body[data-jui-theme][data-palette="editorial"] {
     --jui-color-secondary90: oklch(0.200 0.0152 271.9);
 
     /* Ink — text and chrome family */
-    --jui-color-ink05: oklch(0.970 0.0036 75.2);
-    --jui-color-ink10: oklch(0.940 0.0081 75.2);
+    --jui-color-ink05: oklch(0.980 0.0036 75.2);
+    --jui-color-ink10: oklch(0.970 0.0081 75.2);
     --jui-color-ink20: oklch(0.880 0.0138 75.2);
     --jui-color-ink30: oklch(0.800 0.0195 75.2);
     --jui-color-ink40: oklch(0.700 0.0255 75.2);
@@ -69,8 +69,8 @@ body[data-jui-theme][data-palette="editorial"] {
     --jui-color-ink90: oklch(0.200 0.0114 75.2);
 
     /* Neutral — warm/cool tinted */
-    --jui-color-neutral05: oklch(0.970 0.0040 95);
-    --jui-color-neutral10: oklch(0.940 0.0040 95);
+    --jui-color-neutral05: oklch(0.980 0.0040 95);
+    --jui-color-neutral10: oklch(0.970 0.0040 95);
     --jui-color-neutral20: oklch(0.880 0.0040 95);
     --jui-color-neutral30: oklch(0.800 0.0040 95);
     --jui-color-neutral40: oklch(0.700 0.0040 95);
@@ -81,8 +81,8 @@ body[data-jui-theme][data-palette="editorial"] {
     --jui-color-neutral90: oklch(0.200 0.0040 95);
 
     /* Error — uses its own chroma peak so destructive reads alarming */
-    --jui-color-error05: oklch(0.970 0.0168 21.7);
-    --jui-color-error10: oklch(0.940 0.0378 21.7);
+    --jui-color-error05: oklch(0.980 0.0168 21.7);
+    --jui-color-error10: oklch(0.970 0.0378 21.7);
     --jui-color-error20: oklch(0.880 0.0644 21.7);
     --jui-color-error30: oklch(0.800 0.0910 21.7);
     --jui-color-error40: oklch(0.700 0.1190 21.7);
@@ -93,8 +93,8 @@ body[data-jui-theme][data-palette="editorial"] {
     --jui-color-error90: oklch(0.200 0.0532 21.7);
 
     /* Warning */
-    --jui-color-warning05: oklch(0.970 0.0048 65.1);
-    --jui-color-warning10: oklch(0.940 0.0108 65.1);
+    --jui-color-warning05: oklch(0.980 0.0048 65.1);
+    --jui-color-warning10: oklch(0.970 0.0108 65.1);
     --jui-color-warning20: oklch(0.880 0.0184 65.1);
     --jui-color-warning30: oklch(0.800 0.0260 65.1);
     --jui-color-warning40: oklch(0.700 0.0340 65.1);
@@ -105,8 +105,8 @@ body[data-jui-theme][data-palette="editorial"] {
     --jui-color-warning90: oklch(0.200 0.0152 65.1);
 
     /* Success */
-    --jui-color-success05: oklch(0.970 0.0048 156.2);
-    --jui-color-success10: oklch(0.940 0.0108 156.2);
+    --jui-color-success05: oklch(0.980 0.0048 156.2);
+    --jui-color-success10: oklch(0.970 0.0108 156.2);
     --jui-color-success20: oklch(0.880 0.0184 156.2);
     --jui-color-success30: oklch(0.800 0.0260 156.2);
     --jui-color-success40: oklch(0.700 0.0340 156.2);
@@ -117,8 +117,8 @@ body[data-jui-theme][data-palette="editorial"] {
     --jui-color-success90: oklch(0.200 0.0152 156.2);
 
     /* Info */
-    --jui-color-info05: oklch(0.970 0.0048 233);
-    --jui-color-info10: oklch(0.940 0.0108 233);
+    --jui-color-info05: oklch(0.980 0.0048 233);
+    --jui-color-info10: oklch(0.970 0.0108 233);
     --jui-color-info20: oklch(0.880 0.0184 233);
     --jui-color-info30: oklch(0.800 0.0260 233);
     --jui-color-info40: oklch(0.700 0.0340 233);

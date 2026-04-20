@@ -41,7 +41,6 @@ import com.effacy.jui.core.client.dom.css.Insets;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.ui.client.explorer.ComponentDocumentation.Config.ConfigurationExample;
-import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.effacy.jui.ui.client.navigation.TabNavigator;
 import com.effacy.jui.ui.client.navigation.TabNavigatorCreator;
 import com.effacy.jui.ui.client.panel.PanelCreator;
@@ -334,7 +333,7 @@ public class ComponentDocumentation extends Component<ComponentDocumentation.Con
 
             // Body containing a tabbed panel.
             Div.$ (root).style (styles ().body ()).$ (body -> {
-                TabNavigatorCreator.$ (body, cfg -> cfg.style (TABSET_STYLE).padding (Insets.em (1)), tpanel -> {
+                TabNavigatorCreator.$ (body, cfg -> cfg.variant(TABSET_STYLE).padding (Insets.em (1)), tpanel -> {
                     tpanel.tab ("options", "Options", buildOptions ());
                     if (Config.Type.FRAGMENT != config().type)
                         tpanel.tab ("behaviour", "Behaviour", buildBehaviour ());
@@ -564,7 +563,7 @@ public class ComponentDocumentation extends Component<ComponentDocumentation.Con
      * Custom tabs (slightly more compact)
      ************************************************************************/
     
-    public static final TabNavigator.Config.Style TABSET_STYLE = TabNavigator.Config.Style.create (TabSetLocalCSS.instance (), false, FontAwesome.minus (), FontAwesome.plus ());
+    public static final TabNavigator.Config.Variant TABSET_STYLE = config -> config.styles (TabSetLocalCSS.instance ());
 
     @CssResource({
         IComponentCSS.COMPONENT_CSS,

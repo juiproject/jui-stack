@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interaction Diagram Prototype</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --page: #f3efe2;
+        --panel: #fffdf6;
+        --border: #d9c9a3;
+        --ink: #243b53;
+        --accent: #9f580a;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+        background:
+          radial-gradient(circle at top left, rgba(255, 214, 153, 0.35), transparent 28%),
+          linear-gradient(180deg, #f8f5ec 0%, var(--page) 100%);
+        color: var(--ink);
+      }
+
+      main {
+        display: grid;
+        grid-template-columns: minmax(320px, 420px) 1fr;
+        gap: 20px;
+        min-height: 100vh;
+        padding: 24px;
+        box-sizing: border-box;
+      }
+
+      .panel {
+        background: rgba(255, 253, 246, 0.92);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: 0 18px 40px rgba(36, 59, 83, 0.08);
+        overflow: hidden;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-rows: auto auto 1fr auto;
+      }
+
+      h1 {
+        margin: 0;
+        padding: 18px 20px 8px;
+        font-size: 1.6rem;
+        color: #102a43;
+      }
+
+      p {
+        margin: 0;
+        padding: 0 20px 16px;
+        line-height: 1.45;
+      }
+
+      textarea {
+        width: calc(100% - 32px);
+        height: min(68vh, 820px);
+        margin: 0 16px 16px;
+        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        resize: vertical;
+        box-sizing: border-box;
+        background: #fffef9;
+        color: #1f2933;
+      }
+
+      .toolbar {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        padding: 0 16px 16px;
+      }
+
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 10px 16px;
+        background: linear-gradient(135deg, #b35c00 0%, var(--accent) 100%);
+        color: white;
+        font: 600 14px/1 ui-sans-serif, system-ui, sans-serif;
+        cursor: pointer;
+      }
+
+      .status {
+        font: 13px/1.4 ui-sans-serif, system-ui, sans-serif;
+        color: #52606d;
+      }
+
+      .preview {
+        padding: 16px;
+        overflow: auto;
+      }
+
+      .preview svg {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 8px;
+      }
+
+      @media (max-width: 980px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+
+        textarea {
+          height: 360px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="panel controls">
+        <h1>Interaction Diagram Prototype</h1>
+        <p>
+          This prototype accepts a self-contained JSON serialization of an
+          `interaction` diagram block and renders it to SVG in the browser.
+        </p>
+        <textarea id="source">
+{
+  "diagram": {
+    "id": "customer-details-update",
+    "title": "Customer Details Update",
+    "view": "flow"
+  },
+  "layout": {
+    "algorithm": "layered",
+    "direction": "left-to-right",
+    "routing": "curved",
+    "crossing_minimisation": true
+  },
+  "terminals": [
+    { "id": "start", "type": "start" }
+  ],
+  "interaction_units": [
+    {
+      "id": "customer_summary",
+      "name": "Customer Summary",
+      "info": "Name, Address, Email",
+      "actions": [{ "id": "edit", "label": "Edit" }]
+    },
+    {
+      "id": "edit_customer",
+      "name": "Edit Customer",
+      "fields": "Name, Address",
+      "actions": [
+        { "id": "return", "label": "Return" },
+        { "id": "update", "label": "Update" }
+      ]
+    }
+  ],
+  "activities": [
+    { "id": "update_customer", "name": "Update Customer" }
+  ],
+  "flows": [
+    { "from": "start", "to": "customer_summary" },
+    {
+      "from": "customer_summary",
+      "trigger": "edit",
+      "to": "edit_customer"
+    },
+    {
+      "from": "edit_customer",
+      "trigger": "return",
+      "to": "customer_summary",
+      "layout": { "kind": "return" }
+    },
+    {
+      "from": "edit_customer",
+      "trigger": "update",
+      "via": "update_customer",
+      "condition": "update succeeds",
+      "to": "customer_summary",
+      "layout": { "kind": "success" }
+    },
+    {
+      "from": "edit_customer",
+      "trigger": "update",
+      "via": "update_customer",
+      "condition": "update fails",
+      "to": "edit_customer",
+      "layout": { "kind": "error" }
+    }
+  ]
+}
+        </textarea>
+        <div class="toolbar">
+          <button id="render">Render Diagram</button>
+          <span class="status" id="status">Ready.</span>
+        </div>
+      </section>
+      <section class="panel preview" id="preview"></section>
+    </main>
+
+    <script src="../src/js/interaction-diagram.js"></script>
+    <script>
+      const source = document.getElementById("source");
+      const preview = document.getElementById("preview");
+      const renderButton = document.getElementById("render");
+      const status = document.getElementById("status");
+
+      function render() {
+        try {
+          InteractionDiagram.parseInteractionDocument(source.value);
+          InteractionDiagram.renderInto(preview, source.value);
+          status.textContent = "Rendered successfully.";
+        } catch (error) {
+          preview.innerHTML = "";
+          status.textContent = error instanceof Error ? error.message : String(error);
+        }
+      }
+
+      renderButton.addEventListener("click", render);
+      render();
+    </script>
+  </body>
+</html>

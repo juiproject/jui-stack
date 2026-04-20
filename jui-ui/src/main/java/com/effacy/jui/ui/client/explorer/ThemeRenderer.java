@@ -27,11 +27,10 @@ import com.effacy.jui.core.client.dom.renderer.NodeProviderDataRenderer;
 import com.effacy.jui.platform.css.client.CssDeclaration;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.ui.client.Theme;
+import com.effacy.jui.ui.client.modal.ModalDialogCreator;
 import com.effacy.jui.ui.client.control.Controls;
 import com.effacy.jui.ui.client.control.builder.ControlForm;
 import com.effacy.jui.ui.client.control.builder.ControlFormCreator;
-import com.effacy.jui.ui.client.explorer.ThemeRenderer.ThemeStyle;
-import com.effacy.jui.ui.client.modal.ModalDialogCreator;
 import com.effacy.jui.validation.model.validator.NotEmptyValidator;
 import com.google.gwt.core.client.GWT;
 
@@ -48,13 +47,8 @@ import elemental2.dom.Node;
  *
  * @author Jeremy Buckley
  */
-public class ThemeRenderer extends NodeProviderDataRenderer<List<ThemeStyle>> {
+public class ThemeRenderer extends NodeProviderDataRenderer<List<ThemeRenderer.ThemeStyle>> {
 
-    /**
-     * {@inheritDoc}
-     *
-     * @see com.effacy.jui.core.client.dom.renderer.NodeDataRenderer#generate(java.lang.Object)
-     */
     @Override
     protected INodeProvider generate(List<ThemeStyle> data) {
         IThemeRendererCSSS styles = ThemeRendererCSS.instance ();
@@ -65,11 +59,9 @@ public class ThemeRenderer extends NodeProviderDataRenderer<List<ThemeStyle>> {
                     if (item.type == ThemeStyle.Type.COLOR) {
                         div.css ("cursor", "pointer");
                         div.onclick ((e,n) -> {
-                            // Dialog with a single text field to change the code.
                             ModalDialogCreator.build (ControlFormCreator.build (cfg -> {
                                 cfg.style (ControlForm.Config.Style.COMPACT);
                             }, panel -> {
-                                // ControlSection sec1 = panel.section ().build ();
                                 panel.group (grp -> {
                                     grp.control ("color", "The new value (default is given):", Controls.text (cfg -> {
                                         cfg.acceptor ("color");
@@ -77,9 +69,7 @@ public class ThemeRenderer extends NodeProviderDataRenderer<List<ThemeStyle>> {
                                     }, ctl -> {
                                         if (item.code != null)
                                             ctl.setValue (item.code);
-                                    }), cell -> {
-                                        cell.grow (1);
-                                    });
+                                    }));
                                 });
                             }), cfg -> {
                                 cfg.title ("Modify the colour").width (Length.px (405)).closable ().removeOnClose ();
@@ -89,23 +79,23 @@ public class ThemeRenderer extends NodeProviderDataRenderer<List<ThemeStyle>> {
                                         color = color.toLowerCase ();
                                         CSSStyleDeclaration decl = DomGlobal.document.body.style;
                                         decl.setProperty (item.reference, color);
-                                        color = decl.getPropertyValue(item.reference);
+                                        color = decl.getPropertyValue (item.reference);
                                         JQuery.$ (n).find ("h6").text (color);
                                         ah.success ();
-                                    } else
+                                    } else {
                                         ah.fail ();
+                                    }
                                 }));
                             }).open ();
                         });
                     }
-                    if (item.type != ThemeStyle.Type.HEADER)
+                    if (item.type != ThemeStyle.Type.HEADER) {
                         div.style (styles.wrapper ());
-                    else
+                    } else {
                         div.style (styles.header ());
+                    }
                     if (item.type == ThemeStyle.Type.HEADER) {
-                        div.h2 (header -> {
-                            header.text (item.header);
-                        });
+                        div.h2 (header -> header.text (item.header));
                     }
                     if (item.type == ThemeStyle.Type.COLOR) {
                         div.span (swatch -> {
@@ -136,9 +126,6 @@ public class ThemeRenderer extends NodeProviderDataRenderer<List<ThemeStyle>> {
         return $wnd.getComputedStyle(el);
     }-*/;
 
-    /**
-     * Theme is used as the (internally supplied) data to the renderer.
-     */
     public static class ThemeStyle {
         enum Type {
             HEADER, COLOR, GEOM, FONT;
@@ -169,102 +156,35 @@ public class ThemeRenderer extends NodeProviderDataRenderer<List<ThemeStyle>> {
             this.code = code;
             this.description = description;
             if (code == null) {
-                Map<String,Map<String,String>> css = Theme.styles ().getCssDeclarations ();
-                this.code = css.get(".theme").get(reference);
+                Map<String, Map<String, String>> css = Theme.styles ().getCssDeclarations ();
+                Map<String, String> theme = css.get (".theme");
+                if (theme != null) {
+                    this.code = theme.get (reference);
+                }
             }
         }
 
         public static List<ThemeStyle> colors() {
             List<ThemeStyle> styles = new ArrayList<> ();
 
-            styles.add (new ThemeStyle ("Primary tones"));
-            styles.add (new ThemeStyle ("--jui-color-primary05", "Primary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-primary10", "Primary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-primary20", "Primary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-primary30", "Primary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-primary40", "Primary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-primary50", "Primary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-primary60", "Primary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-primary70", "Primary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-primary80", "Primary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-primary90", "Primary colour tone"));
+            styles.add (new ThemeStyle ("Reference palette: primary"));
+            addRange (styles, "--jui-color-primary", "Primary colour tone");
+            styles.add (new ThemeStyle ("Reference palette: secondary"));
+            addRange (styles, "--jui-color-secondary", "Secondary colour tone");
+            styles.add (new ThemeStyle ("Reference palette: ink"));
+            addRange (styles, "--jui-color-ink", "Ink (cool neutral) tone");
+            styles.add (new ThemeStyle ("Reference palette: neutral"));
+            addRange (styles, "--jui-color-neutral", "Neutral colour tone");
+            styles.add (new ThemeStyle ("Reference palette: error"));
+            addRange (styles, "--jui-color-error", "Error colour tone");
+            styles.add (new ThemeStyle ("Reference palette: warning"));
+            addRange (styles, "--jui-color-warning", "Warning colour tone");
+            styles.add (new ThemeStyle ("Reference palette: success"));
+            addRange (styles, "--jui-color-success", "Success colour tone");
+            styles.add (new ThemeStyle ("Reference palette: info"));
+            addRange (styles, "--jui-color-info", "Info colour tone");
 
-            styles.add (new ThemeStyle ("Secondary tones"));
-            styles.add (new ThemeStyle ("--jui-color-secondary05", "Secondary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-secondary10", "Secondary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-secondary20", "Secondary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-secondary30", "Secondary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-secondary40", "Secondary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-secondary50", "Secondary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-secondary60", "Secondary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-secondary70", "Secondary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-secondary80", "Secondary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-secondary90", "Secondary colour tone"));
-
-            styles.add (new ThemeStyle ("Tertiary tones"));
-            styles.add (new ThemeStyle ("--jui-color-tertiary05", "Tertiary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-tertiary10", "Tertiary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-tertiary20", "Tertiary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-tertiary30", "Tertiary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-tertiary40", "Tertiary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-tertiary50", "Tertiary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-tertiary60", "Tertiary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-tertiary70", "Tertiary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-tertiary80", "Tertiary colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-tertiary90", "Tertiary colour tone"));
-
-            styles.add (new ThemeStyle ("Neutral tones"));
-            styles.add (new ThemeStyle ("--jui-color-neutral05", "Neutral colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-neutral10", "Neutral colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-neutral20", "Neutral colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-neutral30", "Neutral colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-neutral40", "Neutral colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-neutral50", "Neutral colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-neutral60", "Neutral colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-neutral70", "Neutral colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-neutral80", "Neutral colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-neutral90", "Neutral colour tone"));
-
-            styles.add (new ThemeStyle ("Error tones"));
-            styles.add (new ThemeStyle ("--jui-color-error05", "Error colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-error10", "Error colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-error20", "Error colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-error30", "Error colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-error40", "Error colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-error50", "Error colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-error60", "Error colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-error70", "Error colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-error80", "Error colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-error90", "Error colour tone"));
-
-            styles.add (new ThemeStyle ("Warning tones"));
-            styles.add (new ThemeStyle ("--jui-color-warning05", "Warning colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-warning10", "Warning colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-warning20", "Warning colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-warning30", "Warning colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-warning40", "Warning colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-warning50", "Warning colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-warning60", "Warning colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-warning70", "Warning colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-warning80", "Warning colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-warning90", "Warning colour tone"));
-
-            styles.add (new ThemeStyle ("Success tones"));
-            styles.add (new ThemeStyle ("--jui-color-success05", "Success colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-success10", "Success colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-success20", "Success colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-success30", "Success colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-success40", "Success colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-success50", "Success colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-success60", "Success colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-success70", "Success colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-success80", "Success colour tone"));
-            styles.add (new ThemeStyle ("--jui-color-success90", "Success colour tone"));
-
-            styles.add (new ThemeStyle ("Auxillary colours"));
-            styles.add (new ThemeStyle ("--jui-color-aux-focus1", "Focus outline"));
-            styles.add (new ThemeStyle ("--jui-color-aux-focus2", "Focus outline (shadow)"));
-            styles.add (new ThemeStyle ("--jui-color-aux-blue", "System blue (used by controls)"));
+            styles.add (new ThemeStyle ("Reference palette: auxiliary"));
             styles.add (new ThemeStyle ("--jui-color-aux-white", "Absolute white"));
             styles.add (new ThemeStyle ("--jui-color-aux-black", "Absolute black"));
 
@@ -274,99 +194,129 @@ public class ThemeRenderer extends NodeProviderDataRenderer<List<ThemeStyle>> {
         public static List<ThemeStyle> topography() {
             List<ThemeStyle> styles = new ArrayList<> ();
 
-            styles.add (new ThemeStyle ("Geometry"));
-            styles.add (new ThemeStyle (Type.GEOM, "--jui-border-radius", null, "Standard border radius"));
-            styles.add (new ThemeStyle (Type.GEOM, "--jui-border-radius-soft",  null, "Softer border radius"));
-            styles.add (new ThemeStyle (Type.GEOM, "--jui-border-radius-hard",  null, "Harder border radius"));
+            styles.add (new ThemeStyle ("Role tokens: surfaces"));
+            styles.add (new ThemeStyle ("--jui-role-surface-canvas", "Application canvas surface"));
+            styles.add (new ThemeStyle ("--jui-role-surface-raised", "Raised component surface"));
+            styles.add (new ThemeStyle ("--jui-role-surface-muted", "Muted chrome surface"));
+            styles.add (new ThemeStyle ("--jui-role-surface-sunken", "Sunken or disabled surface"));
+            styles.add (new ThemeStyle ("--jui-role-surface-overlay", "Overlay or dialog surface"));
+            styles.add (new ThemeStyle ("--jui-role-surface-accent", "Accent-tinted surface"));
+            styles.add (new ThemeStyle ("--jui-role-surface-error", "Error-tinted surface"));
 
-            styles.add (new ThemeStyle ("States"));
-            styles.add (new ThemeStyle ("--jui-state-focus", "Focus border colour"));
-            styles.add (new ThemeStyle ("--jui-state-focus-offset", "Focus border colour (shadow)"));
-            styles.add (new ThemeStyle ("--jui-state-disabled", "Disabled colour"));
-            styles.add (new ThemeStyle ("--jui-state-disabled-offset", "Disabled colour (alternative)"));
-            styles.add (new ThemeStyle ("--jui-state-error", "Error text"));
-            styles.add (new ThemeStyle ("--jui-state-error-offset", "Error indicator (highlights)"));
-            styles.add (new ThemeStyle ("--jui-state-waiting", "Waiting text"));
-            styles.add (new ThemeStyle ("--jui-state-waiting-bg", "Waiting background"));
-            styles.add (new ThemeStyle ("--jui-state-waiting-bg-offset", "Waiting background (transition)"));
+            styles.add (new ThemeStyle ("Role tokens: text and borders"));
+            styles.add (new ThemeStyle ("--jui-role-text-default", "Default body text"));
+            styles.add (new ThemeStyle ("--jui-role-text-muted", "Muted support text"));
+            styles.add (new ThemeStyle ("--jui-role-text-heading", "Heading text"));
+            styles.add (new ThemeStyle ("--jui-role-text-link", "Interactive link text"));
+            styles.add (new ThemeStyle ("--jui-role-border-subtle", "Subtle border"));
+            styles.add (new ThemeStyle ("--jui-role-border-default", "Default border"));
+            styles.add (new ThemeStyle ("--jui-role-border-strong", "Strong border"));
+            styles.add (new ThemeStyle ("--jui-role-border-contrast", "High-contrast border/text helper"));
 
-            styles.add (new ThemeStyle ("Line"));
-            styles.add (new ThemeStyle ("--jui-line", "Standard line"));
-            styles.add (new ThemeStyle ("--jui-line-dark", "Darker line)"));
-            styles.add (new ThemeStyle ("--jui-line-light", "Lighter line"));
+            styles.add (new ThemeStyle ("Role tokens: interaction and feedback"));
+            styles.add (new ThemeStyle ("--jui-role-interactive-primary", "Primary interactive colour"));
+            styles.add (new ThemeStyle ("--jui-role-interactive-primary-hover", "Primary interactive hover"));
+            styles.add (new ThemeStyle ("--jui-role-interactive-primary-on", "Text/icon on primary interactive surfaces"));
+            styles.add (new ThemeStyle ("--jui-role-feedback-info", "Informational feedback"));
+            styles.add (new ThemeStyle ("--jui-role-feedback-success", "Success feedback"));
+            styles.add (new ThemeStyle ("--jui-role-feedback-warning", "Warning feedback"));
+            styles.add (new ThemeStyle ("--jui-role-feedback-error", "Error feedback"));
+            styles.add (new ThemeStyle ("--jui-role-focus-ring", "Focus ring colour"));
+            styles.add (new ThemeStyle ("--jui-role-focus-shadow", "Focus shadow colour"));
 
-            styles.add (new ThemeStyle ("Text"));
-            styles.add (new ThemeStyle ("--jui-text", "Body text"));
-            styles.add (new ThemeStyle ("--jui-text-offset", "Offset against text (background)"));
-            styles.add (new ThemeStyle ("--jui-text-header", "Header text"));
-            styles.add (new ThemeStyle ("--jui-text-header-sub", "Sub-heading text"));
-            styles.add (new ThemeStyle ("--jui-text-subtle", "Informational text"));
-            styles.add (new ThemeStyle ("--jui-text-link", "Text links"));
-            styles.add (new ThemeStyle ("--jui-text-link-hover", "Text links (hover)"));
-            styles.add (new ThemeStyle ("--jui-text-error", "Error message text"));
-            styles.add (new ThemeStyle ("--jui-text-disabled", "Disabled text"));
-        
+            styles.add (new ThemeStyle ("Scale tokens: spacing"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-space-1", null, "4px spacing step"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-space-2", null, "8px spacing step"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-space-3", null, "12px spacing step"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-space-4", null, "16px spacing step"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-space-6", null, "24px spacing step"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-space-8", null, "32px spacing step"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-space-12", null, "48px spacing step"));
+
+            styles.add (new ThemeStyle ("Scale tokens: typography"));
+            styles.add (new ThemeStyle (Type.FONT, "--jui-font-family-sans", null, "Primary sans-serif font family"));
+            styles.add (new ThemeStyle (Type.FONT, "--jui-font-family-mono", null, "Monospace font family"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-font-size-sm", null, "Small font size"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-font-size-md", null, "Default font size"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-font-size-lg", null, "Large font size"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-font-weight-medium", null, "Medium font weight"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-font-weight-semibold", null, "Semibold font weight"));
+
+            styles.add (new ThemeStyle ("Scale tokens: geometry and motion"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-radius-xs", null, "Extra small radius"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-radius-sm", null, "Small radius"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-radius-md", null, "Medium radius"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-radius-lg", null, "Large radius"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-control-height", null, "Standard control height"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-duration-fast", null, "Fast interaction duration"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-duration-standard", null, "Standard interaction duration"));
+
             return styles;
         }
 
         public static List<ThemeStyle> components() {
             List<ThemeStyle> styles = new ArrayList<> ();
 
-            styles.add (new ThemeStyle ("Controls"));
-            styles.add (new ThemeStyle (Type.FONT, "--jui-ctl-font", null, "Font to use for controls"));
-            styles.add (new ThemeStyle ("--jui-ctl-active", ""));
-            styles.add (new ThemeStyle (Type.GEOM, "--jui-ctl-opacity-readonly", null, "Opacity for disabled state"));
-            styles.add (new ThemeStyle ("--jui-ctl-bg", "Background (text entry)"));
-            styles.add (new ThemeStyle ("--jui-ctl-bg-disabled", "Background (disabled)"));
-            styles.add (new ThemeStyle ("--jui-ctl-bg-readonly", "Background (read only)"));
-            styles.add (new ThemeStyle ("--jui-ctl-bg-offset", "Background (darker)"));
-            styles.add (new ThemeStyle ("--jui-ctl-border", "Border color"));
-            styles.add (new ThemeStyle (Type.GEOM, "--jui-ctl-border-radius", null, "Border radius"));
-            styles.add (new ThemeStyle ("--jui-ctl-text", "Text color (entry)"));
-            styles.add (new ThemeStyle ("--jui-ctl-text-placeholder", "Placeholder color"));
-            styles.add (new ThemeStyle ("--jui-ctl-text-disabled", "Text color (disabled)"));
-            styles.add (new ThemeStyle ("--jui-ctl-text-readonly", "Text color (read only)"));
-            styles.add (new ThemeStyle ("--jui-ctl-text-header", "Text color (header)"));
-            styles.add (new ThemeStyle ("--jui-ctl-text-subtle", "Text color (subtle)"));
-            styles.add (new ThemeStyle ("--jui-ctl-text-link", "Text color (link)"));
-            styles.add (new ThemeStyle ("--jui-ctl-text-offset", "Background"));
-            styles.add (new ThemeStyle ("--jui-ctl-action", "Action icon color"));
-            styles.add (new ThemeStyle ("--jui-ctl-action-disabled", "Action icon color (disabled)"));
-            styles.add (new ThemeStyle ("--jui-ctl-action-readonly", "Action icon color (read only)"));
-            styles.add (new ThemeStyle ("--jui-ctl-action-hover", "Action icon color (hover)"));
-            styles.add (new ThemeStyle ("--jui-ctl-focus", "Focus outline color"));
-            styles.add (new ThemeStyle ("--jui-ctl-focus-offset", "Focus outline color (shadow)"));
-            styles.add (new ThemeStyle ("--jui-ctl-err-focus", "Error outline color"));
-            styles.add (new ThemeStyle ("--jui-ctl-err-focus-offset", "Error outline color (shadow)"));
+            styles.add (new ThemeStyle ("Component tokens: controls"));
+            styles.add (new ThemeStyle (Type.FONT, "--jui-comp-control-font-family", null, "Font family used by controls"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-comp-control-height", null, "Default control height"));
+            styles.add (new ThemeStyle ("--jui-comp-control-surface", "Default control surface"));
+            styles.add (new ThemeStyle ("--jui-comp-control-border", "Default control border"));
+            styles.add (new ThemeStyle ("--jui-comp-control-text", "Default control text"));
+            styles.add (new ThemeStyle ("--jui-comp-control-action", "Default control action/icon colour"));
+            styles.add (new ThemeStyle ("--jui-comp-control-focus", "Default control focus ring"));
 
-            styles.add (new ThemeStyle ("Buttons"));
-            styles.add (new ThemeStyle ("--jui-btn-bg", "Background color"));
-            styles.add (new ThemeStyle ("--jui-btn-bg-hover", "Background color (hover)"));
-            styles.add (new ThemeStyle ("--jui-btn-bg-disabled", "Background color (disabled)"));
-            styles.add (new ThemeStyle ("--jui-btn-bg-disabled-offset", "Background color (disabled darker)"));
-            styles.add (new ThemeStyle ("--jui-btn-border", "Border color"));
-            styles.add (new ThemeStyle (Type.GEOM, "--jui-btn-border-radius", null, "Border radius"));
-            styles.add (new ThemeStyle ("--jui-btn-text", "Text color"));
+            styles.add (new ThemeStyle ("Component tokens: buttons"));
+            styles.add (new ThemeStyle (Type.GEOM, "--jui-comp-button-height", null, "Default button height"));
+            styles.add (new ThemeStyle ("--jui-comp-button-surface", "Default button background"));
+            styles.add (new ThemeStyle ("--jui-comp-button-surface-hover", "Default button hover background"));
+            styles.add (new ThemeStyle ("--jui-comp-button-border", "Default button border"));
+            styles.add (new ThemeStyle ("--jui-comp-button-text", "Default button text"));
+            styles.add (new ThemeStyle ("--jui-comp-button-outline-surface", "Outlined button background"));
+            styles.add (new ThemeStyle ("--jui-comp-button-link-text", "Link button text"));
+            styles.add (new ThemeStyle ("--jui-comp-button-danger-surface", "Danger button background"));
+            styles.add (new ThemeStyle ("--jui-comp-button-success-surface", "Success button background"));
+            styles.add (new ThemeStyle ("--jui-comp-button-warning-surface", "Warning button background"));
 
-            styles.add (new ThemeStyle ("--jui-btn-danger-bg", "Danger variant"));
-            styles.add (new ThemeStyle ("--jui-btn-danger-bg-hover", "Danger variant"));
-            styles.add (new ThemeStyle ("--jui-btn-danger-border", "Danger variant"));
+            styles.add (new ThemeStyle ("Component tokens: navigators"));
+            styles.add (new ThemeStyle ("--jui-comp-tabset-surface", "Navigator chrome surface"));
+            styles.add (new ThemeStyle ("--jui-comp-tabset-surface-hover", "Navigator hover surface"));
+            styles.add (new ThemeStyle ("--jui-comp-tabset-surface-active", "Navigator active surface"));
+            styles.add (new ThemeStyle ("--jui-comp-tabset-border", "Navigator border"));
+            styles.add (new ThemeStyle ("--jui-comp-tabset-text", "Navigator text"));
+            styles.add (new ThemeStyle ("--jui-comp-tabset-text-active", "Navigator active text"));
 
-            styles.add (new ThemeStyle ("--jui-btn-warning-bg", "Warning variant"));
-            styles.add (new ThemeStyle ("--jui-btn-warning-bg-hover", "Warning variant"));
-            styles.add (new ThemeStyle ("--jui-btn-warning-border", "Warning variant"));
+            styles.add (new ThemeStyle ("Component tokens: dialogs, tables, notifications and forms"));
+            styles.add (new ThemeStyle ("--jui-comp-dialog-surface", "Dialog surface"));
+            styles.add (new ThemeStyle ("--jui-comp-dialog-border", "Dialog border"));
+            styles.add (new ThemeStyle ("--jui-comp-dialog-header-surface", "Dialog header surface"));
+            styles.add (new ThemeStyle ("--jui-comp-dialog-header-divider", "Dialog header divider"));
+            styles.add (new ThemeStyle ("--jui-comp-dialog-footer-surface", "Dialog footer surface"));
+            styles.add (new ThemeStyle ("--jui-comp-dialog-footer-divider", "Dialog footer divider"));
+            styles.add (new ThemeStyle ("--jui-comp-table-header-surface", "Table header surface"));
+            styles.add (new ThemeStyle ("--jui-comp-table-row-border", "Table row divider"));
+            styles.add (new ThemeStyle ("--jui-comp-notification-info-accent", "Notification accent"));
+            styles.add (new ThemeStyle ("--jui-comp-notification-error-surface", "Notification error surface"));
+            styles.add (new ThemeStyle ("--jui-comp-form-header", "Form heading colour"));
+            styles.add (new ThemeStyle ("--jui-comp-form-error-surface", "Form error surface"));
 
-            styles.add (new ThemeStyle ("--jui-btn-success-bg", "Success variant"));
-            styles.add (new ThemeStyle ("--jui-btn-success-bg-hover", "Success variant"));
-            styles.add (new ThemeStyle ("--jui-btn-success-border", "Success variant"));
+            styles.add (new ThemeStyle ("Legacy compatibility"));
+            styles.add (new ThemeStyle ("--jui-ctl-bg", "Compatibility alias for the new control surface token"));
+            styles.add (new ThemeStyle ("--jui-btn-bg", "Compatibility alias for the new button surface token"));
+            styles.add (new ThemeStyle ("--jui-tabset-bg-02", "Compatibility alias for the new navigator chrome token"));
+            styles.add (new ThemeStyle ("--jui-text", "Compatibility alias for the new default text role"));
 
             return styles;
         }
+
+        private static void addRange(List<ThemeStyle> styles, String prefix, String description) {
+            String[] suffixes = { "05", "10", "20", "30", "40", "50", "60", "70", "80", "90" };
+            for (String suffix : suffixes) {
+                styles.add (new ThemeStyle (prefix + suffix, description));
+            }
+        }
     }
 
-    /**
-     * Styles for the standard item.
-     */
     public static interface IThemeRendererCSSS extends CssDeclaration {
 
         public String outer();

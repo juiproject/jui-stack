@@ -395,6 +395,7 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
 
         /**
          * Registers the default paste processor which performs some basic cleanup.
+         * 
          * @return this configuration instance.
          */
         public Config defaultPasteProcessor() {
@@ -611,17 +612,30 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
 
     /**
      * Re-sizes the text area if needed.
-     * 
+     * <p>
+     * When the {@code rows} attribute is set on the textarea, the browser
+     * derives a natural height from it. To preserve this as a lower bound the
+     * resize temporarily removes the explicit height, lets the browser apply the
+     * rows-based height, captures it, then sets the height to whichever is
+     * larger: the rows-based height or the content's scroll height.
+     *
      * @param assigned
      *                 {@code true} if the resize is being applied after an
      *                 assignment of value.
      */
     protected void _resize(boolean assigned) {
-        // Reset to minimum so scrollHeight reflects the actual content height
-        // (allows shrinking when text reflows to fewer lines).
-        int minHeight = 16;
+        // Remove explicit height so the browser applies the rows attribute.
+        inputEl.style.removeProperty("height");
+
+        // Capture the rows-based height (clientHeight with rows but no explicit
+        // height). This is the floor.
+        int minHeight = inputEl.clientHeight;
+        if (minHeight <= 0)
+            minHeight = 16;
         if (sizeAfterAssignment > minHeight)
             minHeight = sizeAfterAssignment;
+
+        // Set to the floor so scrollHeight reflects actual content.
         CSS.HEIGHT.apply(inputEl, Length.px(minHeight));
         if (assigned)
             sizeAfterAssignment = inputEl.clientHeight;

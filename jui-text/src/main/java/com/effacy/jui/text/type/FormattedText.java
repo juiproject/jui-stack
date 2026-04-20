@@ -26,6 +26,7 @@ import com.effacy.jui.rpc.handler.client.command.V;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.builder.FormattedTextBuilder;
 import com.effacy.jui.text.type.builder.markdown.MarkdownParser;
+import com.effacy.jui.text.type.builder.markdown.MarkdownSerializer;
 
 /**
  * Captures text that is formatted in a rich content sense (i.e custom blocks of
@@ -90,6 +91,15 @@ public class FormattedText implements Iterable<FormattedBlock> {
      */
     public boolean empty() {
         return ((blocks == null) || blocks.isEmpty());
+    }
+
+    /**
+     * Serializes this formatted text to markdown.
+     *
+     * @return the markdown string (never {@code null}).
+     */
+    public String toMarkdown() {
+        return MarkdownSerializer.serialize(this);
     }
 
     /**

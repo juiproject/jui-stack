@@ -9,3 +9,4 @@ target-ide/
 tmp/
 dependency-reduced-pom.xml
 bin/
+planning/design-system-critique.md

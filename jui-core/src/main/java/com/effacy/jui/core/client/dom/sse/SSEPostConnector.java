@@ -78,6 +78,8 @@ public class SSEPostConnector {
 
     private boolean debug;
 
+    private XMLHttpRequest activeXhr;
+
     /**
      * Assigns the handler for SSE events.
      */
@@ -144,6 +146,7 @@ public class SSEPostConnector {
 
             // On completion, handle status.
             if (xhr.readyState == 4) {
+                activeXhr = null;
                 if ((xhr.status == 200) || (xhr.status == 0)) {
                     if (completeHandler != null) {
                         try {
@@ -175,7 +178,20 @@ public class SSEPostConnector {
         xhr.open("POST", url, true);
         xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
         xhr.setRequestHeader("Accept", "text/event-stream");
+        activeXhr = xhr;
         xhr.send(jsonBody);
+    }
+
+    /**
+     * Aborts the active request, if any. The {@code onComplete} handler will
+     * still fire (via the XHR readyState 4 transition with status 0).
+     */
+    public void abort() {
+        if (activeXhr != null) {
+            XMLHttpRequest xhr = activeXhr;
+            activeXhr = null;
+            xhr.abort();
+        }
     }
 
     /**

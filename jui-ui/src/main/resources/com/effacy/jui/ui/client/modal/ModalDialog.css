@@ -1,50 +1,94 @@
+.component {
+    --cpt-modaldialog-surface: var(--jui-comp-dialog-surface);
+    --cpt-modaldialog-border: var(--jui-comp-dialog-border);
+    --cpt-modaldialog-border-width: 1px;
+    --cpt-modaldialog-radius: var(--jui-comp-dialog-radius);
+    --cpt-modaldialog-shadow: var(--jui-comp-dialog-shadow);
+    --cpt-modaldialog-chrome: var(--jui-comp-dialog-chrome);
+    --cpt-modaldialog-header-bg: var(--jui-comp-dialog-header-surface);
+    --cpt-modaldialog-header-divider: var(--jui-comp-dialog-header-divider);
+    --cpt-modaldialog-header-divider-width: 1px;
+    --cpt-modaldialog-footer-bg: var(--jui-comp-dialog-footer-surface);
+    --cpt-modaldialog-footer-divider: var(--jui-comp-dialog-footer-divider);
+    --cpt-modaldialog-footer-divider-width: 1px;
+    --cpt-modaldialog-heading: var(--jui-comp-dialog-heading);
+    --cpt-modaldialog-heading-size: 1.3em;
+    --cpt-modaldialog-heading-weight: var(--jui-font-weight-semibold);
+    --cpt-modaldialog-heading-margin-left: var(--jui-space-3);
+    --cpt-modaldialog-heading-margin-top: var(--jui-space-3);
+    --cpt-modaldialog-heading-margin-bottom-compact: var(--jui-space-3);
+    --cpt-modaldialog-heading-margin-right-compact: var(--jui-space-8);
+    --cpt-modaldialog-subheading: var(--jui-comp-dialog-subheading);
+    --cpt-modaldialog-subheading-padding-block-start: var(--jui-space-1);
+    --cpt-modaldialog-subheading-padding-block-end: var(--jui-space-2);
+    --cpt-modaldialog-subheading-margin-inline: var(--jui-space-3);
+    --cpt-modaldialog-icon: var(--jui-comp-dialog-icon);
+    --cpt-modaldialog-icon-gap: var(--jui-space-3);
+    --cpt-modaldialog-link: var(--jui-comp-dialog-link);
+    --cpt-modaldialog-close: var(--jui-comp-dialog-close);
+    --cpt-modaldialog-close-top: 14px;
+    --cpt-modaldialog-close-right: 14px;
+    --cpt-modaldialog-close-padding: 1px;
+    --cpt-modaldialog-close-radius: 100%;
+    --cpt-modaldialog-wrap-padding: var(--jui-space-3);
+    --cpt-modaldialog-wrap-padding-slider: var(--jui-space-3);
+    --cpt-modaldialog-header-padding-inline: var(--jui-space-3);
+    --cpt-modaldialog-header-padding-block: 0;
+    --cpt-modaldialog-footer-padding-inline: var(--jui-space-5);
+    --cpt-modaldialog-footer-padding-block: 0;
+    --cpt-modaldialog-footer-height: 55px;
+}
+
 .component .dialog {
-	display: flex;
-	flex-direction: column;
-	max-height: 100%;
-	width: 100%;
-	background: #fff;
-	border: 1px solid #ddd;
-	border-radius: 10px;
-	box-sizing: border-box;
-	overflow: hidden;
-	box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.50);
-	margin: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    width: 100%;
+    background: var(--cpt-modaldialog-surface);
+    border: var(--cpt-modaldialog-border-width) solid var(--cpt-modaldialog-border);
+    border-radius: var(--cpt-modaldialog-radius);
+    box-sizing: border-box;
+    overflow: hidden;
+    box-shadow: var(--cpt-modaldialog-shadow);
+    margin: 0;
     position: relative;
 }
 
 .component.slider {
-	border: none;
-	border-left: 1px solid #ddd;
+    border: none;
+    border-left: var(--cpt-modaldialog-border-width) solid var(--cpt-modaldialog-border);
 }
 
 .component .wrap {
-	padding: 0 10px;
+    padding: 0 var(--cpt-modaldialog-wrap-padding);
 }
 
 .component.slider .wrap {
-	padding: 0 0 0 10px;
+    padding: 0 0 0 var(--cpt-modaldialog-wrap-padding-slider);
 }
 
 .component.slider .dialog {
-	height: 100%;
-	border-radius: 0px;
-	margin-right: 0;
-	border: none;
+    height: 100%;
+    border-radius: 0px;
+    margin-right: 0;
+    border: none;
 }
 
 .component .dialog .header {
-	position: relative;
-	background: #f6f6f6;
-	border-bottom: 1px solid #ddd;
-	flex: none;
-	padding-left: 10px;
+    position: relative;
+    background: var(--cpt-modaldialog-header-bg);
+    border-bottom: var(--cpt-modaldialog-header-divider-width) solid var(--cpt-modaldialog-header-divider);
+    flex: none;
+    padding-left: var(--cpt-modaldialog-header-padding-inline);
+    padding-right: var(--cpt-modaldialog-header-padding-inline);
+    padding-top: var(--cpt-modaldialog-header-padding-block);
+    padding-bottom: var(--cpt-modaldialog-header-padding-block);
 }
 
 .component.compact .dialog .header h1 {
-	margin-bottom: 10px;
-	-webkit-font-smoothing: auto;
-    margin-right: 2em;
+    margin-bottom: var(--cpt-modaldialog-heading-margin-bottom-compact);
+    -webkit-font-smoothing: auto;
+    margin-right: var(--cpt-modaldialog-heading-margin-right-compact);
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
@@ -55,102 +99,102 @@
 }
 
 .component .dialog .header h1 {
-    font-weight: 600;
-	font-size: 1.3em;
-	margin-left: 10px;
-	margin-top: 10px;
-	color: #222;
+    font-weight: var(--cpt-modaldialog-heading-weight);
+    font-size: var(--cpt-modaldialog-heading-size);
+    margin-left: var(--cpt-modaldialog-heading-margin-left);
+    margin-top: var(--cpt-modaldialog-heading-margin-top);
+    color: var(--cpt-modaldialog-heading);
 }
 
 .component.slider .dialog .header h1 {
-	font-size: 1.4em;
-	margin-left: 15px;
-	margin-top: 12px;
+    font-size: 1.4em;
+    margin-left: var(--jui-space-4);
+    margin-top: 12px;
 }
 
 .component .dialog .header h2 {
-	margin-left: 10px;
-	margin-right: 10px;
-	color: #666;
-	display: table;
-	padding: 0.25em 0 0.5em 0;
-	-webkit-font-smoothing: auto;
+    margin-left: var(--cpt-modaldialog-subheading-margin-inline);
+    margin-right: var(--cpt-modaldialog-subheading-margin-inline);
+    color: var(--cpt-modaldialog-subheading);
+    display: table;
+    padding: var(--cpt-modaldialog-subheading-padding-block-start) 0 var(--cpt-modaldialog-subheading-padding-block-end) 0;
+    -webkit-font-smoothing: auto;
 }
 
 .component .dialog .header h2 em {
-	display: table-cell;
-	vertical-align: top;
-	padding-right: 0.75em;
-	position: relative;
-	top: 0.2em;
-	color: #999;
+    display: table-cell;
+    vertical-align: top;
+    padding-right: var(--cpt-modaldialog-icon-gap);
+    position: relative;
+    top: 0.2em;
+    color: var(--cpt-modaldialog-icon);
 }
 
 .component .dialog .header h2 span {
-	display: table-cell;
-	vertical-align: top;
+    display: table-cell;
+    vertical-align: top;
 }
 
 .component.compact .dialog .header h2 {
-	display: none;
+    display: none;
 }
 
 .component .dialog .header a {
-	position: absolute;
-	right: 14px;
-	top: 14px;
-	text-decoration: none;
-	cursor: pointer;
-	color: #007eff;
+    position: absolute;
+    right: var(--cpt-modaldialog-close-right);
+    top: var(--cpt-modaldialog-close-top);
+    text-decoration: none;
+    cursor: pointer;
+    color: var(--cpt-modaldialog-link);
 }
 
 .component .dialog .header a span {
-	margin-left: 0.5em;
+    margin-left: var(--jui-space-2);
 }
 
 .component .dialog .header a:hover {
-	text-decoration: none;
+    text-decoration: none;
 }
 
 .component .dialog .header a:hover span {
-	text-decoration: underline;
+    text-decoration: underline;
 }
 
 .component .dialog .header a.closeDefault {
-	width: 1em;
-	height: 1em;
-	text-align: center;
-	transition: transform 0.2s ease-in-out, font-size 0.2s ease-in-out;
-	border-radius: 100%;
-	padding: 1px;
-	color: #333;
-	display: flex;
+    width: 1em;
+    height: 1em;
+    text-align: center;
+    transition: transform 0.2s ease-in-out, font-size 0.2s ease-in-out;
+    border-radius: var(--cpt-modaldialog-close-radius);
+    padding: var(--cpt-modaldialog-close-padding);
+    color: var(--cpt-modaldialog-close);
+    display: flex;
     align-items: center;
-	justify-content: center;
+    justify-content: center;
 }
 
 .component .dialog .header a.closeDefault:hover {
-	transform: rotate(90deg);
+    transform: rotate(90deg);
 }
 
 .component .dialog .body {
-	flex: 1;
-	overflow: auto;
+    flex: 1;
+    overflow: auto;
     position: relative;
 }
 
 .component .dialog .body .contents {
-	height: 100%;
-	overflow: auto;
-	display: grid;
+    height: 100%;
+    overflow: auto;
+    display: grid;
 }
 
 .component .dialog .footer {
-	height: 55px;
-	position: relative;
-	background: #f6f6f6;
-	border-top: 1px solid #ddd;
-	flex: none;
-	box-sizing: border-box;
-	padding: 0px 20px 0 20px;
+    height: var(--cpt-modaldialog-footer-height);
+    position: relative;
+    background: var(--cpt-modaldialog-footer-bg);
+    border-top: var(--cpt-modaldialog-footer-divider-width) solid var(--cpt-modaldialog-footer-divider);
+    flex: none;
+    box-sizing: border-box;
+    padding: var(--cpt-modaldialog-footer-padding-block) var(--cpt-modaldialog-footer-padding-inline);
 }

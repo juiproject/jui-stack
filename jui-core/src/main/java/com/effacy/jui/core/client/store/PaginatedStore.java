@@ -48,7 +48,7 @@ public abstract class PaginatedStore<V> extends StoreSelection<V> implements IPa
     /**
      * See {@link #getPageSize()}.
      */
-    private int pageSize = 10;
+    protected int pageSize = 10;
 
     /**
      * Indicates that a loading request in in progress (activated).
@@ -74,6 +74,29 @@ public abstract class PaginatedStore<V> extends StoreSelection<V> implements IPa
      * See {@link #setDelayInInitialLoad(int)}.
      */
     private int delayOnInitialLoad = 0;
+    
+    /************************************************************************
+     * Construction.
+     ************************************************************************/
+
+    /**
+     * Default constructor.
+     */
+    protected PaginatedStore() {
+        super();
+    }
+
+    /**
+     * Constructor with page size.
+     * 
+     * @param pageSize
+     *                 the page size to use (this will be used for the initial load
+     *                 and can be updated by calling {@link #reload(int)}).
+     */
+    protected PaginatedStore(int pageSize) {
+        super();
+        this.pageSize = pageSize;
+    }
     
     /************************************************************************
      * Event dispatchers.

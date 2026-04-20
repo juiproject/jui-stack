@@ -33,6 +33,18 @@ import elemental2.dom.Element;
  */
 public final class Theme {
 
+    /**
+     * Stable marker attribute applied to the document body once the JUI theme has
+     * been initialised. External application CSS can use this rather than relying
+     * on the generated theme class name.
+     */
+    public static final String THEME_ATTRIBUTE = "data-jui-theme";
+
+    /**
+     * Attribute used to activate an alternate palette on the document body.
+     */
+    public static final String PALETTE_ATTRIBUTE = "data-palette";
+
     /************************************************************************
      * Standard colors
      ************************************************************************/
@@ -117,44 +129,44 @@ public final class Theme {
         return Color.variable ("--jui-color-secondary90");
     }
 
-    public static Color colorTertiary05() {
-        return Color.variable ("--jui-color-tertiary05");
+    public static Color colorInk05() {
+        return Color.variable ("--jui-color-ink05");
     }
 
-    public static Color colorTertiary10() {
-        return Color.variable ("--jui-color-tertiary10");
+    public static Color colorInk10() {
+        return Color.variable ("--jui-color-ink10");
     }
 
-    public static Color colorTertiary20() {
-        return Color.variable ("--jui-color-tertiary20");
+    public static Color colorInk20() {
+        return Color.variable ("--jui-color-ink20");
     }
 
-    public static Color colorTertiary30() {
-        return Color.variable ("--jui-color-tertiary30");
+    public static Color colorInk30() {
+        return Color.variable ("--jui-color-ink30");
     }
 
-    public static Color colorTertiary40() {
-        return Color.variable ("--jui-color-tertiary40");
+    public static Color colorInk40() {
+        return Color.variable ("--jui-color-ink40");
     }
 
-    public static Color colorTertiary50() {
-        return Color.variable ("--jui-color-tertiary50");
+    public static Color colorInk50() {
+        return Color.variable ("--jui-color-ink50");
     }
 
-    public static Color colorTertiary60() {
-        return Color.variable ("--jui-color-tertiary60");
+    public static Color colorInk60() {
+        return Color.variable ("--jui-color-ink60");
     }
 
-    public static Color colorTertiary70() {
-        return Color.variable ("--jui-color-tertiary70");
+    public static Color colorInk70() {
+        return Color.variable ("--jui-color-ink70");
     }
 
-    public static Color colorTertiary80() {
-        return Color.variable ("--jui-color-tertiary80");
+    public static Color colorInk80() {
+        return Color.variable ("--jui-color-ink80");
     }
 
-    public static Color colorTertiary90() {
-        return Color.variable ("--jui-color-tertiary90");
+    public static Color colorInk90() {
+        return Color.variable ("--jui-color-ink90");
     }
 
     public static Color colorNeutral05() {
@@ -237,24 +249,52 @@ public final class Theme {
         return Color.variable ("--jui-color-error90");
     }
 
+    public static Color colorInfo05() {
+        return Color.variable ("--jui-color-info05");
+    }
+
+    public static Color colorInfo10() {
+        return Color.variable ("--jui-color-info10");
+    }
+
+    public static Color colorInfo20() {
+        return Color.variable ("--jui-color-info20");
+    }
+
+    public static Color colorInfo30() {
+        return Color.variable ("--jui-color-info30");
+    }
+
+    public static Color colorInfo40() {
+        return Color.variable ("--jui-color-info40");
+    }
+
+    public static Color colorInfo50() {
+        return Color.variable ("--jui-color-info50");
+    }
+
+    public static Color colorInfo60() {
+        return Color.variable ("--jui-color-info60");
+    }
+
+    public static Color colorInfo70() {
+        return Color.variable ("--jui-color-info70");
+    }
+
+    public static Color colorInfo80() {
+        return Color.variable ("--jui-color-info80");
+    }
+
+    public static Color colorInfo90() {
+        return Color.variable ("--jui-color-info90");
+    }
+
     public static Color colorAuxWhite() {
         return Color.variable ("--jui-color-aux-white");
     }
 
     public static Color colorAuxBlack() {
         return Color.variable ("--jui-color-aux-black");
-    }
-
-    public static Color colorAuxBlue() {
-        return Color.variable ("--jui-color-aux-blue");
-    }
-
-    public static Color colorAuxFocus1() {
-        return Color.variable ("--jui-color-aux-focus1");
-    }
-
-    public static Color colorAuxFocus2() {
-        return Color.variable ("--jui-color-aux-focus2");
     }
 
     /************************************************************************
@@ -266,6 +306,82 @@ public final class Theme {
      */
     public static void init() {
         ThemeCSS.init ();
+    }
+
+    /**
+     * A built-in alternate colour palette. Activating a palette redefines the
+     * {@code --jui-color-*} reference tokens (and, where needed, selected role
+     * tokens) through the {@code [data-palette]} attribute on the document body.
+     * Components do not need to change — they consume role and component-family
+     * tokens, which resolve against the active palette.
+     * <p>
+     * This enum is only a convenience for palettes that ship with JUI. JUI
+     * applications are free to define their own palette names in application CSS
+     * and activate them through {@link #palette(String)}.
+     */
+    public enum Palette {
+
+        /** The built-in palette (teal primary). */
+        DEFAULT (null),
+
+        /** Editorial — muted, earthen, surface-layered. */
+        EDITORIAL ("editorial");
+
+        private final String attribute;
+
+        Palette(String attribute) {
+            this.attribute = attribute;
+        }
+
+        /**
+         * The value used for the {@code data-palette} attribute, or
+         * {@code null} for the default palette (no attribute).
+         */
+        public String attribute() {
+            return attribute;
+        }
+    }
+
+    /**
+     * Activates the given palette. Setting {@link Palette#DEFAULT} or
+     * {@code null} returns to the built-in palette.
+     */
+    public static void palette(Palette palette) {
+        palette ((palette == null) ? null : palette.attribute ());
+    }
+
+    /**
+     * Activates a palette by name. This is the preferred entry point for
+     * application-defined palettes that live in external CSS such as
+     * {@code common.css}, {@code theme.css}, or {@code jui.css}.
+     * <p>
+     * Applications can define selectors such as:
+     *
+     * <pre>
+     * body[data-jui-theme][data-palette="myapp"] {
+     *     --jui-palette-primary-hue: 250;
+     * }
+     * </pre>
+     *
+     * then activate that palette with:
+     *
+     * <pre>
+     * Theme.palette ("myapp");
+     * </pre>
+     *
+     * Passing {@code null} or an empty string clears the active palette and
+     * returns to the default theme values.
+     *
+     * @param palette
+     *                the palette name, or {@code null} / empty to clear.
+     */
+    public static void palette(String palette) {
+        palette = (palette == null) ? null : palette.trim ();
+        if ((palette == null) || palette.isEmpty ()) {
+            DomGlobal.document.body.removeAttribute (PALETTE_ATTRIBUTE);
+        } else {
+            DomGlobal.document.body.setAttribute (PALETTE_ATTRIBUTE, palette);
+        }
     }
 
     /************************************************************************
@@ -338,7 +454,12 @@ public final class Theme {
     }
 
     @CssResource(value = {
-        "com/effacy/jui/ui/client/Theme.css",
+        "com/effacy/jui/ui/client/Theme.Reference.css",
+        "com/effacy/jui/ui/client/Theme.Reference.Editorial.css",
+        "com/effacy/jui/ui/client/Theme.Role.css",
+        "com/effacy/jui/ui/client/Theme.Scale.css",
+        "com/effacy/jui/ui/client/Theme.Component.css",
+        "com/effacy/jui/ui/client/Theme.Legacy.css",
         "com/effacy/jui/ui/client/Theme_Override.css"
     }, generateCssDecarations = true)
     public abstract static class ThemeCSS implements IThemeCSS {
@@ -366,6 +487,7 @@ public final class Theme {
             INIT = true;
             IThemeCSS styles = instance ();
             DomGlobal.document.body.classList.add (styles.theme ());
+            DomGlobal.document.body.setAttribute (THEME_ATTRIBUTE, "true");
             return true;
         }
 

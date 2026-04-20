@@ -23,12 +23,15 @@ import com.effacy.jui.core.client.dom.builder.Div;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
+import com.effacy.jui.core.client.dom.builder.IFragmentCSS;
 import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Color;
 import com.effacy.jui.core.client.dom.css.Colors;
+import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.ui.client.icon.FontAwesome;
+import com.google.gwt.core.client.GWT;
 
 /**
  * Displays a collection of options as selectable items in a row. Good for use
@@ -65,7 +68,7 @@ public class ChoiceSelector {
 
     /**
      * Represents a selectable option.
-     * 
+     *
      * @param label
      *                the display label.
      * @param icon
@@ -117,37 +120,76 @@ public class ChoiceSelector {
     }
 
     /**
-     * Defines a variant of the selector.
+     * Variants configure the selector purely by overriding the
+     * {@code --juiChoiceSelector-*} CSS tokens exposed by
+     * {@code ChoiceSelector.css}. Custom variants are one-liner lambdas — no
+     * additional CSS required.
      */
-    public interface Variant {
-
-        public static final Variant STANDARD = Variant.create("variant-outlined", true);
-
-        public static final Variant CONTROL = Variant.create("variant-control", false);
-
-        public String style();
-
-        public boolean dropshadow();
+    public interface Variant extends com.effacy.jui.core.client.dom.builder.Fragment.IFragmentVariant<ChoiceSelectorFragment> {
 
         /**
-         * Convenience to create an instance of a variant.
+         * Standard relief-and-shadow presentation (the CSS defaults).
          */
-        public static Variant create(String style, boolean dropshadow) {
-            return new Variant() {
-                public String style() { return style; }
-                public boolean dropshadow() { return dropshadow; }
-            };
-        }
+        public static final Variant STANDARD = fragment -> {};
+
+        /**
+         * Flat "toggle group" presentation with dividers between options and no
+         * relief / shadow. Suitable when sitting inside a control bar.
+         */
+        public static final Variant CONTROL = fragment -> fragment.css("""
+            --juiChoiceSelector-relief: 0;
+            --juiChoiceSelector-option-tb: 0.25em;
+            --juiChoiceSelector-text-weight: 600;
+            --juiChoiceSelector-option-radius: 0;
+            --juiChoiceSelector-text: var(--jui-color-neutral50);
+            --juiChoiceSelector-option-divider: 1px solid #e1e1e1;
+            --juiChoiceSelector-shadow-selected: none;
+        """);
+
+        /**
+         * Tight inline "segmented pill" presentation — soft rounded container,
+         * no outer border, small options with subtle selected tint. Suitable
+         * for embedding in toolbars or card headers where a full STANDARD
+         * presentation would be too loud.
+         */
+        public static final Variant COMPACT = fragment -> fragment.css("""
+            --juiChoiceSelector-relief: 3px;
+            --juiChoiceSelector-relief-border: transparent;
+            --juiChoiceSelector-radius: 8px;
+            --juiChoiceSelector-option-radius: 5px;
+            --juiChoiceSelector-option-tb: 0.2em;
+            --juiChoiceSelector-option-lr: 0.7em;
+            --juiChoiceSelector-text-weight: 500;
+            --juiChoiceSelector-shadow-selected: none;
+        """);
+
+        /**
+         * Classic segmented-control presentation — bordered rounded container,
+         * options share edges (no relief, no individual radius, no dividers).
+         * Selected option fills its slot with a muted tint; unselected options
+         * are transparent. Matches the "inline-flex rounded-lg border" pattern
+         * common in utility-CSS designs.
+         */
+        public static final Variant SEGMENTED = fragment -> fragment.css("""
+            --juiChoiceSelector-relief: 0;
+            --juiChoiceSelector-relief-border: var(--jui-color-neutral20);
+            --juiChoiceSelector-radius: 8px;
+            --juiChoiceSelector-option-radius: 0;
+            --juiChoiceSelector-bg: var(--jui-color-aux-white);
+            --juiChoiceSelector-bg-selected: var(--jui-color-neutral10);
+            --juiChoiceSelector-bg-hover: var(--jui-color-neutral05);
+            --juiChoiceSelector-text: var(--jui-color-neutral50);
+            --juiChoiceSelector-text-selected: var(--jui-color-neutral70);
+            --juiChoiceSelector-option-tb: 0.25em;
+            --juiChoiceSelector-option-lr: 0.7em;
+            --juiChoiceSelector-text-weight: 500;
+            --juiChoiceSelector-shadow-selected: none;
+        """);
     }
 
     public static class ChoiceSelectorFragment extends AChoiceSelectorFragment<ChoiceSelectorFragment> {}
 
     public static class AChoiceSelectorFragment<T extends AChoiceSelectorFragment<T>> extends BaseFragment<T> {
-
-        /**
-         * See {@link #variant(Variant)}.
-         */
-        protected Variant variant = Variant.STANDARD;
 
         /**
          * See {@link #option(Option)}.
@@ -160,22 +202,8 @@ public class ChoiceSelector {
         protected boolean disabled;
 
         /**
-         * Assigns a variant to the card.
-         * 
-         * @param variant
-         *                the variant.
-         * @return this fragment.
-         */
-        @SuppressWarnings("unchecked")
-        public T variant(Variant variant) {
-            if (variant != null)
-                this.variant = variant;
-            return (T) this;
-        }
-
-        /**
          * Adds an option to the choice list.
-         * 
+         *
          * @param option
          *               the option to add.
          * @return this fragment.
@@ -189,7 +217,7 @@ public class ChoiceSelector {
 
         /**
          * Conditionally adds an option to the choice list.
-         * 
+         *
          * @param condition
          *                  {@code true} if to add.
          * @param option
@@ -206,7 +234,7 @@ public class ChoiceSelector {
         /**
          * Generates a disabled version of the selector. This is a convenience to avoid
          * having to set each option to disabled.
-         * 
+         *
          * @param disabled
          *                 {@code true} to disable.
          * @return this fragment.
@@ -217,18 +245,23 @@ public class ChoiceSelector {
             return (T) this;
         }
 
+        /**
+         * Expose the CSS resource for extensions.
+         */
+        protected ILocalCSS styles() {
+            return LocalCSS.instance();
+        }
+
         @Override
         protected void buildInto(ElementBuilder root) {
-            root.style ("juiChoiceSelector", variant.style());
-            if (variant.dropshadow())
-                root.style("dropshadow");
+            root.style (styles().fragment());
             options.forEach(option -> {
                 Div.$(root).$(op -> {
                     if (option.state().disabled() || disabled) {
-                        op.style("disabled");
+                        op.style(styles().disabled());
                     } else {
                         if (option.state().active())
-                            op.style("active");
+                            op.style(styles().active());
                         if (option.handler() != null)
                             op.onclick(e -> option.handler().invoke());
                     }
@@ -244,7 +277,31 @@ public class ChoiceSelector {
                 });
             });
         }
-        
+
     }
-    
+
+    public static interface ILocalCSS extends IFragmentCSS {
+
+        String active();
+
+        String disabled();
+    }
+
+    @CssResource({
+        "com/effacy/jui/ui/client/fragments/ChoiceSelector.css",
+        "com/effacy/jui/ui/client/fragments/ChoiceSelector_Override.css"
+    })
+    public static abstract class LocalCSS implements ILocalCSS {
+
+        private static LocalCSS STYLES;
+
+        public static ILocalCSS instance() {
+            if (STYLES == null) {
+                STYLES = (LocalCSS) GWT.create (LocalCSS.class);
+                STYLES.ensureInjected ();
+            }
+            return STYLES;
+        }
+    }
+
 }

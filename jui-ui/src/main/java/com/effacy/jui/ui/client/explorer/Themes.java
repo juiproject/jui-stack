@@ -35,7 +35,7 @@ public class Themes extends SplitPanel {
         );
         addOther (InfoBlockCreator.<Integer>$ (cfg -> cfg.padding (Insets.em (2, 1.75, 2, 0.75)), builder -> {
             builder.header ("Theme", header -> {
-                header.subtitle ("Theming is applied using CSS variables defined in Theme.css. These can be modified by providing an override as per the Theme documentation (see the documentation hub).");
+                header.subtitle ("Theming is applied using the split Theme.*.css resources. These can be tuned through role, component, and --cpt-* tokens, with final overrides available through Theme_Override.css.");
             });
         })).update (ThemeRenderer.ThemeStyle.colors ().size ());
 
@@ -46,4 +46,3 @@ public class Themes extends SplitPanel {
     }
 
 }
-

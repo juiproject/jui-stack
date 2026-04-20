@@ -57,32 +57,32 @@ public class ButtonDocumentation {
             option.value (Button.Config.Behaviour.WAIT, "Display a waiting state (with a visual spinner) until the handler callback returns");
         })
         .style ("LINK", style -> {
-            style.css ("Button_Link.css","Button_Link_Override.css");
+            style.css ("Button.css","Button_Override.css");
             style.description("A simple version of the button that displays as a link rather than a formed button.");
             style.variable ("*", "Common theme variables");
         })
         .style ("OUTLINED", style -> {
-            style.css ("Button_Outlined.css","Button_Outlined_Override.css");
+            style.css ("Button.css","Button_Override.css");
             style.description("A standard button.");
             style.variable ("*", "Common theme variables");
         })
         .style ("NORMAL", style -> {
-            style.css ("Button_Normal.css","Button_Normal_Override.css");
+            style.css ("Button.css","Button_Override.css");
             style.description("A standard button.");
             style.variable ("*", "Common theme variables");
         })
         .style ("NORMAL_SUCCESS", style -> {
-            style.css ("Button_NormalSuccess.css","Button_NormalSuccess_Override.css");
+            style.css ("Button.css","Button_Override.css");
             style.description("A standard button coloured to indicate a success path.");
             style.variable ("*", "Common theme variables");
         })
         .style ("NORMAL_WARNING", style -> {
-            style.css ("Button_NormalWarning.css","Button_NormalWarning_Override.css");
+            style.css ("Button.css","Button_Override.css");
             style.description("A standard button coloured to indicate a state of wariness.");
             style.variable ("*", "Common theme variables");
         })
         .style ("NORMAL_DANGER", style -> {
-            style.css ("Button_NormalDanger.css","Button_NormalDanger_Override.css");
+            style.css ("Button.css","Button_Override.css");
             style.description("A standard button coloured to indicate a state of alertness.");
             style.variable ("*", "Common theme variables");
         })    

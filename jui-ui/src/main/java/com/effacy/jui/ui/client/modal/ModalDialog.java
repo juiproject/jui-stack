@@ -15,7 +15,6 @@
  ******************************************************************************/
 package com.effacy.jui.ui.client.modal; 
 
-import java.beans.Transient;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -162,72 +161,115 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
         /**
          * Generalized style (visual representation).
          */
-        public interface Style {
+        @FunctionalInterface
+        public interface Variant {
+
+            public static final Variant STANDARD = dialog -> {
+            };
+
+            public static final Variant SEPARATED = dialog -> {
+                dialog.css ("""
+                    --cpt-modaldialog-header-bg: var(--jui-comp-dialog-surface);
+                    --cpt-modaldialog-heading-margin-left: var(--jui-space-4);
+                    --cpt-modaldialog-heading-margin-top: var(--jui-space-4);
+                    --cpt-modaldialog-subheading-margin-inline: var(--jui-space-4);
+                    --cpt-modaldialog-subheading-padding-block-start: var(--jui-space-5);
+                    --cpt-modaldialog-subheading-padding-block-end: var(--jui-space-4);
+                    --cpt-modaldialog-subheading: var(--jui-comp-dialog-subheading);
+                    --cpt-modaldialog-icon: var(--jui-comp-dialog-icon);
+                    --cpt-modaldialog-footer-bg: var(--jui-comp-dialog-surface);
+                """);
+            };
+
+            public static final Variant UNIFORM = dialog -> {
+                dialog.css ("""
+                    --cpt-modal-z1-height-left: var(--jui-space-2);
+                    --cpt-modal-z1-height-right: 0;
+                    --cpt-modal-z1-height-top: 0;
+                    --cpt-modal-z1-height-bottom: 0;
+                    --cpt-modal-z1-slider-height-left: var(--jui-space-4);
+                    --cpt-modal-z1-slider-height-right: 0;
+                    --cpt-modal-z1-slider-height-top: 0;
+                    --cpt-modal-z1-slider-height-bottom: 0;
+                    --cpt-modal-z2-height-left: var(--jui-space-4);
+                    --cpt-modal-z2-height-right: 0;
+                    --cpt-modal-z2-height-top: 0;
+                    --cpt-modal-z2-height-bottom: 0;
+                    --cpt-modal-z2-slider-height-left: var(--jui-space-8);
+                    --cpt-modal-z2-slider-height-right: 0;
+                    --cpt-modal-z2-slider-height-top: 0;
+                    --cpt-modal-z2-slider-height-bottom: 0;
+                    --cpt-modal-z3-height-left: var(--jui-space-6);
+                    --cpt-modal-z3-height-right: 0;
+                    --cpt-modal-z3-height-top: 0;
+                    --cpt-modal-z3-height-bottom: 0;
+                    --cpt-modal-z3-slider-height-left: var(--jui-space-12);
+                    --cpt-modal-z3-slider-height-right: 0;
+                    --cpt-modal-z3-slider-height-top: 0;
+                    --cpt-modal-z3-slider-height-bottom: 0;
+                    --cpt-modal-z4-height-left: var(--jui-space-8);
+                    --cpt-modal-z4-height-right: 0;
+                    --cpt-modal-z4-height-top: 0;
+                    --cpt-modal-z4-height-bottom: 0;
+                    --cpt-modal-z5-height-left: var(--jui-space-10);
+                    --cpt-modal-z5-height-right: 0;
+                    --cpt-modal-z5-height-top: 0;
+                    --cpt-modal-z5-height-bottom: 0;
+                    --cpt-modal-z6-height-left: var(--jui-space-12);
+                    --cpt-modal-z6-height-right: 0;
+                    --cpt-modal-z6-height-top: 0;
+                    --cpt-modal-z6-height-bottom: 0;
+                    --cpt-modaldialog-header-bg: var(--jui-comp-dialog-surface);
+                    --cpt-modaldialog-heading-size: var(--jui-font-size-2xl);
+                    --cpt-modaldialog-heading-margin-left: var(--jui-space-4);
+                    --cpt-modaldialog-heading-margin-top: var(--jui-space-4);
+                    --cpt-modaldialog-subheading-margin-inline: var(--jui-space-4);
+                    --cpt-modaldialog-subheading-padding-block-start: var(--jui-space-5);
+                    --cpt-modaldialog-subheading-padding-block-end: var(--jui-space-4);
+                    --cpt-modaldialog-subheading: var(--jui-comp-dialog-subheading);
+                    --cpt-modaldialog-icon: var(--jui-comp-dialog-icon);
+                    --cpt-modaldialog-footer-bg: var(--jui-comp-dialog-surface);
+                    --cpt-modaldialog-footer-divider-width: 0;
+                """);
+            };
 
             /**
-             * The styles to apply.
+             * Provides additional configuration.
              */
-            public ILocalCSS styles();
-
-            /**
-             * Close icon to use.
-             * 
-             * @return the icon CSS.
-             */
-            default public String closeIcon() {
-                return FontAwesome.times ();
-            }
+            void configure(Config<?> dialog);
         }
 
         /**
-         * Standard styles for dialogs. Note that you can supply your own styles by
-         * implementing {@link Style}.
+         * This is for backwards compatibility. It is recommended to use
+         * {@link #variant(Variant)} instead and to implement the {@link Variant}
+         * interface for any styles. This is because it allows for more flexibility in
+         * the future (e.g. allowing multiple styles to be applied together).
          */
-        public enum ModalStyle implements Style {
+        @Deprecated
+        public enum ModalStyle implements Variant {
+            @Deprecated STANDARD, @Deprecated SEPARATED, @Deprecated UNIFORM;
 
-            /**
-             * Action bar distinguished from body.
-             */
-            STANDARD(StandardLocalCSS.instance ()),
-
-            /**
-             * Action bar separated from body.
-             */
-            SEPARATED(SeparatedLocalCSS.instance ()),
-
-            /**
-             * Action bar blends into body.
-             */
-            UNIFORM(UniformLocalCSS.instance ());
-
-            /**
-             * See {@link #styles()}.
-             */
-            private ILocalCSS styles;
-
-            /**
-             * Private constructor.
-             */
-            private ModalStyle(ILocalCSS styles) {
-                this.styles = styles;
-            }
-
-            /**
-             * {@inheritDoc}
-             *
-             * @see com.effacy.jui.core.client.modal.ModalDialog.Config.Style#styles()
-             */
+            @Deprecated
             @Override
-            public ILocalCSS styles() {
-                return styles;
+            public void configure(Config<?> dialog) {
+                switch (this) {
+                    case STANDARD:
+                        Variant.STANDARD.configure (dialog);
+                        break;
+                    case SEPARATED:
+                        Variant.SEPARATED.configure (dialog);
+                        break;
+                    case UNIFORM:
+                        Variant.UNIFORM.configure (dialog);
+                        break;
+                }
             }
-
         }
 
         /**
-         * See {@link #getStyle()}.
+         * The styles to use.
          */
-        protected Style style = ModalStyle.STANDARD;
+        protected ILocalCSS styles;
 
         /**
          * See {@link #title(String)}.
@@ -255,7 +297,7 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
         private boolean closable = true;
 
         /**
-         * See {@link #getCloseIconStyle()} (custom case).
+         * See {@link #getCloseIcon()}.
          */
         private String closeIcon;
 
@@ -413,15 +455,37 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
         }
 
         /**
+         * This is for backwards compatibility. It is recommended to use {@link #variant(Variant)}.
+         */
+        @Deprecated
+        public Config<C> style(ModalStyle variant) {
+            if (variant != null)
+                variant.configure (this);
+            return this;
+        }
+
+        /**
          * Sets the style for the dialog.
          * 
          * @param style
          *              the style.
          * @return this configuration instance.
          */
-        public Config<C> style(Style style) {
-            if (style != null)
-                this.style = style;
+        public Config<C> variant(Variant variant) {
+            if (variant != null)
+                variant.configure (this);
+            return this;
+        }
+
+        /**
+         * Sets the styles to use for the dialog.
+         *
+         * @param styles
+         *               the styles.
+         * @return this configuration instance.
+         */
+        public Config<C> styles(ILocalCSS styles) {
+            this.styles = styles;
             return this;
         }
 
@@ -591,16 +655,6 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
         }
 
         /**
-         * The style of dialog.
-         * 
-         * @return the style.
-         */
-        @Transient
-        public Style getStyle() {
-            return style;
-        }
-
-        /**
          * Getter for {@link #setTitle(String)}.
          */
         public String getTitle() {
@@ -635,10 +689,10 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
          * 
          * @return the icon style.
          */
-        public String getCloseIconStyle() {
-            if (closeIcon != null)
-                return closeIcon;
-            return getStyle ().closeIcon ();
+        public String getCloseIcon() {
+            if (closeIcon == null)
+                return FontAwesome.times();
+            return closeIcon;
         }
 
         /**
@@ -652,7 +706,7 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
 
         /**
          * The default close applies when there is no custom close icon or text. Note
-         * that {@link #getCloseIconStyle()} will return the default close icon. return
+         * that {@link #getCloseIcon()} will return the default close icon. return
          * {@code true} if the close is the default.
          */
         public boolean isCloseDefault() {
@@ -1426,7 +1480,7 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
                                             a.on (e -> closeAction (), UIEventType.ONCLICK);
                                             if (data.isCloseDefault ())
                                                 a.style (styles ().closeDefault ());
-                                            a.em ().style (data.getCloseIconStyle ());
+                                            a.em ().style (data.getCloseIcon ());
                                             if (!StringSupport.empty (data.getCloseText ()))
                                                 a.span ().text (data.getCloseText ());
                                         });
@@ -1474,7 +1528,9 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
      */
     @Override
     protected ILocalCSS styles() {
-        return config ().getStyle ().styles ();
+        if (config().styles != null)
+            return config().styles;
+        return StandardLocalCSS.instance();
     }
 
     /**
@@ -1535,60 +1591,6 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
         public static ILocalCSS instance() {
             if (STYLES == null) {
                 STYLES = (StandardLocalCSS) GWT.create (StandardLocalCSS.class);
-                STYLES.ensureInjected ();
-            }
-            return STYLES;
-        }
-    }
-
-    /**
-     * Separated CSS.
-     */
-    @CssResource({
-        IComponentCSS.COMPONENT_CSS,
-        "com/effacy/jui/ui/client/modal/Modal.css",
-        "com/effacy/jui/ui/client/modal/Modal_Override.css",
-        "com/effacy/jui/ui/client/modal/ModalDialog.css",
-        "com/effacy/jui/ui/client/modal/ModalDialog_Override.css",
-        "com/effacy/jui/ui/client/modal/ModalDialog_Separated.css",
-        "com/effacy/jui/ui/client/modal/ModalDialog_Separated_Override.css"
-    })
-    public static abstract class SeparatedLocalCSS implements ILocalCSS {
-
-        /********************************************************************
-         * Local instance
-         ********************************************************************/
-
-        private static SeparatedLocalCSS STYLES;
-
-        public static ILocalCSS instance() {
-            if (STYLES == null) {
-                STYLES = (SeparatedLocalCSS) GWT.create (SeparatedLocalCSS.class);
-                STYLES.ensureInjected ();
-            }
-            return STYLES; 
-        }
-    }
-
-    /**
-     * Uniform CSS.
-     */
-    @CssResource({
-        IComponentCSS.COMPONENT_CSS,
-        "com/effacy/jui/ui/client/modal/Modal.css",
-        "com/effacy/jui/ui/client/modal/Modal_Override.css",
-        "com/effacy/jui/ui/client/modal/ModalDialog.css",
-        "com/effacy/jui/ui/client/modal/ModalDialog_Override.css",
-        "com/effacy/jui/ui/client/modal/ModalDialog_Uniform.css",
-        "com/effacy/jui/ui/client/modal/ModalDialog_Uniform_Override.css"
-    })
-    public static abstract class UniformLocalCSS implements ILocalCSS {
-
-        private static UniformLocalCSS STYLES;
-
-        public static ILocalCSS instance() {
-            if (STYLES == null) {
-                STYLES = (UniformLocalCSS) GWT.create (UniformLocalCSS.class);
                 STYLES.ensureInjected ();
             }
             return STYLES;

@@ -1,32 +1,43 @@
+.component {
+    --cpt-table-header-bg: var(--jui-comp-table-header-surface);
+    --cpt-table-header-border: var(--jui-comp-table-border);
+    --cpt-table-row-border: var(--jui-comp-table-row-border);
+    --cpt-table-header-text: var(--jui-comp-table-heading-text);
+    --cpt-table-header-icon: var(--jui-comp-table-heading-icon);
+    --cpt-table-header-padding: 0.75em 1em 0.5em 1em;
+    --cpt-table-cell-padding: 0.25em 1em;
+}
+
 .component .table thead tr {
-	background: #fafafa;
+    background: var(--cpt-table-header-bg);
 }
 
 .component .table thead th {
-	padding: 0.75em 1em 0.5em 1em;
-	border-bottom: 1px solid #ddd;
+    padding: var(--cpt-table-header-padding);
+    border-bottom: 1px solid var(--cpt-table-header-border);
 }
 
 .component .table thead th div {
-	font-weight: 500;
+    font-weight: var(--jui-font-weight-medium);
+    color: var(--cpt-table-header-text);
 }
 
 .component .table thead th div em.icon {
-	color: #999;
+    color: var(--cpt-table-header-icon);
 }
 
 .component .table thead th div span.header {
-	white-space: nowrap;
-	text-overflow: ellipsis;
-	overflow: hidden;
-	user-select: none;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    user-select: none;
 }
 
 .component .table tbody tr td {
-	padding: 0.25em 1em;
-	border-bottom: 1px solid #f1f1f1;
+    padding: var(--cpt-table-cell-padding);
+    border-bottom: 1px solid var(--cpt-table-row-border);
 }
 
 .component .table tbody tr:last-child td {
-	border-bottom: none;
+    border-bottom: none;
 }

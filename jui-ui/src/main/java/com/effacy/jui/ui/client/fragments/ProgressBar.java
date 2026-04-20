@@ -333,7 +333,7 @@ public class ProgressBar extends Fragment<ProgressBar> {
             --juiProgressBar-bar-border-radius: 10px;
             --juiProgressBar-bar-bg: #fff;
             --juiProgressBar-bar-fg: var(--jui-color-success10);
-            --juiProgressBar-bar-height: 100%;
+            --juiProgressBar-bar-height: 10px;
             --juiProgressBar-commentary-vertical-gap: 0.5em;
             --juiProgressBar-commentary-gap: 2em;
             --juiProgressBar-commentary-color: var(--jui-color-neutral50);
@@ -369,9 +369,9 @@ public class ProgressBar extends Fragment<ProgressBar> {
             border-radius: var(--juiProgressBar-bar-border-radius);
             overflow: hidden;
             background: var(--juiProgressBar-bar-bg);
+            height: var(--juiProgressBar-bar-height);
         }
         .fragment .outer .bar > div {
-            height: var(--juiProgressBar-bar-height);
             background: var(--juiProgressBar-bar-fg);
             height: 100%;
         }

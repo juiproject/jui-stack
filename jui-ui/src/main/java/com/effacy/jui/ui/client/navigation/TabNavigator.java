@@ -99,6 +99,16 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
     }
 
     /**
+     * Describes a tab for the purposes of {@link #handleNavigation(Consumer)}.
+     * <p>
+     * {@code group} is the label of the containing group (may be {@code null}
+     * for a silent/no-label group). {@code label} is the tab's display label,
+     * {@code reference} is the tab's reference id and {@code icon} is the
+     * tab's icon CSS class (may be {@code null}).
+     */
+    public static record NavigationDescriptor(String group, String label, String reference, String icon) {}
+
+    /**
      * Configuration for the panel.
      */
     public static class Config extends Component.Config {
@@ -966,12 +976,28 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
 
     /**
      * Activates the specified tab.
-     * 
+     *
      * @param ref
      *            the reference of the tab to activate.
      */
     public void activate(String ref) {
         _activate (ref);
+    }
+
+    /**
+     * Registers a handler invoked whenever the active tab changes. The handler
+     * receives a {@link NavigationDescriptor} with the group label, tab label
+     * and reference of the newly activated tab.
+     * <p>
+     * Fires on state change only — re-activating the already-active tab does
+     * not re-invoke the handler.
+     *
+     * @param handler
+     *                the handler to register.
+     */
+    public void handleNavigation(Consumer<NavigationDescriptor> handler) {
+        if (handler != null)
+            navigationHandlers.add (handler);
     }
 
     /**
@@ -1271,6 +1297,11 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         }
     }
 
+
+    /**
+     * Handlers registered via {@link #handleNavigation(Consumer)}.
+     */
+    private List<Consumer<NavigationDescriptor>> navigationHandlers = new ArrayList<> ();
 
     /**
      * Pre-render activate.
@@ -1688,6 +1719,7 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
             return false;
         if (!tabs.get (ref).enabled)
             return false;
+        boolean alreadyActive = tabs.get (ref).isActive ();
         tabs.forEach ((key, tab) -> {
             if (ref.equals (key))
                 tab.activate ();
@@ -1699,7 +1731,32 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         if (Debug.isTestMode())
             getRoot().setAttribute("test-state", ref);
 
+        // Notify navigation handlers on state change only.
+        if (!alreadyActive)
+            _fireNavigation (ref);
+
         return true;
+    }
+
+    /**
+     * Fires {@link #navigationHandlers} for the given tab reference.
+     */
+    private void _fireNavigation(String ref) {
+        if (navigationHandlers.isEmpty ())
+            return;
+        TabConfig tabCfg = config ().tabs.findTab (ref);
+        if (tabCfg == null)
+            return;
+        String groupLabel = null;
+        for (TabGroupConfig grp : config ().tabs.getTabGroups ()) {
+            if (grp.getTabs ().contains (tabCfg)) {
+                groupLabel = grp.label;
+                break;
+            }
+        }
+        NavigationDescriptor desc = new NavigationDescriptor (groupLabel, tabCfg.label, ref, tabCfg.icon);
+        for (Consumer<NavigationDescriptor> h : navigationHandlers)
+            h.accept (desc);
     }
 
     /**

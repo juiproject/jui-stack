@@ -1,0 +1,66 @@
+.fragment {
+    --frag-btn-margin: 2px;
+    --frag-btn-base: var(--jui-btn-bg);
+    --frag-btn-border: var(--frag-btn-base);
+    --frag-btn-border-width: 1px;
+    --frag-btn-radius: var(--jui-btn-border-radius);
+    --frag-btn-text: var(--jui-color-aux-white);
+    --frag-btn-text-hover: var(--frag-btn-text);
+    --frag-btn-text-weight: 400;
+    --frag-btn-bg: var(--frag-btn-base);
+    --frag-btn-bg-hover: var(--jui-btn-bg-hover);
+    --frag-btn-padding-tb: 0.45em;
+    --frag-btn-padding-lr: 0.75em;
+    --frag-btn-align: center;
+    --frag-btn-hover-text-decoration: none;
+    --frag-btn-hover-bg: var(--frag-btn-bg-hover);
+}
+
+.fragment {
+    justify-content: center;
+    align-items: var(--frag-btn-align);
+    padding: var(--frag-btn-padding-tb) var(--frag-btn-padding-lr);
+    letter-spacing: 0.02em;
+    font-weight: var(--frag-btn-text-weight);
+    cursor: pointer;
+    display: inline-flex;
+    text-wrap-mode: nowrap;
+    gap: 0.5em;
+    border: var(--frag-btn-border-width) solid var(--frag-btn-border);
+    border-radius: var(--frag-btn-radius);
+    color: var(--frag-btn-text);
+    background-color: var(--frag-btn-bg);
+    margin: var(--frag-btn-margin);
+    position: relative;
+}
+
+.fragment.left {
+    justify-content: left;
+}
+
+.fragment.running .label {
+    visibility: hidden;
+}
+
+.fragment .runningpart {
+    visibility: hidden;
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fragment.running .runningpart {
+    visibility: visible;
+}
+
+.fragment:hover:not(.running) {
+    background-color: var(--frag-btn-hover-bg);
+    color: var(--frag-btn-text-hover);
+}
+
+.fragment:hover:not(.running) .label {
+    text-decoration: var(--frag-btn-hover-text-decoration);
+}

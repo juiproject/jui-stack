@@ -26,7 +26,7 @@ import com.effacy.jui.ui.client.control.SelectionGroupControl;
 import com.effacy.jui.ui.client.control.builder.ControlForm;
 import com.effacy.jui.ui.client.control.builder.ControlFormCreator;
 import com.effacy.jui.ui.client.modal.Modal.Type;
-import com.effacy.jui.ui.client.modal.ModalDialog.Config.ModalStyle;
+import com.effacy.jui.ui.client.modal.ModalDialog;
 import com.effacy.jui.ui.client.modal.ModalDialogCreator;
 import com.effacy.jui.ui.client.modal.ModalDialogCreator.IDialogOpener;
 
@@ -50,7 +50,7 @@ public class ControlPanel01 extends ControlForm<Void,Void> implements IProcessab
     public static void open(Consumer<Optional<Long>> cb) {
         if (DIALOG == null)
             DIALOG = ModalDialogCreator.<Void, Long, ControlPanel01>dialog (new ControlPanel01 (), cfg -> {
-                cfg.style (ModalStyle.UNIFORM) 
+                cfg.variant (ModalDialog.Config.Variant.UNIFORM)
                     .testId("controlpanel001_dialog") 
                     .title("Create project") 
                     .type(Type.CENTER) 

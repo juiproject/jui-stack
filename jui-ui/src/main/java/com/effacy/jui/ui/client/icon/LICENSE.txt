@@ -1,1 +1,15 @@
-The FontAwesome assets (font files and CSS) are licensed as per https://github.com/FortAwesome/Font-Awesome.
+The icon packs bundled with JUI carry their own upstream licences — they are
+NOT governed by the Apache 2.0 licence that covers the rest of jui-stack.
+
+  Font Awesome Free
+    Icons under CC BY 4.0, fonts under SIL OFL 1.1, code under MIT.
+    See https://github.com/FortAwesome/Font-Awesome
+
+  Remix Icon
+    Remix Icon License v1.0 (custom, not Apache 2.0 — changed Jan 2026).
+    The full licence text ships as REMIX_LICENSE.txt in the resource package
+    com/effacy/jui/ui/client/icon and must travel with any redistribution.
+    See https://github.com/Remix-Design/RemixIcon
+
+The Java binding classes (FontAwesome.java, RemixIcon.java) are JUI source and
+covered by the project-wide Apache 2.0 licence.

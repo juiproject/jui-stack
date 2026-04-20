@@ -1,5 +1,7 @@
 .component {
     --cpt-tabbedpanel-width: 4.5em;
+    --cpt-tabbedpanel-vi-tooltip-bg: #333;
+    --cpt-tabbedpanel-vi-tooltip-text: #fff;
 }
 
 .component .tabs  {
@@ -23,15 +25,16 @@
 
 .component .tabs  .group ul > li > div > span {
     display: none;
-    background-color: #333;
+    background-color: var(--cpt-tabbedpanel-vi-tooltip-bg);
     top: -3px;
     left: 125%;
-    color: #fff;
+    color: var(--cpt-tabbedpanel-vi-tooltip-text);
     z-index: 1;
     font-size: 0.9em;
     padding: 0.25em 0.75em;
     border-radius: 4px;
     opacity: 0;
+    white-space: nowrap;
 }
 
 .component .tabs  .group ul > li:hover > div > span {
@@ -39,6 +42,13 @@
     position: absolute;
     opacity: 1;
     animation: jui-tabset-fade 0.5s;
+    color: var(--cpt-tabbedpanel-vi-tooltip-text);
+    background-color: var(--cpt-tabbedpanel-vi-tooltip-bg);
+}
+
+.component .tabs .group ul > li.active > div > span,
+.component .tabs .group ul > li:not(.active):hover > div > span {
+    color: var(--cpt-tabbedpanel-vi-tooltip-text);
 }
 
 @keyframes jui-tabset-fade {

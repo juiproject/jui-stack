@@ -42,7 +42,7 @@ import com.effacy.jui.ui.client.control.TextControl;
 import com.effacy.jui.ui.client.control.TextControlCreator;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.effacy.jui.ui.client.modal.Modal.Type;
-import com.effacy.jui.ui.client.modal.ModalDialog.Config.ModalStyle;
+import com.effacy.jui.ui.client.modal.ModalDialog;
 import com.effacy.jui.ui.client.modal.ModalDialogCreator;
 import com.effacy.jui.ui.client.modal.ModalDialogCreator.IDialogOpener;
 import com.effacy.jui.ui.client.modal.ProgressSequence.Config.State;
@@ -117,10 +117,10 @@ public class Lesson5c extends Panel implements INavigationAware, IResetable {
         public static void open() {
             if (DIALOG == null)
                 DIALOG = ModalDialogCreator.<Void, Void, MultiStepDialog1>dialog (new MultiStepDialog1 (), cfg -> {
-                    cfg.style (ModalStyle.SEPARATED)
-                            .title ("Multistep dialog 1")
-                            .type (Type.CENTER)
-                            .width (Length.px (500));
+                    cfg.variant (ModalDialog.Config.Variant.SEPARATED)
+                        .title ("Multistep dialog 1")
+                        .type (Type.CENTER)
+                        .width (Length.px (500));
                 }, b -> {
                     b.cancel ();
                     b.button ((c, btn) -> {
@@ -304,10 +304,10 @@ public class Lesson5c extends Panel implements INavigationAware, IResetable {
         public static void open() {
             if (DIALOG == null)
                 DIALOG = ModalDialogCreator.<Void, Void, MultiStepDialog2>dialog (new MultiStepDialog2 (), cfg -> {
-                    cfg.style (ModalStyle.SEPARATED)
-                            .title ("Multistep dialog 2")
-                            .type (Type.CENTER)
-                            .width (Length.px (500));
+                    cfg.variant (ModalDialog.Config.Variant.SEPARATED)
+                        .title ("Multistep dialog 2")
+                        .type (Type.CENTER)
+                        .width (Length.px (500));
                 }, b -> {
                     b.cancel ();
                     b.button ((c, btn) -> {
@@ -481,10 +481,10 @@ public class Lesson5c extends Panel implements INavigationAware, IResetable {
         public static void open(Consumer<Optional<String>> callback) {
             if (DIALOG == null)
                 DIALOG = ModalDialogCreator.<Void, String, MultiStepDialog3>dialog (new MultiStepDialog3 (), cfg -> {
-                    cfg.style (ModalStyle.SEPARATED)
-                            .title ("Multistep dialog 3")
-                            .type (Type.CENTER)
-                            .width (Length.px (500));
+                    cfg.variant (ModalDialog.Config.Variant.SEPARATED)
+                        .title ("Multistep dialog 3")
+                        .type (Type.CENTER)
+                        .width (Length.px (500));
                 }, b -> {
                     b.cancel ();
                     b.button ((c, btn) -> {
@@ -689,10 +689,10 @@ public class Lesson5c extends Panel implements INavigationAware, IResetable {
         public static void open(Consumer<Optional<String>> callback) {
             if (DIALOG == null)
                 DIALOG = ModalDialogCreator.<Void, String, MultiStepDialog4>dialog (new MultiStepDialog4 (), cfg -> {
-                    cfg.style (ModalStyle.SEPARATED)
-                            .title ("Multistep dialog 4")
-                            .type (Type.CENTER)
-                            .width (Length.px (500));
+                    cfg.variant (ModalDialog.Config.Variant.SEPARATED)
+                        .title ("Multistep dialog 4")
+                        .type (Type.CENTER)
+                        .width (Length.px (500));
                 }, b -> {
                     b.cancel ();
                     b.button ((c, btn) -> {

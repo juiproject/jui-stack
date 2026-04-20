@@ -1,4 +1,60 @@
 .component {
+  --cpt-modal-height-top: 40px;
+  --cpt-modal-height-right: 0;
+  --cpt-modal-height-bottom: 40px;
+  --cpt-modal-height-left: 0;
+  --cpt-modal-slider-height-top: 0;
+  --cpt-modal-slider-height-right: 0;
+  --cpt-modal-slider-height-bottom: 0;
+  --cpt-modal-slider-height-left: 0;
+  --cpt-modal-z1-height-top: 32px;
+  --cpt-modal-z1-height-right: -8px;
+  --cpt-modal-z1-height-bottom: 48px;
+  --cpt-modal-z1-height-left: 8px;
+  --cpt-modal-z1-slider-height-top: var(--cpt-modal-slider-height-top);
+  --cpt-modal-z1-slider-height-right: var(--cpt-modal-slider-height-right);
+  --cpt-modal-z1-slider-height-bottom: var(--cpt-modal-slider-height-bottom);
+  --cpt-modal-z1-slider-height-left: var(--cpt-modal-slider-height-left);
+  --cpt-modal-z2-height-top: 24px;
+  --cpt-modal-z2-height-right: -16px;
+  --cpt-modal-z2-height-bottom: 56px;
+  --cpt-modal-z2-height-left: 16px;
+  --cpt-modal-z2-slider-height-top: var(--cpt-modal-slider-height-top);
+  --cpt-modal-z2-slider-height-right: var(--cpt-modal-slider-height-right);
+  --cpt-modal-z2-slider-height-bottom: var(--cpt-modal-slider-height-bottom);
+  --cpt-modal-z2-slider-height-left: var(--cpt-modal-slider-height-left);
+  --cpt-modal-z3-height-top: 18px;
+  --cpt-modal-z3-height-right: -24px;
+  --cpt-modal-z3-height-bottom: 62px;
+  --cpt-modal-z3-height-left: 24px;
+  --cpt-modal-z3-slider-height-top: var(--cpt-modal-slider-height-top);
+  --cpt-modal-z3-slider-height-right: var(--cpt-modal-slider-height-right);
+  --cpt-modal-z3-slider-height-bottom: var(--cpt-modal-slider-height-bottom);
+  --cpt-modal-z3-slider-height-left: var(--cpt-modal-slider-height-left);
+  --cpt-modal-z4-height-top: 12px;
+  --cpt-modal-z4-height-right: -32px;
+  --cpt-modal-z4-height-bottom: 68px;
+  --cpt-modal-z4-height-left: 32px;
+  --cpt-modal-z4-slider-height-top: var(--cpt-modal-slider-height-top);
+  --cpt-modal-z4-slider-height-right: var(--cpt-modal-slider-height-right);
+  --cpt-modal-z4-slider-height-bottom: var(--cpt-modal-slider-height-bottom);
+  --cpt-modal-z4-slider-height-left: var(--cpt-modal-slider-height-left);
+  --cpt-modal-z5-height-top: 8px;
+  --cpt-modal-z5-height-right: -40px;
+  --cpt-modal-z5-height-bottom: 72px;
+  --cpt-modal-z5-height-left: 40px;
+  --cpt-modal-z5-slider-height-top: var(--cpt-modal-slider-height-top);
+  --cpt-modal-z5-slider-height-right: var(--cpt-modal-slider-height-right);
+  --cpt-modal-z5-slider-height-bottom: var(--cpt-modal-slider-height-bottom);
+  --cpt-modal-z5-slider-height-left: var(--cpt-modal-slider-height-left);
+  --cpt-modal-z6-height-top: 4px;
+  --cpt-modal-z6-height-right: -48px;
+  --cpt-modal-z6-height-bottom: 76px;
+  --cpt-modal-z6-height-left: 48px;
+  --cpt-modal-z6-slider-height-top: var(--cpt-modal-slider-height-top);
+  --cpt-modal-z6-slider-height-right: var(--cpt-modal-slider-height-right);
+  --cpt-modal-z6-slider-height-bottom: var(--cpt-modal-slider-height-bottom);
+  --cpt-modal-z6-slider-height-left: var(--cpt-modal-slider-height-left);
   display: none;
 }
 
@@ -66,18 +122,18 @@
 
 .component .outer .inner .height {
   position: absolute;
-  top: 40px;
-  bottom: 40px;
-  left: 0;
-  right: 0;
+  top: var(--cpt-modal-height-top);
+  bottom: var(--cpt-modal-height-bottom);
+  left: var(--cpt-modal-height-left);
+  right: var(--cpt-modal-height-right);
 }
 
 .component.slider .outer .inner .height {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  top: var(--cpt-modal-slider-height-top);
+  bottom: var(--cpt-modal-slider-height-bottom);
+  left: var(--cpt-modal-slider-height-left);
+  right: var(--cpt-modal-slider-height-right);
 }
 
 .component .outer .inner .wrap {
@@ -99,10 +155,17 @@
 }
 
 .component.z1 .outer .inner .height {
-  left: 8px;
-  right: -8px;
-  top: 32px;
-  bottom: 48px;
+  left: var(--cpt-modal-z1-height-left);
+  right: var(--cpt-modal-z1-height-right);
+  top: var(--cpt-modal-z1-height-top);
+  bottom: var(--cpt-modal-z1-height-bottom);
+}
+
+.component.z1 .outer .inner .slider .height {
+  left: var(--cpt-modal-z1-slider-height-left);
+  right: var(--cpt-modal-z1-slider-height-right);
+  top: var(--cpt-modal-z1-slider-height-top);
+  bottom: var(--cpt-modal-z1-slider-height-bottom);
 }
 
 .component.z2 .outer, .component.z2 .outer .inner {
@@ -110,10 +173,17 @@
 }
 
 .component.z2 .outer .inner .height {
-  left: 16px;
-  right: -16px;
-  top: 24px;
-  bottom: 56px;
+  left: var(--cpt-modal-z2-height-left);
+  right: var(--cpt-modal-z2-height-right);
+  top: var(--cpt-modal-z2-height-top);
+  bottom: var(--cpt-modal-z2-height-bottom);
+}
+
+.component.z2 .outer .inner .slider .height {
+  left: var(--cpt-modal-z2-slider-height-left);
+  right: var(--cpt-modal-z2-slider-height-right);
+  top: var(--cpt-modal-z2-slider-height-top);
+  bottom: var(--cpt-modal-z2-slider-height-bottom);
 }
 
 .component.z3 .outer, .component.z3 .outer .inner {
@@ -121,10 +191,17 @@
 }
 
 .component.z3 .outer .inner .height {
-  left: 24px;
-  right: -24px;
-  top: 18px;
-  bottom: 62px;
+  left: var(--cpt-modal-z3-height-left);
+  right: var(--cpt-modal-z3-height-right);
+  top: var(--cpt-modal-z3-height-top);
+  bottom: var(--cpt-modal-z3-height-bottom);
+}
+
+.component.z3 .outer .inner .slider .height {
+  left: var(--cpt-modal-z3-slider-height-left);
+  right: var(--cpt-modal-z3-slider-height-right);
+  top: var(--cpt-modal-z3-slider-height-top);
+  bottom: var(--cpt-modal-z3-slider-height-bottom);
 }
 
 .component.z4 .outer, .component.z4 .outer .inner {
@@ -132,10 +209,17 @@
 }
 
 .component.z4 .outer .inner .height {
-  left: 32px;
-  right: -32px;
-  top: 12px;
-  bottom: 68px;
+  left: var(--cpt-modal-z4-height-left);
+  right: var(--cpt-modal-z4-height-right);
+  top: var(--cpt-modal-z4-height-top);
+  bottom: var(--cpt-modal-z4-height-bottom);
+}
+
+.component.z4 .outer .inner .slider .height {
+  left: var(--cpt-modal-z4-slider-height-left);
+  right: var(--cpt-modal-z4-slider-height-right);
+  top: var(--cpt-modal-z4-slider-height-top);
+  bottom: var(--cpt-modal-z4-slider-height-bottom);
 }
 
 .component.z5 .outer, .component.z5 .outer .inner {
@@ -143,10 +227,17 @@
 }
 
 .component.z5 .outer .inner .height {
-  left: 40px;
-  right: -40px;
-  top: 8px;
-  bottom: 72px;
+  left: var(--cpt-modal-z5-height-left);
+  right: var(--cpt-modal-z5-height-right);
+  top: var(--cpt-modal-z5-height-top);
+  bottom: var(--cpt-modal-z5-height-bottom);
+}
+
+.component.z5 .outer .inner .slider .height {
+  left: var(--cpt-modal-z5-slider-height-left);
+  right: var(--cpt-modal-z5-slider-height-right);
+  top: var(--cpt-modal-z5-slider-height-top);
+  bottom: var(--cpt-modal-z5-slider-height-bottom);
 }
 
 .component.z6 .outer, .component.z6 .outer .inner {
@@ -154,10 +245,17 @@
 }
 
 .component.z6 .outer .inner .height {
-  left: 48px;
-  right: -48px;
-  top: 4px;
-  bottom: 76px;
+  left: var(--cpt-modal-z6-height-left);
+  right: var(--cpt-modal-z6-height-right);
+  top: var(--cpt-modal-z6-height-top);
+  bottom: var(--cpt-modal-z6-height-bottom);
+}
+
+.component.z6 .outer .inner .slider .height {
+  left: var(--cpt-modal-z6-slider-height-left);
+  right: var(--cpt-modal-z6-slider-height-right);
+  top: var(--cpt-modal-z6-slider-height-top);
+  bottom: var(--cpt-modal-z6-slider-height-bottom);
 }
 
 .blur {

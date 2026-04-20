@@ -1,0 +1,137 @@
+.component {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75em;
+}
+.component .preview {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+}
+.component .avatarImage {
+    width: 4em;
+    height: 4em;
+    border-radius: 50%;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.component .avatarImage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.component .avatarImage em {
+    font-size: 1.8em;
+    color: #bbb;
+}
+.component .actions {
+    display: flex;
+    gap: 1em;
+}
+.component .changeLink {
+    color: var(--jui-color-primary, #0066cc);
+    cursor: pointer;
+    font-size: 0.9em;
+}
+.component .changeLink:hover {
+    text-decoration: underline;
+}
+.component .removeLink {
+    color: var(--jui-color-neutral60, #888);
+    cursor: pointer;
+    font-size: 0.9em;
+}
+.component .removeLink:hover {
+    text-decoration: underline;
+    color: var(--jui-color-error60, #c00);
+}
+.component .panel {
+    border: 1px solid #e0e0e0;
+    border-radius: 0.5em;
+    padding: 1em;
+    background: #fafafa;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+}
+.component .sectionLabel {
+    display: block;
+    font-size: 0.85em;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 0.5em;
+}
+.component .stockGrid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.5em;
+}
+.component .stockItem {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s;
+    background: #fff;
+}
+.component .stockItem:hover {
+    border-color: var(--jui-color-primary, #0066cc);
+    transform: scale(1.1);
+}
+.component .dropZone {
+    border: 2px dashed #ccc;
+    border-radius: 0.5em;
+    padding: 1.5em;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: border-color 0.15s, background 0.15s;
+}
+.component .dropZone:hover {
+    border-color: var(--jui-color-primary, #0066cc);
+    background: #f5f5ff;
+}
+.component .dropZone.dragover {
+    border-color: var(--jui-color-primary, #0066cc);
+    background: #eef0ff;
+}
+.component .cropCanvasWrap {
+    display: flex;
+    justify-content: center;
+}
+.component .cropCanvasWrap canvas {
+    cursor: crosshair;
+    border-radius: 0.25em;
+}
+.component .cropActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1em;
+    margin-top: 0.5em;
+}
+.component .cropApplyLink {
+    color: var(--jui-color-primary, #0066cc);
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+.component .cropApplyLink:hover {
+    text-decoration: underline;
+}
+.component .cropInstructions {
+    font-size: 0.85em;
+    color: #888;
+    margin: 0 0 0.5em 0;
+}
+.component.read_only .changeLink,
+.component.read_only .removeLink,
+.component.disabled .changeLink,
+.component.disabled .removeLink {
+    display: none;
+}

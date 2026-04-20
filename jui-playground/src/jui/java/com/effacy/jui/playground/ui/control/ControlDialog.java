@@ -19,7 +19,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import com.effacy.jui.core.client.IProcessable;
-import com.effacy.jui.core.client.control.IControl;
 import com.effacy.jui.core.client.dom.css.Insets;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.platform.util.client.ListSupport;
@@ -30,7 +29,7 @@ import com.effacy.jui.ui.client.control.SelectionGroupControl;
 import com.effacy.jui.ui.client.control.builder.ControlForm;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.effacy.jui.ui.client.modal.Modal.Type;
-import com.effacy.jui.ui.client.modal.ModalDialog.Config.ModalStyle;
+import com.effacy.jui.ui.client.modal.ModalDialog;
 import com.effacy.jui.ui.client.modal.ModalDialogCreator;
 import com.effacy.jui.ui.client.modal.ModalDialogCreator.IDialogOpener;
 import com.effacy.jui.validation.model.validator.Validators;
@@ -55,7 +54,7 @@ public class ControlDialog extends ControlForm<Void,Void> implements IProcessabl
     public static void open(Consumer<Optional<Long>> cb) {
         if (DIALOG == null)
             DIALOG = ModalDialogCreator.<Void, Long, ControlDialog>dialog (new ControlDialog (), cfg -> {
-                cfg.style (ModalStyle.UNIFORM) 
+                cfg.variant (ModalDialog.Config.Variant.UNIFORM) 
                     .testId("controldialog") 
                     .title("Create project") 
                     .type(Type.CENTER) 

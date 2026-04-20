@@ -17,6 +17,7 @@ package com.effacy.jui.ui.client;
 
 
 import com.effacy.jui.ui.client.icon.FontAwesome;
+import com.effacy.jui.ui.client.icon.RemixIcon;
 import com.google.gwt.core.client.EntryPoint;
 
 /**
@@ -28,6 +29,7 @@ public class Initialiser implements EntryPoint {
     public void onModuleLoad() {
         Theme.init ();
         FontAwesome.inject ();
+        RemixIcon.inject ();
     }
 }
 

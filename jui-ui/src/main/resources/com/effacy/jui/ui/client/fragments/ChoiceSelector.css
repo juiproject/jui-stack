@@ -1,0 +1,68 @@
+.fragment {
+    --juiChoiceSelector-relief-border: var(--jui-color-neutral20);
+    --juiChoiceSelector-relief: 3px;
+    --juiChoiceSelector-radius: 6px;
+    --juiChoiceSelector-shadow: var(--jui-color-neutral30);
+    --juiChoiceSelector-shadow-selected: 0 0 6px var(--juiChoiceSelector-shadow);
+    --juiChoiceSelector-bg: var(--jui-color-neutral10);
+    --juiChoiceSelector-bg-hover: var(--jui-color-neutral20);
+    --juiChoiceSelector-bg-selected: var(--jui-color-aux-white);
+    --juiChoiceSelector-text: var(--jui-color-neutral60);
+    --juiChoiceSelector-text-hover: var(--juiChoiceSelector-text);
+    --juiChoiceSelector-text-selected: var(--jui-color-neutral90);
+    --juiChoiceSelector-text-weight: 300;
+    --juiChoiceSelector-option-lr: 1em;
+    --juiChoiceSelector-option-tb: 0.5em;
+    --juiChoiceSelector-option-radius: var(--juiChoiceSelector-radius);
+    --juiChoiceSelector-option-divider: none;
+    --juiChoiceSelector-opacity-disabled: 0.4;
+
+    display: flex;
+    width: fit-content;
+    gap: var(--juiChoiceSelector-relief);
+    padding: var(--juiChoiceSelector-relief);
+    border: 1px solid var(--juiChoiceSelector-relief-border);
+    border-radius: var(--juiChoiceSelector-radius);
+    background: var(--juiChoiceSelector-bg);
+    color: var(--juiChoiceSelector-text);
+    overflow: hidden;
+}
+
+.fragment > div {
+    padding: var(--juiChoiceSelector-option-tb) var(--juiChoiceSelector-option-lr);
+    font-weight: var(--juiChoiceSelector-text-weight);
+    color: var(--juiChoiceSelector-text);
+    border-radius: var(--juiChoiceSelector-option-radius);
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fragment > div:not(:first-child) {
+    border-left: var(--juiChoiceSelector-option-divider);
+}
+
+.fragment > div.active {
+    background: var(--juiChoiceSelector-bg-selected);
+    color: var(--juiChoiceSelector-text-selected);
+    box-shadow: var(--juiChoiceSelector-shadow-selected);
+}
+
+.fragment > div:not(.active):not(.disabled):hover {
+    background: var(--juiChoiceSelector-bg-hover);
+    color: var(--juiChoiceSelector-text-hover);
+    cursor: pointer;
+}
+
+.fragment > div > em {
+    margin-right: 0.5em;
+}
+
+.fragment > div.disabled {
+    cursor: no-drop;
+}
+
+.fragment > div.disabled > span {
+    opacity: var(--juiChoiceSelector-opacity-disabled);
+}

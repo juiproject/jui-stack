@@ -26,6 +26,7 @@ import com.effacy.jui.core.client.navigation.INavigationHandlerParent;
 import com.effacy.jui.core.client.navigation.NavigationSupport;
 import com.effacy.jui.platform.core.client.ApplicationEntryPoint;
 import com.effacy.jui.platform.util.client.ListSupport;
+import com.effacy.jui.ui.client.Theme;
 
 import elemental2.dom.DomGlobal;
 
@@ -48,6 +49,8 @@ public class PlaygroundApp implements ApplicationEntryPoint {
     public void onApplicationLoad() {
         // Debugging.
         CachedDataRenderer.DEBUG = false;
+
+        Theme.palette(Theme.Palette.EDITORIAL);
 
         // Configuration.
         //DiagramBlock.BASE_URL = "/uml/";

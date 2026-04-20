@@ -23,6 +23,7 @@ import com.effacy.jui.ui.client.control.SelectionControlDocumentation;
 import com.effacy.jui.ui.client.control.SelectionGroupControlDocumentation;
 import com.effacy.jui.ui.client.control.TextAreaControlDocumentation;
 import com.effacy.jui.ui.client.control.TextControlDocumentation;
+import com.effacy.jui.ui.client.fragments.BtnDocumentation;
 import com.effacy.jui.ui.client.fragments.CardDocumentation;
 import com.effacy.jui.ui.client.fragments.DividerDocumentation;
 import com.effacy.jui.ui.client.fragments.IconDocumentation;
@@ -80,6 +81,7 @@ public class ComponentExplorer extends TabNavigator {
     }
 
     public static void fragments(TabNavigator panel) {
+        panel.tab("btn", "Btn", BtnDocumentation.documentation ());
         panel.tab("card", "Card", CardDocumentation.documentation ());
         panel.tab("divider", "Divider", DividerDocumentation.documentation ());
         panel.tab("icon", "Icon", IconDocumentation.documentation ());
@@ -87,6 +89,7 @@ public class ComponentExplorer extends TabNavigator {
     }
 
     public static void fragments(TabNavigator.Config panel) {
+        panel.tab("btn", "Btn", BtnDocumentation.documentation ());
         panel.tab("card", "Card", CardDocumentation.documentation ());
         panel.tab("divider", "Divider", DividerDocumentation.documentation ());
         panel.tab("icon", "Icon", IconDocumentation.documentation ());

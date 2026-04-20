@@ -1,0 +1,1302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>JUI Palette Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* =============================================================================
+   Page chrome — the studio UI itself. These styles do NOT consume the palette
+   being authored; they are fixed. The palette only drives the swatches and
+   preview section.
+   ========================================================================== */
+
+:root {
+    color-scheme: light;
+    --ui-bg: #f4f4f5;
+    --ui-panel: #ffffff;
+    --ui-border: #e4e4e7;
+    --ui-border-strong: #d4d4d8;
+    --ui-text: #18181b;
+    --ui-text-muted: #71717a;
+    --ui-accent: #2563eb;
+    --ui-radius: 8px;
+    --ui-radius-sm: 4px;
+    --ui-space: 12px;
+    --ui-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --ui-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--ui-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ui-text);
+    background: var(--ui-bg);
+}
+
+header.studio-head {
+    padding: 20px 28px;
+    background: var(--ui-panel);
+    border-bottom: 1px solid var(--ui-border);
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+}
+header.studio-head h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+header.studio-head .sub {
+    color: var(--ui-text-muted);
+    font-size: 13px;
+}
+
+main.studio-body {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 24px;
+    padding: 24px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+@media (max-width: 1100px) {
+    main.studio-body { grid-template-columns: 1fr; }
+}
+
+.panel {
+    background: var(--ui-panel);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+    padding: 20px;
+}
+
+.panel h2 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--ui-text-muted);
+}
+.panel p.hint {
+    margin: 0 0 16px 0;
+    color: var(--ui-text-muted);
+    font-size: 13px;
+}
+.panel + .panel { margin-top: 16px; }
+
+.field {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    margin: 10px 0;
+}
+.field > label {
+    font-size: 13px;
+    color: var(--ui-text);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.field > label .note {
+    font-size: 11px;
+    color: var(--ui-text-muted);
+    font-weight: normal;
+}
+.field > input[type="color"] {
+    width: 40px;
+    height: 32px;
+    padding: 2px;
+    border: 1px solid var(--ui-border-strong);
+    border-radius: var(--ui-radius-sm);
+    background: var(--ui-panel);
+    cursor: pointer;
+}
+.field > input[type="text"] {
+    width: 90px;
+    padding: 6px 8px;
+    border: 1px solid var(--ui-border-strong);
+    border-radius: var(--ui-radius-sm);
+    font-family: var(--ui-mono);
+    font-size: 12px;
+    background: var(--ui-panel);
+}
+.field > .pair {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.field.single {
+    grid-template-columns: 1fr auto;
+}
+.field.single input[type="text"] {
+    width: 140px;
+}
+
+.field input[type="range"] {
+    width: 180px;
+}
+.field .value-readout {
+    font-family: var(--ui-mono);
+    font-size: 12px;
+    color: var(--ui-text-muted);
+    min-width: 46px;
+    text-align: right;
+}
+
+.btn-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+.btn {
+    padding: 7px 14px;
+    font-size: 13px;
+    font-family: inherit;
+    border: 1px solid var(--ui-border-strong);
+    background: var(--ui-panel);
+    color: var(--ui-text);
+    border-radius: var(--ui-radius-sm);
+    cursor: pointer;
+}
+.btn:hover { background: var(--ui-bg); }
+.btn.primary { background: var(--ui-text); color: var(--ui-panel); border-color: var(--ui-text); }
+.btn.primary:hover { background: #000; }
+
+textarea.css-output {
+    width: 100%;
+    min-height: 260px;
+    padding: 12px;
+    font-family: var(--ui-mono);
+    font-size: 12px;
+    line-height: 1.5;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-sm);
+    background: #18181b;
+    color: #e4e4e7;
+    resize: vertical;
+    white-space: pre;
+    overflow-x: auto;
+}
+
+/* =============================================================================
+   Swatches
+   ========================================================================== */
+
+.swatch-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(10, 1fr);
+    gap: 4px;
+    align-items: center;
+}
+.swatch-grid .head {
+    font-family: var(--ui-mono);
+    font-size: 11px;
+    color: var(--ui-text-muted);
+    text-align: center;
+    padding: 2px 0;
+}
+.swatch-grid .family-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ui-text);
+}
+.swatch {
+    height: 48px;
+    border-radius: var(--ui-radius-sm);
+    border: 1px solid rgba(0,0,0,0.04);
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding: 4px;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.08s;
+}
+.swatch:hover { transform: scale(1.05); z-index: 2; }
+.swatch .step {
+    font-family: var(--ui-mono);
+    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.85);
+    color: #000;
+    opacity: 0;
+}
+.swatch:hover .step { opacity: 1; }
+.swatch.dark .step { background: rgba(0,0,0,0.7); color: #fff; }
+
+/* =============================================================================
+   Preview — THIS area consumes the palette tokens
+   ========================================================================== */
+
+/* Theme derivations. Axes are set on #theme; all --jui-color-* are derived. */
+
+#theme {
+    /* Axes (overridden by JS) */
+    --jui-palette-primary-hue: 210;
+    --jui-palette-secondary-hue: 170;
+    --jui-palette-ink-hue: 255;
+    --jui-palette-neutral-hue: 0;
+    --jui-palette-error-hue: 25;
+    --jui-palette-warning-hue: 65;
+    --jui-palette-success-hue: 145;
+    --jui-palette-info-hue: 240;
+
+    --jui-palette-chroma-peak: 0.15;
+    --jui-palette-ink-chroma-peak: 0.035;
+    --jui-palette-error-chroma-peak: 0.18;
+    --jui-palette-neutral-chroma: 0;
+
+    /* Canvas tint — the outer page background. Defaults to pure white; the
+       studio sets it to the user's canvas input when provided. */
+    --jui-role-surface-canvas: oklch(1 0 0);
+
+    /* --- derived color ramps --------------------------------------------- */
+    /* Primary */
+    --jui-color-primary05: oklch(0.97 calc(var(--jui-palette-chroma-peak) * 0.12) var(--jui-palette-primary-hue));
+    --jui-color-primary10: oklch(0.94 calc(var(--jui-palette-chroma-peak) * 0.27) var(--jui-palette-primary-hue));
+    --jui-color-primary20: oklch(0.88 calc(var(--jui-palette-chroma-peak) * 0.46) var(--jui-palette-primary-hue));
+    --jui-color-primary30: oklch(0.80 calc(var(--jui-palette-chroma-peak) * 0.65) var(--jui-palette-primary-hue));
+    --jui-color-primary40: oklch(0.70 calc(var(--jui-palette-chroma-peak) * 0.85) var(--jui-palette-primary-hue));
+    --jui-color-primary50: oklch(0.58 calc(var(--jui-palette-chroma-peak) * 1.00) var(--jui-palette-primary-hue));
+    --jui-color-primary60: oklch(0.48 calc(var(--jui-palette-chroma-peak) * 0.96) var(--jui-palette-primary-hue));
+    --jui-color-primary70: oklch(0.38 calc(var(--jui-palette-chroma-peak) * 0.81) var(--jui-palette-primary-hue));
+    --jui-color-primary80: oklch(0.28 calc(var(--jui-palette-chroma-peak) * 0.58) var(--jui-palette-primary-hue));
+    --jui-color-primary90: oklch(0.20 calc(var(--jui-palette-chroma-peak) * 0.38) var(--jui-palette-primary-hue));
+
+    /* Secondary */
+    --jui-color-secondary05: oklch(0.97 calc(var(--jui-palette-chroma-peak) * 0.12) var(--jui-palette-secondary-hue));
+    --jui-color-secondary10: oklch(0.94 calc(var(--jui-palette-chroma-peak) * 0.27) var(--jui-palette-secondary-hue));
+    --jui-color-secondary20: oklch(0.88 calc(var(--jui-palette-chroma-peak) * 0.46) var(--jui-palette-secondary-hue));
+    --jui-color-secondary30: oklch(0.80 calc(var(--jui-palette-chroma-peak) * 0.65) var(--jui-palette-secondary-hue));
+    --jui-color-secondary40: oklch(0.70 calc(var(--jui-palette-chroma-peak) * 0.85) var(--jui-palette-secondary-hue));
+    --jui-color-secondary50: oklch(0.58 calc(var(--jui-palette-chroma-peak) * 1.00) var(--jui-palette-secondary-hue));
+    --jui-color-secondary60: oklch(0.48 calc(var(--jui-palette-chroma-peak) * 0.96) var(--jui-palette-secondary-hue));
+    --jui-color-secondary70: oklch(0.38 calc(var(--jui-palette-chroma-peak) * 0.81) var(--jui-palette-secondary-hue));
+    --jui-color-secondary80: oklch(0.28 calc(var(--jui-palette-chroma-peak) * 0.58) var(--jui-palette-secondary-hue));
+    --jui-color-secondary90: oklch(0.20 calc(var(--jui-palette-chroma-peak) * 0.38) var(--jui-palette-secondary-hue));
+
+    /* Ink */
+    --jui-color-ink05: oklch(0.97 calc(var(--jui-palette-ink-chroma-peak) * 0.12) var(--jui-palette-ink-hue));
+    --jui-color-ink10: oklch(0.94 calc(var(--jui-palette-ink-chroma-peak) * 0.27) var(--jui-palette-ink-hue));
+    --jui-color-ink20: oklch(0.88 calc(var(--jui-palette-ink-chroma-peak) * 0.46) var(--jui-palette-ink-hue));
+    --jui-color-ink30: oklch(0.80 calc(var(--jui-palette-ink-chroma-peak) * 0.65) var(--jui-palette-ink-hue));
+    --jui-color-ink40: oklch(0.70 calc(var(--jui-palette-ink-chroma-peak) * 0.85) var(--jui-palette-ink-hue));
+    --jui-color-ink50: oklch(0.58 calc(var(--jui-palette-ink-chroma-peak) * 1.00) var(--jui-palette-ink-hue));
+    --jui-color-ink60: oklch(0.48 calc(var(--jui-palette-ink-chroma-peak) * 0.96) var(--jui-palette-ink-hue));
+    --jui-color-ink70: oklch(0.38 calc(var(--jui-palette-ink-chroma-peak) * 0.81) var(--jui-palette-ink-hue));
+    --jui-color-ink80: oklch(0.28 calc(var(--jui-palette-ink-chroma-peak) * 0.58) var(--jui-palette-ink-hue));
+    --jui-color-ink90: oklch(0.20 calc(var(--jui-palette-ink-chroma-peak) * 0.38) var(--jui-palette-ink-hue));
+
+    /* Neutral — constant chroma */
+    --jui-color-neutral05: oklch(0.97 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
+    --jui-color-neutral10: oklch(0.94 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
+    --jui-color-neutral20: oklch(0.88 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
+    --jui-color-neutral30: oklch(0.80 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
+    --jui-color-neutral40: oklch(0.70 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
+    --jui-color-neutral50: oklch(0.58 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
+    --jui-color-neutral60: oklch(0.48 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
+    --jui-color-neutral70: oklch(0.38 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
+    --jui-color-neutral80: oklch(0.28 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
+    --jui-color-neutral90: oklch(0.20 var(--jui-palette-neutral-chroma) var(--jui-palette-neutral-hue));
+
+    /* Error */
+    --jui-color-error05: oklch(0.97 calc(var(--jui-palette-error-chroma-peak) * 0.12) var(--jui-palette-error-hue));
+    --jui-color-error10: oklch(0.94 calc(var(--jui-palette-error-chroma-peak) * 0.27) var(--jui-palette-error-hue));
+    --jui-color-error20: oklch(0.88 calc(var(--jui-palette-error-chroma-peak) * 0.46) var(--jui-palette-error-hue));
+    --jui-color-error30: oklch(0.80 calc(var(--jui-palette-error-chroma-peak) * 0.65) var(--jui-palette-error-hue));
+    --jui-color-error40: oklch(0.70 calc(var(--jui-palette-error-chroma-peak) * 0.85) var(--jui-palette-error-hue));
+    --jui-color-error50: oklch(0.58 calc(var(--jui-palette-error-chroma-peak) * 1.00) var(--jui-palette-error-hue));
+    --jui-color-error60: oklch(0.48 calc(var(--jui-palette-error-chroma-peak) * 0.96) var(--jui-palette-error-hue));
+    --jui-color-error70: oklch(0.38 calc(var(--jui-palette-error-chroma-peak) * 0.81) var(--jui-palette-error-hue));
+    --jui-color-error80: oklch(0.28 calc(var(--jui-palette-error-chroma-peak) * 0.58) var(--jui-palette-error-hue));
+    --jui-color-error90: oklch(0.20 calc(var(--jui-palette-error-chroma-peak) * 0.38) var(--jui-palette-error-hue));
+
+    /* Warning */
+    --jui-color-warning05: oklch(0.97 calc(var(--jui-palette-chroma-peak) * 0.12) var(--jui-palette-warning-hue));
+    --jui-color-warning10: oklch(0.94 calc(var(--jui-palette-chroma-peak) * 0.27) var(--jui-palette-warning-hue));
+    --jui-color-warning20: oklch(0.88 calc(var(--jui-palette-chroma-peak) * 0.46) var(--jui-palette-warning-hue));
+    --jui-color-warning30: oklch(0.80 calc(var(--jui-palette-chroma-peak) * 0.65) var(--jui-palette-warning-hue));
+    --jui-color-warning40: oklch(0.70 calc(var(--jui-palette-chroma-peak) * 0.85) var(--jui-palette-warning-hue));
+    --jui-color-warning50: oklch(0.58 calc(var(--jui-palette-chroma-peak) * 1.00) var(--jui-palette-warning-hue));
+    --jui-color-warning60: oklch(0.48 calc(var(--jui-palette-chroma-peak) * 0.96) var(--jui-palette-warning-hue));
+    --jui-color-warning70: oklch(0.38 calc(var(--jui-palette-chroma-peak) * 0.81) var(--jui-palette-warning-hue));
+    --jui-color-warning80: oklch(0.28 calc(var(--jui-palette-chroma-peak) * 0.58) var(--jui-palette-warning-hue));
+    --jui-color-warning90: oklch(0.20 calc(var(--jui-palette-chroma-peak) * 0.38) var(--jui-palette-warning-hue));
+
+    /* Success */
+    --jui-color-success05: oklch(0.97 calc(var(--jui-palette-chroma-peak) * 0.12) var(--jui-palette-success-hue));
+    --jui-color-success10: oklch(0.94 calc(var(--jui-palette-chroma-peak) * 0.27) var(--jui-palette-success-hue));
+    --jui-color-success20: oklch(0.88 calc(var(--jui-palette-chroma-peak) * 0.46) var(--jui-palette-success-hue));
+    --jui-color-success30: oklch(0.80 calc(var(--jui-palette-chroma-peak) * 0.65) var(--jui-palette-success-hue));
+    --jui-color-success40: oklch(0.70 calc(var(--jui-palette-chroma-peak) * 0.85) var(--jui-palette-success-hue));
+    --jui-color-success50: oklch(0.58 calc(var(--jui-palette-chroma-peak) * 1.00) var(--jui-palette-success-hue));
+    --jui-color-success60: oklch(0.48 calc(var(--jui-palette-chroma-peak) * 0.96) var(--jui-palette-success-hue));
+    --jui-color-success70: oklch(0.38 calc(var(--jui-palette-chroma-peak) * 0.81) var(--jui-palette-success-hue));
+    --jui-color-success80: oklch(0.28 calc(var(--jui-palette-chroma-peak) * 0.58) var(--jui-palette-success-hue));
+    --jui-color-success90: oklch(0.20 calc(var(--jui-palette-chroma-peak) * 0.38) var(--jui-palette-success-hue));
+
+    /* Info */
+    --jui-color-info05: oklch(0.97 calc(var(--jui-palette-chroma-peak) * 0.12) var(--jui-palette-info-hue));
+    --jui-color-info10: oklch(0.94 calc(var(--jui-palette-chroma-peak) * 0.27) var(--jui-palette-info-hue));
+    --jui-color-info20: oklch(0.88 calc(var(--jui-palette-chroma-peak) * 0.46) var(--jui-palette-info-hue));
+    --jui-color-info30: oklch(0.80 calc(var(--jui-palette-chroma-peak) * 0.65) var(--jui-palette-info-hue));
+    --jui-color-info40: oklch(0.70 calc(var(--jui-palette-chroma-peak) * 0.85) var(--jui-palette-info-hue));
+    --jui-color-info50: oklch(0.58 calc(var(--jui-palette-chroma-peak) * 1.00) var(--jui-palette-info-hue));
+    --jui-color-info60: oklch(0.48 calc(var(--jui-palette-chroma-peak) * 0.96) var(--jui-palette-info-hue));
+    --jui-color-info70: oklch(0.38 calc(var(--jui-palette-chroma-peak) * 0.81) var(--jui-palette-info-hue));
+    --jui-color-info80: oklch(0.28 calc(var(--jui-palette-chroma-peak) * 0.58) var(--jui-palette-info-hue));
+    --jui-color-info90: oklch(0.20 calc(var(--jui-palette-chroma-peak) * 0.38) var(--jui-palette-info-hue));
+
+    /* Aux */
+    --jui-color-aux-white: oklch(1 0 0);
+    --jui-color-aux-black: oklch(0 0 0);
+
+    /* --- role tokens (subset relevant to the preview) -------------------- */
+    --jui-role-surface-overlay: var(--jui-color-aux-white);
+    --jui-role-surface-raised: var(--jui-color-neutral05);
+    --jui-role-surface-muted: var(--jui-color-neutral10);
+    --jui-role-surface-sunken: var(--jui-color-neutral20);
+    --jui-role-border-subtle: var(--jui-color-neutral20);
+    --jui-role-border-default: var(--jui-color-neutral30);
+    --jui-role-border-strong: var(--jui-color-neutral40);
+    --jui-role-border-contrast: var(--jui-color-neutral60);
+    --jui-role-text-default: var(--jui-color-ink70);
+    --jui-role-text-muted: var(--jui-color-ink30);
+    --jui-role-text-heading: var(--jui-color-ink70);
+    --jui-role-text-disabled: var(--jui-color-neutral40);
+    --jui-role-text-inverse: var(--jui-color-aux-white);
+    --jui-role-text-link: var(--jui-color-primary50);
+    --jui-role-interactive-primary: var(--jui-color-primary50);
+    --jui-role-interactive-primary-hover: var(--jui-color-primary60);
+    --jui-role-interactive-primary-on: var(--jui-color-aux-white);
+    --jui-role-feedback-info: var(--jui-color-info50);
+    --jui-role-feedback-success: var(--jui-color-success60);
+    --jui-role-feedback-warning: var(--jui-color-warning70);
+    --jui-role-feedback-error: var(--jui-color-error50);
+    --jui-role-focus-ring: var(--jui-color-info40);
+}
+
+/* =============================================================================
+   Mock JUI components (styled to reflect the active palette)
+   ========================================================================== */
+
+.preview-canvas {
+    background: var(--jui-role-surface-canvas);
+    padding: 32px;
+    border-radius: var(--ui-radius);
+    color: var(--jui-role-text-default);
+    font-family: var(--ui-sans);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.preview-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--jui-role-text-muted);
+    margin: 0 0 10px 0;
+}
+
+.preview-panel {
+    background: var(--jui-role-surface-overlay);
+    border: 1px solid var(--jui-role-border-default);
+    border-radius: 10px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.preview-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Buttons */
+.jbtn {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 9px 16px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    background: var(--jui-role-interactive-primary);
+    color: var(--jui-role-interactive-primary-on);
+    border-color: var(--jui-role-interactive-primary);
+}
+.jbtn:hover { background: var(--jui-role-interactive-primary-hover); border-color: var(--jui-role-interactive-primary-hover); }
+.jbtn.outlined {
+    background: transparent;
+    color: var(--jui-role-interactive-primary);
+    border-color: var(--jui-role-interactive-primary);
+}
+.jbtn.outlined:hover { background: var(--jui-color-primary05); }
+.jbtn.link {
+    background: transparent;
+    color: var(--jui-role-text-link);
+    border-color: transparent;
+    padding: 9px 10px;
+}
+.jbtn.danger {
+    background: var(--jui-role-feedback-error);
+    border-color: var(--jui-role-feedback-error);
+    color: var(--jui-color-aux-white);
+}
+.jbtn.danger:hover { background: var(--jui-color-error60); border-color: var(--jui-color-error60); }
+.jbtn.warning {
+    background: var(--jui-color-warning50);
+    border-color: var(--jui-color-warning50);
+    color: var(--jui-color-aux-white);
+}
+.jbtn.success {
+    background: var(--jui-role-feedback-success);
+    border-color: var(--jui-role-feedback-success);
+    color: var(--jui-color-aux-white);
+}
+.jbtn.disabled {
+    background: var(--jui-role-surface-sunken);
+    color: var(--jui-role-text-disabled);
+    border-color: var(--jui-role-surface-sunken);
+    cursor: default;
+}
+
+/* Text input */
+.jfield {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.jfield label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--jui-role-text-default);
+}
+.jfield label.required::before {
+    content: '*';
+    padding-right: 4px;
+}
+.jinput {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 8px 12px;
+    background: var(--jui-role-surface-raised);
+    border: 1px solid var(--jui-role-border-default);
+    border-radius: 4px;
+    color: var(--jui-role-text-default);
+    outline: none;
+    min-height: 38px;
+}
+.jinput::placeholder { color: var(--jui-role-text-muted); }
+.jinput:focus {
+    border-color: var(--jui-role-focus-ring);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--jui-role-focus-ring) 30%, transparent);
+}
+.jinput[disabled] {
+    background: var(--jui-role-surface-sunken);
+    color: var(--jui-role-text-disabled);
+}
+.jinput.error {
+    border-color: var(--jui-role-feedback-error);
+}
+
+/* Select (mock as styled) */
+.jselect {
+    appearance: none;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 8px 28px 8px 12px;
+    background: var(--jui-role-surface-raised)
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='none' stroke='black' stroke-width='1.5' d='M1 1 L5 5 L9 1'/></svg>") no-repeat right 10px center;
+    border: 1px solid var(--jui-role-border-default);
+    border-radius: 4px;
+    color: var(--jui-role-text-default);
+    min-height: 38px;
+}
+
+/* Tabs (underline style) */
+.jtabs {
+    display: flex;
+    border-bottom: 1px solid var(--jui-role-border-subtle);
+    gap: 0;
+}
+.jtab {
+    padding: 10px 16px;
+    font-size: 14px;
+    color: var(--jui-role-text-muted);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    user-select: none;
+}
+.jtab:hover { color: var(--jui-role-text-default); }
+.jtab.active {
+    color: var(--jui-role-interactive-primary);
+    border-bottom-color: var(--jui-role-interactive-primary);
+    font-weight: 500;
+}
+
+/* Segmented control */
+.jseg {
+    display: inline-flex;
+    background: var(--jui-role-surface-muted);
+    border-radius: 20px;
+    padding: 3px;
+    gap: 2px;
+    align-items: center;
+}
+.jseg button {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 5px 14px;
+    border: none;
+    background: transparent;
+    color: var(--jui-role-border-contrast);
+    border-radius: 16px;
+    cursor: pointer;
+}
+.jseg button.active {
+    background: var(--jui-role-interactive-primary);
+    color: var(--jui-role-interactive-primary-on);
+}
+
+/* Radio group */
+.jradio {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+}
+.jradio label {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--jui-role-text-default);
+}
+.jradio input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--jui-role-interactive-primary);
+    cursor: pointer;
+}
+
+/* Toggle */
+.jtoggle {
+    position: relative;
+    width: 42px;
+    height: 22px;
+    display: inline-block;
+}
+.jtoggle input { display: none; }
+.jtoggle .track {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--jui-role-border-strong);
+    border-radius: 11px;
+    transition: background 0.15s;
+}
+.jtoggle .thumb {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    background: var(--jui-color-aux-white);
+    border-radius: 50%;
+    transition: transform 0.15s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.jtoggle input:checked ~ .track { background: var(--jui-role-interactive-primary); }
+.jtoggle input:checked ~ .thumb { transform: translateX(20px); }
+
+/* Dialog mock */
+.jdialog {
+    background: var(--jui-role-surface-overlay);
+    border: 1px solid var(--jui-role-border-default);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    max-width: 480px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.jdialog .head {
+    background: var(--jui-role-surface-muted);
+    border-bottom: 1px solid var(--jui-role-border-default);
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--jui-role-text-heading);
+    font-weight: 600;
+}
+.jdialog .body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    color: var(--jui-role-text-default);
+}
+.jdialog .body hr {
+    border: none;
+    border-top: 1px solid var(--jui-role-border-subtle);
+    margin: 4px 0;
+}
+.jdialog .foot {
+    background: var(--jui-role-surface-muted);
+    border-top: 1px solid var(--jui-role-border-default);
+    padding: 12px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Notification / badge */
+.jnotif {
+    padding: 12px 14px;
+    border-radius: 6px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: 13px;
+    border-left: 4px solid;
+}
+.jnotif.info { background: var(--jui-color-info05); border-color: var(--jui-role-feedback-info); color: var(--jui-role-text-default); }
+.jnotif.success { background: var(--jui-color-success05); border-color: var(--jui-role-feedback-success); color: var(--jui-role-text-default); }
+.jnotif.warning { background: var(--jui-color-warning05); border-color: var(--jui-role-feedback-warning); color: var(--jui-role-text-default); }
+.jnotif.error { background: var(--jui-color-error05); border-color: var(--jui-role-feedback-error); color: var(--jui-role-text-default); }
+
+/* Card */
+.jcard {
+    background: var(--jui-role-surface-overlay);
+    border: 1px solid var(--jui-role-border-default);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.jcard h4 { margin: 0; font-size: 15px; font-weight: 600; color: var(--jui-role-text-heading); }
+.jcard p { margin: 0; font-size: 13px; color: var(--jui-role-text-muted); }
+</style>
+</head>
+<body>
+
+<header class="studio-head">
+    <h1>JUI Palette Studio</h1>
+    <span class="sub">Paste a brand palette. See the full theme. Copy the CSS.</span>
+</header>
+
+<main class="studio-body">
+
+    <!-- =========================================================================
+         LEFT COLUMN — inputs + CSS output
+         ====================================================================== -->
+    <div>
+
+        <div class="panel">
+            <h2>Palette input</h2>
+            <p class="hint">The studio uses only the <em>hue</em> of each colour you provide. Lightness and chroma follow JUI's shared ladder. Leave a field blank to use JUI's default hue for that family.</p>
+
+            <div class="field">
+                <label>Primary<span class="note">brand accent</span></label>
+                <div class="pair">
+                    <input type="color" id="in-primary" value="#0d9bb4">
+                    <input type="text" id="in-primary-hex" value="#0D9BB4">
+                </div>
+            </div>
+            <div class="field">
+                <label>Secondary<span class="note">second brand accent</span></label>
+                <div class="pair">
+                    <input type="color" id="in-secondary" value="#24916f">
+                    <input type="text" id="in-secondary-hex" value="#24916F">
+                </div>
+            </div>
+            <div class="field">
+                <label>Ink<span class="note">text &amp; chrome family</span></label>
+                <div class="pair">
+                    <input type="color" id="in-ink" value="#425a71">
+                    <input type="text" id="in-ink-hex" value="#425A71">
+                </div>
+            </div>
+
+            <h2 style="margin-top: 24px;">Feedback hues</h2>
+            <p class="hint">Typically not part of a brand palette — defaults work for most cases. Override only if a feedback colour needs to match your brand direction.</p>
+
+            <div class="field">
+                <label>Error</label>
+                <div class="pair">
+                    <input type="color" id="in-error" value="#d32f2f">
+                    <input type="text" id="in-error-hex" value="#D32F2F">
+                </div>
+            </div>
+            <div class="field">
+                <label>Warning</label>
+                <div class="pair">
+                    <input type="color" id="in-warning" value="#cd8d0d">
+                    <input type="text" id="in-warning-hex" value="#CD8D0D">
+                </div>
+            </div>
+            <div class="field">
+                <label>Success</label>
+                <div class="pair">
+                    <input type="color" id="in-success" value="#00ad0b">
+                    <input type="text" id="in-success-hex" value="#00AD0B">
+                </div>
+            </div>
+            <div class="field">
+                <label>Info</label>
+                <div class="pair">
+                    <input type="color" id="in-info" value="#1475ff">
+                    <input type="text" id="in-info-hex" value="#1475FF">
+                </div>
+            </div>
+
+            <h2 style="margin-top: 24px;">Tuning</h2>
+
+            <div class="field">
+                <label>Chroma peak<span class="note">saturation of brand families (0.02 muted → 0.18 vivid)</span></label>
+                <div class="pair">
+                    <input type="range" id="in-chroma" min="0.02" max="0.18" step="0.005" value="0.15">
+                    <span class="value-readout" id="out-chroma">0.150</span>
+                </div>
+            </div>
+            <div class="field">
+                <label>Error chroma peak<span class="note">kept high so destructive reads alarming</span></label>
+                <div class="pair">
+                    <input type="range" id="in-error-chroma" min="0.08" max="0.20" step="0.005" value="0.18">
+                    <span class="value-readout" id="out-error-chroma">0.180</span>
+                </div>
+            </div>
+            <div class="field">
+                <label>Ink chroma peak<span class="note">text and chrome — typically very low</span></label>
+                <div class="pair">
+                    <input type="range" id="in-ink-chroma" min="0.005" max="0.10" step="0.005" value="0.035">
+                    <span class="value-readout" id="out-ink-chroma">0.035</span>
+                </div>
+            </div>
+            <div class="field">
+                <label>Neutral chroma<span class="note">0 = pure gray; > 0 tints every surface with the neutral hue</span></label>
+                <div class="pair">
+                    <input type="range" id="in-neutral-chroma" min="0" max="0.02" step="0.001" value="0">
+                    <span class="value-readout" id="out-neutral-chroma">0.000</span>
+                </div>
+            </div>
+            <div class="field">
+                <label>Neutral hue<span class="note">only matters when neutral chroma > 0</span></label>
+                <div class="pair">
+                    <input type="range" id="in-neutral-hue" min="0" max="360" step="1" value="0">
+                    <span class="value-readout" id="out-neutral-hue">0°</span>
+                </div>
+            </div>
+
+            <h2 style="margin-top: 24px;">Canvas</h2>
+            <p class="hint">The page background behind panels and dialogs. Defaults to pure white; set a tint for an editorial / on-paper feel.</p>
+            <div class="field">
+                <label>Canvas tint</label>
+                <div class="pair">
+                    <input type="color" id="in-canvas" value="#ffffff">
+                    <input type="text" id="in-canvas-hex" value="#FFFFFF">
+                </div>
+            </div>
+
+            <h2 style="margin-top: 24px;">Palette name</h2>
+            <div class="field single">
+                <label>Used in the selector <code>.theme[data-palette="..."]</code></label>
+                <input type="text" id="in-name" value="custom">
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>CSS output</h2>
+            <p class="hint">Paste this into a new <code>Theme.Reference.&lt;Name&gt;.css</code> file and register it in <code>Theme.java</code>.</p>
+            <textarea class="css-output" id="out-css" readonly></textarea>
+            <div class="btn-row">
+                <button class="btn primary" id="btn-copy">Copy CSS</button>
+                <button class="btn" id="btn-reset">Reset to JUI default</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- =========================================================================
+         RIGHT COLUMN — swatches + preview
+         ====================================================================== -->
+    <div id="theme">
+
+        <div class="panel">
+            <h2>Ramps</h2>
+            <p class="hint">Every family derives ten shades on the shared lightness ladder (05 lightest → 90 darkest). Hover a swatch to see its step.</p>
+            <div class="swatch-grid" id="swatch-grid"></div>
+        </div>
+
+        <div class="panel">
+            <h2>Preview</h2>
+            <p class="hint">Mock JUI components styled with the active palette. Outer area is the canvas; inner area is a white panel.</p>
+
+            <div class="preview-canvas">
+
+                <div>
+                    <p class="preview-section-title">Buttons</p>
+                    <div class="preview-row">
+                        <button class="jbtn">Primary</button>
+                        <button class="jbtn outlined">Outlined</button>
+                        <button class="jbtn link">Link</button>
+                        <button class="jbtn success">Success</button>
+                        <button class="jbtn warning">Warning</button>
+                        <button class="jbtn danger">Danger</button>
+                        <button class="jbtn disabled">Disabled</button>
+                    </div>
+                </div>
+
+                <div class="preview-panel">
+
+                    <div>
+                        <p class="preview-section-title">Form fields</p>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                            <div class="jfield"><label class="required">First name</label><input class="jinput" placeholder="First name"></div>
+                            <div class="jfield"><label>Middle name(s)</label><input class="jinput" placeholder="Middle name"></div>
+                            <div class="jfield"><label class="required">Last name</label><input class="jinput" placeholder="Last name"></div>
+                            <div class="jfield"><label>Email</label><input class="jinput" value="jane.doe@example.com"></div>
+                            <div class="jfield"><label class="required">Password</label><input class="jinput" type="password" value="secret123"></div>
+                            <div class="jfield"><label>Title</label><select class="jselect"><option>Ms</option><option>Mr</option><option>Mx</option></select></div>
+                            <div class="jfield"><label>Disabled</label><input class="jinput" value="read only" disabled></div>
+                            <div class="jfield"><label>With error</label><input class="jinput error" value="too short"></div>
+                        </div>
+                    </div>
+
+                    <hr style="border:none; border-top: 1px solid var(--jui-role-border-subtle); margin: 4px 0;">
+
+                    <div>
+                        <p class="preview-section-title">Radio, toggle, tabs, segmented</p>
+                        <div style="display:flex; flex-direction:column; gap: 18px;">
+
+                            <div class="jradio">
+                                <label><input type="radio" name="r" checked> Public to organisation</label>
+                                <label><input type="radio" name="r"> Private to me</label>
+                            </div>
+
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <label class="jtoggle"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+                                <span style="font-size:14px;">Use project as template</span>
+                            </div>
+
+                            <div class="jtabs">
+                                <div class="jtab active">Overview</div>
+                                <div class="jtab">Members</div>
+                                <div class="jtab">Permissions</div>
+                                <div class="jtab">Activity</div>
+                            </div>
+
+                            <div class="jseg">
+                                <button class="active">NONE</button>
+                                <button>READ</button>
+                                <button>MANAGE</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr style="border:none; border-top: 1px solid var(--jui-role-border-subtle); margin: 4px 0;">
+
+                    <div>
+                        <p class="preview-section-title">Notifications</p>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <div class="jnotif info">Info — A project template will be used.</div>
+                            <div class="jnotif success">Success — Project created.</div>
+                            <div class="jnotif warning">Warning — Unsaved changes will be lost.</div>
+                            <div class="jnotif error">Error — The name is already taken.</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div>
+                    <p class="preview-section-title">Dialog</p>
+                    <div class="jdialog">
+                        <div class="head"><span>Create project</span><span style="cursor:pointer; color:var(--jui-role-text-muted);">×</span></div>
+                        <div class="body">
+                            <div class="jfield"><label class="required">Name of project</label><input class="jinput" placeholder="Name of project"></div>
+                            <div class="jfield">
+                                <label class="required">Privacy</label>
+                                <div class="jradio">
+                                    <label><input type="radio" name="p" checked> Public to organisation</label>
+                                    <label><input type="radio" name="p"> Private to me</label>
+                                </div>
+                            </div>
+                            <hr>
+                            <div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0;">
+                                    <span>Use project as template</span>
+                                    <label class="jtoggle"><input type="checkbox"><span class="track"></span><span class="thumb"></span></label>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0;">
+                                    <span>Use project as a guideline</span>
+                                    <label class="jtoggle"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+                                </div>
+                            </div>
+                            <hr>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span>User groups and rights</span>
+                                <div class="jseg"><button class="active">NONE</button><button>READ</button><button>MANAGE</button></div>
+                            </div>
+                        </div>
+                        <div class="foot">
+                            <button class="jbtn link">cancel</button>
+                            <button class="jbtn">Create project</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="preview-section-title">Cards on canvas</p>
+                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+                        <div class="jcard"><h4>Templates</h4><p>Ready-made starts for common project shapes.</p><button class="jbtn outlined" style="align-self:flex-start; margin-top:6px;">Browse</button></div>
+                        <div class="jcard"><h4>Recent</h4><p>Projects you opened in the last seven days.</p><button class="jbtn outlined" style="align-self:flex-start; margin-top:6px;">View all</button></div>
+                        <div class="jcard"><h4>Archived</h4><p>Projects that have been closed or archived.</p><button class="jbtn outlined" style="align-self:flex-start; margin-top:6px;">Browse</button></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</main>
+
+<script>
+/* =============================================================================
+   hex -> OKLCH conversion
+   ========================================================================== */
+
+function hexToOklch(hex) {
+    hex = hex.replace('#', '').trim();
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    if (!/^[0-9a-fA-F]{6}$/.test(hex)) return null;
+
+    const r = parseInt(hex.slice(0, 2), 16) / 255;
+    const g = parseInt(hex.slice(2, 4), 16) / 255;
+    const b = parseInt(hex.slice(4, 6), 16) / 255;
+
+    // sRGB → linear
+    const lin = c => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    const rl = lin(r), gl = lin(g), bl = lin(b);
+
+    // Linear RGB → OKLab (Björn Ottosson)
+    const L_ = Math.cbrt(0.4122214708 * rl + 0.5363325363 * gl + 0.0514459929 * bl);
+    const M_ = Math.cbrt(0.2119034982 * rl + 0.6806995451 * gl + 0.1073969566 * bl);
+    const S_ = Math.cbrt(0.0883024619 * rl + 0.2817188376 * gl + 0.6299787005 * bl);
+
+    const L = 0.2104542553 * L_ + 0.7936177850 * M_ - 0.0040720468 * S_;
+    const a = 1.9779984951 * L_ - 2.4285922050 * M_ + 0.4505937099 * S_;
+    const b2 = 0.0259040371 * L_ + 0.7827717662 * M_ - 0.8086757660 * S_;
+
+    const C = Math.sqrt(a * a + b2 * b2);
+    let H = Math.atan2(b2, a) * 180 / Math.PI;
+    if (H < 0) H += 360;
+
+    return { L, C, H };
+}
+
+/* =============================================================================
+   Swatch grid — generated once, colours are live via CSS vars
+   ========================================================================== */
+
+const FAMILIES = ['primary', 'secondary', 'ink', 'neutral', 'error', 'warning', 'success', 'info'];
+const STEPS = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90];
+
+function buildSwatches() {
+    const grid = document.getElementById('swatch-grid');
+    grid.innerHTML = '';
+    // header row
+    grid.appendChild(document.createElement('div')); // empty corner
+    for (const s of STEPS) {
+        const h = document.createElement('div');
+        h.className = 'head';
+        h.textContent = String(s).padStart(2, '0');
+        grid.appendChild(h);
+    }
+    // family rows
+    for (const fam of FAMILIES) {
+        const label = document.createElement('div');
+        label.className = 'family-label';
+        label.textContent = fam;
+        grid.appendChild(label);
+        for (const s of STEPS) {
+            const padded = String(s).padStart(2, '0');
+            const sw = document.createElement('div');
+            sw.className = 'swatch' + (s >= 60 ? ' dark' : '');
+            sw.style.background = `var(--jui-color-${fam}${padded})`;
+            sw.innerHTML = `<span class="step">${padded}</span>`;
+            grid.appendChild(sw);
+        }
+    }
+}
+
+/* =============================================================================
+   Input wiring — colour inputs stay paired (picker <-> hex text)
+   ========================================================================== */
+
+function pair(pickerId, textId) {
+    const picker = document.getElementById(pickerId);
+    const text = document.getElementById(textId);
+    picker.addEventListener('input', () => {
+        text.value = picker.value.toUpperCase();
+        update();
+    });
+    text.addEventListener('input', () => {
+        if (/^#?[0-9a-fA-F]{6}$/.test(text.value.replace('#', ''))) {
+            const v = text.value.startsWith('#') ? text.value : '#' + text.value;
+            picker.value = v.toLowerCase();
+            update();
+        }
+    });
+}
+
+/* =============================================================================
+   Compute axes from inputs and apply to the preview element
+   ========================================================================== */
+
+function readAxes() {
+    const fromHex = id => {
+        const v = document.getElementById(id).value;
+        const p = hexToOklch(v);
+        return p ? Math.round(p.H * 10) / 10 : null;
+    };
+
+    return {
+        primaryHue:    fromHex('in-primary-hex'),
+        secondaryHue:  fromHex('in-secondary-hex'),
+        inkHue:        fromHex('in-ink-hex'),
+        errorHue:      fromHex('in-error-hex'),
+        warningHue:    fromHex('in-warning-hex'),
+        successHue:    fromHex('in-success-hex'),
+        infoHue:       fromHex('in-info-hex'),
+        chromaPeak:    parseFloat(document.getElementById('in-chroma').value),
+        errorChromaPeak: parseFloat(document.getElementById('in-error-chroma').value),
+        inkChromaPeak: parseFloat(document.getElementById('in-ink-chroma').value),
+        neutralChroma: parseFloat(document.getElementById('in-neutral-chroma').value),
+        neutralHue:    parseFloat(document.getElementById('in-neutral-hue').value),
+        canvas:        document.getElementById('in-canvas-hex').value,
+        name:          (document.getElementById('in-name').value || 'custom').trim()
+    };
+}
+
+function applyAxes(a) {
+    const root = document.getElementById('theme');
+    root.style.setProperty('--jui-palette-primary-hue', a.primaryHue);
+    root.style.setProperty('--jui-palette-secondary-hue', a.secondaryHue);
+    root.style.setProperty('--jui-palette-ink-hue', a.inkHue);
+    root.style.setProperty('--jui-palette-error-hue', a.errorHue);
+    root.style.setProperty('--jui-palette-warning-hue', a.warningHue);
+    root.style.setProperty('--jui-palette-success-hue', a.successHue);
+    root.style.setProperty('--jui-palette-info-hue', a.infoHue);
+    root.style.setProperty('--jui-palette-chroma-peak', a.chromaPeak);
+    root.style.setProperty('--jui-palette-error-chroma-peak', a.errorChromaPeak);
+    root.style.setProperty('--jui-palette-ink-chroma-peak', a.inkChromaPeak);
+    root.style.setProperty('--jui-palette-neutral-chroma', a.neutralChroma);
+    root.style.setProperty('--jui-palette-neutral-hue', a.neutralHue);
+    root.style.setProperty('--jui-role-surface-canvas', a.canvas);
+
+    // readouts
+    document.getElementById('out-chroma').textContent = a.chromaPeak.toFixed(3);
+    document.getElementById('out-error-chroma').textContent = a.errorChromaPeak.toFixed(3);
+    document.getElementById('out-ink-chroma').textContent = a.inkChromaPeak.toFixed(3);
+    document.getElementById('out-neutral-chroma').textContent = a.neutralChroma.toFixed(3);
+    document.getElementById('out-neutral-hue').textContent = Math.round(a.neutralHue) + '°';
+}
+
+/* =============================================================================
+   Generate the CSS output text
+   ========================================================================== */
+
+/* Per-step lightness ladder and chroma bell ratios — must match
+   Theme.Reference.css. Changing either here without changing JUI will
+   cause generated palettes to drift from the live theme. */
+const STEP_L = [0.98, 0.97, 0.88, 0.80, 0.70, 0.58, 0.48, 0.38, 0.28, 0.20];
+const STEP_R = [0.12, 0.27, 0.46, 0.65, 0.85, 1.00, 0.96, 0.81, 0.58, 0.38];
+const STEP_N = ['05', '10', '20', '30', '40', '50', '60', '70', '80', '90'];
+
+function ramp(family, hue, peak, indent) {
+    if (hue == null) hue = 0;
+    const out = [];
+    for (let i = 0; i < STEP_N.length; i++) {
+        const L = STEP_L[i].toFixed(3);
+        const C = (peak * STEP_R[i]).toFixed(4);
+        const H = Math.round(hue * 10) / 10;
+        out.push(`${indent}--jui-color-${family}${STEP_N[i]}: oklch(${L} ${C} ${H});`);
+    }
+    return out;
+}
+
+function neutralRamp(hue, chroma, indent) {
+    const out = [];
+    const H = Math.round(hue * 10) / 10;
+    const C = chroma.toFixed(4);
+    for (let i = 0; i < STEP_N.length; i++) {
+        const L = STEP_L[i].toFixed(3);
+        out.push(`${indent}--jui-color-neutral${STEP_N[i]}: oklch(${L} ${C} ${H});`);
+    }
+    return out;
+}
+
+function buildCss(a) {
+    const I = '    ';
+    const lines = [];
+    lines.push(`/* Generated by JUI Palette Studio. */`);
+    lines.push(`/* Drop into jui-ui/src/main/resources/com/effacy/jui/ui/client/ */`);
+    lines.push(`/* and register in Theme.java @CssResource. */`);
+    lines.push('');
+    lines.push(`.theme[data-palette="${a.name}"] {`);
+    lines.push('');
+    lines.push(`${I}/* ==================================================================`);
+    lines.push(`${I}   Palette axes.`);
+    lines.push(`${I}`);
+    lines.push(`${I}   These are the authoring knobs. The ramps below are derived from`);
+    lines.push(`${I}   them and redeclared as resolved oklch() values so the palette file`);
+    lines.push(`${I}   is self-contained — you can inspect each colour directly.`);
+    lines.push(`${I}`);
+    lines.push(`${I}   If you only want to override axes and let JUI's Theme.Reference.css`);
+    lines.push(`${I}   do the derivation, keep just this block and delete the ramps below.`);
+    lines.push(`${I}   ================================================================== */`);
+    lines.push(`${I}--jui-palette-primary-hue:   ${fmt(a.primaryHue)};`);
+    lines.push(`${I}--jui-palette-secondary-hue: ${fmt(a.secondaryHue)};`);
+    lines.push(`${I}--jui-palette-ink-hue:       ${fmt(a.inkHue)};`);
+    lines.push(`${I}--jui-palette-error-hue:     ${fmt(a.errorHue)};`);
+    lines.push(`${I}--jui-palette-warning-hue:   ${fmt(a.warningHue)};`);
+    lines.push(`${I}--jui-palette-success-hue:   ${fmt(a.successHue)};`);
+    lines.push(`${I}--jui-palette-info-hue:      ${fmt(a.infoHue)};`);
+    lines.push('');
+    lines.push(`${I}--jui-palette-chroma-peak:       ${a.chromaPeak.toFixed(3)};`);
+    lines.push(`${I}--jui-palette-error-chroma-peak: ${a.errorChromaPeak.toFixed(3)};`);
+    lines.push(`${I}--jui-palette-ink-chroma-peak:   ${a.inkChromaPeak.toFixed(3)};`);
+    if (a.neutralChroma > 0) {
+        lines.push(`${I}--jui-palette-neutral-hue:       ${Math.round(a.neutralHue)};`);
+        lines.push(`${I}--jui-palette-neutral-chroma:    ${a.neutralChroma.toFixed(3)};`);
+    }
+    lines.push('');
+    lines.push(`${I}/* ==================================================================`);
+    lines.push(`${I}   Derived ramps — resolved values for every --jui-color-*NN token.`);
+    lines.push(`${I}   ================================================================== */`);
+    lines.push('');
+    lines.push(`${I}/* Primary */`);
+    lines.push(...ramp('primary', a.primaryHue, a.chromaPeak, I));
+    lines.push('');
+    lines.push(`${I}/* Secondary */`);
+    lines.push(...ramp('secondary', a.secondaryHue, a.chromaPeak, I));
+    lines.push('');
+    lines.push(`${I}/* Ink — text and chrome family */`);
+    lines.push(...ramp('ink', a.inkHue, a.inkChromaPeak, I));
+    lines.push('');
+    lines.push(`${I}/* Neutral — ${a.neutralChroma > 0 ? 'warm/cool tinted' : 'pure gray (constant chroma 0)'} */`);
+    lines.push(...neutralRamp(a.neutralHue, a.neutralChroma, I));
+    lines.push('');
+    lines.push(`${I}/* Error — uses its own chroma peak so destructive reads alarming */`);
+    lines.push(...ramp('error', a.errorHue, a.errorChromaPeak, I));
+    lines.push('');
+    lines.push(`${I}/* Warning */`);
+    lines.push(...ramp('warning', a.warningHue, a.chromaPeak, I));
+    lines.push('');
+    lines.push(`${I}/* Success */`);
+    lines.push(...ramp('success', a.successHue, a.chromaPeak, I));
+    lines.push('');
+    lines.push(`${I}/* Info */`);
+    lines.push(...ramp('info', a.infoHue, a.chromaPeak, I));
+
+    if (a.canvas.toUpperCase() !== '#FFFFFF') {
+        const ok = hexToOklch(a.canvas);
+        lines.push('');
+        lines.push(`${I}/* Page canvas — tinted. Bounded areas (panels, dialogs) stay white */`);
+        lines.push(`${I}/* via the default role layer; only the outer canvas takes this tint. */`);
+        lines.push(`${I}--jui-role-surface-canvas: oklch(${ok.L.toFixed(3)} ${ok.C.toFixed(3)} ${ok.H.toFixed(1)});`);
+    }
+    lines.push('}');
+    return lines.join('\n');
+}
+
+function fmt(h) { return h == null ? '0' : (Math.round(h * 10) / 10).toString(); }
+
+/* =============================================================================
+   Full update pipeline
+   ========================================================================== */
+
+function update() {
+    const axes = readAxes();
+    applyAxes(axes);
+    document.getElementById('out-css').value = buildCss(axes);
+}
+
+/* =============================================================================
+   Wire up
+   ========================================================================== */
+
+pair('in-primary',   'in-primary-hex');
+pair('in-secondary', 'in-secondary-hex');
+pair('in-ink',       'in-ink-hex');
+pair('in-error',     'in-error-hex');
+pair('in-warning',   'in-warning-hex');
+pair('in-success',   'in-success-hex');
+pair('in-info',      'in-info-hex');
+pair('in-canvas',    'in-canvas-hex');
+
+['in-chroma', 'in-error-chroma', 'in-ink-chroma', 'in-neutral-chroma', 'in-neutral-hue', 'in-name']
+    .forEach(id => document.getElementById(id).addEventListener('input', update));
+
+document.getElementById('btn-copy').addEventListener('click', () => {
+    const ta = document.getElementById('out-css');
+    ta.select();
+    document.execCommand('copy');
+    const btn = document.getElementById('btn-copy');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => { btn.textContent = orig; }, 1200);
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+    const defaults = {
+        'in-primary-hex': '#0D9BB4',
+        'in-secondary-hex': '#24916F',
+        'in-ink-hex': '#425A71',
+        'in-error-hex': '#D32F2F',
+        'in-warning-hex': '#CD8D0D',
+        'in-success-hex': '#00AD0B',
+        'in-info-hex': '#1475FF',
+        'in-canvas-hex': '#FFFFFF',
+        'in-name': 'custom'
+    };
+    for (const [id, v] of Object.entries(defaults)) {
+        document.getElementById(id).value = v;
+        const pickerId = id.replace('-hex', '');
+        const picker = document.getElementById(pickerId);
+        if (picker) picker.value = v.toLowerCase();
+    }
+    document.getElementById('in-chroma').value = 0.15;
+    document.getElementById('in-error-chroma').value = 0.18;
+    document.getElementById('in-ink-chroma').value = 0.035;
+    document.getElementById('in-neutral-chroma').value = 0;
+    document.getElementById('in-neutral-hue').value = 0;
+    update();
+});
+
+buildSwatches();
+update();
+</script>
+
+</body>
+</html>

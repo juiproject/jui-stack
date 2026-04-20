@@ -23,14 +23,18 @@ import com.effacy.jui.core.client.Invoker;
 import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Em;
+import com.effacy.jui.core.client.dom.builder.IFragmentCSS;
+import com.effacy.jui.core.client.dom.builder.Fragment.IFragmentVariant;
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
 import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Length;
+import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.ui.client.button.Button;
 import com.effacy.jui.ui.client.button.IButtonHandler.IButtonActionCallback;
 import com.effacy.jui.ui.client.icon.FontAwesome;
+import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.Element;
 import elemental2.dom.HTMLButtonElement;
@@ -57,87 +61,124 @@ public class Btn {
     /**
      * The visual form that the button takes.
      */
-    public interface Variant {
+    public interface Variant extends IFragmentVariant<BtnFragment> {
 
         /**
          * Standard button presentation.
          */
-        public static final Variant STANDARD = Variant.create("variant-standard");
+        public static final Variant STANDARD = fragment -> {
+        };
+
+        /**
+         * Expanded padding.
+         */
+        public static final Variant EXPANDED = fragment -> {
+            fragment.css("--frag-btn-padding-lr: 1em;");
+        };
+
+        /**
+         * Rounded corners.
+         */
+        public static final Variant ROUNDED = fragment -> {
+            fragment.css("--frag-btn-radius: 16px;");
+        };
+
+        /**
+         * Compact padding.
+         */
+        public static final Variant COMPACT = fragment -> {
+            fragment.css("--frag-btn-padding-lr: 0;");
+        };
 
         /**
          * Standard button presentation that is rounded.
          */
-        public static final Variant STANDARD_ROUNDED = Variant.create("variant-standard variant-rounded");
-        
+        public static final Variant STANDARD_ROUNDED = fragment -> {
+            fragment.variant(STANDARD).variant(ROUNDED);
+        };
+
         /**
          * Same as {@link #STANDARD} but expands the padding.
          */
-        public static final Variant STANDARD_EXPANDED = Variant.create("variant-standard variant-expanded");
+        public static final Variant STANDARD_EXPANDED = fragment -> {
+            fragment.variant(STANDARD).variant(EXPANDED);
+        };
         
         /**
          * Same as {@link #STANDARD_EXPANDED} but is rounded.
          */
-        public static final Variant STANDARD_EXPANDED_ROUNDED = Variant.create("variant-standard variant-expanded variant-rounded");
+        public static final Variant STANDARD_EXPANDED_ROUNDED = fragment -> {
+            fragment.variant(STANDARD_EXPANDED).variant(ROUNDED);
+        };
         
         /**
          * Draws with an outline.
          */
-        public static final Variant OUTLINED = Variant.create("variant-outlined");
+        public static final Variant OUTLINED = fragment -> {
+            fragment.css("""
+                --frag-btn-text: var(--frag-btn-border);
+                --frag-btn-text-hover: var(--jui-color-aux-white);
+                --frag-btn-bg: var(--jui-color-aux-white);
+                --frag-btn-hover-bg: var(--frag-btn-border);
+            """);
+        };
 
         /**
          * Same as {@link #OUTLINED} but is rounded.
          */
-        public static final Variant OUTLINED_ROUNDED = Variant.create("variant-outlined variant-rounded");
+        public static final Variant OUTLINED_ROUNDED = fragment -> fragment.variant(OUTLINED).variant(ROUNDED);
         
         /**
          * Text only (link-like).
          */
-        public static final Variant TEXT = Variant.create("variant-text");
+        public static final Variant TEXT = fragment -> {
+            fragment.css("""
+                --frag-btn-text: var(--frag-btn-base);
+                --frag-btn-text-hover: var(--frag-btn-base);
+                --frag-btn-border-width: 0;
+                --frag-btn-bg: transparent;
+                --frag-btn-bg-hover: transparent;
+                --frag-btn-hover-text-decoration: underline;
+            """);
+        };
         
         /**
          * Same as {@link #TEXT} but is compact (no padding).
          */
-        public static final Variant TEXT_COMPACT = Variant.create("variant-text variant-compact");
-
-        /**
-         * A CSS class to apply in addition.
-         */
-        public String style();
-
-        /**
-         * Convenience to create an instance of a variant.
-         */
-        public static Variant create(String style) {
-            return new Variant() {
-                public String style() { return style; }
-            };
-        }
+        public static final Variant TEXT_COMPACT = fragment -> fragment.variant(TEXT).variant(COMPACT);
     }
 
     /**
      * Various colour schemes that are phrased in the language of use.
      */
-    public interface Nature {
+    public interface Nature extends IFragmentVariant<BtnFragment> {
 
-        public static final Nature NORMAL = Nature.create("nature-normal");
-        public static final Nature WARNING = Nature.create("nature-warning");
-        public static final Nature DANGER = Nature.create("nature-danger");
-        public static final Nature SUCCESS = Nature.create("nature-success");
-        public static final Nature GREY = Nature.create("nature-grey");
+        public static final Nature NORMAL = fragment -> {
+        };
 
-        /**
-         * A CSS class to apply in addition.
-         */
-        public String style();
-
-        /**
-         * Convenience to create an instance of a variant.
-         */
-        public static Nature create(String style) {
-            return new Nature() {
-                public String style() { return style; }
-            };
-        }
+        public static final Nature WARNING = fragment -> fragment.css("""
+            --frag-btn-base: var(--jui-btn-warning-bg);
+            --frag-btn-bg-hover: var(--jui-btn-warning-bg-hover);
+        """);
+        
+        public static final Nature DANGER = fragment -> fragment.css("""
+            --frag-btn-base: var(--jui-btn-danger-bg);
+            --frag-btn-bg-hover: var(--jui-btn-danger-bg-hover);
+            --frag-btn-text-weight: 600;
+        """);
+        
+        public static final Nature SUCCESS = fragment -> fragment.css("""
+            --frag-btn-base: var(--jui-btn-success-bg);
+            --frag-btn-bg-hover: var(--jui-btn-success-bg-hover);
+        """);
+        
+        public static final Nature GREY = fragment -> fragment.css("""
+            --frag-btn-border: var(--jui-color-neutral30);
+            --frag-btn-base: var(--jui-color-aux-white);
+            --frag-btn-bg-hover: var(--jui-color-neutral05);
+            --frag-btn-text: var(--jui-color-neutral60);
+            --frag-btn-text-hover: var(--jui-color-neutral60);
+        """);
     }
 
     /**
@@ -149,16 +190,6 @@ public class Btn {
          * See constructor.
          */
         private String label;
-
-        /**
-         * See {@link #variant(Variant)}.
-         */
-        private Variant variant = Variant.STANDARD;
-
-        /**
-         * See {@link #nature(Nature)}.
-         */
-        private Nature nature = Nature.NORMAL;
 
         /**
          * See {@link #icon(String)}.
@@ -198,6 +229,8 @@ public class Btn {
          */
         public BtnFragment(String label) {
             this.label = label;
+            variant(Variant.STANDARD);
+            nature(Nature.NORMAL);
         }
 
         /**
@@ -208,9 +241,7 @@ public class Btn {
          * @return the fragment instance.
          */
         public BtnFragment variant(Variant variant) {
-            if (variant != null)
-                this.variant = variant;
-            return this;
+            return variant((IFragmentVariant<BtnFragment>) variant);
         }
 
         /**
@@ -222,7 +253,7 @@ public class Btn {
          */
         public BtnFragment nature(Nature nature) {
             if (nature != null)
-                this.nature = nature;
+                nature.configure(this);
             return this;
         }
 
@@ -320,11 +351,16 @@ public class Btn {
             return this;
         }
 
+        protected ILocalCSS styles() {
+            return LocalCSS.instance();
+        }
+
         @Override
         protected ElementBuilder createRoot(ContainerBuilder<?> parent) {
             if (label == null)
                 return null;
             ElementBuilder btn = com.effacy.jui.core.client.dom.builder.Button.$ (parent);
+            btn.style(styles().fragment());
             if (attributes != null)
                 attributes.forEach((k,v) -> btn.attr(k, v));
             if (!StringSupport.empty(icon))
@@ -332,24 +368,23 @@ public class Btn {
             if (testId != null)
                 btn.testId (testId);
             btn.$(
-                Span.$().style("running").$(
+                Span.$().style(styles().runningpart()).$(
                     Em.$().style(FontAwesome.spinner(FontAwesome.Option.SPIN))
                 ),
-                Span.$().style("label").text (label)
+                Span.$().style(styles().label()).text (label)
             );
-            btn.style ("juiButton", variant.style(), nature.style());
             if (size != null)
                 btn.css (CSS.FONT_SIZE, size);
             if (width != null) {
                 btn.css (CSS.WIDTH, width);
-                btn.style("left");
+                btn.style(styles().left());
             }
             if (onclick != null) {
                 btn.onclick ((e, n) -> {
                     ((HTMLButtonElement)n).disabled = true;
-                    ((Element)n).classList.add("running");
+                    ((Element)n).classList.add(styles().running());
                     onclick.accept(() -> {
-                        ((Element)n).classList.remove("running");
+                        ((Element)n).classList.remove(styles().running());
                         ((HTMLButtonElement)n).disabled = false;
                     });
                 });
@@ -358,5 +393,32 @@ public class Btn {
         }
 
     }
-}
 
+    public static interface ILocalCSS extends IFragmentCSS {
+
+        String left();
+
+        String running();
+
+        String runningpart();
+
+        String label();
+    }
+
+    @CssResource({
+        "com/effacy/jui/ui/client/fragments/Btn.css",
+        "com/effacy/jui/ui/client/fragments/Btn_Override.css"
+    })
+    public static abstract class LocalCSS implements ILocalCSS {
+
+        private static LocalCSS STYLES;
+
+        public static ILocalCSS instance() {
+            if (STYLES == null) {
+                STYLES = (LocalCSS) GWT.create(LocalCSS.class);
+                STYLES.ensureInjected();
+            }
+            return STYLES;
+        }
+    }
+}

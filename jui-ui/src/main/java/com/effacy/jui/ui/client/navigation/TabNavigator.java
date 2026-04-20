@@ -99,114 +99,158 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
     }
 
     /**
+     * Describes a tab for the purposes of {@link #handleNavigation(Consumer)}.
+     * <p>
+     * {@code group} is the label of the containing group (may be {@code null}
+     * for a silent/no-label group). {@code label} is the tab's display label,
+     * {@code reference} is the tab's reference id and {@code icon} is the
+     * tab's icon CSS class (may be {@code null}).
+     */
+    public static record NavigationDescriptor(String group, String label, String reference, String icon) {}
+
+    /**
      * Configuration for the panel.
      */
     public static class Config extends Component.Config {
 
         /**
-         * Style for the tab set (defines presentation configuration including CSS).
+         * Orientation of the tab set.
          */
-        public interface Style {
+        public enum Orientation {
+            HORIZONTAL, VERTICAL
+        }
+
+        /**
+         * Variant for the tab set (defines presentation configuration including CSS).
+         */
+        @FunctionalInterface
+        public interface Variant {
 
             /**
-             * Horizontal tabs.
+             * Standard tabs.
              */
-            public static final Style HORIZONTAL = create (HorizontalLocalCSS.instance (), false, FontAwesome.minus (), FontAwesome.plus ());
+            public static final Variant HORIZONTAL = cfg -> {
+                cfg.orientation (Orientation.HORIZONTAL);
+            };
 
             /**
              * Horizontal tabs (underline version).
              */
-            public static final Style HORIZONTAL_UNDERLINE = create (HorizontalUnderlineLocalCSS.instance (), false, FontAwesome.minus (), FontAwesome.plus ());
+            public static final Variant HORIZONTAL_UNDERLINE = cfg -> {
+                cfg.orientation (Orientation.HORIZONTAL);
+                cfg.styles (HorizontalUnderlineLocalCSS.instance ());
+            };
 
             /**
              * Horizontal tabs (bar version). 
              */
-            public static final Style HORIZONTAL_BAR = create (HorizontalBarLocalCSS.instance (), false, FontAwesome.minus (), FontAwesome.plus ());
-
-            /**
-             * Vertical tabs (icon only).
-             */
-            public static final Style VERTICAL_ICON = create (VerticalIconLocalCSS.instance (), true, FontAwesome.minus (), FontAwesome.plus ());
+            public static final Variant HORIZONTAL_BAR = cfg -> {
+                cfg.orientation (Orientation.HORIZONTAL);
+                cfg.styles (HorizontalBarLocalCSS.instance ());
+            };
 
             /**
              * Vertical tabs.
              */
-            public static final Style VERTICAL = create (VerticalLocalCSS.instance (), true, FontAwesome.minus (), FontAwesome.plus ());
+            public static final Variant VERTICAL = cfg -> {
+                cfg.orientation (Orientation.VERTICAL);
+            };
+
+            /**
+             * Vertical tabs (icon only).
+             */
+            public static final Variant VERTICAL_ICON = cfg -> {
+                cfg.orientation (Orientation.VERTICAL);
+                cfg.styles (VerticalIconLocalCSS.instance ());
+            };
 
             /**
              * Vertical tabs (alternative).
              */
-            public static final Style VERTICAL_ALT = create (VerticalAltLocalCSS.instance (), true, FontAwesome.minus (), FontAwesome.plus ());
+            public static final Variant VERTICAL_ALT = cfg -> {
+                cfg.orientation (Orientation.VERTICAL);
+                cfg.styles (VerticalAltLocalCSS.instance ());
+            };
 
             /**
              * Vertical tabs that are slim (only displays the icon) and slide out on hover
              * to display the label.
              */
-            public static final Style VERTICAL_COMPACT = create (VerticalCompactLocalCSS.instance (), true, FontAwesome.minus (), FontAwesome.plus ());
+            public static final Variant VERTICAL_COMPACT = cfg -> {
+                cfg.orientation (Orientation.VERTICAL);
+                cfg.styles (VerticalCompactLocalCSS.instance ());
+            };
 
             /**
-             * The CSS styles.
+             * Provides additional configuration.
              */
-            public ILocalCSS styles();
-
-            /**
-             * Determines if the styles are based on a vertical arrangement.
-             * 
-             * @return {@code true} if they are.
-             */
-            public boolean vertical();
-
-            /**
-             * The icon to show for an open group (one that is collapsable).
-             * 
-             * @return the icon.
-             */
-            public String groupOpenIcon();
-
-            /**
-             * The icon to show for a closed group (one that is collapsable).
-             * 
-             * @return the icon.
-             */
-            public String groupClosedIcon();
-
-            /**
-             * Convenience to create a style.
-             * 
-             * @return the style.
-             */
-            public static Style create(ILocalCSS styles, boolean vertical, String groupOpenIcon, String groupClosedIcon) {
-                return new Style () {
-
-                    @Override
-                    public ILocalCSS styles() {
-                        return styles;
-                    }
-
-                    @Override
-                    public boolean vertical() {
-                        return vertical;
-                    }
-
-                    @Override
-                    public String groupOpenIcon() {
-                        return groupOpenIcon;
-                    }
-
-                    @Override
-                    public String groupClosedIcon() {
-                        return groupClosedIcon;
-                    }
-
-                };
-            }
-
+            public void configure(Config cfg);
         }
+
+        /**
+         * For backwards compatibility, the style enum is still supported but deprecated
+         * in favor of the more flexible variant configuration (that can include styles
+         * but also other configuration). The styles are mapped to variants internally
+         * for backwards compatibility.
+         */
+        @Deprecated
+        public enum Style implements Variant {
+            @Deprecated HORIZONTAL,
+            @Deprecated HORIZONTAL_UNDERLINE,
+            @Deprecated HORIZONTAL_BAR,
+            @Deprecated VERTICAL,
+            @Deprecated VERTICAL_ALT,
+            @Deprecated VERTICAL_ICON,
+            @Deprecated VERTICAL_COMPACT;
+
+            @Deprecated
+            @Override
+            public void configure(Config dialog) {
+                switch (this) {
+                    case HORIZONTAL:
+                        Variant.HORIZONTAL.configure (dialog);
+                        break;
+                    case HORIZONTAL_UNDERLINE:
+                        Variant.HORIZONTAL_UNDERLINE.configure (dialog);
+                        break;
+                    case HORIZONTAL_BAR:
+                        Variant.HORIZONTAL_BAR.configure (dialog);
+                        break;
+                    case VERTICAL:
+                        Variant.VERTICAL.configure (dialog);
+                        break;
+                    case VERTICAL_ALT:
+                        Variant.VERTICAL_ALT.configure (dialog);
+                        break;
+                    case VERTICAL_ICON:
+                        Variant.VERTICAL_ICON.configure (dialog);
+                        break;
+                    case VERTICAL_COMPACT:
+                        Variant.VERTICAL_COMPACT.configure (dialog);
+                        break;
+                }
+            }
+        }
+
+        /**
+         * The orientation to apply to the tab set.
+         */
+        private Orientation orientation = Orientation.HORIZONTAL;
 
         /**
          * The styles to apply to the tab set.
          */
-        private Style style = Style.HORIZONTAL;
+        private ILocalCSS styles;
+
+        /**
+         * The icon to show for an open group.
+         */
+        private String groupOpenIcon = FontAwesome.minus ();
+
+        /**
+         * The icon to show for a closed group.
+         */
+        private String groupClosedIcon = FontAwesome.plus ();
 
         /**
          * See {@link #padding(Insets)}.
@@ -238,6 +282,9 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
          */
         protected Length minHeight;
 
+        /**
+         * The collection of tabs.
+         */
         protected TabCollection tabs = new TabCollection();
 
         /**
@@ -248,24 +295,111 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         }
 
         /**
-         * Assigns a tab style.
-         * 
-         * @param style
-         *              the style.
-         * @return this configuration instance.
+         * For backwards compatibility, the style method is still supported but
+         * deprecated in favor of the more flexible variant configuration (that can
+         * include styles but also other configuration). The styles are mapped to
+         * variants internally for backwards compatibility.
          */
+        @Deprecated
         public Config style(Config.Style style) {
-            this.style = style;
+            if (style != null)
+                style.configure (this);
             return this;
         }
 
         /**
-         * Getter for {@link #style(Style)}.
+         * Assign a variant to the tab set.
+         * 
+         * @param variant
+         *                the variant.
+         * @return this configuration instance.
          */
-        public Config.Style getStyle() {
-            if (style == null)
-                style = Config.Style.HORIZONTAL;
-            return style;
+        public Config variant(Variant variant) {
+            if (variant != null)
+                variant.configure (this);
+            return this;
+        }
+
+        /**
+         * Sets the orientation for the tab set.
+         * 
+         * @param orientation
+         *                    the orientation.
+         * @return this configuration instance.
+         */
+        public Config orientation(Orientation orientation) {
+            if (orientation != null)
+                this.orientation = orientation;
+            return this;
+        }
+
+        /**
+         * Getter for {@link #orientation(Orientation)}.
+         */
+        public Orientation getOrientation() {
+            if (orientation == null)
+                orientation = Orientation.HORIZONTAL;
+            return orientation;
+        }
+
+        /**
+         * Sets the styles to use for the tab set.
+         * 
+         * @param styles
+         *               the styles.
+         * @return this configuration instance.
+         */
+        public Config styles(ILocalCSS styles) {
+            if (styles != null)
+                this.styles = styles;
+            return this;
+        }
+
+        /**
+         * Getter for {@link #styles(ILocalCSS)}.
+         */
+        public ILocalCSS getStyles() {
+            if (styles == null)
+                styles = (getOrientation () == Orientation.VERTICAL) ? VerticalLocalCSS.instance () : HorizontalLocalCSS.instance ();
+            return styles;
+        }
+
+        /**
+         * Assigns the icon to use for an open group.
+         * 
+         * @param icon
+         *             the icon.
+         * @return this configuration instance.
+         */
+        public Config groupOpenIcon(String icon) {
+            groupOpenIcon = icon;
+            return this;
+        }
+
+        /**
+         * Getter for {@link #groupOpenIcon(String)}.
+         */
+        public String getGroupOpenIcon() {
+            return groupOpenIcon;
+        }
+
+        /**
+         * Assigns the icon to use for a closed group.
+         * 
+         * @param icon
+         *             the icon.
+         * @return this configuration instance.
+         */
+        public Config groupClosedIcon(String icon) {
+            groupClosedIcon = icon;
+            return this;
+        }
+
+        /**
+         * Getter for {@link #groupClosedIcon(String)}.
+         */
+        public String getGroupClosedIcon() {
+            return groupClosedIcon;
         }
 
         /**
@@ -386,14 +520,52 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
             return tabs.tab(reference, label, activator);
         }
     
+        /**
+         * Adds a tab to the tab set (always to the last created tab group) with a
+         * simplen handler.
+         * 
+         * @param label
+         *                display label for the tab.
+         * @param handler
+         *                the handler to invoke when the tab is clicked (note that this
+         *                is not a navigation handler and will not be passed a
+         *                navigation context).
+         * @return the tab (for further configuration).
+         */
         public ITabConfig tab(String label, Invoker handler) {
             return tabs.tab(label, handler);
         }
 
+        /**
+         * Adds a tab to the tab set (always to the last created tab group) with a
+         * component.
+         * 
+         * @param reference
+         *                  the reference to the tab.
+         * @param label
+         *                  display label for the tab.
+         * @param component
+         *                  the component to add.
+         * @return the tab (for further configuration).
+         */
         public ITabConfig tab(String reference, String label, IComponent component) {
             return tabs.tab (reference, label, component, null);
         }
 
+        /**
+         * Adds a tab to the tab set (always to the last created tab group) with a
+         * component and layout data.
+         * 
+         * @param reference
+         *                  the reference to the tab.
+         * @param label
+         *                  display label for the tab.
+         * @param component
+         *                  the component to add.
+         * @param layoutData
+         *                  (optional) layout data to apply.
+         * @return the tab (for further configuration).
+         */
         public ITabConfig tab(String reference, String label, IComponent component, LayoutData layoutData) {
             return tabs.tab (reference, label, component, layoutData);
         }
@@ -804,12 +976,28 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
 
     /**
      * Activates the specified tab.
-     * 
+     *
      * @param ref
      *            the reference of the tab to activate.
      */
     public void activate(String ref) {
         _activate (ref);
+    }
+
+    /**
+     * Registers a handler invoked whenever the active tab changes. The handler
+     * receives a {@link NavigationDescriptor} with the group label, tab label
+     * and reference of the newly activated tab.
+     * <p>
+     * Fires on state change only — re-activating the already-active tab does
+     * not re-invoke the handler.
+     *
+     * @param handler
+     *                the handler to register.
+     */
+    public void handleNavigation(Consumer<NavigationDescriptor> handler) {
+        if (handler != null)
+            navigationHandlers.add (handler);
     }
 
     /**
@@ -1111,6 +1299,11 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
 
 
     /**
+     * Handlers registered via {@link #handleNavigation(Consumer)}.
+     */
+    private List<Consumer<NavigationDescriptor>> navigationHandlers = new ArrayList<> ();
+
+    /**
      * Pre-render activate.
      */
     private String activatePreRender = null;
@@ -1196,7 +1389,7 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
             // Apply root-level styles.
             if (!StringSupport.empty (config ().color))
                 root.css ("backgroundColor", config ().color);
-            String orientation = config ().getStyle ().vertical () ? styles ().vertical () : styles ().horizontal ();
+            String orientation = (config ().getOrientation () == Config.Orientation.VERTICAL) ? styles ().vertical () : styles ().horizontal ();
             root.style (styles ().component (), orientation);
 
             // Build out DOM structure.
@@ -1526,6 +1719,7 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
             return false;
         if (!tabs.get (ref).enabled)
             return false;
+        boolean alreadyActive = tabs.get (ref).isActive ();
         tabs.forEach ((key, tab) -> {
             if (ref.equals (key))
                 tab.activate ();
@@ -1537,7 +1731,32 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         if (Debug.isTestMode())
             getRoot().setAttribute("test-state", ref);
 
+        // Notify navigation handlers on state change only.
+        if (!alreadyActive)
+            _fireNavigation (ref);
+
         return true;
+    }
+
+    /**
+     * Fires {@link #navigationHandlers} for the given tab reference.
+     */
+    private void _fireNavigation(String ref) {
+        if (navigationHandlers.isEmpty ())
+            return;
+        TabConfig tabCfg = config ().tabs.findTab (ref);
+        if (tabCfg == null)
+            return;
+        String groupLabel = null;
+        for (TabGroupConfig grp : config ().tabs.getTabGroups ()) {
+            if (grp.getTabs ().contains (tabCfg)) {
+                groupLabel = grp.label;
+                break;
+            }
+        }
+        NavigationDescriptor desc = new NavigationDescriptor (groupLabel, tabCfg.label, ref, tabCfg.icon);
+        for (Consumer<NavigationDescriptor> h : navigationHandlers)
+            h.accept (desc);
     }
 
     /**
@@ -1572,7 +1791,7 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
 
     @Override
     protected ILocalCSS styles() {
-        return config().style.styles();
+        return config ().getStyles ();
     }
 
     public static interface ILocalCSS extends IComponentCSS {
@@ -1694,6 +1913,8 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         IComponentCSS.COMPONENT_CSS,
         ILocalCSS.CSS,
         ILocalCSS.CSS_OVERRIDE,
+        "com/effacy/jui/ui/client/navigation/TabNavigator_Horizontal.css",
+        "com/effacy/jui/ui/client/navigation/TabNavigator_Horizontal_Override.css",
         "com/effacy/jui/ui/client/navigation/TabNavigator_HorizontalBar.css",
         "com/effacy/jui/ui/client/navigation/TabNavigator_HorizontalBar_Override.css"
     })
@@ -1740,6 +1961,7 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         ILocalCSS.CSS,
         ILocalCSS.CSS_OVERRIDE,
         "com/effacy/jui/ui/client/navigation/TabNavigator_Vertical.css",
+        "com/effacy/jui/ui/client/navigation/TabNavigator_Vertical_Override.css",
         "com/effacy/jui/ui/client/navigation/TabNavigator_VerticalAlt.css",
         "com/effacy/jui/ui/client/navigation/TabNavigator_VerticalAlt_Override.css"
     })
@@ -1805,4 +2027,3 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
     }
 
 }
-

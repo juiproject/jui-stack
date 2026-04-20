@@ -1,123 +1,144 @@
-/***************************************
- * Themes
- ***/
+.component {
+    --cpt-notification-gap: var(--jui-space-4);
+}
+
 .component .notification.theme {
-	--notif-color: hsl(214, 98%, 55%);
-	--notif-color-border: hsl(214, 98%, 60%);
-	--notif-color-bg: #fff;
-	--notif-color-icon: #fff;
-	--notif-color-title: #333;
-	--notif-color-text: #777;
-	--notif-color-item: #999;
-	--notif-border-radius: 3px;
+    --cpt-notification-accent: var(--jui-comp-notification-info-accent);
+    --cpt-notification-border: var(--jui-comp-notification-info-border);
+    --cpt-notification-surface: var(--jui-comp-notification-info-surface);
+    --cpt-notification-icon: var(--jui-role-text-inverse);
+    --cpt-notification-title: var(--jui-role-text-heading);
+    --cpt-notification-text: var(--jui-role-border-contrast);
+    --cpt-notification-item: var(--jui-role-text-muted);
+    --cpt-notification-radius: var(--jui-comp-notification-radius);
+
+    --notif-color: var(--cpt-notification-accent);
+    --notif-color-border: var(--cpt-notification-border);
+    --notif-color-bg: var(--cpt-notification-surface);
+    --notif-color-icon: var(--cpt-notification-icon);
+    --notif-color-title: var(--cpt-notification-title);
+    --notif-color-text: var(--cpt-notification-text);
+    --notif-color-item: var(--cpt-notification-item);
+    --notif-border-radius: var(--cpt-notification-radius);
 }
 
 .component .notification.theme_success {
-	--notif-color: hsl(116, 46%, 49%);
-	--notif-color-border: hsl(116, 46%, 54%);
-	--notif-color-bg: #fff;
-	--notif-color-icon: #fff;
-	--notif-color-title: #333;
-	--notif-color-text: #777;
-	--notif-color-item: #999;
-	--notif-border-radius: 3px;
-}
+    --cpt-notification-accent: var(--jui-comp-notification-success-accent);
+    --cpt-notification-border: var(--jui-comp-notification-success-border);
+    --cpt-notification-surface: var(--jui-comp-notification-success-surface);
+    --cpt-notification-icon: var(--jui-role-text-inverse);
+    --cpt-notification-title: var(--jui-role-text-heading);
+    --cpt-notification-text: var(--jui-role-border-contrast);
+    --cpt-notification-item: var(--jui-role-text-muted);
+    --cpt-notification-radius: var(--jui-comp-notification-radius);
 
+    --notif-color: var(--cpt-notification-accent);
+    --notif-color-border: var(--cpt-notification-border);
+    --notif-color-bg: var(--cpt-notification-surface);
+    --notif-color-icon: var(--cpt-notification-icon);
+    --notif-color-title: var(--cpt-notification-title);
+    --notif-color-text: var(--cpt-notification-text);
+    --notif-color-item: var(--cpt-notification-item);
+    --notif-border-radius: var(--cpt-notification-radius);
+}
 
 .component .notification.theme_error {
-	--notif-color: hsl(0, 89%, 53%);
-	--notif-color-border: hsl(0, 89%, 57%);
-	--notif-color-bg: #fff0f4;
-	--notif-color-icon: #fff;
-	--notif-color-title: hsl(0, 89%, 53%);
-	--notif-color-text: hsl(0, 89%, 53%);
-	--notif-color-item: hsl(0, 89%, 53%);
-	--notif-border-radius: 3px;
+    --cpt-notification-accent: var(--jui-comp-notification-error-accent);
+    --cpt-notification-border: var(--jui-comp-notification-error-border);
+    --cpt-notification-surface: var(--jui-comp-notification-error-surface);
+    --cpt-notification-icon: var(--jui-role-text-inverse);
+    --cpt-notification-title: var(--jui-comp-notification-error-accent);
+    --cpt-notification-text: var(--jui-comp-notification-error-accent);
+    --cpt-notification-item: var(--jui-comp-notification-error-accent);
+    --cpt-notification-radius: var(--jui-comp-notification-radius);
+
+    --notif-color: var(--cpt-notification-accent);
+    --notif-color-border: var(--cpt-notification-border);
+    --notif-color-bg: var(--cpt-notification-surface);
+    --notif-color-icon: var(--cpt-notification-icon);
+    --notif-color-title: var(--cpt-notification-title);
+    --notif-color-text: var(--cpt-notification-text);
+    --notif-color-item: var(--cpt-notification-item);
+    --notif-border-radius: var(--cpt-notification-radius);
 }
 
-/***************************************
- * Structure
- ***/
 .component {
-	margin: 0;
-	padding: 0;
-	box-sizing: content-box;
+    margin: 0;
+    padding: 0;
+    box-sizing: content-box;
 }
 
 .component .wrap {
-	display: flex;
+    display: flex;
     flex-direction: column;
-    gap: 1em;
+    gap: var(--cpt-notification-gap);
 }
 
 .component .notification {
-	position: relative;
-	border: 1px solid var(--notif-color-border);
-	background: var(--notif-color-bg);
-    /*border-left: 5px solid var(--notif-color);*/
-	border-radius: var(--notif-border-radius);
-	color: var(--notif-color-text);
-	padding: 0.75em 1em 1em 4em;
-	overflow: hidden;
+    position: relative;
+    border: 1px solid var(--cpt-notification-border, var(--notif-color-border));
+    background: var(--cpt-notification-surface, var(--notif-color-bg));
+    border-radius: var(--cpt-notification-radius, var(--notif-border-radius));
+    color: var(--cpt-notification-text, var(--notif-color-text));
+    padding: var(--jui-space-3) var(--jui-space-4) var(--jui-space-4) var(--jui-space-8);
+    overflow: hidden;
 }
 
 .component .notification h3 {
-	padding-left: 1rem;
-	margin: 0;
-	color: var(--notif-color-title);
-	font-weight: 400;
-	margin-bottom: 0.25em;
-	font-size: 1.4em;
+    padding-left: var(--jui-space-4);
+    margin: 0 0 var(--jui-space-1) 0;
+    color: var(--cpt-notification-title, var(--notif-color-title));
+    font-weight: var(--jui-font-weight-regular);
+    font-size: 1.4em;
 }
 
 .component .notification p {
-	font-size: inherit;
-	display: table;
-	padding-left: 1em;
-	margin-block-start: 0;
-	margin-block-end: 0;
+    font-size: inherit;
+    display: table;
+    padding-left: var(--jui-space-4);
+    margin-block-start: 0;
+    margin-block-end: 0;
 }
 
 .component .notification div.left {
-	padding-top: 0.75em;
-	position: absolute;
-	background: var(--notif-color-border);
-	width: 4em;
-	left: 0;
-	top: 0;
-	bottom: 0;
-	text-align: center;
+    padding-top: var(--jui-space-3);
+    position: absolute;
+    background: var(--cpt-notification-border, var(--notif-color-border));
+    width: var(--jui-space-8);
+    left: 0;
+    top: 0;
+    bottom: 0;
+    text-align: center;
 }
 
 .component .notification div em {
-	font-size: inherit;
-	color: var(--notif-color-icon);
+    font-size: inherit;
+    color: var(--cpt-notification-icon, var(--notif-color-icon));
 }
 
 .component .notification div em::before {
-	font-size: 2em;
+    font-size: 2em;
 }
 
 .component .notification span {
-	font-size: inherit;
+    font-size: inherit;
 }
 
 .component .notification ul {
-	margin-top: 0.75em;
-	margin-bottom: 0;
-	font-size: inherit;
-	padding-inline: 1em;
+    margin-top: var(--jui-space-3);
+    margin-bottom: 0;
+    font-size: inherit;
+    padding-inline: var(--jui-space-4);
 }
 
 .component .notification ul li {
-	list-style: disc;
-    margin-left: 2em;
-	font-size: inherit;
-	font-size: 0.9em;
-	color: var(--notif-color-item);
-    margin-bottom: 0.25em;
+    list-style: disc;
+    margin-left: var(--jui-space-8);
+    font-size: 0.9em;
+    color: var(--cpt-notification-item, var(--notif-color-item));
+    margin-bottom: var(--jui-space-1);
 }
 
 .component .notification ul li:last-child {
-    margin-bottom: 0em;
+    margin-bottom: 0;
 }

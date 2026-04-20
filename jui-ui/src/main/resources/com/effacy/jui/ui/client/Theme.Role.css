@@ -1,0 +1,47 @@
+.theme {
+    /* Semantic role tokens */
+    --jui-role-surface-canvas: var(--jui-color-aux-white);
+    --jui-role-surface-raised: var(--jui-color-neutral05);
+    --jui-role-surface-muted: var(--jui-color-neutral10);
+    --jui-role-surface-sunken: var(--jui-color-neutral20);
+    --jui-role-surface-overlay: var(--jui-color-aux-white);
+    --jui-role-surface-accent: var(--jui-color-primary05);
+    --jui-role-surface-info: var(--jui-color-info05);
+    --jui-role-surface-success: var(--jui-color-success05);
+    --jui-role-surface-warning: var(--jui-color-warning05);
+    --jui-role-surface-error: var(--jui-color-error05);
+
+    --jui-role-border-subtle: var(--jui-color-neutral20);
+    --jui-role-border-default: var(--jui-color-neutral30);
+    --jui-role-border-strong: var(--jui-color-neutral40);
+    --jui-role-border-contrast: var(--jui-color-neutral60);
+
+    --jui-role-text-default: var(--jui-color-ink70);
+    --jui-role-text-muted: var(--jui-color-ink30);
+    --jui-role-text-heading: var(--jui-color-ink70);
+    --jui-role-text-heading-subtle: var(--jui-color-ink60);
+    --jui-role-text-disabled: var(--jui-color-neutral40);
+    --jui-role-text-inverse: var(--jui-color-aux-white);
+    --jui-role-text-link: var(--jui-color-primary50);
+    --jui-role-text-link-hover: var(--jui-color-primary70);
+
+    --jui-role-interactive-primary: var(--jui-color-primary50);
+    --jui-role-interactive-primary-hover: var(--jui-color-primary60);
+    --jui-role-interactive-primary-strong: var(--jui-color-primary70);
+    --jui-role-interactive-primary-on: var(--jui-color-aux-white);
+    --jui-role-interactive-secondary: var(--jui-color-secondary50);
+    --jui-role-interactive-secondary-hover: var(--jui-color-secondary60);
+
+    --jui-role-feedback-info: var(--jui-color-info50);
+    --jui-role-feedback-success: var(--jui-color-success60);
+    --jui-role-feedback-warning: var(--jui-color-warning70);
+    --jui-role-feedback-error: var(--jui-color-error50);
+
+    --jui-role-focus-ring: var(--jui-color-info40);
+    --jui-role-focus-shadow: var(--jui-color-info20);
+    --jui-role-disabled: var(--jui-color-neutral30);
+    --jui-role-disabled-strong: var(--jui-color-neutral40);
+    --jui-role-selection: var(--jui-color-ink70);
+    --jui-role-selection-muted: var(--jui-color-ink20);
+    --jui-role-selection-active: var(--jui-color-ink30);
+}

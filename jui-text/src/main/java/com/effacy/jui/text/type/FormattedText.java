@@ -16,8 +16,10 @@
 package com.effacy.jui.text.type;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -34,6 +36,11 @@ import com.effacy.jui.text.type.builder.markdown.MarkdownSerializer;
  */
 @JsonSerializable
 public class FormattedText implements Iterable<FormattedBlock> {
+
+    /**
+     * Default generator used where callers do not provide one explicitly.
+     */
+    private static final IBlockIdGenerator DEFAULT_BLOCK_ID_GENERATOR = new DefaultBlockIdGenerator();
 
     /**
      * RPC value type.
@@ -78,6 +85,7 @@ public class FormattedText implements Iterable<FormattedBlock> {
             if (part == null)
                 continue;
             FormattedBlock blk = new FormattedBlock (BlockType.PARA);
+            blk.ensureId(DEFAULT_BLOCK_ID_GENERATOR);
             text.getBlocks ().add (blk);
             blk.add (FormattedLine.string (part));
         }
@@ -252,6 +260,75 @@ public class FormattedText implements Iterable<FormattedBlock> {
         this.blocks = blocks;
     }
 
+    /**
+     * Ensures every block in the document has an identifier.
+     *
+     * @return this text instance.
+     */
+    public FormattedText ensureBlockIds() {
+        return ensureBlockIds(DEFAULT_BLOCK_ID_GENERATOR);
+    }
+
+    /**
+     * Ensures every block in the document has an identifier.
+     *
+     * @param generator
+     *                  the generator to use for missing identifiers.
+     * @return this text instance.
+     */
+    public FormattedText ensureBlockIds(IBlockIdGenerator generator) {
+        if (generator == null)
+            generator = DEFAULT_BLOCK_ID_GENERATOR;
+        for (FormattedBlock block : getBlocks())
+            block.ensureId(generator);
+        return this;
+    }
+
+    /**
+     * Finds a top-level block by identifier.
+     * 
+     * @param id
+     *           the identifier.
+     * @return the block, or {@code null}.
+     */
+    public FormattedBlock blockById(String id) {
+        int index = blockIndexById(id);
+        return (index < 0) ? null : getBlocks().get(index);
+    }
+
+    /**
+     * Finds the index of a top-level block by identifier.
+     * 
+     * @param id
+     *           the identifier.
+     * @return the index, or {@code -1}.
+     */
+    public int blockIndexById(String id) {
+        if ((id == null) || id.isBlank())
+            return -1;
+        for (int i = 0; i < getBlocks().size(); i++) {
+            if (id.equals(getBlocks().get(i).getId()))
+                return i;
+        }
+        return -1;
+    }
+
+    /**
+     * Validates that all top-level blocks have unique identifiers.
+     *
+     * @throws IllegalStateException
+     *                               if an identifier is missing or duplicated.
+     */
+    public void validateUniqueBlockIds() {
+        Set<String> ids = new HashSet<>();
+        for (FormattedBlock block : getBlocks()) {
+            if (!block.hasId())
+                throw new IllegalStateException("Block missing id");
+            if (!ids.add(block.getId()))
+                throw new IllegalStateException("Duplicate block id: " + block.getId());
+        }
+    }
+
     /************************************************************************
      * Building.
      ************************************************************************/
@@ -269,6 +346,7 @@ public class FormattedText implements Iterable<FormattedBlock> {
         if (type == null)
             return this;
         FormattedBlock blk = new FormattedBlock (type);
+        blk.ensureId(DEFAULT_BLOCK_ID_GENERATOR);
         getBlocks ().add (blk);
         if (builder != null)
             builder.accept (blk);
@@ -286,6 +364,7 @@ public class FormattedText implements Iterable<FormattedBlock> {
         if (type == null)
             return null;
         FormattedBlock blk = new FormattedBlock (type);
+        blk.ensureId(DEFAULT_BLOCK_ID_GENERATOR);
         getBlocks ().add (blk);
         return blk;
     }

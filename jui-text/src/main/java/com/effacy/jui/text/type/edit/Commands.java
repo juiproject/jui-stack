@@ -1136,7 +1136,7 @@ public final class Commands {
         List<FormattedBlock> blocks = state.doc().getBlocks();
         if ((blockIndex < 0) || (blockIndex >= blocks.size()))
             return null;
-        FormattedBlock clone = blocks.get(blockIndex).clone();
+        FormattedBlock clone = blocks.get(blockIndex).clone(false);
         Transaction tr = Transaction.create();
         tr.step(new InsertBlockStep(blockIndex + 1, clone));
         tr.setSelection(Selection.cursor(blockIndex + 1, 0));
@@ -1331,14 +1331,14 @@ public final class Commands {
             tr.step(new ReplaceBlockStep(fromBlock, leftPart));
             tr.setSelection(Selection.cursor(fromBlock, newOffset));
         } else {
-            FormattedBlock lastPasted = pastedBlocks.get(N - 1).clone();
+            FormattedBlock lastPasted = pastedBlocks.get(N - 1).clone(false);
             int cursorOffset = Positions.contentSize(lastPasted);
             mergeBlockContent(lastPasted, rightPart);
             lastPasted.setType(rightPart.getType());
 
             tr.step(new ReplaceBlockStep(fromBlock, leftPart));
             for (int i = 1; i < N - 1; i++)
-                tr.step(new InsertBlockStep(fromBlock + i, pastedBlocks.get(i).clone()));
+                tr.step(new InsertBlockStep(fromBlock + i, pastedBlocks.get(i).clone(false)));
             tr.step(new InsertBlockStep(fromBlock + N - 1, lastPasted));
             tr.setSelection(Selection.cursor(fromBlock + N - 1, cursorOffset));
         }

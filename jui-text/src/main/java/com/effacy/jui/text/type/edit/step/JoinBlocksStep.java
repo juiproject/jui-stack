@@ -39,12 +39,13 @@ public class JoinBlocksStep implements Step {
         FormattedBlock right = doc.getBlocks().get(blockIndex + 1);
         int leftContentSize = Positions.contentSize(left);
         int contentPos = Positions.blockStart(doc, blockIndex) + 1;
+        String rightId = right.getId();
 
         left.merge(right);
         doc.getBlocks().remove(blockIndex + 1);
 
         return new StepResult(
-            new SplitBlockStep(blockIndex, leftContentSize),
+            new SplitBlockStep(blockIndex, leftContentSize, rightId),
             StepMap.of(contentPos + leftContentSize, 2, 0)
         );
     }

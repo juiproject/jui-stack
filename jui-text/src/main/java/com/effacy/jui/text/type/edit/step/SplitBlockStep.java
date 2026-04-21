@@ -20,6 +20,7 @@ public class SplitBlockStep implements Step {
 
     private final int blockIndex;
     private final int offset;
+    private final String rightBlockId;
 
     /**
      * @param blockIndex
@@ -31,8 +32,23 @@ public class SplitBlockStep implements Step {
      *                   to a new block.
      */
     public SplitBlockStep(int blockIndex, int offset) {
+        this(blockIndex, offset, null);
+    }
+
+    /**
+     * @param blockIndex
+     *                   index of the block to split.
+     * @param offset
+     *                   character offset within the block's content where the
+     *                   split occurs.
+     * @param rightBlockId
+     *                     optional identifier to assign to the newly created
+     *                     right-hand block.
+     */
+    public SplitBlockStep(int blockIndex, int offset, String rightBlockId) {
         this.blockIndex = blockIndex;
         this.offset = offset;
+        this.rightBlockId = rightBlockId;
     }
 
     @Override
@@ -41,6 +57,9 @@ public class SplitBlockStep implements Step {
         int contentPos = Positions.blockStart(doc, blockIndex) + 1;
 
         FormattedBlock right = block.split(offset);
+        if ((rightBlockId != null) && !rightBlockId.isBlank())
+            right.setId(rightBlockId);
+        right.ensureId();
         doc.getBlocks().add(blockIndex + 1, right);
 
         return new StepResult(

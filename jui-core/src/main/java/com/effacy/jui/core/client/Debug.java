@@ -49,6 +49,11 @@ public class Debug {
     /**
      * Determines if one is operating in a test mode (i.e. running a standard Java
      * unit test).
+     * <p>
+     * This is determined by checking if one is not running in client mode. This is
+     * a simple check that is sufficient for the current use cases. It is not
+     * expected that there will be any need to run in test mode in client mode, but
+     * if there is then a more complex check could be added.
      * 
      * @return {@code true} if so.
      */

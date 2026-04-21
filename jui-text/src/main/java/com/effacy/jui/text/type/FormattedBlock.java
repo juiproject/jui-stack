@@ -31,6 +31,11 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 public class FormattedBlock {
 
     /**
+     * Default generator used where a caller has not provided a specific strategy.
+     */
+    private static final IBlockIdGenerator DEFAULT_BLOCK_ID_GENERATOR = new DefaultBlockIdGenerator();
+
+    /**
      * Describes content constraints for blocks. This can be used for validation and
      * for guiding user interfaces.
      */
@@ -206,6 +211,11 @@ public class FormattedBlock {
     /**
      * See {@link #getType()}.
      */
+    private String id;
+
+    /**
+     * See {@link #getType()}.
+     */
     private BlockType type;
 
     /**
@@ -346,6 +356,94 @@ public class FormattedBlock {
     /************************************************************************
      * General properties.
      ************************************************************************/
+
+    /**
+     * The unique identifier for this block.
+     * 
+     * @return the identifier, or {@code null} if none has been assigned.
+     */
+    public String getId() {
+        return id;
+    }
+
+    /**
+     * Serialisation setter for {@link #getId()}.
+     */
+    public void setId(String id) {
+        if (id != null) {
+            id = id.trim();
+            if (id.isEmpty())
+                id = null;
+        }
+        this.id = id;
+    }
+
+    /**
+     * Builder-style setter for {@link #getId()}.
+     * 
+     * @param id
+     *           the identifier.
+     * @return this instance.
+     */
+    public FormattedBlock id(String id) {
+        setId(id);
+        return this;
+    }
+
+    /**
+     * Determines whether this block currently has an identifier.
+     * 
+     * @return {@code true} if it has one.
+     */
+    public boolean hasId() {
+        return (id != null) && !id.isBlank();
+    }
+
+    /**
+     * Ensures that this block has an identifier, generating one if required.
+     * <p>
+     * Child blocks are also assigned identifiers where missing.
+     * 
+     * @return the resolved identifier.
+     */
+    public String ensureId() {
+        return ensureId(DEFAULT_BLOCK_ID_GENERATOR);
+    }
+
+    /**
+     * Ensures that this block has an identifier, generating one if required.
+     * <p>
+     * Child blocks are also assigned identifiers where missing.
+     * 
+     * @param generator
+     *                  the generator to use when an identifier is missing.
+     * @return the resolved identifier.
+     */
+    public String ensureId(IBlockIdGenerator generator) {
+        if (generator == null)
+            generator = DEFAULT_BLOCK_ID_GENERATOR;
+        if (!hasId())
+            setId(generator.nextId());
+        if (blocks != null) {
+            for (FormattedBlock child : blocks)
+                child.ensureId(generator);
+        }
+        return id;
+    }
+
+    /**
+     * Removes the identifier from this block and all children.
+     * 
+     * @return this instance.
+     */
+    public FormattedBlock clearId() {
+        id = null;
+        if (blocks != null) {
+            for (FormattedBlock child : blocks)
+                child.clearId();
+        }
+        return this;
+    }
 
     /**
      * The total length of the block (being the sum of the length of the lines or
@@ -749,11 +847,25 @@ public class FormattedBlock {
     }
 
     public FormattedBlock clone() {
+        return clone(true);
+    }
+
+    /**
+     * Creates a deep copy of this block.
+     * 
+     * @param preserveId
+     *                   {@code true} to retain identifiers; {@code false} to
+     *                   clear identifiers on the cloned structure.
+     * @return the clone.
+     */
+    public FormattedBlock clone(boolean preserveId) {
         FormattedBlock blk = new FormattedBlock (type);
+        if (preserveId)
+            blk.id = id;
         blk.indent = indent;
         getLines ().forEach (line -> blk.add (line));
         if (blocks != null)
-            blocks.forEach (child -> blk.getBlocks ().add (child.clone ()));
+            blocks.forEach (child -> blk.getBlocks ().add (child.clone (preserveId)));
         if (meta != null)
             blk.getMeta ().putAll (meta);
         blk.content = content;

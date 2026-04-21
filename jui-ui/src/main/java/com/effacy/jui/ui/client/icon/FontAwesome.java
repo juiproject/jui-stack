@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.effacy.jui.core.client.Debug;
 import com.effacy.jui.platform.core.JuiIncompatible;
 import com.effacy.jui.platform.css.client.CssDeclaration;
 import com.effacy.jui.platform.css.client.CssResource;
@@ -72,7 +73,7 @@ public class FontAwesome {
     /**
      * Instance of the font family.
      */
-    private static final FontCSS INSTANCE = (FontCSS) GWT.create (FontCSS.class);
+    private static FontCSS INSTANCE;
 
     /**
      * Private constructor.
@@ -86,7 +87,10 @@ public class FontAwesome {
      */
     public static final void inject() {
         if (!INJECTED) {
-            INSTANCE.ensureInjected ();
+            if ((INSTANCE == null) && !Debug.isUnitTestMode()) {
+                INSTANCE = (FontCSS) GWT.create (FontCSS.class);
+                INSTANCE.ensureInjected ();
+            }
             INJECTED = true;
         }
     }

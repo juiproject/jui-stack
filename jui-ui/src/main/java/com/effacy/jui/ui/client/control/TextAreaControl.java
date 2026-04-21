@@ -515,7 +515,6 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
             if (height == null)
                 height = Length.px (0);
             CSS.MIN_HEIGHT.apply(inputEl, height);
-            sizeAfterAssignment = 0;
         }
         return this;
     }
@@ -547,7 +546,7 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
         }
         _updateCounter();
         if (config().expandOnContent)
-            TimerSupport.defer(() -> _resize(true));
+            TimerSupport.defer(() -> _resize());
     }
 
     /**
@@ -567,7 +566,7 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
                             e.stopEvent ();
                     }, UIEventType.ONKEYPRESS);
                     if (config().expandOnContent)
-                        ta.on (e -> _resize(false), UIEventType.ONINPUT);
+                        ta.on (e -> _resize(), UIEventType.ONINPUT);
                     ta.on (e -> modified (), UIEventType.ONKEYUP);
                     ta.on (e -> {
                         TimerSupport.defer(() -> {
@@ -604,42 +603,29 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
     }
 
     /**
-     * Used to capture the size of the textarea after an assignment in value has
-     * been made. This is used when {@link Config#expandOnContent} is enabled and
-     * constitutes the smallest value permissible for the height of the textarea.
-     */
-    private int sizeAfterAssignment = 0;
-
-    /**
-     * Re-sizes the text area if needed.
+     * Re-sizes the text area to fit its content, using the {@code rows}
+     * attribute as the lower bound.
      * <p>
-     * When the {@code rows} attribute is set on the textarea, the browser
-     * derives a natural height from it. To preserve this as a lower bound the
-     * resize temporarily removes the explicit height, lets the browser apply the
-     * rows-based height, captures it, then sets the height to whichever is
-     * larger: the rows-based height or the content's scroll height.
-     *
-     * @param assigned
-     *                 {@code true} if the resize is being applied after an
-     *                 assignment of value.
+     * The rows attribute already drives a natural height on the textarea; this
+     * method only applies an explicit {@code height} when the content's
+     * scrollHeight exceeds that natural height. When content shrinks back
+     * within the natural height the explicit height is removed so the rows
+     * attribute resumes driving the size.
+     * <p>
+     * If the element is not yet laid out (clientHeight reads 0 — e.g. inside a
+     * not-yet-visible ancestor, or the deferred call fires before layout
+     * completes) this method bails out. Previous versions fell back to a
+     * hardcoded 16px floor here, which produced a textarea rendered as a
+     * single line instead of the configured number of rows. A later input or
+     * window-resize event will retry with a valid measurement; the rows
+     * attribute keeps sizing correct in the meantime.
      */
-    protected void _resize(boolean assigned) {
-        // Remove explicit height so the browser applies the rows attribute.
+    protected void _resize() {
         inputEl.style.removeProperty("height");
-
-        // Capture the rows-based height (clientHeight with rows but no explicit
-        // height). This is the floor.
-        int minHeight = inputEl.clientHeight;
-        if (minHeight <= 0)
-            minHeight = 16;
-        if (sizeAfterAssignment > minHeight)
-            minHeight = sizeAfterAssignment;
-
-        // Set to the floor so scrollHeight reflects actual content.
-        CSS.HEIGHT.apply(inputEl, Length.px(minHeight));
-        if (assigned)
-            sizeAfterAssignment = inputEl.clientHeight;
-        if (inputEl.scrollHeight > minHeight)
+        int naturalHeight = inputEl.clientHeight;
+        if (naturalHeight <= 0)
+            return;
+        if (inputEl.scrollHeight > naturalHeight)
             CSS.HEIGHT.apply(inputEl, Length.px(inputEl.scrollHeight));
     }
 
@@ -692,7 +678,7 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
     @Override
     protected void onWindowResize(int width, int height) {
         if (config ().expandOnContent)
-            _resize (false);
+            _resize ();
     }
 
     /**

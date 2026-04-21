@@ -18,9 +18,9 @@ package com.effacy.jui.core.client.store;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.effacy.jui.core.client.GWTTest;
+import com.effacy.jui.core.client.AbstractJUITest;
 
-public class ListStoreTest extends GWTTest {
+public class ListStoreTest extends AbstractJUITest {
 
     @Test
     public void test_add() {

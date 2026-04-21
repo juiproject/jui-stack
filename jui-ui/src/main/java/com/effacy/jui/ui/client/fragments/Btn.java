@@ -411,11 +411,11 @@ public class Btn {
     })
     public static abstract class LocalCSS implements ILocalCSS {
 
-        private static LocalCSS STYLES;
+        private static ILocalCSS STYLES;
 
         public static ILocalCSS instance() {
             if (STYLES == null) {
-                STYLES = (LocalCSS) GWT.create(LocalCSS.class);
+                STYLES = (ILocalCSS) GWT.create(LocalCSS.class);
                 STYLES.ensureInjected();
             }
             return STYLES;

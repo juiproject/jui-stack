@@ -3,6 +3,9 @@
     --jui-selectctl-text: var(--jui-ctl-text);
     --jui-selectctl-text-light: var(--jui-ctl-text-placeholder);
     --jui-selectctl-bg: var(--jui-ctl-bg);
+    --jui-selectctl-icon-color: var(--jui-selectctl-text-light);
+    --jui-selectctl-prompt-color: var(--jui-selectctl-text-light);
+    --jui-selectctl-prompt-weight: 600;
 }
 
 .component {
@@ -35,6 +38,16 @@
 
 .component.waiting .inner * {
 	visibility: hidden;
+}
+
+.component .inner em.icon_left {
+    color: var(--jui-selectctl-icon-color);
+}
+
+.component .inner span.prompt {
+    color: var(--jui-selectctl-prompt-color);
+    font-weight: var(--jui-selectctl-prompt-weight);
+    white-space: nowrap;
 }
 
 .component .inner #content {

@@ -31,6 +31,7 @@ public class InsertBlockStep implements Step {
 
     @Override
     public StepResult apply(FormattedText doc) {
+        block.ensureId();
         int pos = Positions.blockStart(doc, index);
         doc.getBlocks().add(index, block);
         int ns = Positions.nodeSize(block);

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2024 Jeremy Buckley
+ * Copyright 2026 Jeremy Buckley
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -24,6 +24,7 @@ import java.util.TreeSet;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.effacy.jui.core.client.Debug;
 import com.effacy.jui.platform.core.JuiIncompatible;
 import com.effacy.jui.platform.css.client.CssDeclaration;
 import com.effacy.jui.platform.css.client.CssResource;
@@ -80,7 +81,7 @@ public class RemixIcon {
     /**
      * Instance of the font family.
      */
-    private static final FontCSS INSTANCE = (FontCSS) GWT.create (FontCSS.class);
+    private static FontCSS INSTANCE;
 
     /**
      * Private constructor.
@@ -94,6 +95,10 @@ public class RemixIcon {
      */
     public static final void inject() {
         if (!INJECTED) {
+            if ((INSTANCE == null) && !Debug.isUnitTestMode()) {
+                INSTANCE = (FontCSS) GWT.create (FontCSS.class);
+                INSTANCE.ensureInjected ();
+            }
             INSTANCE.ensureInjected ();
             INJECTED = true;
         }

@@ -19,7 +19,6 @@ import java.util.function.Supplier;
 
 import com.effacy.jui.core.client.MarkupParser;
 
-import elemental2.dom.DomGlobal;
 import elemental2.dom.Node;
 
 
@@ -64,13 +63,13 @@ public class MarkupBuilder extends NodeBuilder<MarkupBuilder> {
     @Override
     protected Node _nodeImpl(Node parent, BuildContext ctx) {
         if (content == null)
-            return DomGlobal.document.createTextNode ("");
+            return DomNodes.createTextNode ("");
         String text = content.get();
         if (text == null)
-            return DomGlobal.document.createTextNode ("");
+            return DomNodes.createTextNode ("");
         if (!text.contains("*")) {
             appendTextWithNewlines(parent, text);
-            return DomGlobal.document.createTextNode ("");
+            return DomNodes.createTextNode ("");
         }
         for (MarkupParser.Block blk : MarkupParser.parse(text)) {
             if (blk.isPlain()) {
@@ -78,18 +77,18 @@ public class MarkupBuilder extends NodeBuilder<MarkupBuilder> {
             } else {
                 Node p = parent;
                 if (blk.bold()) {
-                    p = DomGlobal.document.createElement("strong");
+                    p = DomNodes.createElement("strong");
                     parent.appendChild(p);
                 }
                 if (blk.italic()) {
-                    Node i = DomGlobal.document.createElement("i");
+                    Node i = DomNodes.createElement("i");
                     p.appendChild(i);
                     p = i;
                 }
                 appendTextWithNewlines(p, blk.text());
             }
         }
-        return DomGlobal.document.createTextNode ("");
+        return DomNodes.createTextNode ("");
     }
 
     /**
@@ -100,9 +99,9 @@ public class MarkupBuilder extends NodeBuilder<MarkupBuilder> {
         String[] lines = text.split("\n", -1);
         for (int i = 0; i < lines.length; i++) {
             if (i > 0)
-                parent.appendChild(DomGlobal.document.createElement("br"));
+                parent.appendChild(DomNodes.createElement("br"));
             if (!lines[i].isEmpty())
-                parent.appendChild(DomGlobal.document.createTextNode(lines[i]));
+                parent.appendChild(DomNodes.createTextNode(lines[i]));
         }
     }
 

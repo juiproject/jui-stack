@@ -19,7 +19,6 @@ import java.util.function.Supplier;
 
 import com.effacy.jui.platform.util.client.StringSupport;
 
-import elemental2.dom.DomGlobal;
 import elemental2.dom.Node;
 import elemental2.dom.Text;
 
@@ -88,21 +87,21 @@ public class TextBuilder extends NodeBuilder<TextBuilder> {
     @Override
     protected Text _nodeImpl(Node parent, BuildContext ctx) {
         if (content == null)
-            return DomGlobal.document.createTextNode ("");
+            return DomNodes.createTextNode ("");
         if (!split)
-            return DomGlobal.document.createTextNode (StringSupport.safe (content.get ()));
+            return DomNodes.createTextNode (StringSupport.safe (content.get ()));
         String [] parts = StringSupport.split (content.get ());
         for (int i = 0; i < parts.length; i++) {
             if (i > 0)
-                parent.appendChild (DomGlobal.document.createElement ("br"));
+                parent.appendChild (DomNodes.createElement ("br"));
             if (StringSupport.empty (parts[0]))
                 continue;
-            Text node = DomGlobal.document.createTextNode (StringSupport.safe (parts[i]));
+            Text node = DomNodes.createTextNode (StringSupport.safe (parts[i]));
             if (i >= (parts.length - 1))
                 return node;
             parent.appendChild (node);
         }
-        return DomGlobal.document.createTextNode (""); 
+        return DomNodes.createTextNode (""); 
     }
 
 }

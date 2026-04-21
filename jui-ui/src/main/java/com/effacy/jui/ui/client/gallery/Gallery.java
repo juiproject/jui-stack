@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.effacy.jui.core.client.IDisposable;
@@ -38,10 +39,10 @@ import com.effacy.jui.core.client.store.IOffsetStore;
 import com.effacy.jui.core.client.store.IPaginatedStore;
 import com.effacy.jui.core.client.store.IStore;
 import com.effacy.jui.core.client.store.IStore.Status;
-import com.effacy.jui.core.client.util.Tribool;
 import com.effacy.jui.core.client.store.IStoreChangedListener;
 import com.effacy.jui.core.client.store.IStoreLoadingListener;
 import com.effacy.jui.core.client.store.IStoreSelection;
+import com.effacy.jui.core.client.util.Tribool;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.TimerSupport;
@@ -61,6 +62,18 @@ import jsinterop.base.Js;
  * @author Jeremy Buckley
  */
 public class Gallery<R> extends Component<Gallery.Config> implements IGallery<R> {
+
+    /**
+     * Used to describe a grouping. These are distiniguished by reference.
+     */
+    public record GroupDescriptor(String reference, String title) {
+        public static GroupDescriptor of(String reference, String title) {
+            return new GroupDescriptor (reference, title);
+        }
+        public static GroupDescriptor of(String title) {
+            return new GroupDescriptor (title, title);
+        }
+    }
 
     /**
      * Configuration for a gallery.
@@ -137,6 +150,11 @@ public class Gallery<R> extends Component<Gallery.Config> implements IGallery<R>
         private BiConsumer<ElementBuilder,String> emptyError;
 
         /**
+         * See {@link #lastItem(Consumer)}.
+         */
+        private Consumer<ElementBuilder> lastItem;
+
+        /**
          * Construct with the default style.
          */
         public Config() {
@@ -174,6 +192,18 @@ public class Gallery<R> extends Component<Gallery.Config> implements IGallery<R>
          */
         public Style getStyle() {
             return style;
+        }
+
+        /**
+         * Builds an element for the last item in the gallery (like an action).
+         * 
+         * @param lastItem
+         *                 the rendering for the last item.
+         * @return this configuration instance.
+         */
+        public Config lastItem(Consumer<ElementBuilder> lastItem) {
+            this.lastItem = lastItem;
+            return this;
         }
 
         /**
@@ -292,6 +322,10 @@ public class Gallery<R> extends Component<Gallery.Config> implements IGallery<R>
      */
     private Supplier<IGalleryItem<R>> itemFactory;
 
+    private Function<R,GroupDescriptor> groupExtractor;
+
+    private BiConsumer<ElementBuilder, GroupDescriptor> groupRenderer;
+
     /************************************************************************
      * Debugging
      ************************************************************************/
@@ -405,6 +439,32 @@ public class Gallery<R> extends Component<Gallery.Config> implements IGallery<R>
     }
 
     /**
+     * Used to declare grouping of records in the gallery. When specified the
+     * gallery will be split into groups based on the group descriptor returned by
+     * the extractor and rendered using the group renderer. Note that the extractor
+     * is called for each record and so should be efficient (for example, it may be
+     * appropriate to cache the result in the record itself if it is expensive to
+     * calculate).
+     * <p>
+     * The would normally reside on the config however it needs to be types by the
+     * record type.
+     *
+     * @param groupExtractor
+     *                       the means to extract the group descriptor from a
+     *                       record.
+     * @param groupRenderer
+     *                       to render the group header based on the group
+     *                       descriptor. The renderer is passed a container to
+     *                       render into and the group descriptor.
+     * @return the gallery instance (for chaining).
+     */
+    public Gallery<R> groupBy(Function<R,GroupDescriptor> groupExtractor, BiConsumer<ElementBuilder, GroupDescriptor> groupRenderer) {
+        this.groupExtractor = groupExtractor;
+        this.groupRenderer = groupRenderer;
+        return this;
+    }
+
+    /**
      * {@inheritDoc}
      *
      * @see com.effacy.jui.ui.client.gallery.IGallery#getStore()
@@ -466,6 +526,11 @@ public class Gallery<R> extends Component<Gallery.Config> implements IGallery<R>
      * The target for the gallery content.
      */
     protected Element targetEl;
+
+    /**
+     * The last element in the gallery (when using the last item feature).
+     */
+    protected Element lastEl;
 
     /**
      * The empty area.
@@ -659,7 +724,14 @@ public class Gallery<R> extends Component<Gallery.Config> implements IGallery<R>
                 gallery.attr ("test-ref", "gallery");
                 gallery.style (styles ().gallery ());
                 gallery.on (e -> onGalleryScroll (e), UIEventType.ONSCROLL);
-                Div.$ (gallery).by ("target");
+                Div.$ (gallery).by ("target").$(target -> {
+                    if (config().lastItem != null) {
+                        Div.$ (target).use(n -> lastEl = (Element) n).$ (last -> {
+                            //P.$(last).text("HELLO");
+                            config().lastItem.accept(last);
+                        });//.$ (last -> config().lastItem.accept (last));
+                    }
+                });
             });
             Div.$ (root).$ (empty -> {
                 empty.by ("empty");
@@ -799,6 +871,11 @@ public class Gallery<R> extends Component<Gallery.Config> implements IGallery<R>
         // Remove any empty and error styles.
         galleryEl.classList.remove (styles ().empty ());
 
+        // Strip any group headings ahead of the main rendering pass. The
+        // record-indexing logic below assumes the target contains only record
+        // wrappers; any headings are re-inserted after records are placed.
+        _stripGroupHeaders ();
+
         // Check for and render the empty case if relevant.
         if (records.isEmpty ()) {
             for (GalleryItemWrapper item : currentRecords) {
@@ -809,6 +886,9 @@ public class Gallery<R> extends Component<Gallery.Config> implements IGallery<R>
             DomSupport.removeAllChildren (targetEl);
             return Tribool.FALSE;
         }
+
+        if ((lastEl != null) && (lastEl.parentElement != null))
+            lastEl.parentElement.removeChild(lastEl);
 
         // Go through all the elements and strip groups.
         // if ((itemsPerRow == 1) && (groupHandler != null)) {
@@ -948,13 +1028,90 @@ public class Gallery<R> extends Component<Gallery.Config> implements IGallery<R>
             }
         }
 
+        // Apply grouping via the configured extractor/renderer.
+        _applyGrouping (revisedRecords);
+
+        if (lastEl != null)
+            targetEl.append(lastEl);
+
         return _endOfPage ();
+    }
+
+    /**
+     * Attribute flag used to identify a group-heading element that was inserted
+     * into the target by {@link #_applyGrouping(List)}.
+     */
+    private static final String GROUP_HEADER_ATTR = "data-gallery-group";
+
+    /**
+     * Removes any group-heading children from the target element. Called ahead
+     * of the main record-rendering pass so the idx-based DOM manipulation can
+     * assume that target children are records only.
+     */
+    private void _stripGroupHeaders() {
+        if (targetEl == null)
+            return;
+        Element child = targetEl.firstElementChild;
+        while (child != null) {
+            Element next = (Element) child.nextElementSibling;
+            if (child.hasAttribute (GROUP_HEADER_ATTR))
+                targetEl.removeChild (child);
+            child = next;
+        }
+    }
+
+    /**
+     * Walks through the rendered records and inserts a heading before any
+     * record that initiates a new group. A record initiates a new group when
+     * its extracted descriptor has a reference that differs from the previous
+     * record's (including the case where no previous record has supplied a
+     * descriptor). A {@code null} descriptor is treated as "no change" — the
+     * record inherits the current group.
+     *
+     * @param revisedRecords
+     *                       the ordered list of record wrappers currently in
+     *                       the target.
+     */
+    @SuppressWarnings("unchecked")
+    private void _applyGrouping(List<GalleryItemWrapper> revisedRecords) {
+        if ((groupExtractor == null) || (groupRenderer == null))
+            return;
+        String currentRef = null;
+        for (GalleryItemWrapper item : revisedRecords) {
+            R record = (R) item.getRecord ();
+            GroupDescriptor descriptor = groupExtractor.apply (record);
+            if (descriptor == null)
+                continue;
+            String ref = descriptor.reference ();
+            boolean newGroup = (currentRef == null) || !currentRef.equals (ref);
+            if (newGroup) {
+                Element itemEl = item.getElement ();
+                if ((itemEl != null) && (itemEl.parentElement != null))
+                    itemEl.parentElement.insertBefore (_createGroupHeader (descriptor), itemEl);
+                currentRef = ref;
+            }
+        }
+    }
+
+    /**
+     * Constructs a DOM element for a group heading and invokes the configured
+     * renderer against it.
+     *
+     * @param descriptor
+     *                   the descriptor for the group.
+     * @return the constructed heading element.
+     */
+    private Element _createGroupHeader(GroupDescriptor descriptor) {
+        Element header = DomSupport.createDiv ();
+        header.setAttribute (GROUP_HEADER_ATTR, "true");
+        Wrap.$ (header).$ (eb -> groupRenderer.accept (eb, descriptor)).build ();
+        return header;
     }
 
     /**
      * Converts the current item index to a list position relative to the current
      * row.
-     * 
+     *
      * @param idx
      *             the index of the item.
      * @param size

@@ -20,12 +20,14 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.function.Function;
 
+import com.effacy.jui.text.type.DefaultBlockIdGenerator;
 import com.effacy.jui.text.type.FormattedBlock;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
 import com.effacy.jui.text.type.builder.markdown.MarkdownParser;
 import com.effacy.jui.text.type.FormattedText;
+import com.effacy.jui.text.type.IBlockIdGenerator;
 
 /**
  * An {@link IEventBuilder} implementation that builds a
@@ -124,6 +126,24 @@ public class FormattedTextBuilder implements IEventBuilder<FormattedText> {
      */
     private FormattedLine currentLine;
 
+    /**
+     * Generator used to assign block identifiers during construction.
+     */
+    private IBlockIdGenerator blockIdGenerator = new DefaultBlockIdGenerator();
+
+    /**
+     * Overrides the block identifier generator used during construction.
+     * 
+     * @param generator
+     *                  the generator to use. If {@code null}, the default
+     *                  generator is restored.
+     * @return this instance.
+     */
+    public FormattedTextBuilder blockIdGenerator(IBlockIdGenerator generator) {
+        this.blockIdGenerator = (generator != null) ? generator : new DefaultBlockIdGenerator();
+        return this;
+    }
+
     @Override
     public void commence() {
         text = new FormattedText();
@@ -139,6 +159,7 @@ public class FormattedTextBuilder implements IEventBuilder<FormattedText> {
     @Override
     public void startBlock(BlockType type) {
         FormattedBlock block = new FormattedBlock(type);
+        block.ensureId(blockIdGenerator);
         if (!blockStack.isEmpty())
             blockStack.peek().getBlocks().add(block);
         else

@@ -12,6 +12,13 @@ import com.effacy.jui.text.type.FormattedLine.FormatType;
 
 public class FormattedTextMarkdownParserTest {
 
+    private void assertBlockIdsPresent(FormattedBlock block) {
+        assertNotNull(block.getId());
+        assertFalse(block.getId().isBlank());
+        for (FormattedBlock child : block.getBlocks())
+            assertBlockIdsPresent(child);
+    }
+
     @Test
     public void testEmptyInput() {
         FormattedText result = FormattedText.markdown("");
@@ -30,12 +37,23 @@ public class FormattedTextMarkdownParserTest {
 
         assertEquals(1, result.getBlocks().size());
         FormattedBlock block = result.getBlocks().get(0);
+        assertBlockIdsPresent(block);
         assertEquals(BlockType.PARA, block.getType());
         assertEquals(1, block.getLines().size());
 
         FormattedLine line = block.getLines().get(0);
         assertEquals("Hello world", line.getText());
         assertTrue(line.getFormatting().isEmpty());
+    }
+
+    @Test
+    public void testMultipleBlocksGenerateDistinctIds() {
+        FormattedText result = FormattedText.markdown("# Heading\n\nParagraph");
+
+        assertEquals(2, result.getBlocks().size());
+        assertBlockIdsPresent(result.getBlocks().get(0));
+        assertBlockIdsPresent(result.getBlocks().get(1));
+        assertNotEquals(result.getBlocks().get(0).getId(), result.getBlocks().get(1).getId());
     }
 
     @Test
@@ -1973,6 +1991,7 @@ This is *some* supporting **guidance**:
         );
 
         FormattedBlock table = result.getBlocks().get(0);
+        assertBlockIdsPresent(table);
         FormattedBlock bodyRow = table.getBlocks().get(1);
         FormattedBlock cell = bodyRow.getBlocks().get(0);
 

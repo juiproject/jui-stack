@@ -79,7 +79,7 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
     /**
      * The default style to employ when one is not assign explicitly.
      */
-    public static Config.Style DEFAULT_STYLE = Config.Style.STANDARD;
+    //public static Config.Style DEFAULT_STYLE = Config.Style.STANDARD;
 
     /**
      * Configuration for building a {@link SelectionControl}.
@@ -93,59 +93,18 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
         /**
          * Style for the tab set (defines presentation configuration including CSS).
          */
-        public interface Style {
+        @FunctionalInterface
+        public interface Variant {
 
             /**
-             * The CSS styles.
+             * Apply the variant to the control configuration.
+             *
+             * @param cfg
+             *            the configuration to apply the variant to.
              */
-            public ILocalCSS styles();
-
-            /**
-             * The CSS class to use for the selector icon.
-             */
-            public String selectorIcon();
-
-            /**
-             * Convenience to create a style.
-             * 
-             * @param styles
-             *                     the CSS styles.
-             * @param selectorIcon
-             *                     the CSS class to use for the selector icon.
-             * @return the associated style.
-             */
-            public static Style create(final ILocalCSS styles, final String selectorIcon) {
-                return new Style () {
-
-                    @Override
-                    public ILocalCSS styles() {
-                        return styles;
-                    }
-
-                    /**
-                     * {@inheritDoc}
-                     *
-                     * @see com.effacy.jui.ui.client.control.TextControl.Config.Style#selectorIcon()
-                     */
-                    @Override
-                    public String selectorIcon() {
-                        return selectorIcon;
-                    }
-
-                };
-            }
-
-            /**
-             * Standard style.
-             */
-            public static final Style STANDARD = Style.create (StandardLocalCSS.instance (), FontAwesome.angleDown ());
+            void configure(Config<?> cfg);
 
         }
-
-        /**
-         * The styles to apply to the tab set.
-         */
-        protected Style style = (DEFAULT_STYLE != null) ? DEFAULT_STYLE : Style.STANDARD;
 
         enum SelectorPosition {
             DEFAULT, TOP, BOTTOM;
@@ -155,6 +114,26 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
          * See {@link #placeholder(String)}.
          */
         private String placeholder;
+
+        /**
+         * See {@link #iconLeft(String)}.
+         */
+        private String iconLeft;
+
+        /**
+         * See {@link #prompt(String)}.
+         */
+        private String prompt;
+
+        /**
+         * See {@link #selectorIcon(String)}.
+         */
+        private String selectorIcon = FontAwesome.angleDown ();
+
+        /**
+         * See {@link #styles(ILocalCSS)}.
+         */
+        private ILocalCSS styles;
 
         /**
          * See {@link #allowEmpty(boolean)}.
@@ -281,25 +260,15 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
         }
 
         /**
-         * Construct with a style.
+         * Apply a variant to the configuration.
          * 
-         * @param style
-         *              the style.
+         * @param variant
+         *                the variant to apply.
+         * @return this configuration instance.
          */
-        public Config(Style style) {
-            style (style);
-        }
-
-        /**
-         * Assigns a different style.
-         * 
-         * @param style
-         *              the style.
-         * @return this configuration.
-         */
-        public Config<V> style(Style style) {
-            if (style != null)
-                this.style = style;
+        public Config<V> variant(Variant variant) {
+            if (variant != null)
+                variant.configure(this);
             return this;
         }
 
@@ -382,6 +351,57 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
          */
         public Config<V> placeholder(String placeholder) {
             this.placeholder = placeholder;
+            return this;
+        }
+
+        /**
+         * Assigns an icon (CSS class) to display to the left of the content.
+         *
+         * @param iconLeft
+         *                 the icon CSS class (e.g. {@code FontAwesome.filter()}).
+         * @return this configuration instance.
+         */
+        public Config<V> iconLeft(String iconLeft) {
+            this.iconLeft = iconLeft;
+            return this;
+        }
+
+        /**
+         * Assigns a short prompt label to display before the content (e.g. "Sort:").
+         * The selected value follows in the usual rendering.
+         *
+         * @param prompt
+         *               the prompt text.
+         * @return this configuration instance.
+         */
+        public Config<V> prompt(String prompt) {
+            this.prompt = prompt;
+            return this;
+        }
+
+        /**
+         * Overrides the icon (CSS class) used for the selector open/close chevron.
+         * Defaults to {@link FontAwesome#angleDown()}.
+         *
+         * @param selectorIcon
+         *                     the icon CSS class.
+         * @return this configuration instance.
+         */
+        public Config<V> selectorIcon(String selectorIcon) {
+            if (selectorIcon != null)
+                this.selectorIcon = selectorIcon;
+            return this;
+        }
+
+        /**
+         * Overrides the CSS styles (defaults to {@link StandardLocalCSS#instance()}).
+         *
+         * @param styles
+         *               the styles to use.
+         * @return this configuration instance.
+         */
+        public Config<V> styles(ILocalCSS styles) {
+            this.styles = styles;
             return this;
         }
 
@@ -1232,7 +1252,9 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
      * Styles (made available to selection).
      */
     protected ILocalCSS styles() {
-        return config ().style.styles ();
+        if (config().styles == null)
+            return StandardLocalCSS.instance();
+        return config().styles;
     }
 
     /**
@@ -1312,6 +1334,10 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
                     selector.style (styles ().selector_left ());
             });
             Em.$ (inner).style (styles ().read_only (), FontAwesome.lock ());
+            if (data.iconLeft != null)
+                Em.$ (inner).style (styles ().icon_left (), data.iconLeft);
+            if (data.prompt != null)
+                Span.$ (inner).style (styles ().prompt ()).text (data.prompt);
             Span.$ (inner).id ("content").by ("content");
             if (data.isAllowEmpty ()) {
                 Em.$ (inner).$ (icon -> {
@@ -1325,7 +1351,7 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
                         icon.setAttribute ("test-ref", "remove");
                 });
             }
-            Em.$ (inner).style (config ().style.selectorIcon (), styles ().open ());
+            Em.$ (inner).style (data.selectorIcon, styles ().open ());
         }).build (tree -> {
             manageFocusEl (tree.first ("control"));
             contentEl = tree.first ("content");
@@ -1347,10 +1373,22 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
         public String open();
 
         public String empty();
-        
+
         public String selector_top();
 
         public String selector_left();
+
+        /**
+         * Applied to the leading icon rendered when {@link Config#iconLeft(String)}
+         * is set.
+         */
+        public String icon_left();
+
+        /**
+         * Applied to the leading prompt label rendered when
+         * {@link Config#prompt(String)} is set.
+         */
+        public String prompt();
 
     }
 

@@ -18,12 +18,12 @@ package com.effacy.jui.core.client.component;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.effacy.jui.core.client.GWTTest;
+import com.effacy.jui.core.client.AbstractJUITest;
 import com.effacy.jui.core.client.IDisposable;
 import com.effacy.jui.core.client.dom.IUIEventHandler;
 import com.effacy.jui.core.client.dom.UIEvent;
 
-public class ComponentTest extends GWTTest {
+public class ComponentTest extends AbstractJUITest {
 
     /**
      * Tests the disposal of event handlers when the component is disposed of.

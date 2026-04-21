@@ -46,6 +46,10 @@ public class TransactionTest {
         return doc.getBlocks().get(blockIndex).getLines().get(0).getText();
     }
 
+    private static String blockIdAt(FormattedText doc, int blockIndex) {
+        return doc.getBlocks().get(blockIndex).getId();
+    }
+
     /************************************************************************
      * InsertBlockStep
      ************************************************************************/
@@ -98,6 +102,16 @@ public class TransactionTest {
         Assertions.assertEquals("B", textAt(doc, 1));
     }
 
+    @Test
+    public void testInsertBlock_assignsIdWhenMissing() {
+        FormattedText doc = doc("A");
+        FormattedBlock inserted = para("X").clearId();
+
+        Transaction.create().step(new InsertBlockStep(1, inserted)).apply(doc);
+
+        Assertions.assertTrue(doc.getBlocks().get(1).hasId());
+    }
+
     /************************************************************************
      * DeleteBlockStep
      ************************************************************************/
@@ -127,15 +141,18 @@ public class TransactionTest {
     @Test
     public void testReplaceBlock() {
         FormattedText doc = doc("A", "B", "C");
+        String originalId = blockIdAt(doc, 1);
         Transaction tr = Transaction.create().step(new ReplaceBlockStep(1, para("X")));
         Transaction inverse = tr.apply(doc).inverse();
 
         Assertions.assertEquals(3, doc.getBlocks().size());
         Assertions.assertEquals("X", textAt(doc, 1));
+        Assertions.assertEquals(originalId, blockIdAt(doc, 1));
 
         // Undo restores original.
         inverse.apply(doc);
         Assertions.assertEquals("B", textAt(doc, 1));
+        Assertions.assertEquals(originalId, blockIdAt(doc, 1));
     }
 
     /************************************************************************
@@ -843,17 +860,22 @@ public class TransactionTest {
     @Test
     public void testSplitBlock_middle() {
         FormattedText doc = doc("Hello World");
+        String originalId = blockIdAt(doc, 0);
         Transaction tr = Transaction.create().step(new SplitBlockStep(0, 5));
         TransactionResult result = tr.apply(doc);
 
         Assertions.assertEquals(2, doc.getBlocks().size());
         Assertions.assertEquals("Hello", textAt(doc, 0));
         Assertions.assertEquals(" World", textAt(doc, 1));
+        Assertions.assertEquals(originalId, blockIdAt(doc, 0));
+        Assertions.assertTrue(doc.getBlocks().get(1).hasId());
+        Assertions.assertNotEquals(blockIdAt(doc, 0), blockIdAt(doc, 1));
 
         // Undo joins back.
         result.inverse().apply(doc);
         Assertions.assertEquals(1, doc.getBlocks().size());
         Assertions.assertEquals("Hello World", textAt(doc, 0));
+        Assertions.assertEquals(originalId, blockIdAt(doc, 0));
     }
 
     @Test
@@ -915,17 +937,22 @@ public class TransactionTest {
     @Test
     public void testJoinBlocks() {
         FormattedText doc = doc("Hello", " World");
+        String leftId = blockIdAt(doc, 0);
+        String rightId = blockIdAt(doc, 1);
         Transaction tr = Transaction.create().step(new JoinBlocksStep(0));
         TransactionResult result = tr.apply(doc);
 
         Assertions.assertEquals(1, doc.getBlocks().size());
         Assertions.assertEquals("Hello World", textAt(doc, 0));
+        Assertions.assertEquals(leftId, blockIdAt(doc, 0));
 
         // Undo splits back.
         result.inverse().apply(doc);
         Assertions.assertEquals(2, doc.getBlocks().size());
         Assertions.assertEquals("Hello", textAt(doc, 0));
         Assertions.assertEquals(" World", textAt(doc, 1));
+        Assertions.assertEquals(leftId, blockIdAt(doc, 0));
+        Assertions.assertEquals(rightId, blockIdAt(doc, 1));
     }
 
     @Test
@@ -964,9 +991,11 @@ public class TransactionTest {
     public void testSplitAndJoin_roundTrip() {
         // Split then undo (join), verify original document is restored.
         FormattedText doc = doc("Hello World");
+        String originalId = blockIdAt(doc, 0);
         TransactionResult splitResult = Transaction.create()
             .step(new SplitBlockStep(0, 5))
             .apply(doc);
+        String splitRightId = blockIdAt(doc, 1);
 
         Assertions.assertEquals(2, doc.getBlocks().size());
 
@@ -974,11 +1003,27 @@ public class TransactionTest {
         TransactionResult joinResult = splitResult.inverse().apply(doc);
         Assertions.assertEquals(1, doc.getBlocks().size());
         Assertions.assertEquals("Hello World", textAt(doc, 0));
+        Assertions.assertEquals(originalId, blockIdAt(doc, 0));
 
         // Redo (split again).
         joinResult.inverse().apply(doc);
         Assertions.assertEquals(2, doc.getBlocks().size());
         Assertions.assertEquals("Hello", textAt(doc, 0));
+        Assertions.assertEquals(originalId, blockIdAt(doc, 0));
+        Assertions.assertEquals(splitRightId, blockIdAt(doc, 1));
+    }
+
+    @Test
+    public void testDuplicateBlock_assignsNewId() {
+        FormattedText doc = doc("A");
+        String originalId = blockIdAt(doc, 0);
+        EditorState state = EditorState.create(doc);
+
+        state.apply(Commands.duplicateBlock(state, 0));
+
+        Assertions.assertEquals(2, doc.getBlocks().size());
+        Assertions.assertEquals(originalId, blockIdAt(doc, 0));
+        Assertions.assertNotEquals(originalId, blockIdAt(doc, 1));
     }
 
     /************************************************************************

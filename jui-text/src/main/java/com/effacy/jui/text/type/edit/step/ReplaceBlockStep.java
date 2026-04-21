@@ -36,6 +36,8 @@ public class ReplaceBlockStep implements Step {
         int contentPos = Positions.blockStart(doc, blockIndex) + 1;
         int oldContentSize = Positions.contentSize(original);
         FormattedBlock originalClone = original.clone();
+        replacement.setId(original.getId());
+        replacement.ensureId();
         doc.getBlocks().set(blockIndex, replacement);
         int newContentSize = Positions.contentSize(replacement);
         return new StepResult(

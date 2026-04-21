@@ -15,40 +15,24 @@
  ******************************************************************************/
 package com.effacy.jui.core.client;
 
-import com.effacy.jui.core.client.observable.ListenerOracle;
-import com.google.gwt.core.client.GWTBridge;
-import com.google.gwt.core.shared.GWT;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 
-public class GWTTestBridge extends GWTBridge {
+import com.effacy.jui.core.client.test.GWTTestBridge;
 
-    private static GWTTestBridge BRIDGE;
+/**
+ * Base class for JUI unit tests. This creates and installs a suitable GWT bridge
+ * for use with the {@link GWT} static methods.
+ */
+public abstract class AbstractJUITest extends com.effacy.jui.core.client.test.AbstractJUITest{
 
-    public static void init() {
-        if (BRIDGE == null) {
-            BRIDGE = new GWTTestBridge ();
-            GWT.setBridge (BRIDGE);
-        }
+    @BeforeAll
+    public static void configureGWT() {
+        GWTTestBridge.init ();
     }
 
-    @Override
-    public <T> T create(Class<?> classLiteral) {
-        if (classLiteral == ListenerOracle.class)
-            return (T) new ListenerOracleMock ();
-        return null;
-    }
-
-    @Override
-    public String getVersion() {
-        return "UNIT-TEST";
-    }
-
-    @Override
-    public boolean isClient() {
-        return false;
-    }
-
-    @Override
-    public void log(String message, Throwable e) {
-        // Nothing.
+    @AfterEach
+    public void cleanupGWT() {
+        GWTTestBridge.clear();
     }
 }

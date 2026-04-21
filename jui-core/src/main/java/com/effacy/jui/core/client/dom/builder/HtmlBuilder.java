@@ -10,7 +10,6 @@ import org.gwtproject.regexp.shared.RegExp;
 import com.effacy.jui.core.client.dom.builder.HtmlBuilder.HtmlTemplate.Built;
 import com.effacy.jui.core.client.dom.jquery.JQuery;
 
-import elemental2.dom.DomGlobal;
 import elemental2.dom.Element;
 import elemental2.dom.Node;
 
@@ -186,7 +185,7 @@ public class HtmlBuilder extends ContainerBuilder<HtmlBuilder> {
                 for (Entry<String,String> pair : properties.entrySet())
                     processedHtml = processedHtml.replace("${" + pair.getKey() + "}", pair.getValue());
             }
-            Element node = DomGlobal.document.createElement("div");
+            Element node = DomNodes.createElement("div");
             node.innerHTML = processedHtml;
             Element insert = node.firstElementChild;
             node.remove();

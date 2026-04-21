@@ -536,7 +536,7 @@ public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
         // There is a special case here where the tag is null. In that case we assume
         // that we are actually wrapping the parent as our own.
         int lodgementCount = (handleLodgements != null) ? ctx.lodgements().size() : 0;
-        Element element = (tag == null) ? (Element) parent : DomGlobal.document.createElement (tag);
+        Element element = (tag == null) ? (Element) parent : DomNodes.createElement (tag);
         __nodeImpl (element);
         super._nodeImpl (element, ctx);
         if (handleLodgements != null)

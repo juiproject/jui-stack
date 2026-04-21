@@ -190,7 +190,7 @@ public class Svg implements IDomInsertable {
 
         @Override
         protected void build(Node parent, BuildContext ctx) {
-            Element svg = DomGlobal.document.createElementNS ("http://www.w3.org/2000/svg", "svg");
+            Element svg = DomNodes.createElementNS ("http://www.w3.org/2000/svg", "svg");
             if (viewBox != null)
                 svg.setAttribute ("viewBox", viewBox);
             if (width > 0)
@@ -200,13 +200,13 @@ public class Svg implements IDomInsertable {
             if (id != null)
                 svg.setAttribute ("id", id);
 
-            Element g = DomGlobal.document.createElementNS ("http://www.w3.org/2000/svg", "g");
+            Element g = DomNodes.createElementNS ("http://www.w3.org/2000/svg", "g");
             if (fill != null)
                 g.setAttribute ("fill", fill);
             if (fillRule != null)
                 g.setAttribute ("fill-rule", fillRule);
             paths.forEach (path -> {
-                Element p = DomGlobal.document.createElementNS ("http://www.w3.org/2000/svg", "path");
+                Element p = DomNodes.createElementNS ("http://www.w3.org/2000/svg", "path");
                 if (path.styles != null)
                     path.styles.forEach (style -> p.classList.add (style));
                 p.setAttribute ("fill", path.fill);

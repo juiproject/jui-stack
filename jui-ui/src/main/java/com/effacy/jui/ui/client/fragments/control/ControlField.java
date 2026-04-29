@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2024 Jeremy Buckley
+ * Copyright 2026 Jeremy Buckley
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -26,6 +26,7 @@ import com.effacy.jui.core.client.dom.builder.Label;
 import com.effacy.jui.core.client.dom.builder.Li;
 import com.effacy.jui.core.client.dom.builder.Ul;
 import com.effacy.jui.core.client.dom.builder.Wrap;
+import com.effacy.jui.core.client.dom.builder.Fragment.IFragmentVariant;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.Carrier;
 import com.effacy.jui.platform.util.client.StringSupport;
@@ -38,6 +39,20 @@ import elemental2.dom.Element;
  * display the associated error messages.
  */
 public class ControlField {
+
+    /**
+     * Convenience to scope standard variants.
+     */
+    public static interface Variant extends IFragmentVariant<ControlFieldFragment> {
+
+        public static final Variant SIDE_BY_SIDE = fragment -> {
+            fragment.css("display: flex; flex-direction: row; align-items: start; gap: 2em; --jui-frag-controlfield-label-width: 12em; --jui-frag-controlfield-label-top: 8px;");
+        };
+
+        public static final Variant INVERT_REQUIRED = fragment -> {
+            fragment.css("--jui-frag-controlfield-required-symbol-before:''; --jui-frag-controlfield-required-symbol-after:' *';");
+        };
+    }
 
     public static ControlFieldFragment $() {
         return new ControlFieldFragment ();
@@ -66,19 +81,56 @@ public class ControlField {
         private String label;
 
         /**
+         * See {@link #description(String)}.
+         */
+        private String description;
+
+        /**
          * See {@link #required(boolean)}.
          */
         private boolean required;
 
+        /**
+         * Assigns a label to the field.
+         * 
+         * @param label
+         *              the label.
+         * @return this fragment (for chaining).
+         */
         public ControlFieldFragment label(String label) {
             this.label = label;
             return this;
         }
 
+        /**
+         * Assigns a description to the field, which is rendered below the control. This
+         * is optional and can be used to provide additional context or instructions for
+         * the user.
+         * 
+         * @param description
+         *                    the description.
+         * @return this fragment (for chaining).
+         */
+        public ControlFieldFragment description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        /**
+         * See {@link #required(boolean)}. Defaults to passing {@code true}.
+         */
         public ControlFieldFragment required() {
             return required(true);
         }
 
+        /**
+         * Marks the field as required, which applies a visual indicator and also adds a
+         * CSS class to the label for selection.
+         * 
+         * @param required
+         *                 whether the field is required.
+         * @return this fragment (for chaining).
+         */
         public ControlFieldFragment required(boolean required) {
             this.required = required;
             return this;
@@ -102,11 +154,16 @@ public class ControlField {
         protected void buildInto(ElementBuilder root) {
             Carrier<Element> messagesEl = Carrier.of();
             if (!StringSupport.empty(label)) {
-                Label.$(root).$(l -> {
-                    if(required)
-                        l.style(styles().required());
-                    l.text(label);
+                Div.$(root).style(styles().label()).$(r -> {
+                    Label.$(r).$(l -> {
+                        if(required)
+                            l.style(styles().required());
+                        l.text(label);
+                    });
+                    if (!StringSupport.empty(description))
+                        Div.$(r).text(description);
                 });
+                
             }
             Div.$(root).$(main -> {
                 children.forEach(main::insert);
@@ -149,6 +206,7 @@ public class ControlField {
         String error();
         String required();
         String messages();
+        String label();
     }
 
     /**

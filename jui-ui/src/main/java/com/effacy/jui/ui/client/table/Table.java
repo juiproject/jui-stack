@@ -80,82 +80,70 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
      */
     public static class Config<R> extends Component.Config {
 
-        /**
-         * Style for the gallery layout. 
-         */
-        public interface Style {
+        @FunctionalInterface
+        public interface Variant {
 
             /**
-             * The CSS styles.
+             * Configures the table for the variant.
              */
-            public ILocalCSS styles();
+            public void configure(Config<?> config);
 
             /**
-             * Header icon to use for the ascending direction.
+             * A variant of the table that appears in a panel with rounded corners.
              */
-            public String iconAscending();
+            public static Variant PANEL = config -> {
+                config.css("""
+                    .component {
+                        /* Container - rounded, bordered, subtle shadow */
+                        --cpt-tbl-bg: #faf5ee;
+                        --cpt-tbl-border: 1px solid #ece0ec;
+                        --cpt-tbl-radius: 12px;
+                        --cpt-tbl-shadow: 0 1px 2px rgba(46,26,46,0.03), 0 1px 6px rgba(46,26,46,0.04);
 
-            /**
-             * Header icon to use for the descending direction.
-             */
-            public String iconDescending();
+                        /* Header - small uppercase plum, cream background */
+                        --cpt-tbl-header-bg: #faf5ee;
+                        --cpt-tbl-header-border: 1px solid #ece0ec;
+                        --cpt-tbl-header-color: #6b3e6b;
+                        --cpt-tbl-header-font-size: 11.5px;
+                        --cpt-tbl-header-font-weight: 700;
+                        --cpt-tbl-header-letter-spacing: 0.1em;
+                        --cpt-tbl-header-text-transform: uppercase;
+                        --cpt-tbl-header-padding: 0.85em 1em;
+                        --cpt-tbl-header-icon-color: #b893b8;
+                        --cpt-tbl-sticky-bg: #faf5ee;
 
-            /**
-             * Header icon to use to indicate that a column is sortable (but not sorting).
-             * This is optional.
-             */
-            public String iconSortable();
+                        /* Sort indicator */
+                        --cpt-tbl-sort-indicator-color: #b893b8;
 
-            /**
-             * Convenience to create a style instance.
-             * 
-             * @param styles
-             *                       the style.
-             * @param iconAscending
-             *                       icon for the header ascending indicator.
-             * @param iconDescending
-             *                       icon for the header ascending indicator.
-             * @param iconSortable
-             *                       icon for the header "sortable" indicator.
-             * @return the style instance.
-             */
-            public static Style create(ILocalCSS styles, String iconAscending, String iconDescending, String iconSortable) {
-                return new Style () {
-
-                    @Override
-                    public ILocalCSS styles() {
-                        return styles;
+                        /* Body - generous padding, warm hairline row dividers */
+                        --cpt-tbl-cell-color: #2e1a2e;
+                        --cpt-tbl-cell-padding: 0.9em 1em;
+                        --cpt-tbl-row-border: 1px solid #f4ede2;
+                        --cpt-tbl-hover-bg: #faf5ee;
                     }
-
-                    @Override
-                    public String iconAscending() {
-                        return iconAscending;
-                    }
-
-                    @Override
-                    public String iconDescending() {
-                        return iconDescending;
-                    }
-
-                    @Override
-                    public String iconSortable() {
-                        return iconSortable;
-                    }
-
-                };
-            }
-            
-            /**
-             * Standard style.
-             */
-            public static final Style STANDARD = Style.create (StandardLocalCSS.instance(), FontAwesome.arrowDown(), FontAwesome.arrowUp(), FontAwesome.arrowsUpDown());
-
+                """);
+            };
         }
 
         /**
-         * See {@link #getStyle()}.
+         * See {@link #styles()}.
          */
-        private Style style = Style.STANDARD;
+        private ILocalCSS styles = StandardLocalCSS.instance ();
+
+        /**
+         * See {@link #iconAscending(String)}.
+         */
+        private String iconAscending = FontAwesome.arrowDown ();
+
+        /**
+         * See {@link #iconDescending(String)}.
+         */
+        private String iconDescending = FontAwesome.arrowUp ();
+
+        /**
+         * See {@link #iconSortable(String)}.
+         */
+        private String iconSortable = FontAwesome.arrowsUpDown ();
 
         /**
          * See {@link #scrollable(boolean)}.
@@ -289,15 +277,6 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
             }
 
             /**
-             * The style to apply to the gallery.
-             * 
-             * @return the style.
-             */
-            public Style getStyle() {
-                return style;
-            }
-
-            /**
              * An icon to include with the header.
              * 
              * @param icon
@@ -378,30 +357,56 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
         }
 
         /**
-         * Construct with the default style.
+         * Construct with the default styles.
          */
         public Config() {
             super ();
         }
 
         /**
-         * Construct with a specific style.
-         * 
-         * @param style
-         *              the style.
+         * Construct with a specific set of styles.
+         *
+         * @param styles
+         *               the styles.
          */
-        public Config(Style style) {
-            if (style != null)
-                this.style = style;
+        public Config(ILocalCSS styles) {
+            if (styles != null)
+                this.styles = styles;
         }
 
         /**
-         * The style to apply to the gallery.
-         * 
-         * @return the style.
+         * Configures the table for the variant.
+         *
+         * @param variant
+         *                the variant.
+         * @return this configuration instance.
          */
-        public Style getStyle() {
-            return style;
+        public Config<R> variant(Variant variant) {
+            if (variant != null)
+                variant.configure(this);
+            return this;
+        }
+
+        /**
+         * The styles to apply to the table.
+         *
+         * @param styles
+         *               the styles.
+         * @return this configuration instance.
+         */
+        public Config<R> styles(ILocalCSS styles) {
+            if (styles != null)
+                this.styles = styles;
+            return this;
+        }
+
+        /**
+         * The styles to apply to the table.
+         *
+         * @return the styles.
+         */
+        public ILocalCSS styles() {
+            return styles;
         }
 
         /**
@@ -420,13 +425,84 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
         /**
          * Background color to apply. This overrides any that is present on the selected
          * style.
-         * 
+         *
          * @param color
          *              the color to apply.
          * @return this configuration.
          */
         public Config<R> color(Color color) {
             this.color = color;
+            return this;
+        }
+
+        /**
+         * Header icon to use for the ascending direction.
+         *
+         * @return the icon (CSS class).
+         */
+        public String iconAscending() {
+            return iconAscending;
+        }
+
+        /**
+         * Assigns the header icon to use for the ascending direction.
+         *
+         * @param iconAscending
+         *                      the icon (CSS class, typically from
+         *                      {@link FontAwesome}).
+         * @return this configuration instance.
+         */
+        public Config<R> iconAscending(String iconAscending) {
+            if (iconAscending != null)
+                this.iconAscending = iconAscending;
+            return this;
+        }
+
+        /**
+         * Header icon to use for the descending direction.
+         *
+         * @return the icon (CSS class).
+         */
+        public String iconDescending() {
+            return iconDescending;
+        }
+
+        /**
+         * Assigns the header icon to use for the descending direction.
+         *
+         * @param iconDescending
+         *                       the icon (CSS class, typically from
+         *                       {@link FontAwesome}).
+         * @return this configuration instance.
+         */
+        public Config<R> iconDescending(String iconDescending) {
+            if (iconDescending != null)
+                this.iconDescending = iconDescending;
+            return this;
+        }
+
+        /**
+         * Header icon to use to indicate that a column is sortable (but not sorting).
+         * May be {@code null} to suppress the indicator.
+         *
+         * @return the icon (CSS class) or {@code null}.
+         */
+        public String iconSortable() {
+            return iconSortable;
+        }
+
+        /**
+         * Assigns the header icon to use to indicate that a column is sortable (but
+         * not sorting). Pass {@code null} to suppress the indicator.
+         *
+         * @param iconSortable
+         *                     the icon (CSS class, typically from
+         *                     {@link FontAwesome}) or {@code null}.
+         * @return this configuration instance.
+         */
+        public Config<R> iconSortable(String iconSortable) {
+            if (iconSortable != null)
+                this.iconSortable = iconSortable;
             return this;
         }
 
@@ -515,7 +591,7 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
          * <p>
          * If this is set then the cursor will appear as a pointer over each row and the
          * active row will have a background applied via
-         * <code>--jui-table-hover-bg</code>.
+         * <code>--cpt-tbl-hover-clickable-bg</code>.
          * 
          * @param onclick
          *                the handler.
@@ -1036,10 +1112,10 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
                                         if (h.sortable) {
                                             Span.$ (inner).$ (sorter -> {
                                                 sorter.style (styles ().sortable ());
-                                                Em.$ (sorter).style (data.getStyle ().iconAscending (), styles ().ascending ());
-                                                Em.$ (sorter).style (data.getStyle ().iconDescending (), styles ().descending ());
-                                                if (data.getStyle().iconSortable() != null)
-                                                    Em.$ (sorter).style (data.getStyle ().iconSortable(), styles().sortable());
+                                                Em.$ (sorter).style (data.iconAscending (), styles ().ascending ());
+                                                Em.$ (sorter).style (data.iconDescending (), styles ().descending ());
+                                                if (data.iconSortable () != null)
+                                                    Em.$ (sorter).style (data.iconSortable (), styles ().sortable ());
                                             });
                                         }
                                     });
@@ -1565,7 +1641,7 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
      * @see com.effacy.jui.core.client.component.Component#styles()
      */
     public ILocalCSS styles() {
-        return config ().getStyle ().styles ();
+        return config ().styles ();
     }
 
     public static interface ILocalCSS extends IComponentCSS {
@@ -1609,8 +1685,7 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
     @CssResource({
         IComponentCSS.COMPONENT_CSS,
         "com/effacy/jui/ui/client/table/Table.css",
-        "com/effacy/jui/ui/client/table/Table_Standard.css",
-        "com/effacy/jui/ui/client/table/Table_Standard_Override.css"
+        "com/effacy/jui/ui/client/table/Table_Override.css"
     })
     public static abstract class StandardLocalCSS implements ILocalCSS {
 

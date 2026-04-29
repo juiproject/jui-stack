@@ -1,31 +1,67 @@
 .fragment {
-    --jui-frag-controlmessages-size: 1em;
-    --jui-frag-controlmessages-color: var(--jui-ctl-err-focus);
-    --jui-frag-controlmessages-margin: 0.75em;
-    --jui-frag-controlmessages-padding: 0;
-    --jui-frag-controlmessages-required-weight: 600;
+    --jui-frag-controlfield-label-top: unset;
+    --jui-frag-controlfield-label-width: unset;
+    --jui-frag-controlfield-label-gap: 0.5em;
+    --jui-frag-controlfield-label-weight: 500;
+    --jui-frag-controlfield-description-gap: 0.25em;
+    --jui-frag-controlfield-description-color: #888;
+    --jui-frag-controlfield-description-size: 0.95em;
+    --jui-frag-controlfield-description-weight: 400;
+    --jui-frag-controlfield-error-size: 1em;
+    --jui-frag-controlfield-error-color: var(--jui-ctl-err-focus);
+    --jui-frag-controlfield-error-margin: 0.75em;
+    --jui-frag-controlfield-error-padding: 0;
+    --jui-frag-controlfield-required-weight: 600;
+    --jui-frag-controlfield-required-symbol-before: '* ';
+    --jui-frag-controlfield-required-symbol-after: '';
 }
 
-.fragment > label.required {
-    font-weight: var(--jui-frag-controlmessages-required-weight);
+.fragment > .label {
+    margin-top: var(--jui-frag-controlfield-label-top);
+    margin-bottom: var(--jui-frag-controlfield-label-gap);
+    min-width: var(--jui-frag-controlfield-label-width);
+    max-width: var(--jui-frag-controlfield-label-width);
+    width: var(--jui-frag-controlfield-label-width);
+    flex-shrink: 0;
 }
 
-.fragment .messages {
-    color: var(--jui-frag-controlmessages-color);
+.fragment > .label label {
+    display: inline-block;
+    font-weight: var(--jui-frag-controlfield-label-weight);
+}
+
+.fragment > .label label.required {
+    font-weight: var(--jui-frag-controlfield-required-weight);
+}
+
+.fragment > .label label.required::before {
+    content: var(--jui-frag-controlfield-required-symbol-before);
+}
+
+.fragment > .label label.required::after {
+    content: var(--jui-frag-controlfield-required-symbol-after);
+}
+
+.fragment > .label div {
+    font-size: var(--jui-frag-controlfield-description-size);
+    font-weight: var(--jui-frag-controlfield-description-weight);
+    color: var(--jui-frag-controlfield-description-color);
+    margin-top: var(--jui-frag-controlfield-description-gap);
+}
+
+.fragment ul.messages {
+    color: var(--jui-frag-controlfield-error-color);
     list-style: none;
-    margin-top: var(--jui-frag-controlmessages-margin);
-    padding: var(--jui-frag-controlmessages-padding);
-    font-size: var(--jui-frag-controlmessages-size);
-}
-
-.fragment ul {
+    margin-top: var(--jui-frag-controlfield-error-margin);
+    padding: var(--jui-frag-controlfield-error-padding);
+    font-size: var(--jui-frag-controlfield-error-size);
     display: none;
 }
 
-.fragment.error ul {
+.fragment.error ul.messages {
     display: block;
 }
 
 .fragment.error > label {
-    color: var(--jui-frag-controlmessages-color);
+    color: var(--jui-frag-controlfield-error-color);
 }

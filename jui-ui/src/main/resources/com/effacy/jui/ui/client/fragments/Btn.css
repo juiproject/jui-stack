@@ -14,6 +14,14 @@
     --frag-btn-align: center;
     --frag-btn-hover-text-decoration: none;
     --frag-btn-hover-bg: var(--frag-btn-bg-hover);
+
+    /* Disabled-state tokens. Consumers can tune via Variants by
+       overriding any of these three independently. Defaults are a
+       transparent bg with the JUI role tokens for muted text and a
+       default border — a sensible washed-out look across palettes. */
+    --frag-btn-bg-disabled:     transparent;
+    --frag-btn-text-disabled:   var(--jui-role-text-disabled);
+    --frag-btn-border-disabled: var(--jui-role-border-default);
 }
 
 .fragment {
@@ -63,4 +71,22 @@
 
 .fragment:hover:not(.running) .label {
     text-decoration: var(--frag-btn-hover-text-decoration);
+}
+
+/* Disabled state. Overrides the actual properties (not the custom
+   property layer) so it wins against inline custom-property variants
+   like style="--frag-btn-bg: ...". The :disabled:hover variant matches
+   the .fragment:hover:not(.running) rule's specificity (0,3,0) and is
+   declared after it, so disabled keeps its look on hover even in
+   browsers that still fire :hover on disabled buttons. */
+.fragment:disabled {
+    background-color: var(--frag-btn-bg-disabled);
+    color:            var(--frag-btn-text-disabled);
+    border-color:     var(--frag-btn-border-disabled);
+    cursor:           not-allowed;
+}
+
+.fragment:disabled:hover:not(.running) {
+    background-color: var(--frag-btn-bg-disabled);
+    color:            var(--frag-btn-text-disabled);
 }

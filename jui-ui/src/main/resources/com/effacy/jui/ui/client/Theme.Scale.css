@@ -19,6 +19,10 @@
     --jui-font-family-control: var(--jui-font-family);
     /* Monospace stands alone — the one intentional exception. */
     --jui-font-family-mono:    ui-monospace, monospace;
+    /* 2xs — micro-labels (uppercase eyebrows, kv-card heads). All-caps labels
+       sit at cap height so they read visually larger than their nominal size;
+       this tier exists to compensate without dropping below 11px. */
+    --jui-font-size-2xs: 0.6875rem;
     --jui-font-size-xs: 0.75rem;
     --jui-font-size-sm: 0.875rem;
     --jui-font-size-md: 1rem;

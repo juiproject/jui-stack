@@ -1,39 +1,44 @@
 .fragment {
-    --frag-btn-margin: 2px;
-    --frag-btn-base: var(--jui-btn-bg);
+    /* Defaults flow from the shared --jui-comp-button-* layer so design-
+       wide retunes propagate to both Btn and Button. Variants override at
+       the local --frag-btn-* layer below — see Variant / Nature for the
+       per-variant set of tokens that reach in here. */
+    --frag-btn-margin: var(--jui-comp-button-margin);
+    --frag-btn-base: var(--jui-comp-button-surface);
     --frag-btn-border: var(--frag-btn-base);
     --frag-btn-border-width: 1px;
-    --frag-btn-radius: var(--jui-btn-border-radius);
-    --frag-btn-text: var(--jui-color-aux-white);
+    --frag-btn-radius: var(--jui-comp-button-radius);
+    --frag-btn-text: var(--jui-comp-button-text);
     --frag-btn-text-hover: var(--frag-btn-text);
-    --frag-btn-text-weight: 400;
+    --frag-btn-text-weight: var(--jui-comp-button-font-weight);
     --frag-btn-bg: var(--frag-btn-base);
-    --frag-btn-bg-hover: var(--jui-btn-bg-hover);
-    --frag-btn-padding-tb: 0.45em;
-    --frag-btn-padding-lr: 0.75em;
+    --frag-btn-bg-hover: var(--jui-comp-button-surface-hover);
+    --frag-btn-padding-tb: var(--jui-comp-button-padding-block);
+    --frag-btn-padding-lr: var(--jui-comp-button-padding-inline);
+    --frag-btn-gap: var(--jui-comp-button-gap);
+    --frag-btn-letter-spacing: var(--jui-comp-button-letter-spacing);
     --frag-btn-align: center;
     --frag-btn-hover-text-decoration: none;
     --frag-btn-hover-bg: var(--frag-btn-bg-hover);
 
     /* Disabled-state tokens. Consumers can tune via Variants by
-       overriding any of these three independently. Defaults are a
-       transparent bg with the JUI role tokens for muted text and a
-       default border — a sensible washed-out look across palettes. */
-    --frag-btn-bg-disabled:     transparent;
-    --frag-btn-text-disabled:   var(--jui-role-text-disabled);
-    --frag-btn-border-disabled: var(--jui-role-border-default);
+       overriding any of these three independently. Defaults flow from the
+       comp layer (transparent bg + muted border + muted text). */
+    --frag-btn-bg-disabled:     var(--jui-comp-button-surface-disabled);
+    --frag-btn-text-disabled:   var(--jui-comp-button-text-disabled);
+    --frag-btn-border-disabled: var(--jui-comp-button-border-disabled);
 }
 
 .fragment {
     justify-content: center;
     align-items: var(--frag-btn-align);
     padding: var(--frag-btn-padding-tb) var(--frag-btn-padding-lr);
-    letter-spacing: 0.02em;
+    letter-spacing: var(--frag-btn-letter-spacing);
     font-weight: var(--frag-btn-text-weight);
     cursor: pointer;
     display: inline-flex;
     text-wrap-mode: nowrap;
-    gap: 0.5em;
+    gap: var(--frag-btn-gap);
     border: var(--frag-btn-border-width) solid var(--frag-btn-border);
     border-radius: var(--frag-btn-radius);
     color: var(--frag-btn-text);
@@ -78,15 +83,20 @@
    like style="--frag-btn-bg: ...". The :disabled:hover variant matches
    the .fragment:hover:not(.running) rule's specificity (0,3,0) and is
    declared after it, so disabled keeps its look on hover even in
-   browsers that still fire :hover on disabled buttons. */
-.fragment:disabled {
+   browsers that still fire :hover on disabled buttons.
+   Also matched by the .disabled class so callers can drive the disabled
+   look programmatically (e.g. on a non-<button> root) — same treatment
+   as Button's .component.disabled. */
+.fragment:disabled,
+.fragment.disabled {
     background-color: var(--frag-btn-bg-disabled);
     color:            var(--frag-btn-text-disabled);
     border-color:     var(--frag-btn-border-disabled);
     cursor:           not-allowed;
 }
 
-.fragment:disabled:hover:not(.running) {
+.fragment:disabled:hover:not(.running),
+.fragment.disabled:hover:not(.running) {
     background-color: var(--frag-btn-bg-disabled);
     color:            var(--frag-btn-text-disabled);
 }

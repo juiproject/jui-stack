@@ -42,6 +42,7 @@
     --jui-comp-button-disabled-opacity: 1;
     --jui-comp-button-padding-block: 0.45em;
     --jui-comp-button-padding-inline: 0.75em;
+    --jui-comp-button-font-size: inherit;
     --jui-comp-button-font-weight: 400;
     --jui-comp-button-text-lineheight: 1.4;
     --jui-comp-button-gap: 0.5em;

@@ -10,7 +10,7 @@
     --cpt-btn-border-width: 1px;
     --cpt-btn-border-radius: var(--jui-comp-button-radius);
     --cpt-btn-text: var(--jui-comp-button-text);
-    --cpt-btn-text-size: inherit;
+    --cpt-btn-text-size: var(--jui-comp-button-font-size);
     --cpt-btn-text-lineheight: var(--jui-comp-button-text-lineheight);
     --cpt-btn-font-weight: var(--jui-comp-button-font-weight);
     --cpt-btn-disabled-bg: var(--jui-comp-button-surface-disabled);

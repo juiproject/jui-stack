@@ -15,6 +15,7 @@
     --frag-btn-bg-hover: var(--jui-comp-button-surface-hover);
     --frag-btn-padding-tb: var(--jui-comp-button-padding-block);
     --frag-btn-padding-lr: var(--jui-comp-button-padding-inline);
+    --frag-btn-font-size: var(--jui-comp-button-font-size);
     --frag-btn-gap: var(--jui-comp-button-gap);
     --frag-btn-letter-spacing: var(--jui-comp-button-letter-spacing);
     --frag-btn-align: center;
@@ -34,6 +35,8 @@
     align-items: var(--frag-btn-align);
     padding: var(--frag-btn-padding-tb) var(--frag-btn-padding-lr);
     letter-spacing: var(--frag-btn-letter-spacing);
+    font-size: var(--frag-btn-font-size);
+    font-family: inherit;
     font-weight: var(--frag-btn-text-weight);
     cursor: pointer;
     display: inline-flex;

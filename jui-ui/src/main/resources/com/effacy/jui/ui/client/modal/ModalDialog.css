@@ -14,6 +14,10 @@
     --cpt-modaldialog-heading: var(--jui-comp-dialog-heading);
     --cpt-modaldialog-heading-size: 1.3em;
     --cpt-modaldialog-heading-weight: var(--jui-font-weight-semibold);
+    /* Heading margin-left defines the canonical left edge of the header
+       text column. Subheading and description inherit it by default so
+       all three left edges line up; override any one of them in a
+       project-level override CSS to break the alignment intentionally. */
     --cpt-modaldialog-heading-margin-left: var(--jui-space-3);
     --cpt-modaldialog-heading-margin-top: var(--jui-space-3);
     --cpt-modaldialog-heading-margin-bottom-compact: var(--jui-space-3);
@@ -21,7 +25,14 @@
     --cpt-modaldialog-subheading: var(--jui-comp-dialog-subheading);
     --cpt-modaldialog-subheading-padding-block-start: var(--jui-space-1);
     --cpt-modaldialog-subheading-padding-block-end: var(--jui-space-2);
-    --cpt-modaldialog-subheading-margin-inline: var(--jui-space-3);
+    --cpt-modaldialog-subheading-margin-inline: var(--cpt-modaldialog-heading-margin-left);
+    --cpt-modaldialog-description: var(--jui-comp-dialog-description, var(--cpt-modaldialog-subheading));
+    --cpt-modaldialog-description-size: var(--jui-font-size-sm);
+    --cpt-modaldialog-description-line-height: 1.5;
+    --cpt-modaldialog-description-margin-inline: var(--cpt-modaldialog-heading-margin-left);
+    --cpt-modaldialog-description-margin-block-start: var(--jui-space-1);
+    --cpt-modaldialog-description-margin-block-end: var(--jui-space-3);
+    --cpt-modaldialog-description-max-width: 90%;
     --cpt-modaldialog-icon: var(--jui-comp-dialog-icon);
     --cpt-modaldialog-icon-gap: var(--jui-space-3);
     --cpt-modaldialog-link: var(--jui-comp-dialog-link);
@@ -137,6 +148,23 @@
 
 .component.compact .dialog .header h2 {
     display: none;
+}
+
+/* Description paragraph below the title / subtitle. The empty case is
+   collapsed to zero height (no margins) so dialogs without a description
+   look identical to before. */
+.component .dialog .header .description {
+    margin: var(--cpt-modaldialog-description-margin-block-start)
+            var(--cpt-modaldialog-description-margin-inline)
+            var(--cpt-modaldialog-description-margin-block-end);
+    max-width: var(--cpt-modaldialog-description-max-width);
+    color: var(--cpt-modaldialog-description);
+    font-size: var(--cpt-modaldialog-description-size);
+    line-height: var(--cpt-modaldialog-description-line-height);
+}
+
+.component .dialog .header .description:empty {
+    margin: 0;
 }
 
 .component .dialog .header a {

@@ -37,6 +37,7 @@ import com.effacy.jui.core.client.dom.builder.Div;
 import com.effacy.jui.core.client.dom.builder.DomBuilder;
 import com.effacy.jui.core.client.dom.builder.H1;
 import com.effacy.jui.core.client.dom.builder.H2;
+import com.effacy.jui.core.client.dom.builder.P;
 import com.effacy.jui.core.client.dom.css.CSS;
 import com.effacy.jui.core.client.dom.css.Insets;
 import com.effacy.jui.core.client.dom.css.Length;
@@ -290,6 +291,11 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
          * See {@link #subtitleIcon(String)}.
          */
         private String subtitleIcon;
+
+        /**
+         * See {@link #description(String)}.
+         */
+        private String description;
 
         /**
          * See {@link #closable(boolean)}.
@@ -549,6 +555,19 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
         }
 
         /**
+         * Description text to appear below the title and subtitle. This is useful for
+         * providing additional context to the user about the dialog.
+         * 
+         * @param description
+         *                    the description.
+         * @return this configuration instance.
+         */
+        public Config<C> description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        /**
          * Determines if the dialog is closable.
          * 
          * @param closable
@@ -676,6 +695,13 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
         }
 
         /**
+         * Getter for {@link #description(String)}.
+         */
+        public String getDescription() {
+            return description;
+        }
+
+        /**
          * Getter for {@link #setClosable(boolean)}.
          */
         public boolean isClosable() {
@@ -721,7 +747,7 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
             /**
              * The button style to use.
              */
-            protected Button.Config.Style buttonStyle = Button.Config.Style.NORMAL;
+            protected Button.Config.Variant buttonStyle = Button.Config.Variant.STANDARD;
 
             /**
              * Display label.
@@ -1026,7 +1052,7 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
                 testId = action.label.toLowerCase ().replace (' ','_');
             btn = addAction (
                 new Button.Config ()
-                    .style (action.buttonStyle)
+                    .variant (action.buttonStyle)
                     .testId ("btn_" + testId)
                     .label (action.label)
                     .icon (action.iconStyle)
@@ -1334,7 +1360,7 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
 
     /**
      * Updates the sub-title. This is HTML safe.
-     * 
+     *
      * @param subtitle
      *                 the new sub-title.
      */
@@ -1349,6 +1375,18 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
             else
                 getRoot ().classList.add (styles ().compact ());
         }
+    }
+
+    /**
+     * Updates the description text under the title / subtitle. This is HTML safe.
+     *
+     * @param description
+     *                    the new description (pass {@code null} or empty to clear).
+     */
+    public void updateDescription(String description) {
+        config ().description (description);
+        if (isRendered ())
+            descriptionEl.text (description == null ? "" : description);
     }
 
     /**
@@ -1377,14 +1415,19 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
     protected Element actionsEl;
 
     /**
-     * Access to the title element (used to apply padding).
+     * Access to the title element.
      */
     protected JQueryElement titleEl;
 
     /**
-     * Access to the sub-title element (used to apply padding).
+     * Access to the sub-title element.
      */
     protected JQueryElement subtitleEl;
+
+    /**
+     * Access to the description element.
+     */
+    protected JQueryElement descriptionEl;
 
     /**
      * Internal. Determines if the action section is open.
@@ -1472,6 +1515,16 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
                                             h2.em ().style (data.getSubtitleIcon ());
                                         h2.span ().text (data.getSubtitle ());
                                     });
+                                    // Description sits under title + subtitle. Always rendered
+                                    // (with the `description` ref captured) so that
+                                    // updateDescription(...) can mutate it after-the-fact even
+                                    // if no initial description was supplied. Empty when null.
+                                    P.$(header).$ (p -> {
+                                        p.testRef ("dialog_description").by ("description")
+                                            .style (styles ().description ());
+                                        if (!StringSupport.empty (data.getDescription ()))
+                                            p.text (data.getDescription ());
+                                    });
                                     if (data.isClosable ()) {
                                         A.$(header).$ (a -> {
                                             a.id ("close");
@@ -1514,6 +1567,7 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
             actionsEl = tree.first ("actions");
             titleEl = JQuery.$ ((Element) tree.first ("title"));
             subtitleEl = JQuery.$ ((Element) tree.first ("subtitle"));
+            descriptionEl = JQuery.$ ((Element) tree.first ("description"));
         });
     }
 
@@ -1552,6 +1606,11 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
          * To wrap (the title).
          */
         public String titleWrap();
+
+        /**
+         * Description paragraph below the title / subtitle.
+         */
+        public String description();
 
         /**
          * Dialog body.

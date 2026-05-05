@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.objectweb.asm.Handle;
+
 import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.core.client.component.layout.LayoutData;
 import com.effacy.jui.core.client.control.Control;
@@ -57,8 +59,13 @@ import jsinterop.base.Js;
 public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>> {
 
     /**
-     * The default style to employ when one is not assign explicitly.
+     * The default style to employ when one is not assigned explicitly.
+     *
+     * @deprecated retained as a back-compat hook for code that toggled the
+     * default presentation by reassigning this field. New code should call
+     * {@code config.variant(Variant.PANEL)} (etc.) on a per-control basis.
      */
+    @Deprecated
     public static Config.Style DEFAULT_STYLE = Config.Style.STANDARD;
 
     /**
@@ -67,53 +74,144 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
     public static class Config<V> extends Control.Config<V, Config<V>> {
 
         /********************************************************************
-         * Styles for the control.
+         * Variants and (deprecated) Styles.
+         *
+         * Variants are token-driven config-time hooks that any caller can
+         * apply to switch the visual treatment without swapping
+         * stylesheets. The base CSS does the structural work; variants
+         * override custom-property tokens via {@code config.css(...)}.
+         *
+         * Style is the legacy interface-with-styles() pattern; it is now
+         * a Variant under the hood so existing call sites that pass
+         * {@code Style.STANDARD} / {@code Style.PANEL} continue to work.
          ********************************************************************/
 
         /**
-         * Style for the control (defines presentation configuration including CSS).
+         * A configurable variant of the control. Applied via
+         * {@link Config#variant(Variant)} at config-time, typically just
+         * setting custom-property tokens via {@link Config#css(String)}.
          */
-        public interface Style {
+        @FunctionalInterface
+        public interface Variant {
+
+            /** Apply this variant's configuration. */
+            void configure(Config<?> cfg);
 
             /**
-             * The CSS styles.
+             * Standard horizontal radio-group presentation — pill-shaped
+             * cells in a single rounded surround. The default; applies
+             * no overrides on top of the base CSS.
              */
-            public ILocalCSS styles();
+            public static final Variant STANDARD = config -> {
+                // Defaults from MultiCheckControl.css; nothing extra.
+            };
 
             /**
-             * Convenience to create a style.
-             * 
-             * @param styles
-             *               the CSS styles.
-             * @return the associated style.
+             * Panel variant — separate boxed cells with hairline borders.
+             * Implemented entirely as token overrides on the standard
+             * stylesheet (no separate CSS file).
              */
-            public static Style create(final ILocalCSS styles) {
-                return new Style () {
-
-                    @Override
-                    public ILocalCSS styles() {
-                        return styles;
-                    }
-
-                };
-            }
+            public static final Variant PANEL = config -> config.css("""
+                --jui-multicheckctl-border-radius: 5px;
+                --jui-multicheckctl-border-width: 1px;
+                --jui-multicheckctl-border-color: #ddd;
+                --jui-multicheckctl-padding: 0;
+                --jui-multicheckctl-item-border-radius: 3px;
+                --jui-multicheckctl-item-border-radius-inner: 0;
+                --jui-multicheckctl-size: 1em;
+                --jui-multicheckctl-bg: var(--jui-ctl-bg);
+                --jui-multicheckctl-item-text: #888;
+                --jui-multicheckctl-item-padding-tb: 6px;
+                --jui-multicheckctl-item-hover-bg: #eee;
+            """);
 
             /**
-             * Standard style.
+             * Segmented control — iOS-style. The whole group sits in a
+             * rounded surround with a thin border; the selected pill
+             * lifts forward with a lighter surface + subtle shadow ring.
+             * Unselected items are muted-text on the surround background.
              */
-            public static final Style STANDARD = create(StandardLocalCSS.instance ());
-
-            /**
-             * Panel style.
-             */
-            public static final Style PANEL = create(PanelLocalCSS.instance ());
-
+            public static final Variant SEGMENTED = config -> config.css("""
+                --jui-multicheckctl-border-radius: 8px;
+                --jui-multicheckctl-border-width: 1px;
+                --jui-multicheckctl-border-color: var(--jui-role-border-default);
+                --jui-multicheckctl-bg: var(--jui-role-surface-muted);
+                --jui-multicheckctl-padding: 1px;
+                --jui-multicheckctl-size: 0.875em;
+                --jui-multicheckctl-item-border-radius: 5px;
+                --jui-multicheckctl-item-border-radius-inner: 5px;
+                --jui-multicheckctl-item-padding-tb: 8px;
+                --jui-multicheckctl-item-padding-lr: 14px;
+                --jui-multicheckctl-item-text: var(--jui-role-text-muted);
+                --jui-multicheckctl-item-weight: 500;
+                --jui-multicheckctl-item-hover-bg: transparent;
+                --jui-multicheckctl-item-selected-bg: var(--jui-role-surface-canvas);
+                --jui-multicheckctl-item-selected-text: var(--jui-role-text-default);
+                --jui-multicheckctl-item-selected-weight: 600;
+                --jui-multicheckctl-item-selected-shadow:
+                    0 1px 2px rgba(0,0,0,0.06),
+                    0 0 0 1px rgba(0,0,0,0.06);
+            """);
         }
 
         /**
-         * The styles to apply to the tab set.
+         * Style for the control.
+         *
+         * @deprecated use {@link Variant} directly. Style now extends Variant
+         * so existing call sites using {@code Style.STANDARD} / {@code Style.PANEL}
+         * continue to compile and behave identically.
          */
-        private Style style = (DEFAULT_STYLE != null) ? DEFAULT_STYLE : Style.STANDARD;
+        @Deprecated
+        public interface Style extends Variant {
+
+            /**
+             * The CSS styles for this style.
+             *
+             * @deprecated styles are now owned by {@link Config#styles(ILocalCSS)};
+             * a Variant should set them via that setter from inside its
+             * {@link Variant#configure} implementation if it needs an
+             * alternate stylesheet.
+             */
+            @Deprecated
+            public ILocalCSS styles();
+
+            /**
+             * Convenience to wrap a custom {@link ILocalCSS} as a Style.
+             *
+             * @deprecated define a {@link Variant} and call
+             * {@code cfg.styles(...)} from its configure method.
+             */
+            @Deprecated
+            public static Style create(final ILocalCSS styles) {
+                return new Style () {
+                    @Override public ILocalCSS styles() { return styles; }
+                    @Override public void configure(Config<?> cfg) { cfg.styles (styles); }
+                };
+            }
+
+            /** @deprecated use {@link Variant#STANDARD}. */
+            @Deprecated
+            public static final Style STANDARD = new Style () {
+                @Override public ILocalCSS styles() { return StandardLocalCSS.instance (); }
+                @Override public void configure(Config<?> cfg) { Variant.STANDARD.configure (cfg); }
+            };
+
+            /** @deprecated use {@link Variant#PANEL}. */
+            @Deprecated
+            public static final Style PANEL = new Style () {
+                @Override public ILocalCSS styles() { return StandardLocalCSS.instance (); }
+                @Override public void configure(Config<?> cfg) { Variant.PANEL.configure (cfg); }
+            };
+        }
+
+        /**
+         * The CSS styles in effect. Defaults to {@link StandardLocalCSS} —
+         * Variants tweak custom-property tokens on top of this rather than
+         * swapping the stylesheet, so the obfuscated class names stay
+         * stable across variants. Custom callers can still substitute a
+         * fully different ILocalCSS via {@link #styles(ILocalCSS)}.
+         */
+        private ILocalCSS styles = StandardLocalCSS.instance ();
 
         /**
          * The value options mapped to labels.
@@ -144,6 +242,11 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
          * See {@link #span(Length)}.
          */
         private Length span;
+
+        /**
+         * See {@link #nowrap(boolean)}.
+         */
+        private boolean nowrap;
 
         /**
          * Captures a selectable option.
@@ -199,33 +302,77 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
         }
 
         /**
-         * Construct with the default style.
+         * Construct with the default style. Honours
+         * {@link MultiCheckControl#DEFAULT_STYLE} if a non-standard one
+         * has been globally set.
          */
         public Config() {
             super ();
+            if (DEFAULT_STYLE != null)
+                DEFAULT_STYLE.configure (this);
         }
 
         /**
-         * Construct with a style.
-         * 
-         * @param style
-         *              the style.
+         * Construct with a specific (legacy) style.
+         *
+         * @param style the style.
+         * @deprecated use {@link #variant(Variant)} or set the styles
+         * directly via {@link #styles(ILocalCSS)}.
          */
+        @Deprecated
         public Config(Style style) {
             super ();
-            style(style);
+            if (style != null)
+                style (style);
+            else if (DEFAULT_STYLE != null)
+                DEFAULT_STYLE.configure (this);
+        }
+
+        /**
+         * Apply a {@link Variant} to this configuration.
+         *
+         * @param variant the variant (no-op if {@code null}).
+         * @return this configuration instance.
+         */
+        public Config<V> variant(Variant variant) {
+            if (variant != null)
+                variant.configure (this);
+            return this;
+        }
+
+        /**
+         * Substitute the {@link ILocalCSS} stylesheet used by the control.
+         * Most callers should use {@link #variant(Variant)} instead — the
+         * built-in variants tune the standard stylesheet via tokens.
+         *
+         * @param styles the stylesheet (no-op if {@code null}).
+         * @return this configuration instance.
+         */
+        public Config<V> styles(ILocalCSS styles) {
+            if (styles != null)
+                this.styles = styles;
+            return this;
+        }
+
+        /**
+         * The active stylesheet. Used by the control's
+         * {@link MultiCheckControl#styles()} accessor.
+         */
+        public ILocalCSS getStyles() {
+            return styles;
         }
 
         /**
          * Assigns an alternative style.
-         * 
-         * @param style
-         *              the style.
+         *
+         * @param style the style.
          * @return this configuration instance.
+         * @deprecated use {@link #variant(Variant)}.
          */
+        @Deprecated
         public Config<V> style(Style style) {
             if (style != null)
-                this.style = style;
+                style.configure (this);
             return this;
         }
 
@@ -350,6 +497,27 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
         }
 
         /**
+         * Convenience for passing {@code true} through to {@link #nowrap(boolean)}.
+         */
+        public Config<V> nowrap() {
+            return nowrap (true);
+        }
+
+        /**
+         * Prevents the option labels from wrapping. Useful when the control
+         * sits inside a constrained-width column and the labels would
+         * otherwise break across two lines.
+         *
+         * @param nowrap {@code true} to apply {@code white-space: nowrap}
+         *               to the option labels.
+         * @return this configuration instance.
+         */
+        public Config<V> nowrap(boolean nowrap) {
+            this.nowrap = nowrap;
+            return this;
+        }
+
+        /**
          * {@inheritDoc}
          *
          * @see com.effacy.jui.core.client.component.Component.Config#build(com.effacy.jui.core.client.component.layout.LayoutData[])
@@ -468,6 +636,8 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
                         item.style (styles ().expand ());
                     if (config().labelBold)
                         item.style (styles ().bold ());
+                    if (config().nowrap)
+                        item.style (styles ().nowrap ());
                     Div.$ (item).$ (grp -> {
                         grp.style (styles ().toggle ());
                         if (config().span != null)
@@ -568,7 +738,7 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
      * Styles (made available to selection).
      */
     protected ILocalCSS styles() {
-        return config ().style.styles ();
+        return config ().getStyles ();
     }
 
     public static interface ILocalCSS extends IControlCSS {
@@ -585,6 +755,8 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
         public String expand();
 
         public String bold();
+
+        public String nowrap();
 
         public String spacer();
 
@@ -612,28 +784,6 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
         public static ILocalCSS instance() {
             if (STYLES == null) {
                 STYLES = (StandardLocalCSS) GWT.create (StandardLocalCSS.class);
-                STYLES.ensureInjected ();
-            }
-            return STYLES;
-        }
-    }
-
-    /**
-     * Component CSS (horizontal).
-     */
-    @CssResource({
-        IComponentCSS.COMPONENT_CSS,
-        "com/effacy/jui/ui/client/control/MultiCheckControl.css",
-        "com/effacy/jui/ui/client/control/MultiCheckControl_Override.css",
-        "com/effacy/jui/ui/client/control/MultiCheckControl_Panel.css"
-    })
-    public static abstract class PanelLocalCSS implements ILocalCSS {
-
-        private static PanelLocalCSS STYLES;
-
-        public static ILocalCSS instance() {
-            if (STYLES == null) {
-                STYLES = (PanelLocalCSS) GWT.create (PanelLocalCSS.class);
                 STYLES.ensureInjected ();
             }
             return STYLES;

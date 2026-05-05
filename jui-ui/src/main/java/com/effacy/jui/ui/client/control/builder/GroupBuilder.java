@@ -802,7 +802,7 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                             });
                             // Disply any assigned guidance (top).
                             if (!StringSupport.empty(cell.guidance) && cell.guidanceTop) {
-                                Div.$ (c).style (config.styles ().guidance_top ()).css(cell.guidanceCss).$ (
+                                Div.$ (c).style (config.styles ().guidance_top ()).css(cell.guidanceCss).use(n -> cell.elGuidance = (Element) n).$ (
                                     Markup.$(cell.guidance)
                                 );
                             }
@@ -832,7 +832,7 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                             });
                             // Disply any assigned guidance (bottom).
                             if (!StringSupport.empty(cell.guidance) && !cell.guidanceTop) {
-                                Div.$ (c).style (config.styles ().guidance ()).css(cell.guidanceCss).$ (
+                                Div.$ (c).style (config.styles ().guidance ()).css(cell.guidanceCss).use(n -> cell.elGuidance = (Element) n).$ (
                                     Markup.$(cell.guidance)
                                 );
                             }
@@ -965,6 +965,8 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
 
             protected Element elLabel;
 
+            protected Element elGuidance;
+
             RowCell() {
                 // Expander.
                 grow = 1;
@@ -1002,6 +1004,12 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                     public void updateLabel(String label) {
                         if (elLabel != null)
                             elLabel.textContent = label;
+                    }
+
+                    @Override
+                    public void updateGuidance(String guidance) {
+                        if (elGuidance != null)
+                            elGuidance.textContent = guidance;
                     }
 
                 };

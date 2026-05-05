@@ -15,6 +15,10 @@
     --jui-multicheckctl-item-selected-weight: 600;
     --jui-multicheckctl-item-selected-bg: var(--jui-ctl-active);
     --jui-multicheckctl-item-selected-text:  #fff;
+    /* Optional ring/shadow around the selected item — used by Variant.SEGMENTED
+       to give the active pill a card-like lift. Default keeps the existing
+       look (no outline) for STANDARD / PANEL. */
+    --jui-multicheckctl-item-selected-shadow: none;
     --jui-multicheckctl-label-weight: 500;
     --jui-multicheckctl-label-weight-bold: 600;
 }
@@ -64,6 +68,14 @@
 	font-weight: var(--jui-multicheckctl-label-weight-bold);
 }
 
+/* Prevent option labels from wrapping. Useful inside narrow containers
+   where two-word labels (e.g. "Vendor-hosted") would otherwise break to
+   two lines and unbalance the row. Toggled via Config.nowrap(true). */
+.component .inner .item.nowrap div.toggle label,
+.component .inner .item.nowrap div.toggle label span {
+	white-space: nowrap;
+}
+
 /******************************************
 * Options.
 */
@@ -111,6 +123,7 @@
 
 .component .inner .item div.toggle label.active {
 	background: var(--jui-multicheckctl-item-selected-bg);
+	box-shadow: var(--jui-multicheckctl-item-selected-shadow);
 }
 
 .component .inner .item div.toggle label input {

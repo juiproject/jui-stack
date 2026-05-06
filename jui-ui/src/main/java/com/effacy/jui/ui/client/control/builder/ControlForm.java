@@ -68,53 +68,91 @@ public class ControlForm<SRC,DST> extends Component<ControlForm.Config> implemen
     public static class Config extends Component.Config {
 
         /**
-         * Styles for the control form.
+         * Variant for the form's presentation. Mirrors the standard JUI
+         * variant pattern (see {@code Button.Config.Variant}). Each variant
+         * is a function that overlays its own configuration onto the
+         * underlying {@link Config} — typically by calling
+         * {@link Config#styles(ILocalCSS)} and / or {@link Config#css(String)}
+         * to override the project's CSS tokens.
          */
-        public interface Style {
+        @FunctionalInterface
+        public interface Variant {
+
+            void configure(Config cfg);
 
             /**
-             * The CSS styles.
+             * Default visual style.
              */
-            public ILocalCSS styles();
+            public static final Variant STANDARD = config -> {};
 
             /**
-             * The CSS style to use for the question mark.
-             */
-            public String questionIcon();
+             * Compact variant — used inside dialogs. Overrides the depth-0
+             * group gap and the error-block dimensions to a tighter
+             * spacing that suits a fixed-height modal body. Achieved as
+             * a token overlay on top of {@link StandardLocalCSS}, so
+             * there is no separate {@code CompactLocalCSS} to maintain.
+             **/
+            public static final Variant COMPACT = config -> {
+                config.css ("""
+                    --cpt-form-group-depth0-gap: 2em;
+                    --cpt-form-error-icon-size: 2em;
+                    --cpt-form-error-text-size: 0.98em;
+                    --cpt-form-error-margin-v: 1em;
+                """);
+            };
 
             /**
-             * Convenience to create a style.
-             * 
-             * @param styles
-             *               the CSS styles.
-             * @return the associated style.
-             */
-            public static Style create(ILocalCSS styles, String questionIcon) {
-                return new Style () {
+             * Boxed variant — depth-1 groups render as framed cards
+             * (1px border, rounded corners, padding) so sections read as
+             * visually distinct containers rather than bare stacks.
+             * Depth-0 (the outermost group) and deeper levels are
+             * unaffected. Achieved as a pure token overlay on the depth-1
+             * frame tokens — composes cleanly with {@link #STANDARD} or
+             * {@link #COMPACT}.
+             **/
+            public static final Variant BOXED_1 = config -> {
+                config.css ("""
+                    --cpt-form-group-depth1-border: 1px solid var(--jui-comp-form-separator);
+                    --cpt-form-group-depth1-radius: 8px;
+                    --cpt-form-group-depth1-padding: var(--jui-space-5);
+                """);
+            };
 
-                    @Override
-                    public ILocalCSS styles() {
-                        return styles;
-                    }
-
-                    @Override
-                    public String questionIcon() {
-                        return questionIcon;
-                    }
-
-                };
-            }
-
-            public static final Style STANDARD = create (StandardLocalCSS.instance (), FontAwesome.circleQuestion(FontAwesome.Option.BOLD));
-
-            public static final Style COMPACT = create (CompactLocalCSS.instance (), FontAwesome.circleQuestion(FontAwesome.Option.BOLD));
-
+            /**
+             * See {@inheritDoc BOXED_1} but at depth-2.
+             **/
+            public static final Variant BOXED_2 = config -> {
+                config.css ("""
+                    --cpt-form-group-depth2-border: 1px solid var(--jui-comp-form-separator);
+                    --cpt-form-group-depth2-radius: 8px;
+                    --cpt-form-group-depth2-padding: var(--jui-space-5);
+                """);
+            };
         }
 
         /**
-         * See {@link #style(Style)}.
+         * Backward-compatibility layer around {@link Variant}. New code
+         * should pass a {@link Variant} via {@link #variant(Variant)}.
          */
-        protected Style style = Style.STANDARD;
+        @Deprecated
+        public interface Style extends Variant {
+
+            @Deprecated
+            public static final Style STANDARD = config -> Variant.STANDARD.configure (config);
+
+            @Deprecated
+            public static final Style COMPACT  = config -> Variant.COMPACT.configure (config);
+        }
+
+        /**
+         * See {@link #styles(ILocalCSS)}.
+         */
+        protected ILocalCSS styles;
+
+        /**
+         * See {@link #questionIcon(String)}.
+         */
+        protected String questionIcon = FontAwesome.circleQuestion (FontAwesome.Option.BOLD);
 
         /**
          * See {@link #startingDepth(int)}.
@@ -151,6 +189,9 @@ public class ControlForm<SRC,DST> extends Component<ControlForm.Config> implemen
          */
         protected boolean setterApplyWhenNotDirty = false;
 
+        /**
+         * See {@link #barGap(Length)}.
+         */
         protected Length barGap;
 
         /**
@@ -163,15 +204,78 @@ public class ControlForm<SRC,DST> extends Component<ControlForm.Config> implemen
         }
 
         /**
+         * Assigns a presentation variant. Variants overlay configuration
+         * onto this {@link Config} (typically calling {@link #styles(ILocalCSS)}
+         * and / or {@link #css(String)}).
+         *
+         * @param variant
+         *                the variant (ignored if {@code null}).
+         * @return this configuration instance.
+         */
+        public Config variant(Variant variant) {
+            if (variant != null)
+                variant.configure (this);
+            return this;
+        }
+
+        /**
+         * Assigns a series of presentation variants in order. Later
+         * variants overlay earlier ones.
+         *
+         * @param variants
+         *                 the variants to apply.
+         * @return this configuration instance.
+         */
+        public Config variant(Variant... variants) {
+            if (variants != null) {
+                for (Variant v : variants)
+                    variant (v);
+            }
+            return this;
+        }
+
+        /**
+         * Assigns the CSS styles to use.
+         *
+         * @param styles
+         *               the CSS styles (ignored if {@code null}).
+         * @return this configuration instance.
+         */
+        public Config styles(ILocalCSS styles) {
+            if (styles != null)
+                this.styles = styles;
+            return this;
+        }
+
+        /**
+         * Assigns the icon CSS class for the question mark used by the
+         * help affordance on cells.
+         *
+         * @param questionIcon
+         *                     the icon CSS class (ignored if {@code null}).
+         * @return this configuration instance.
+         */
+        public Config questionIcon(String questionIcon) {
+            if (questionIcon != null)
+                this.questionIcon = questionIcon;
+            return this;
+        }
+
+        /**
          * Assigns the style to use.
-         * 
+         *
          * @param style
          *              the style (ignored if {@code null}).
          * @return this configuration instance.
+         * @deprecated use {@link #variant(Variant)} (and, if needed,
+         *             {@link #styles(ILocalCSS)} / {@link #questionIcon(String)})
+         *             instead. {@link Style} is retained for backward
+         *             compatibility only.
          */
+        @Deprecated
         public Config style(Style style) {
             if (style != null)
-                this.style = style;
+                style.configure (this);
             return this;
         }
 
@@ -321,7 +425,7 @@ public class ControlForm<SRC,DST> extends Component<ControlForm.Config> implemen
 
             @Override
             public String questionIcon() {
-                return config.style.questionIcon ();
+                return config.questionIcon;
             }
 
             @Override
@@ -1101,7 +1205,9 @@ public class ControlForm<SRC,DST> extends Component<ControlForm.Config> implemen
     
     @Override
     protected ILocalCSS styles() {
-        return config ().style.styles();
+        if (config().styles == null)
+            return StandardLocalCSS.instance();
+        return config ().styles;
     }
 
     /************************************************************************
@@ -1137,27 +1243,4 @@ public class ControlForm<SRC,DST> extends Component<ControlForm.Config> implemen
         }
     }
 
-
-    /**
-     * Compact (for dialogs) CSS.
-     */
-    @CssResource({
-        IComponentCSS.COMPONENT_CSS,
-        "com/effacy/jui/ui/client/control/builder/ControlForm_Standard.css",
-        "com/effacy/jui/ui/client/control/builder/ControlForm_Standard_Override.css",
-        "com/effacy/jui/ui/client/control/builder/ControlForm_Compact.css"
-    })
-    public static abstract class CompactLocalCSS implements ILocalCSS {
-
-        private static CompactLocalCSS STYLES;
-
-        public static ILocalCSS instance() {
-            if (STYLES == null) { 
-                STYLES = (CompactLocalCSS) GWT.create (CompactLocalCSS.class);
-                STYLES.ensureInjected ();
-            }
-            return STYLES;
-        }
-    }
-    
 }

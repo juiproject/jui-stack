@@ -581,8 +581,10 @@ public class GroupBuilder<SRC,DST> implements IGroupBuilder<SRC,DST> {
                             h3.css(titleCss);
                         if (!StringSupport.empty (icon))
                             Em.$ (h3).style (icon);
-                        if (!StringSupport.empty (title)) 
+                        if (!StringSupport.empty (title)) {
                             Text.$ (h3, title);
+                            Div.$ (h3);
+                        }
                     });
                 }
                 if (!StringSupport.empty (instruction)) {

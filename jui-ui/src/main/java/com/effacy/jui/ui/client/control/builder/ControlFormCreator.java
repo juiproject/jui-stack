@@ -29,10 +29,19 @@ public final class ControlFormCreator {
     /**
      * Customisable supplier for generating standard dialog configurations.
      * <p>
+     * Delegates to {@link ControlForm.Config.Variant#DIALOG} — the
+     * variant carries the actual behaviour (compact spacing, focus on
+     * reset, depth-1 starting depth, body padding). This Consumer
+     * remains for backward compatibility; new code should prefer
+     * {@code cfg.variant(ControlForm.Config.Variant.DIALOG)} directly.
+     * <p>
      * See {@link #createForDialog()}.
      */
-    public static final Consumer<ControlForm.Config> DIALOG_CONFIG = (cfg) -> {
-        cfg.style (ControlForm.Config.Style.COMPACT).focusOnReset ().startingDepth (1).padding (Insets.em (2.5, 2));
+    public static final ControlForm.Config.Variant DIALOG_CONFIG = config -> {
+        ControlForm.Config.Variant.COMPACT.configure (config);
+        config.focusOnReset ();
+        config.startingDepth (1);
+        config.padding (Insets.em (2.5, 2));
     };
     
 
@@ -82,7 +91,7 @@ public final class ControlFormCreator {
     public static ControlForm.Config configureForDialog(ControlForm.Config config) {
         if (config == null)
             config = create ();
-        DIALOG_CONFIG.accept (config);
+        config.variant(DIALOG_CONFIG);
         return config;
     }
 

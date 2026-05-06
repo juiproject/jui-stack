@@ -12,6 +12,16 @@
     --cpt-form-header-instruction: var(--jui-comp-form-instruction);
     --cpt-form-header-icon-gap: var(--jui-space-3);
 
+    /* Heading font — defaults to `inherit` so the heading uses the
+       page's default font. Override (e.g. to a serif display font like
+       Fraunces) for sections that want a stylistic break from body
+       text. Applied to the h3 only; instruction text + interactive
+       labels keep the inherited body font. */
+    --cpt-form-header-font-family: inherit;
+    --cpt-form-header-font-style: normal;
+    --cpt-form-header-letter-spacing: normal;
+    --cpt-form-header-text-transform: none;
+
     --cpt-form-header-depth0-size: 1.4em;
     --cpt-form-header-depth1-size: 1.3em;
     --cpt-form-header-depth2-size: 1.1em;
@@ -41,6 +51,44 @@
 
     --cpt-form-separator: var(--jui-comp-form-separator);
     --cpt-form-separator-gap: var(--jui-space-6);
+
+    /* Cell label sizing — small font, fixed min-height so labels of
+       different lengths align across a row. */
+    --cpt-form-label-size: 0.95em;
+    --cpt-form-label-min-height: 1.35em;
+    --cpt-form-label-margin-bottom: var(--jui-space-2);
+
+    /* Help bubble (the small "?" icon next to a cell label that reveals
+       a tooltip on hover). */
+    --cpt-form-help-bubble-width: 15em;
+    --cpt-form-help-icon-size: 0.8em;
+    --cpt-form-help-icon-opacity: 0.75;
+
+    /* Group header — h3 lays out as flex with the title text on the
+       left and a trailing rule div on the right that can render as a
+       horizontal line (e.g. a section divider). The border defaults to
+       `none` so the rule is invisible by default; project-level themes
+       set --cpt-form-header-rule-border to make it appear. */
+    --cpt-form-header-rule-gap: var(--jui-space-3);
+    --cpt-form-header-rule-border: none;
+
+    /* Optional frame around depth-1 groups (used by Variant.BOXED_1).
+       All four tokens default to "no visual frame" so the standard
+       variant renders depth-1 groups as bare stacks. The BOXED_1 variant
+       overrides them via an inline css overlay; project-level themes
+       can also set them directly. */
+    --cpt-form-group-depth1-border: none;
+    --cpt-form-group-depth1-radius: 0;
+    --cpt-form-group-depth1-padding: 0;
+    --cpt-form-group-depth1-bg: transparent;
+
+    /* Optional frame around depth-2 groups (used by Variant.BOXED_2).
+       Mirrors the depth-1 frame tokens — defaults to no visual frame so
+       deeper nested groups stay bare unless a variant or theme opts in. */
+    --cpt-form-group-depth2-border: none;
+    --cpt-form-group-depth2-radius: 0;
+    --cpt-form-group-depth2-padding: 0;
+    --cpt-form-group-depth2-bg: transparent;
 }
 
 .component .errors {
@@ -118,8 +166,26 @@
 
 .component .group > .header h3 {
     margin: 0;
+    font-family: var(--cpt-form-header-font-family);
     font-weight: var(--jui-font-weight-semibold);
+    font-style: var(--cpt-form-header-font-style);
+    letter-spacing: var(--cpt-form-header-letter-spacing);
+    text-transform: var(--cpt-form-header-text-transform);
     color: var(--cpt-form-header);
+    display: flex;
+    align-items: center;
+    gap: var(--cpt-form-header-rule-gap);
+}
+
+/* Trailing rule — the empty <div> after the title text in the h3.
+   Zero-height; the visible "line" is the top border, which defaults
+   to `none` so the rule is invisible unless the consumer overrides
+   --cpt-form-header-rule-border (typically to `1px solid <colour>`).
+   flex: 1 lets it fill the remaining horizontal space in the h3. */
+.component .group > .header h3 > div {
+    flex: 1;
+    height: 0;
+    border-top: var(--cpt-form-header-rule-border);
 }
 
 .component .group > .header > div {
@@ -208,8 +274,31 @@
     gap: var(--cpt-form-group-depth1-gap);
 }
 
+/* Optional frame around a depth-1 group. Token defaults are
+   "no frame" (border:none, radius:0, padding:0, transparent bg);
+   Variant.BOXED_1 overlays them via inline css to produce a card-like
+   container, and project-level themes can override directly. The rule
+   targets only the depth-1 wrapper so depth-0 and deeper levels are
+   unaffected. */
+.component .group.depth1 {
+    border: var(--cpt-form-group-depth1-border);
+    border-radius: var(--cpt-form-group-depth1-radius);
+    padding: var(--cpt-form-group-depth1-padding);
+    background: var(--cpt-form-group-depth1-bg);
+}
+
 .component .group.depth2 > .body {
     gap: var(--cpt-form-group-depth2-gap);
+}
+
+/* Optional frame around a depth-2 group. Mirrors the depth-1 rule;
+   Variant.BOXED_2 overlays the matching tokens to produce a framed
+   card at the second nesting level. */
+.component .group.depth2 {
+    border: var(--cpt-form-group-depth2-border);
+    border-radius: var(--cpt-form-group-depth2-radius);
+    padding: var(--cpt-form-group-depth2-padding);
+    background: var(--cpt-form-group-depth2-bg);
 }
 
 .component .group.depth3 > .body {
@@ -258,11 +347,11 @@
 
 .component .row .cell > label {
     color: var(--cpt-form-text);
-    margin-bottom: var(--jui-space-2);
-    font-size: 0.95em;
+    margin-bottom: var(--cpt-form-label-margin-bottom);
+    font-size: var(--cpt-form-label-size);
     font-weight: var(--jui-font-weight-medium);
     display: block;
-    min-height: 1.35em;
+    min-height: var(--cpt-form-label-min-height);
 }
 
 .component .row .cell.error > label {
@@ -293,11 +382,11 @@
 }
 
 .component .row .cell > label .help em {
-    font-size: 0.8em;
+    font-size: var(--cpt-form-help-icon-size);
     position: relative;
     left: 0.5em;
     top: -0.25em;
-    opacity: 0.75;
+    opacity: var(--cpt-form-help-icon-opacity);
 }
 
 .component .row .cell > label .help div {
@@ -310,7 +399,7 @@
     border-radius: var(--cpt-form-help-radius);
     font-size: 0.85em;
     margin: 0;
-    width: 15em;
+    width: var(--cpt-form-help-bubble-width);
     font-weight: var(--jui-font-weight-medium);
     display: none;
     opacity: 0;

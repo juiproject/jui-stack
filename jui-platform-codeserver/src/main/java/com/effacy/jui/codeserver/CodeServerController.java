@@ -457,8 +457,10 @@ public class CodeServerController {
             return ViewBuilderSupport.build (new BinaryViewBuilder ("text/plain", artefact.content().stream ()));
         }
         if (SourceMapDescriptor.Type.MAP == artefact.type()) {
+            String publicUrl = compiler.descriptor().publicUrl();
             return ViewBuilderSupport.build ((request, response) -> {
-                String sourceRoot = "\"" + String.format ("http://%s:%d/sourcemaps/%s/", request.getServerName(), request.getServerPort(), artefact.module ()) + "\"";
+                String base = (publicUrl != null) ? publicUrl : String.format ("http://%s:%d", request.getServerName(), request.getServerPort());
+                String sourceRoot = "\"" + base + "/sourcemaps/" + artefact.module () + "/\"";
                 String sourceRootKey = "\"$sourceroot_goes_here$\"";
                 BufferedReader reader = Files.newReader(artefact.content ().file (), Charsets.UTF_8);
                 try {

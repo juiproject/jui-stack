@@ -84,6 +84,7 @@ public class Options {
     private String bindAddress = ArgHandlerBindAddress.DEFAULT_BIND_ADDRESS;
     private String preferredHost = ArgHandlerBindAddress.DEFAULT_BIND_ADDRESS;
     private int port = 9876;
+    private String publicUrl = null;
 
     private TreeLogger.Type logLevel = TreeLogger.Type.INFO;
     
@@ -271,6 +272,21 @@ public class Options {
     }
 
     /**
+     * The externally-visible URL the code server is reachable at, when the
+     * server sits behind a proxy or port-forwarder (such as GitHub Codespaces)
+     * where the bind address and port don't match what the browser sees.
+     * <p>
+     * Returns {@code null} when not set (the default), in which case callers
+     * should fall back to constructing a URL from {@link #getPreferredHost()}
+     * and {@link #getPort()} (or from the inbound request). When set, the
+     * returned value has any trailing {@code /} stripped so callers can
+     * concatenate paths starting with {@code /}.
+     */
+    public String getPublicUrl() {
+        return publicUrl;
+    }
+
+    /**
      * These are overriding source locations that are to be prepended to the
      * classpath.
      * 
@@ -320,6 +336,7 @@ public class Options {
             registerHandler(new ModuleNameArgument());
             registerHandler(new NoPrecompileFlag());
             registerHandler(new PortFlag());
+            registerHandler(new PublicUrlFlag());
             registerHandler(new SourceFlag());
             registerHandler(new WorkDirFlag());
             registerHandler(new LauncherDir());
@@ -540,6 +557,40 @@ public class Options {
         @Override
         public void setInt(int newValue) {
             port = newValue;
+        }
+    }
+
+    private class PublicUrlFlag extends ArgHandler {
+
+        @Override
+        public String getTag() {
+            return "-publicUrl";
+        }
+
+        @Override
+        public String[] getTagArgs() {
+            return new String[] {"url"};
+        }
+
+        @Override
+        public String getPurpose() {
+            return "The externally-visible URL the code server is reachable at, "
+                + "when behind a proxy or port-forwarder (e.g. GitHub Codespaces). "
+                + "Used to stamp absolute URLs into source maps and the dev-mode "
+                + "redirect script. Defaults to http://<bindAddress>:<port>.";
+        }
+
+        @Override
+        public int handle(String[] args, int startIndex) {
+            if (startIndex + 1 >= args.length) {
+                System.err.println(getTag() + " should be followed by a URL");
+                return -1;
+            }
+            String value = args[startIndex + 1];
+            while (value.endsWith("/"))
+                value = value.substring(0, value.length() - 1);
+            publicUrl = value;
+            return 1;
         }
     }
 

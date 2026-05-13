@@ -143,7 +143,7 @@
             </goals>
             <configuration>
               <module>com.effacy.jui.playground.PlaygroundApp</module>
-              <jvmArgs>-Xmx4096M,-Xss1024k</jvmArgs>
+              <jvmArgs>-Xmx2g,-Xss1024k</jvmArgs>
               <style>OBF</style>
               <webappDirectory>${basedir}/src/main/resources/static</webappDirectory>
             </configuration>

@@ -1,0 +1,29 @@
+{
+  "name": "JUI Stack",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "forwardPorts": [8080, 9876],
+  "portsAttributes": {
+    "8080": {
+      "label": "JUI Application",
+      "onAutoForward": "notify"
+    },
+    "9876": {
+      "label": "JUI Code Server",
+      "visibility": "public",
+      "onAutoForward": "notify"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-maven",
+        "vscjava.vscode-java-debug",
+        "redhat.vscode-xml"
+      ],
+      "settings": {
+        "java.configuration.updateBuildConfiguration": "automatic"
+      }
+    }
+  }
+}

@@ -485,7 +485,8 @@ public class Recompiler {
         overrideConfig (moduleDef, "computeScriptBaseJs", "com/effacy/jui/codeserver/gwt/computeScriptBase.js");
         // Fix bug with SDM and Chrome 24+ where //@ sourceURL directives cause X-SourceMap header to be ignored
         // Frustratingly, Chrome won't canonicalize a relative URL
-        overrideConfig (moduleDef, "includeSourceMapUrl", "http://" + serverPrefix + Constants.sourceMapLocationTemplate (moduleDef.getName()));
+        String sourceMapBaseUrl = (options.getPublicUrl() != null) ? options.getPublicUrl() : ("http://" + serverPrefix);
+        overrideConfig (moduleDef, "includeSourceMapUrl", sourceMapBaseUrl + Constants.sourceMapLocationTemplate (moduleDef.getName()));
 
         // If present, set some config properties back to defaults.
         // (Needed for Google's server-side linker.)
@@ -645,9 +646,17 @@ public class Recompiler {
     String generateStubNocacheJs(String outputModuleName, Options options) throws IOException {
         URL url = Resources.getResource (Recompiler.class, "stub.nocache.js");
         String template = Resources.toString (url, Charsets.UTF_8);
+        // When a publicUrl has been set we bake it in as a JS string literal;
+        // otherwise we preserve the original runtime construction of a URL from
+        // the page hostname plus the configured code server port.
+        String urlExpr;
+        if (options.getPublicUrl() != null)
+            urlExpr = "'" + options.getPublicUrl() + "'";
+        else
+            urlExpr = "'http://' + hostName + ':" + options.getPort() + "'";
         return template
             .replace("__MODULE_NAME__", outputModuleName)
-            .replace("__SUPERDEV_PORT__", String.valueOf (options.getPort ()));
+            .replace("__SUPERDEV_URL_EXPR__", urlExpr);
     }
 
     /**

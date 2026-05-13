@@ -56,25 +56,43 @@ If you are adding this to an existing Codespace, rebuild the container (**Codesp
 
 ### 2. Configure the `codeserver` Maven profile
 
-The Maven plugin auto-derives the public URL whenever `CODESPACE_NAME` and `GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN` are both present in the environment, which they always are inside a Codespace. **No configuration change is needed** for the standard `codeserver` profile to work in a Codespace — just follow the normal setup described in [Code server / Getting started](docs/app_codeserver.md#getting-started).
+The Maven plugin auto-derives the public URL whenever `CODESPACE_NAME` and `GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN` are both present in the environment, which they always are inside a Codespace. The standard `codeserver` profile therefore works in a Codespace with no changes — just follow the normal setup described in [Code server / Getting started](docs/app_codeserver.md#getting-started).
 
-If you want to be explicit, or if you are running behind a different proxy and need to override the auto-derivation, add a `<publicUrl>` element:
+There are still two settings worth tuning for Codespaces, though: the public URL is better made explicit (so it is documented in the pom and resilient to plugin changes), and the code server's heap should be reduced so it fits comfortably within an 8 GB Codespace alongside the application, VS Code, and the Java language server. The recommended pattern is a small auto-activated *overlay* profile that layers these two overrides on top of the existing `codeserver` profile:
 
 ```xml
-<plugin>
-  <groupId>com.effacy.jui</groupId>
-  <artifactId>jui-maven-plugin</artifactId>
-  <version>${release}</version>
-  <configuration>
-    <module>com.effacy.jui.playground.PlaygroundApp</module>
-    <publicUrl>https://my-codespace-9876.app.github.dev</publicUrl>
-    <!-- the rest of your configuration -->
-  </configuration>
-  ...
-</plugin>
+<profile>
+  <id>codespaces</id>
+  <activation>
+    <property><name>env.CODESPACE_NAME</name></property>
+  </activation>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.effacy.jui</groupId>
+        <artifactId>jui-maven-plugin</artifactId>
+        <version>${release}</version>
+        <configuration>
+          <jvmArgs>-Xmx2g</jvmArgs>
+          <publicUrl>https://${env.CODESPACE_NAME}-9876.${env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}</publicUrl>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</profile>
 ```
 
-To suppress auto-derivation entirely (e.g. for testing the non-Codespaces flow from within a Codespace) pass an empty string or `-`:
+Because the profile activates automatically when `CODESPACE_NAME` is present, the user-facing command stays the same in both environments:
+
+```bash
+mvn -Pcodeserver
+```
+
+On a local machine the overlay is inactive and `codeserver` runs unchanged. In a Codespace the overlay merges into the same plugin configuration and overrides just the two affected fields — `<sources>`, `<inclusions>`, and `<exclusions>` are inherited from `codeserver` untouched.
+
+The `jui-playground` module already includes this overlay; see its `pom.xml` for the canonical example.
+
+To suppress the public URL entirely (e.g. for testing the non-Codespaces flow from within a Codespace) pass an empty string or `-`:
 
 ```bash
 mvn -Pcodeserver -Djui.publicUrl=-

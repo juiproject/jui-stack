@@ -1,6 +1,7 @@
 {
   "name": "JUI Stack",
   "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "postCreateCommand": "ln -sfn /home/codespace/java/17.0.15-ms /home/codespace/java/current",
   "forwardPorts": [8080, 9876],
   "portsAttributes": {
     "8080": {

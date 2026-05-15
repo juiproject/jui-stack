@@ -207,6 +207,11 @@ public class Btn {
         private Length width;
 
         /**
+         * See {@link #disable(boolean)}.
+         */
+        private boolean disabled;
+
+        /**
          * See {@link #onclick(Consumer<IButtonActionCallback>)}.
          */
         private Consumer<IButtonActionCallback> onclick;
@@ -250,7 +255,9 @@ public class Btn {
          * @param nature
          *              the nature to apply.
          * @return the fragment instance.
+         * @deprecated use {@link #variant(Variant)} instead.
          */
+        @Deprecated
         public BtnFragment nature(Nature nature) {
             if (nature != null)
                 nature.configure(this);
@@ -290,6 +297,18 @@ public class Btn {
          */
         public BtnFragment width(Length width) {
             this.width = width;
+            return this;
+        }
+
+        /**
+         * Disables the button, preventing interaction and applying disabled styling.
+         * 
+         * @param disabled
+         *                 whether the button should be disabled.
+         * @return the fragment instance.
+         */
+        public BtnFragment disable(boolean disabled) {
+            this.disabled = disabled;
             return this;
         }
 
@@ -361,6 +380,10 @@ public class Btn {
                 return null;
             ElementBuilder btn = com.effacy.jui.core.client.dom.builder.Button.$ (parent);
             btn.style(styles().fragment());
+            if (disabled) {
+                btn.attr("disabled", "disabled");
+                btn.style(styles().disabled());
+            }
             if (attributes != null)
                 attributes.forEach((k,v) -> btn.attr(k, v));
             if (!StringSupport.empty(icon))
@@ -403,6 +426,8 @@ public class Btn {
         String runningpart();
 
         String label();
+
+        String disabled();
     }
 
     @CssResource({

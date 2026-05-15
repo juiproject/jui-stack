@@ -30,7 +30,6 @@ import com.effacy.jui.core.client.dom.css.CSS.CSSProperty;
 import com.effacy.jui.core.client.dom.css.CSS.ICSSProperty;
 import com.effacy.jui.platform.util.client.StringSupport;
 
-import elemental2.dom.DomGlobal;
 import elemental2.dom.Element;
 import elemental2.dom.HTMLElement;
 import elemental2.dom.HTMLInputElement;

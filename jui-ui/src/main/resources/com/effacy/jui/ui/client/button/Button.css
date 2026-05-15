@@ -1,4 +1,8 @@
 .component {
+    /* Defaults flow from the shared --jui-comp-button-* layer so design-
+       wide retunes propagate to both Btn and Button. Variants override at
+       the local --cpt-btn-* layer below — see Variant for the per-variant
+       set of tokens that reach in here. */
     --cpt-btn-height: var(--jui-comp-button-height);
     --cpt-btn-bg: var(--jui-comp-button-surface);
     --cpt-btn-bg-hover: var(--jui-comp-button-surface-hover);
@@ -6,24 +10,24 @@
     --cpt-btn-border-width: 1px;
     --cpt-btn-border-radius: var(--jui-comp-button-radius);
     --cpt-btn-text: var(--jui-comp-button-text);
-    --cpt-btn-text-size: var(--jui-font-size-md);
-    --cpt-btn-text-lineheight: 1.8em;
-    --cpt-btn-font-weight: var(--jui-font-weight-medium);
+    --cpt-btn-text-size: var(--jui-comp-button-font-size);
+    --cpt-btn-text-lineheight: var(--jui-comp-button-text-lineheight);
+    --cpt-btn-font-weight: var(--jui-comp-button-font-weight);
     --cpt-btn-disabled-bg: var(--jui-comp-button-surface-disabled);
     --cpt-btn-disabled-border: var(--jui-comp-button-border-disabled);
     --cpt-btn-disabled-text: var(--jui-comp-button-text-disabled);
-    --cpt-btn-disabled-opacity: 0.8;
-    --cpt-btn-waiting-bg: var(--jui-comp-button-surface-disabled);
-    --cpt-btn-waiting-border: var(--jui-comp-button-border-disabled);
+    --cpt-btn-disabled-opacity: var(--jui-comp-button-disabled-opacity);
+    --cpt-btn-waiting-bg: var(--jui-comp-button-waiting-surface);
+    --cpt-btn-waiting-border: var(--jui-comp-button-waiting-border);
     --cpt-btn-waiting-text: var(--jui-comp-button-waiting-text);
     --cpt-btn-text-hover: var(--cpt-btn-text);
     --cpt-btn-hover-text-decoration: none;
     --cpt-btn-focus-border: var(--jui-comp-button-focus-border);
     --cpt-btn-focus-shadow: var(--jui-comp-button-focus-shadow);
-    --cpt-btn-padding-inline: var(--jui-space-4);
-    --cpt-btn-padding-block: 3px;
-    --cpt-btn-gap: var(--jui-space-3);
-    --cpt-btn-margin: 2px 4px;
+    --cpt-btn-padding-inline: var(--jui-comp-button-padding-inline);
+    --cpt-btn-padding-block: var(--jui-comp-button-padding-block);
+    --cpt-btn-gap: var(--jui-comp-button-gap);
+    --cpt-btn-margin: var(--jui-comp-button-margin);
 }
 
 .component {
@@ -63,6 +67,7 @@
 
 .component.disabled {
     border-color: var(--cpt-btn-disabled-border) !important;
+    background: var(--cpt-btn-disabled-bg) !important;
 }
 
 .component.disabled * {

@@ -1,0 +1,1331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>JUI Theme Guide</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Live JUI theme stylesheets — kept in sync with the source. The four
+     files together define every --jui-* token: Reference (palette ramps),
+     Scale (spacing / typography / radii / elevation / motion), Role
+     (semantic surface / border / text / interactive / feedback), and
+     Component (per-component knobs that derive from the role layer).
+
+     Loaded relative to docs/tools/. The CSS files scope their declarations
+     to .theme (since Theme.init() applies that class to body), so this
+     page wraps the swatches in <div class="theme"> rather than putting
+     it on <body> — that way the page chrome below is unaffected by the
+     JUI font / colour resets. -->
+<link rel="stylesheet" href="../../jui-ui/src/main/resources/com/effacy/jui/ui/client/Theme.Reference.css">
+<link rel="stylesheet" href="../../jui-ui/src/main/resources/com/effacy/jui/ui/client/Theme.Scale.css">
+<link rel="stylesheet" href="../../jui-ui/src/main/resources/com/effacy/jui/ui/client/Theme.Role.css">
+<link rel="stylesheet" href="../../jui-ui/src/main/resources/com/effacy/jui/ui/client/Theme.Component.css">
+
+<style>
+/* =============================================================================
+   Page chrome — uses its own --ui-* namespace so the JUI tokens being
+   guided are not contaminated by chrome decisions.
+   ========================================================================== */
+:root {
+    color-scheme: light;
+    --ui-bg: #f4f4f5;
+    --ui-panel: #ffffff;
+    --ui-border: #e4e4e7;
+    --ui-border-strong: #d4d4d8;
+    --ui-text: #18181b;
+    --ui-text-muted: #71717a;
+    --ui-accent: #2563eb;
+    --ui-radius: 8px;
+    --ui-radius-sm: 4px;
+    --ui-space: 12px;
+    --ui-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --ui-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--ui-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ui-text);
+    background: var(--ui-bg);
+}
+
+header.page-head {
+    padding: 20px 28px;
+    background: var(--ui-panel);
+    border-bottom: 1px solid var(--ui-border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+header.page-head .row {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+header.page-head h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+header.page-head .sub {
+    color: var(--ui-text-muted);
+    font-size: 13px;
+}
+header.page-head nav {
+    margin-top: 12px;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    font-size: 13px;
+}
+header.page-head nav a {
+    color: var(--ui-text-muted);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 2px;
+}
+header.page-head nav a:hover {
+    color: var(--ui-text);
+    border-bottom-color: var(--ui-border-strong);
+}
+
+main {
+    padding: 24px 28px 80px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+section {
+    background: var(--ui-panel);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+    padding: 24px 28px;
+    margin-bottom: 20px;
+}
+section > header {
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--ui-border);
+    padding-bottom: 12px;
+}
+section > header h2 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+section > header p {
+    margin: 0;
+    color: var(--ui-text-muted);
+    font-size: 13px;
+}
+section h3 {
+    margin: 20px 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ui-text);
+}
+section h3:first-child { margin-top: 0; }
+
+/* Token row table — used for swatch + name + value in colour sections. */
+.token-grid {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    gap: 4px 14px;
+    align-items: center;
+    font-size: 13px;
+}
+.token-grid .swatch {
+    width: 56px;
+    height: 32px;
+    border-radius: 4px;
+    border: 1px solid var(--ui-border);
+}
+.token-grid .name {
+    font-family: var(--ui-mono);
+    font-size: 12px;
+    color: var(--ui-text);
+}
+.token-grid .value {
+    font-family: var(--ui-mono);
+    font-size: 12px;
+    color: var(--ui-text-muted);
+    text-align: right;
+}
+/* Two-line value cell: top is the resolved value, bottom is the var() chain
+   that produced it (omitted when the declaration is a literal). */
+.value .resolved { font-family: var(--ui-mono); font-size: 12px; color: var(--ui-text); }
+.value .chain    { font-family: var(--ui-mono); font-size: 10px; color: var(--ui-text-muted); margin-top: 2px; opacity: 0.85; }
+.value .chain code { font-family: inherit; }
+
+/* Compact column-grid for ramps (10 tints across). */
+.ramp {
+    display: grid;
+    grid-template-columns: 110px repeat(10, 1fr);
+    gap: 2px 6px;
+    font-family: var(--ui-mono);
+    font-size: 11px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.ramp .label {
+    font-weight: 600;
+    color: var(--ui-text);
+    padding-right: 8px;
+}
+.ramp .tint {
+    height: 36px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.08);
+    position: relative;
+    cursor: default;
+}
+.ramp .tint span {
+    position: absolute;
+    bottom: 2px;
+    left: 4px;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    pointer-events: none;
+}
+.ramp .tint.light span {
+    color: rgba(0, 0, 0, 0.7);
+    text-shadow: 0 1px 1px rgba(255,255,255,0.6);
+}
+
+/* Type sample row. */
+.type-row {
+    display: grid;
+    grid-template-columns: 110px 1fr auto;
+    gap: 16px;
+    align-items: baseline;
+    padding: 10px 0;
+    border-bottom: 1px dotted var(--ui-border);
+}
+.type-row:last-child { border-bottom: none; }
+.type-row .label {
+    font-family: var(--ui-mono);
+    font-size: 11px;
+    color: var(--ui-text-muted);
+}
+.type-row .sample {
+    color: var(--ui-text);
+    line-height: 1.3;
+}
+.type-row .resolved {
+    font-family: var(--ui-mono);
+    font-size: 11px;
+    color: var(--ui-text-muted);
+    text-align: right;
+}
+
+/* Spacing scale visualisation. */
+.space-row {
+    display: grid;
+    grid-template-columns: 110px 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 4px 0;
+}
+.space-row .name {
+    font-family: var(--ui-mono);
+    font-size: 12px;
+    color: var(--ui-text);
+}
+.space-row .bar {
+    height: 16px;
+    background: var(--ui-accent);
+    border-radius: 2px;
+    opacity: 0.85;
+}
+.space-row .value {
+    font-family: var(--ui-mono);
+    font-size: 11px;
+    color: var(--ui-text-muted);
+    text-align: right;
+}
+
+/* Radii visualisation. */
+.radii-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 14px;
+}
+.radii-row .item {
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-sm);
+    padding: 12px;
+    text-align: center;
+}
+.radii-row .item .preview {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 8px;
+    background: var(--ui-accent);
+    opacity: 0.9;
+}
+.radii-row .item .name {
+    font-family: var(--ui-mono);
+    font-size: 11px;
+}
+.radii-row .item .value {
+    font-family: var(--ui-mono);
+    font-size: 10px;
+    color: var(--ui-text-muted);
+}
+
+/* Elevation visualisation. */
+.elev-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 18px;
+}
+.elev-row .item {
+    background: #fff;
+    padding: 18px 14px;
+    border-radius: 6px;
+    text-align: center;
+}
+.elev-row .item .name {
+    font-family: var(--ui-mono);
+    font-size: 11px;
+}
+.elev-row .item .value {
+    font-family: var(--ui-mono);
+    font-size: 10px;
+    color: var(--ui-text-muted);
+    margin-top: 2px;
+}
+
+/* Component preview blocks. */
+.comp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+.comp-grid .preview {
+    background: var(--jui-role-surface-canvas, #fff);
+    border: 1px dashed var(--ui-border-strong);
+    border-radius: 6px;
+    padding: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+.comp-grid .tokens {
+    font-size: 12px;
+    overflow: auto;
+}
+.comp-grid .tokens table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.comp-grid .tokens td {
+    padding: 3px 8px;
+    border-bottom: 1px dotted var(--ui-border);
+    font-family: var(--ui-mono);
+    font-size: 11px;
+    vertical-align: top;
+}
+.comp-grid .tokens td:first-child { color: var(--ui-text); }
+.comp-grid .tokens td:last-child { color: var(--ui-text-muted); text-align: right; }
+
+/* Mock buttons in component preview — visual replicas, not the actual JUI
+   Button. Just enough fidelity to show what the tokens add up to. */
+.btn-mock {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--jui-comp-button-gap);
+    padding: var(--jui-comp-button-padding-block) var(--jui-comp-button-padding-inline);
+    font-size: var(--jui-comp-button-font-size);
+    font-weight: var(--jui-comp-button-font-weight);
+    line-height: var(--jui-comp-button-text-lineheight);
+    letter-spacing: var(--jui-comp-button-letter-spacing);
+    border: 1px solid var(--jui-comp-button-border);
+    border-radius: var(--jui-comp-button-radius);
+    background: var(--jui-comp-button-surface);
+    color: var(--jui-comp-button-text);
+    cursor: pointer;
+    user-select: none;
+}
+.btn-mock.outline {
+    background: var(--jui-comp-button-outline-surface);
+    color: var(--jui-comp-button-outline-text);
+    border-color: var(--jui-comp-button-outline-border);
+}
+.btn-mock.danger {
+    background: var(--jui-comp-button-danger-surface);
+    border-color: var(--jui-comp-button-danger-border);
+}
+.btn-mock.success {
+    background: var(--jui-comp-button-success-surface);
+    border-color: var(--jui-comp-button-success-border);
+}
+.btn-mock.warning {
+    background: var(--jui-comp-button-warning-surface);
+    border-color: var(--jui-comp-button-warning-border);
+}
+.btn-mock.disabled {
+    background: var(--jui-comp-button-surface-disabled);
+    border-color: var(--jui-comp-button-border-disabled);
+    color: var(--jui-comp-button-text-disabled);
+    cursor: not-allowed;
+}
+.btn-mock.link {
+    background: transparent;
+    border: 0;
+    color: var(--jui-comp-button-link-text);
+    padding: 0;
+}
+
+/* Surface preview tile. */
+.surface-tile {
+    display: grid;
+    grid-template-columns: 90px 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 0;
+    margin-bottom: 6px;
+}
+.surface-tile .swatch {
+    height: 56px;
+    border-radius: 4px;
+    border: 1px solid var(--ui-border);
+    position: relative;
+}
+.surface-tile .swatch .label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--jui-role-text-default, #333);
+    font-size: 11px;
+    font-family: var(--ui-mono);
+    font-weight: 500;
+}
+.surface-tile .name {
+    font-family: var(--ui-mono);
+    font-size: 12px;
+}
+.surface-tile .value {
+    font-family: var(--ui-mono);
+    font-size: 11px;
+    color: var(--ui-text-muted);
+    text-align: right;
+}
+
+/* Inline tag for axis values. */
+.axis-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--ui-bg);
+    border: 1px solid var(--ui-border);
+    font-family: var(--ui-mono);
+    font-size: 11px;
+    margin: 2px 6px 2px 0;
+}
+.axis-pill .name { color: var(--ui-text-muted); }
+.axis-pill .value { color: var(--ui-text); margin-left: 4px; }
+
+footer {
+    padding: 18px 28px;
+    color: var(--ui-text-muted);
+    font-size: 12px;
+    text-align: center;
+}
+</style>
+</head>
+<body>
+
+<header class="page-head">
+    <div class="row">
+        <h1>JUI Theme Guide</h1>
+        <span class="sub">Live values from the JUI theme stylesheets — Reference, Scale, Role, Component.</span>
+    </div>
+    <nav>
+        <a href="#palette">Palette axes</a>
+        <a href="#ramps">Reference ramps</a>
+        <a href="#surface">Role · Surface</a>
+        <a href="#text">Role · Text</a>
+        <a href="#border">Role · Border</a>
+        <a href="#interactive">Role · Interactive</a>
+        <a href="#feedback">Role · Feedback</a>
+        <a href="#typography">Typography</a>
+        <a href="#spacing">Spacing</a>
+        <a href="#radii">Radii</a>
+        <a href="#elevation">Elevation</a>
+        <a href="#motion">Motion</a>
+        <a href="#button">Components · Button</a>
+        <a href="#dialog">Components · Dialog</a>
+        <a href="#form">Components · Form</a>
+        <a href="#table">Components · Table</a>
+    </nav>
+</header>
+
+<!-- The .theme class scopes every --jui-* declaration in the linked CSS files
+     to this wrapper, mirroring how Theme.init() applies it to body in a real
+     JUI app. The page chrome above stays unaffected. -->
+<main class="theme" id="theme-root">
+
+    <!-- ===================================================================
+         PALETTE AXES — the source-of-truth knobs. Override these on a
+         scoped selector (e.g. body[data-palette="..."]) to redefine the
+         entire palette without touching individual ramp tokens.
+         =================================================================== -->
+    <section id="palette">
+        <header>
+            <h2>Palette axes</h2>
+            <p>Authoring knobs. Every reference colour token is derived from these via <code>oklch() + calc()</code> — override an axis to retune a whole family.</p>
+        </header>
+        <div id="palette-axes-out"></div>
+    </section>
+
+    <!-- ===================================================================
+         REFERENCE RAMPS — derived from axes, 10 tints per family.
+         =================================================================== -->
+    <section id="ramps">
+        <header>
+            <h2>Reference ramps</h2>
+            <p>10-tint scales for each family. Lightness ladder is non-negotiable across families; chroma curves bell around step -50.</p>
+        </header>
+        <div id="ramps-out"></div>
+    </section>
+
+    <!-- ===================================================================
+         ROLE · SURFACE
+         =================================================================== -->
+    <section id="surface">
+        <header>
+            <h2>Role · Surface</h2>
+            <p>Layered surfaces from canvas (top-most page) to overlay. Use these instead of reference colours so a palette change automatically updates them.</p>
+        </header>
+        <div id="surface-out"></div>
+    </section>
+
+    <!-- ===================================================================
+         ROLE · TEXT
+         =================================================================== -->
+    <section id="text">
+        <header>
+            <h2>Role · Text</h2>
+            <p>Text colour roles. Default + heading for content, muted for secondary, link for navigation, inverse for dark surfaces.</p>
+        </header>
+        <div id="text-out"></div>
+    </section>
+
+    <!-- ===================================================================
+         ROLE · BORDER
+         =================================================================== -->
+    <section id="border">
+        <header>
+            <h2>Role · Border</h2>
+            <p>Border weights from subtle (table dividers) through strong (focus / emphasis).</p>
+        </header>
+        <div id="border-out"></div>
+    </section>
+
+    <!-- ===================================================================
+         ROLE · INTERACTIVE
+         =================================================================== -->
+    <section id="interactive">
+        <header>
+            <h2>Role · Interactive</h2>
+            <p>Primary/secondary action surfaces with hover and on-content variants. The "primary" colour is what most JUI components consume.</p>
+        </header>
+        <div id="interactive-out"></div>
+    </section>
+
+    <!-- ===================================================================
+         ROLE · FEEDBACK + FOCUS + DISABLED + SELECTION
+         =================================================================== -->
+    <section id="feedback">
+        <header>
+            <h2>Role · Feedback / Focus / Disabled / Selection</h2>
+            <p>Status colours used in notifications, validation, and interaction states.</p>
+        </header>
+        <div id="feedback-out"></div>
+    </section>
+
+    <!-- ===================================================================
+         TYPOGRAPHY
+         =================================================================== -->
+    <section id="typography">
+        <header>
+            <h2>Typography</h2>
+            <p>Font families, size scale, weights, line heights. Sizes are in <code>rem</code>; the rendered px value depends on the html root font-size (16px by default).</p>
+        </header>
+
+        <h3>Font families</h3>
+        <div id="font-families-out"></div>
+
+        <h3>Size scale</h3>
+        <div id="font-sizes-out"></div>
+
+        <h3>Weights</h3>
+        <div id="font-weights-out"></div>
+
+        <h3>Line heights</h3>
+        <div id="line-heights-out"></div>
+    </section>
+
+    <!-- ===================================================================
+         SPACING
+         =================================================================== -->
+    <section id="spacing">
+        <header>
+            <h2>Spacing scale</h2>
+            <p>Use these for padding, margin, gap. Values are in <code>rem</code> so they scale with the user's font-size preference.</p>
+        </header>
+        <div id="spacing-out"></div>
+    </section>
+
+    <!-- ===================================================================
+         RADII
+         =================================================================== -->
+    <section id="radii">
+        <header>
+            <h2>Radii</h2>
+            <p>Visual decoration; intentionally in <code>px</code> so corner sizes stay proportionate at any text scale.</p>
+        </header>
+        <div class="radii-row" id="radii-out"></div>
+    </section>
+
+    <!-- ===================================================================
+         ELEVATION
+         =================================================================== -->
+    <section id="elevation">
+        <header>
+            <h2>Elevation</h2>
+            <p>Box-shadow ladder. Higher elevation = greater visual lift away from the page surface.</p>
+        </header>
+        <div class="elev-row" id="elevation-out"></div>
+    </section>
+
+    <!-- ===================================================================
+         MOTION
+         =================================================================== -->
+    <section id="motion">
+        <header>
+            <h2>Motion</h2>
+            <p>Animation duration tokens and easing curves. Use the standard ease for most transitions; emphasis for entrance / exit.</p>
+        </header>
+        <div id="motion-out"></div>
+    </section>
+
+    <!-- ===================================================================
+         COMPONENTS — BUTTON
+         =================================================================== -->
+    <section id="button">
+        <header>
+            <h2>Components · Button</h2>
+            <p>Button structural + variant tokens. Live previews use the resolved token values; they are visual replicas, not the actual JUI Button component.</p>
+        </header>
+        <div class="comp-grid">
+            <div class="preview">
+                <button class="btn-mock">Standard</button>
+                <button class="btn-mock outline">Outlined</button>
+                <button class="btn-mock danger">Danger</button>
+                <button class="btn-mock success">Success</button>
+                <button class="btn-mock warning">Warning</button>
+                <button class="btn-mock disabled" disabled>Disabled</button>
+                <button class="btn-mock link">Link</button>
+            </div>
+            <div class="tokens" id="button-tokens-out"></div>
+        </div>
+    </section>
+
+    <!-- ===================================================================
+         COMPONENTS — DIALOG
+         =================================================================== -->
+    <section id="dialog">
+        <header>
+            <h2>Components · Dialog</h2>
+            <p>Modal dialog tokens — surface, chrome (header/footer fill), heading colours.</p>
+        </header>
+        <div class="comp-grid">
+            <div class="preview" style="padding: 0; align-items: stretch;">
+                <div style="
+                    background: var(--jui-comp-dialog-surface);
+                    border: 1px solid var(--jui-comp-dialog-border);
+                    border-radius: var(--jui-comp-dialog-radius);
+                    box-shadow: var(--jui-comp-dialog-shadow);
+                    overflow: hidden;
+                    width: 100%;
+                ">
+                    <div style="
+                        background: var(--jui-comp-dialog-header-surface);
+                        border-bottom: 1px solid var(--jui-comp-dialog-header-divider);
+                        padding: 12px 16px;
+                        color: var(--jui-comp-dialog-heading);
+                        font-weight: 600;
+                    ">Dialog heading</div>
+                    <div style="padding: 16px; color: var(--jui-role-text-default); font-size: 13px;">
+                        <div style="color: var(--jui-comp-dialog-subheading); font-size: 12px; margin-bottom: 6px;">Subheading text</div>
+                        Body content. <a href="#" style="color: var(--jui-comp-dialog-link);">A link in the dialog body</a>.
+                    </div>
+                    <div style="
+                        background: var(--jui-comp-dialog-footer-surface);
+                        border-top: 1px solid var(--jui-comp-dialog-footer-divider);
+                        padding: 10px 16px;
+                        display: flex;
+                        gap: 8px;
+                        justify-content: flex-end;
+                    ">
+                        <button class="btn-mock outline">Cancel</button>
+                        <button class="btn-mock">Confirm</button>
+                    </div>
+                </div>
+            </div>
+            <div class="tokens" id="dialog-tokens-out"></div>
+        </div>
+    </section>
+
+    <!-- ===================================================================
+         COMPONENTS — FORM
+         =================================================================== -->
+    <section id="form">
+        <header>
+            <h2>Components · Form / Control</h2>
+            <p>Tokens used by ControlForm, text controls, errors, and help text.</p>
+        </header>
+        <div class="comp-grid">
+            <div class="preview" style="flex-direction: column; align-items: stretch;">
+                <div style="
+                    color: var(--jui-comp-form-header);
+                    font-weight: 600;
+                    font-size: 14px;
+                ">Form section heading</div>
+                <div style="
+                    color: var(--jui-comp-form-instruction);
+                    font-size: 12px;
+                    margin-top: 4px;
+                ">Brief instruction text shown below the heading.</div>
+                <div style="margin-top: 12px;">
+                    <div style="font-size: 12px; color: var(--jui-comp-control-text-header); font-weight: 500; margin-bottom: 4px;">Label</div>
+                    <input type="text" placeholder="Placeholder text" style="
+                        width: 100%;
+                        padding: 6px 10px;
+                        background: var(--jui-comp-control-surface);
+                        border: 1px solid var(--jui-comp-control-border);
+                        border-radius: var(--jui-comp-control-radius);
+                        color: var(--jui-comp-control-text);
+                        font-family: var(--jui-comp-control-font-family);
+                        font-size: 13px;
+                    ">
+                </div>
+                <div style="
+                    margin-top: 10px;
+                    background: var(--jui-comp-form-error-surface);
+                    color: var(--jui-comp-form-error-text);
+                    border-radius: var(--jui-comp-form-error-radius);
+                    padding: 8px 12px;
+                    font-size: 12px;
+                ">Error message — surfaces inline against an error-tinted background.</div>
+            </div>
+            <div class="tokens" id="form-tokens-out"></div>
+        </div>
+    </section>
+
+    <!-- ===================================================================
+         COMPONENTS — TABLE
+         =================================================================== -->
+    <section id="table">
+        <header>
+            <h2>Components · Table</h2>
+            <p>Table surface, header chrome, row hover, divider colours.</p>
+        </header>
+        <div class="comp-grid">
+            <div class="preview" style="padding: 0; align-items: stretch;">
+                <div style="width: 100%; background: var(--jui-comp-table-surface); border: 1px solid var(--jui-comp-table-border); border-radius: var(--jui-comp-table-radius);">
+                    <div style="
+                        display: grid;
+                        grid-template-columns: 1fr 1fr 1fr;
+                        background: var(--jui-comp-table-header-surface);
+                        color: var(--jui-comp-table-heading-text);
+                        font-weight: 600;
+                        font-size: 12px;
+                        padding: 8px 12px;
+                        border-bottom: 1px solid var(--jui-comp-table-row-border);
+                    ">
+                        <div>Name</div><div>Status</div><div>Owner</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 8px 12px; color: var(--jui-comp-table-cell-text); font-size: 12px; border-bottom: 1px solid var(--jui-comp-table-row-border);">
+                        <div>Row one</div><div>Active</div><div>Jill</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 8px 12px; color: var(--jui-comp-table-cell-text); font-size: 12px; background: var(--jui-comp-table-row-hover-clickable);">
+                        <div>Row two (hover)</div><div>Draft</div><div>Jack</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tokens" id="table-tokens-out"></div>
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    Generated from live JUI theme stylesheets · regenerated whenever the source CSS changes
+</footer>
+
+<script>
+/* =============================================================================
+   Token resolver — reads computed values off the .theme wrapper so the page
+   reflects the actual cascaded values rather than the source-file literal.
+   ========================================================================== */
+const themeRoot = document.getElementById('theme-root');
+const cs = () => getComputedStyle(themeRoot);
+
+/* Map from a property name to the rendered string (trimmed). Empty string when
+   the property isn't defined. */
+function resolve(name) {
+    return cs().getPropertyValue(name).trim();
+}
+
+/* =============================================================================
+   Definition-chain tracer.
+
+   getComputedStyle gives the *resolved* value (e.g. "rgb(248, 248, 246)"), but
+   we also want the source-level declaration (e.g. "var(--paper-soft)") and the
+   chain of intermediate tokens until a literal is reached. To get that we walk
+   document.styleSheets and record, for every token, the declaration on the
+   highest-specificity matching rule.
+
+   Built once at boot; consumed by valueCell() below.
+   ========================================================================== */
+const rawDecls = new Map();   // tokenName -> { raw, spec, sel }
+
+function collectRawDeclarations() {
+    rawDecls.clear();
+    for (const sheet of document.styleSheets) {
+        let rules;
+        try { rules = sheet.cssRules; } catch (e) { continue; }   // CORS guard
+        for (const rule of rules) {
+            if (!(rule instanceof CSSStyleRule)) continue;
+            let matches = false;
+            try { matches = themeRoot.matches(rule.selectorText); } catch (e) { continue; }
+            if (!matches) continue;
+            const spec = computeSpecificity(rule.selectorText);
+            for (let i = 0; i < rule.style.length; i++) {
+                const prop = rule.style[i];
+                if (!prop.startsWith('--')) continue;
+                const val = rule.style.getPropertyValue(prop).trim();
+                const existing = rawDecls.get(prop);
+                if (!existing || compareSpec(spec, existing.spec) >= 0) {
+                    rawDecls.set(prop, { raw: val, spec, sel: rule.selectorText });
+                }
+            }
+        }
+    }
+}
+
+/* Approximate CSS specificity. Returns [ids, classes/attrs/pseudo, elements].
+   Sufficient for the simple .theme / body[...] selectors the JUI theme uses. */
+function computeSpecificity(sel) {
+    const ids     = (sel.match(/#[\w-]+/g) || []).length;
+    const classes = (sel.match(/\.[\w-]+|\[[^\]]+\]|::?[\w-]+(?:\([^)]*\))?/g) || []).length;
+    const tags    = (sel.match(/(?:^|[\s>+~,])[a-z][\w-]*/gi) || []).length;
+    return [ids, classes, tags];
+}
+
+function compareSpec(a, b) {
+    if (a[0] !== b[0]) return a[0] - b[0];
+    if (a[1] !== b[1]) return a[1] - b[1];
+    return a[2] - b[2];
+}
+
+/* Trace a token through its var() chain until a literal is reached. Returns
+   an array: [intermediate-tok, ..., literal]. For a token whose declaration is
+   already a literal, returns [literal]. For unknown tokens, returns []. */
+function traceChain(tok, visited = new Set()) {
+    if (visited.has(tok)) return ['(cycle)'];
+    visited.add(tok);
+    const decl = rawDecls.get(tok);
+    if (!decl) return [];
+    const m = decl.raw.match(/^var\(\s*(--[\w-]+)\s*(?:,.*)?\)\s*$/);
+    if (!m) return [decl.raw];
+    const next = m[1];
+    return [next, ...traceChain(next, visited)];
+}
+
+/* HTML for a value cell: resolved value on top, definition chain underneath
+   (only when the declaration uses var()). */
+function valueCell(tok) {
+    const resolved = resolve(tok);
+    const chain = traceChain(tok);
+    if (chain.length <= 1) {
+        return `<div class="resolved">${resolved || '—'}</div>`;
+    }
+    const literal = chain[chain.length - 1];
+    const intermediate = chain.slice(0, -1);
+    return `<div class="resolved">${resolved}</div>
+            <div class="chain">via ${intermediate.join(' → ')} → <code>${literal}</code></div>`;
+}
+
+/* Heuristic for picking a readable label colour against an arbitrary
+   background. We render the swatch in OKLCH already; just use a luminance
+   estimate from the resolved colour. */
+function isLightColor(rgbOrOklch) {
+    if (!rgbOrOklch) return false;
+    // crude: rely on CSS colour parser via a temp element
+    const probe = document.createElement('div');
+    probe.style.color = rgbOrOklch;
+    document.body.appendChild(probe);
+    const rgb = getComputedStyle(probe).color;
+    probe.remove();
+    const m = rgb.match(/rgb[a]?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (!m) return false;
+    const [r, g, b] = [+m[1], +m[2], +m[3]];
+    // perceptual luminance approximation
+    const L = (0.299*r + 0.587*g + 0.114*b) / 255;
+    return L > 0.65;
+}
+
+/* ---------- 1. Palette axes ---------- */
+function renderAxes() {
+    const axes = [
+        ['--jui-palette-primary-hue',     'primary hue'],
+        ['--jui-palette-secondary-hue',   'secondary hue'],
+        ['--jui-palette-ink-hue',         'ink hue'],
+        ['--jui-palette-neutral-hue',     'neutral hue'],
+        ['--jui-palette-error-hue',       'error hue'],
+        ['--jui-palette-warning-hue',     'warning hue'],
+        ['--jui-palette-success-hue',     'success hue'],
+        ['--jui-palette-info-hue',        'info hue'],
+        ['--jui-palette-chroma-peak',     'chroma peak'],
+        ['--jui-palette-ink-chroma-peak', 'ink chroma peak'],
+        ['--jui-palette-error-chroma-peak', 'error chroma peak'],
+        ['--jui-palette-neutral-chroma',  'neutral chroma'],
+    ];
+    const out = document.getElementById('palette-axes-out');
+    out.innerHTML = axes.map(([tok, label]) => {
+        const v = resolve(tok);
+        return `<span class="axis-pill"><span class="name">${label}</span><span class="value">${v || '—'}</span></span>`;
+    }).join('');
+}
+
+/* ---------- 2. Reference ramps ---------- */
+function renderRamps() {
+    const families = ['primary', 'secondary', 'ink', 'neutral', 'error', 'warning', 'success', 'info'];
+    const steps = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90];
+    const out = document.getElementById('ramps-out');
+    out.innerHTML = families.map(fam => {
+        const tints = steps.map(s => {
+            const tok = `--jui-color-${fam}${String(s).padStart(2, '0')}`;
+            const v = resolve(tok);
+            return `<div class="tint" style="background: var(${tok});" title="${tok} → ${v}"><span>${s}</span></div>`;
+        }).join('');
+        return `<div class="ramp"><div class="label">${fam}</div>${tints}</div>`;
+    }).join('') + `
+        <div class="ramp" style="margin-top: 10px;">
+            <div class="label">aux</div>
+            <div class="tint" style="background: var(--jui-color-aux-white);"><span style="color: rgba(0,0,0,0.6); text-shadow: none;">white</span></div>
+            <div class="tint" style="background: var(--jui-color-aux-black);"><span>black</span></div>
+        </div>
+    `;
+}
+
+/* ---------- 3. Role swatches (generic helper) ---------- */
+function renderTokenList(targetId, tokens) {
+    const out = document.getElementById(targetId);
+    out.innerHTML = tokens.map(({tok, swatchProp = 'background'}) => {
+        const v = resolve(tok);
+        const sw = swatchProp === 'border'
+            ? `<div class="swatch" style="border-color: ${v}; border-width: 4px;"></div>`
+            : swatchProp === 'color'
+            ? `<div class="swatch" style="display: flex; align-items: center; justify-content: center; color: ${v}; font-weight: 700; font-size: 14px;">Aa</div>`
+            : `<div class="swatch" style="background: ${v};"></div>`;
+        return `${sw}<div class="name">${tok}</div><div class="value">${valueCell(tok)}</div>`;
+    }).join('');
+    out.classList.add('token-grid');
+}
+
+function renderSurfaces() {
+    const tokens = [
+        '--jui-role-surface-canvas',
+        '--jui-role-surface-raised',
+        '--jui-role-surface-muted',
+        '--jui-role-surface-sunken',
+        '--jui-role-surface-overlay',
+        '--jui-role-surface-accent',
+        '--jui-role-surface-info',
+        '--jui-role-surface-success',
+        '--jui-role-surface-warning',
+        '--jui-role-surface-error',
+    ];
+    const out = document.getElementById('surface-out');
+    out.innerHTML = tokens.map(tok => {
+        const v = resolve(tok);
+        return `<div class="surface-tile">
+            <div class="swatch" style="background: ${v};"><span class="label">${tok.replace('--jui-role-surface-', '')}</span></div>
+            <div class="name">${tok}</div>
+            <div class="value">${valueCell(tok)}</div>
+        </div>`;
+    }).join('');
+}
+
+function renderTextRoles() {
+    renderTokenList('text-out', [
+        { tok: '--jui-role-text-default',         swatchProp: 'color' },
+        { tok: '--jui-role-text-muted',           swatchProp: 'color' },
+        { tok: '--jui-role-text-heading',         swatchProp: 'color' },
+        { tok: '--jui-role-text-heading-subtle',  swatchProp: 'color' },
+        { tok: '--jui-role-text-disabled',        swatchProp: 'color' },
+        { tok: '--jui-role-text-inverse',         swatchProp: 'color' },
+        { tok: '--jui-role-text-link',            swatchProp: 'color' },
+        { tok: '--jui-role-text-link-hover',      swatchProp: 'color' },
+    ]);
+}
+
+function renderBorderRoles() {
+    renderTokenList('border-out', [
+        { tok: '--jui-role-border-subtle',   swatchProp: 'border' },
+        { tok: '--jui-role-border-default',  swatchProp: 'border' },
+        { tok: '--jui-role-border-strong',   swatchProp: 'border' },
+        { tok: '--jui-role-border-contrast', swatchProp: 'border' },
+    ]);
+}
+
+function renderInteractiveRoles() {
+    renderTokenList('interactive-out', [
+        { tok: '--jui-role-interactive-primary' },
+        { tok: '--jui-role-interactive-primary-hover' },
+        { tok: '--jui-role-interactive-primary-strong' },
+        { tok: '--jui-role-interactive-primary-on' },
+        { tok: '--jui-role-interactive-secondary' },
+        { tok: '--jui-role-interactive-secondary-hover' },
+    ]);
+}
+
+function renderFeedbackRoles() {
+    renderTokenList('feedback-out', [
+        { tok: '--jui-role-feedback-info' },
+        { tok: '--jui-role-feedback-success' },
+        { tok: '--jui-role-feedback-warning' },
+        { tok: '--jui-role-feedback-error' },
+        { tok: '--jui-role-focus-ring' },
+        { tok: '--jui-role-focus-shadow' },
+        { tok: '--jui-role-disabled' },
+        { tok: '--jui-role-disabled-strong' },
+        { tok: '--jui-role-selection' },
+        { tok: '--jui-role-selection-muted' },
+        { tok: '--jui-role-selection-active' },
+    ]);
+}
+
+/* ---------- 4. Typography ---------- */
+function renderFontFamilies() {
+    const tokens = [
+        '--jui-font-family',
+        '--jui-font-family-heading',
+        '--jui-font-family-control',
+        '--jui-font-family-mono',
+    ];
+    const out = document.getElementById('font-families-out');
+    out.innerHTML = tokens.map(tok => {
+        const v = resolve(tok);
+        return `<div class="type-row">
+            <div class="label">${tok.replace('--jui-font-family', '').replace(/^-/, '') || 'base'}</div>
+            <div class="sample" style="font-family: var(${tok}); font-size: 16px;">The quick brown fox jumps over the lazy dog</div>
+            <div class="resolved">${v}</div>
+        </div>`;
+    }).join('');
+}
+
+function renderFontSizes() {
+    const tokens = [
+        '--jui-font-size-2xs',
+        '--jui-font-size-xs',
+        '--jui-font-size-sm',
+        '--jui-font-size-md',
+        '--jui-font-size-lg',
+        '--jui-font-size-xl',
+        '--jui-font-size-2xl',
+    ];
+    const out = document.getElementById('font-sizes-out');
+    out.innerHTML = tokens.map(tok => {
+        const v = resolve(tok);
+        // probe the rendered px equivalent
+        const probe = document.createElement('div');
+        probe.style.fontSize = `var(${tok})`;
+        themeRoot.appendChild(probe);
+        const px = getComputedStyle(probe).fontSize;
+        probe.remove();
+        return `<div class="type-row">
+            <div class="label">${tok.replace('--jui-font-size-', '')}</div>
+            <div class="sample" style="font-size: var(${tok});">Sample text · ${tok.replace('--jui-font-size-', '')}</div>
+            <div class="resolved">${v} · ${px}</div>
+        </div>`;
+    }).join('');
+}
+
+function renderFontWeights() {
+    const tokens = [
+        '--jui-font-weight-regular',
+        '--jui-font-weight-medium',
+        '--jui-font-weight-semibold',
+        '--jui-font-weight-bold',
+    ];
+    const out = document.getElementById('font-weights-out');
+    out.innerHTML = tokens.map(tok => {
+        const v = resolve(tok);
+        return `<div class="type-row">
+            <div class="label">${tok.replace('--jui-font-weight-', '')}</div>
+            <div class="sample" style="font-weight: var(${tok}); font-size: 15px;">Weight ${v} — sample text</div>
+            <div class="resolved">${v}</div>
+        </div>`;
+    }).join('');
+}
+
+function renderLineHeights() {
+    const tokens = [
+        '--jui-line-height-tight',
+        '--jui-line-height-normal',
+    ];
+    const out = document.getElementById('line-heights-out');
+    out.innerHTML = tokens.map(tok => {
+        const v = resolve(tok);
+        return `<div class="type-row">
+            <div class="label">${tok.replace('--jui-line-height-', '')}</div>
+            <div class="sample" style="line-height: var(${tok}); font-size: 14px;">Two-line sample of body text · so the leading is visible.<br>And here's the second line under that.</div>
+            <div class="resolved">${v}</div>
+        </div>`;
+    }).join('');
+}
+
+/* ---------- 5. Spacing ---------- */
+function renderSpacing() {
+    const tokens = [
+        '--jui-space-0', '--jui-space-1', '--jui-space-2', '--jui-space-3',
+        '--jui-space-4', '--jui-space-5', '--jui-space-6', '--jui-space-7',
+        '--jui-space-8', '--jui-space-10', '--jui-space-12',
+    ];
+    const out = document.getElementById('spacing-out');
+    // determine a max for relative sizing
+    out.innerHTML = tokens.map(tok => {
+        const v = resolve(tok);
+        return `<div class="space-row">
+            <div class="name">${tok.replace('--jui-', '')}</div>
+            <div class="bar" style="width: var(${tok});"></div>
+            <div class="value">${v}</div>
+        </div>`;
+    }).join('');
+}
+
+/* ---------- 6. Radii ---------- */
+function renderRadii() {
+    const tokens = [
+        '--jui-radius-none',
+        '--jui-radius-xs',
+        '--jui-radius-sm',
+        '--jui-radius-md',
+        '--jui-radius-lg',
+        '--jui-radius-pill',
+    ];
+    const out = document.getElementById('radii-out');
+    out.innerHTML = tokens.map(tok => {
+        const v = resolve(tok);
+        return `<div class="item">
+            <div class="preview" style="border-radius: var(${tok});"></div>
+            <div class="name">${tok.replace('--jui-radius-', '')}</div>
+            <div class="value">${v}</div>
+        </div>`;
+    }).join('');
+}
+
+/* ---------- 7. Elevation ---------- */
+function renderElevation() {
+    const tokens = [
+        '--jui-elevation-0',
+        '--jui-elevation-1',
+        '--jui-elevation-2',
+        '--jui-elevation-3',
+    ];
+    const out = document.getElementById('elevation-out');
+    out.innerHTML = tokens.map(tok => {
+        const v = resolve(tok);
+        return `<div class="item" style="box-shadow: var(${tok});">
+            <div class="name">${tok.replace('--jui-elevation-', 'level ')}</div>
+            <div class="value">${v === 'none' ? 'none' : 'shadow stack'}</div>
+        </div>`;
+    }).join('');
+}
+
+/* ---------- 8. Motion ---------- */
+function renderMotion() {
+    const out = document.getElementById('motion-out');
+    const tokens = [
+        '--jui-duration-fast',
+        '--jui-duration-standard',
+        '--jui-duration-slow',
+        '--jui-ease-standard',
+        '--jui-ease-emphasis',
+    ];
+    out.innerHTML = tokens.map(tok => {
+        const v = resolve(tok);
+        return `<span class="axis-pill"><span class="name">${tok.replace('--jui-', '')}</span><span class="value">${v || '—'}</span></span>`;
+    }).join('');
+}
+
+/* ---------- 9. Component token tables ---------- */
+function renderTokenTable(targetId, tokens) {
+    const out = document.getElementById(targetId);
+    out.innerHTML = `<table>${tokens.map(tok => {
+        return `<tr><td>${tok.replace('--jui-comp-', '').replace(/^[^-]+-/, '')}</td><td>${valueCell(tok)}</td></tr>`;
+    }).join('')}</table>`;
+}
+
+function renderButtonTokens() {
+    renderTokenTable('button-tokens-out', [
+        '--jui-comp-button-height',
+        '--jui-comp-button-surface',
+        '--jui-comp-button-surface-hover',
+        '--jui-comp-button-surface-disabled',
+        '--jui-comp-button-border',
+        '--jui-comp-button-border-disabled',
+        '--jui-comp-button-radius',
+        '--jui-comp-button-text',
+        '--jui-comp-button-text-disabled',
+        '--jui-comp-button-disabled-opacity',
+        '--jui-comp-button-padding-block',
+        '--jui-comp-button-padding-inline',
+        '--jui-comp-button-font-size',
+        '--jui-comp-button-font-weight',
+        '--jui-comp-button-text-lineheight',
+        '--jui-comp-button-gap',
+        '--jui-comp-button-margin',
+        '--jui-comp-button-letter-spacing',
+        '--jui-comp-button-waiting-surface',
+        '--jui-comp-button-waiting-border',
+        '--jui-comp-button-waiting-text',
+        '--jui-comp-button-focus-border',
+        '--jui-comp-button-focus-shadow',
+        '--jui-comp-button-danger-surface',
+        '--jui-comp-button-danger-surface-hover',
+        '--jui-comp-button-danger-border',
+        '--jui-comp-button-warning-surface',
+        '--jui-comp-button-warning-surface-hover',
+        '--jui-comp-button-warning-border',
+        '--jui-comp-button-success-surface',
+        '--jui-comp-button-success-surface-hover',
+        '--jui-comp-button-success-border',
+        '--jui-comp-button-outline-surface',
+        '--jui-comp-button-outline-surface-hover',
+        '--jui-comp-button-outline-text',
+        '--jui-comp-button-outline-border',
+        '--jui-comp-button-link-text',
+        '--jui-comp-button-link-text-hover',
+    ]);
+}
+
+function renderDialogTokens() {
+    renderTokenTable('dialog-tokens-out', [
+        '--jui-comp-dialog-surface',
+        '--jui-comp-dialog-border',
+        '--jui-comp-dialog-radius',
+        '--jui-comp-dialog-shadow',
+        '--jui-comp-dialog-chrome',
+        '--jui-comp-dialog-header-surface',
+        '--jui-comp-dialog-header-divider',
+        '--jui-comp-dialog-footer-surface',
+        '--jui-comp-dialog-footer-divider',
+        '--jui-comp-dialog-heading',
+        '--jui-comp-dialog-subheading',
+        '--jui-comp-dialog-icon',
+        '--jui-comp-dialog-link',
+        '--jui-comp-dialog-close',
+    ]);
+}
+
+function renderFormTokens() {
+    renderTokenTable('form-tokens-out', [
+        '--jui-comp-form-header',
+        '--jui-comp-form-instruction',
+        '--jui-comp-form-footer',
+        '--jui-comp-form-text',
+        '--jui-comp-form-text-error',
+        '--jui-comp-form-text-disabled',
+        '--jui-comp-form-help-surface',
+        '--jui-comp-form-help-text',
+        '--jui-comp-form-help-radius',
+        '--jui-comp-form-error-surface',
+        '--jui-comp-form-error-icon',
+        '--jui-comp-form-error-text',
+        '--jui-comp-form-error-radius',
+        '--jui-comp-form-separator',
+        '--jui-comp-control-surface',
+        '--jui-comp-control-border',
+        '--jui-comp-control-radius',
+        '--jui-comp-control-text',
+        '--jui-comp-control-text-placeholder',
+        '--jui-comp-control-active',
+        '--jui-comp-control-focus',
+    ]);
+}
+
+function renderTableTokens() {
+    renderTokenTable('table-tokens-out', [
+        '--jui-comp-table-surface',
+        '--jui-comp-table-radius',
+        '--jui-comp-table-shadow',
+        '--jui-comp-table-header-surface',
+        '--jui-comp-table-sticky-surface',
+        '--jui-comp-table-border',
+        '--jui-comp-table-row-border',
+        '--jui-comp-table-row-hover',
+        '--jui-comp-table-row-hover-clickable',
+        '--jui-comp-table-heading-text',
+        '--jui-comp-table-heading-icon',
+        '--jui-comp-table-cell-text',
+        '--jui-comp-table-sort-indicator',
+        '--jui-comp-table-mask-opacity',
+        '--jui-comp-table-selector-width',
+    ]);
+}
+
+/* ---------- Boot ---------- */
+function bootGuide() {
+    collectRawDeclarations();
+    renderAxes();
+    renderRamps();
+    renderSurfaces();
+    renderTextRoles();
+    renderBorderRoles();
+    renderInteractiveRoles();
+    renderFeedbackRoles();
+    renderFontFamilies();
+    renderFontSizes();
+    renderFontWeights();
+    renderLineHeights();
+    renderSpacing();
+    renderRadii();
+    renderElevation();
+    renderMotion();
+    renderButtonTokens();
+    renderDialogTokens();
+    renderFormTokens();
+    renderTableTokens();
+}
+
+/* Wait for stylesheets to load before resolving values. The <link> tags are
+   in <head>, so by DOMContentLoaded most should be ready, but we double-
+   check via the stylesheets API. */
+function whenStylesReady(cb) {
+    const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+    if (links.every(l => l.sheet)) { cb(); return; }
+    setTimeout(() => whenStylesReady(cb), 50);
+}
+
+document.addEventListener('DOMContentLoaded', () => whenStylesReady(bootGuide));
+</script>
+
+</body>
+</html>

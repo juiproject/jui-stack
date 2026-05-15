@@ -1,162 +1,246 @@
-.component {
-    --jui-table-selectorwidth: 3.5em;
-    --jui-table-hover-bg: #fafafa;
-}
+/* ---------------------------------------------------------------------------
+ * Design tokens.
+ *
+ * Override any of these on a parent or in a supplemental stylesheet to
+ * restyle the table without touching its structural rules. Defaults bind
+ * to --jui-comp-table-* in Theme.Component.css.
+ * ------------------------------------------------------------------------- */
 
 .component {
-	overflow: hidden;
-	position: relative;
+    /* Layout */
+    --cpt-tbl-selector-width: var(--jui-comp-table-selector-width);
+    --cpt-tbl-header-gap: var(--jui-space-2);
+
+    /* Container */
+    --cpt-tbl-bg: var(--jui-comp-table-surface);
+    --cpt-tbl-border: 0 solid transparent;
+    --cpt-tbl-radius: var(--jui-comp-table-radius);
+    --cpt-tbl-shadow: var(--jui-comp-table-shadow);
+
+    /* Surfaces */
+    --cpt-tbl-header-bg: var(--jui-comp-table-header-surface);
+    --cpt-tbl-sticky-bg: var(--jui-comp-table-sticky-surface);   /* Sticky thead bg when .scrollable */
+    --cpt-tbl-hover-bg: var(--jui-comp-table-row-hover);         /* Row hover bg */
+    --cpt-tbl-hover-clickable-bg: var(--jui-comp-table-row-hover-clickable); /* Row hover bg when .clickable */
+
+    /* Header typography */
+    --cpt-tbl-header-color: var(--jui-comp-table-heading-text);
+    --cpt-tbl-header-font-size: inherit;
+    --cpt-tbl-header-font-weight: var(--jui-font-weight-medium);
+    --cpt-tbl-header-text-transform: none;
+    --cpt-tbl-header-letter-spacing: normal;
+
+    /* Header box */
+    --cpt-tbl-header-padding: var(--jui-space-3) var(--jui-space-4) var(--jui-space-2);
+    --cpt-tbl-header-border: 1px solid var(--jui-comp-table-border);
+    --cpt-tbl-header-icon-color: var(--jui-comp-table-heading-icon);
+
+    /* Sort indicator (shown when sortable but not actively sorting) */
+    --cpt-tbl-sort-indicator-color: var(--jui-comp-table-sort-indicator);
+
+    /* Body cells */
+    --cpt-tbl-cell-color: var(--jui-comp-table-cell-text);
+    --cpt-tbl-cell-padding: var(--jui-space-1) var(--jui-space-4);
+    --cpt-tbl-row-border: 1px solid var(--jui-comp-table-row-border);
+
+    /* State */
+    --cpt-tbl-mask-opacity: var(--jui-comp-table-mask-opacity);
+}
+
+/* ---------------------------------------------------------------------------
+ * Structural rules.
+ * ------------------------------------------------------------------------- */
+
+.component {
+    overflow: hidden;
+    position: relative;
+    background: var(--cpt-tbl-bg);
+    border: var(--cpt-tbl-border);
+    border-radius: var(--cpt-tbl-radius);
+    box-shadow: var(--cpt-tbl-shadow);
 }
 
 .component .table table {
-	width: 100%;
-	border-collapse: separate;
-	border-spacing: 0;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
     table-layout: fixed;
 }
 
 .component.scrollable {
-	display: flex;
-	flex-direction: column;
-	overflow: auto;
-	height: 100%;
-}
-
-.component .mask {
-	position: absolute;
-	inset: 0;
-	z-index: 2;
-	display: none;
-}
-
-.component.mask .mask {
-	display: block;
-}
-
-.component .mask div {
-	font-size: 0.8em;
-	position: absolute;
-	left: 50%;
-	margin: -2em auto 0 auto;
-	top: 50%;
-}
-
-.component.quiet .mask div {
-	display: none;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    height: 100%;
 }
 
 .component.scrollable .table {
-	overflow: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
     height: 100%;
 }
 
 .component.scrollable .table table thead {
-	position: sticky;
-	top: 0px;
-	background: #fff;
+    position: sticky;
+    top: 0px;
+    background: var(--cpt-tbl-sticky-bg);
     z-index: 1;
 }
 
-.component.mask .table {
-	opacity: 0.5;
+/* Mask / loading overlay */
+
+.component .mask {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: none;
 }
 
+.component.mask .mask {
+    display: block;
+}
+
+.component .mask div {
+    font-size: 0.8em;
+    position: absolute;
+    left: 50%;
+    margin: -2em auto 0 auto;
+    top: 50%;
+}
+
+.component.quiet .mask div {
+    display: none;
+}
+
+.component.mask .table {
+    opacity: var(--cpt-tbl-mask-opacity);
+}
+
+/* Empty state */
+
 .component .empty {
-	position: absolute;
-	inset: 0;
-	z-index: 1;
-	padding-top: 2em;
-	display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding-top: 2em;
+    display: none;
 }
 
 .component.mask .empty {
-	opacity: 0.5;
+    opacity: var(--cpt-tbl-mask-opacity);
 }
 
 .component.empty .empty {
-	display: block;
+    display: block;
 }
 
 .component.empty tbody {
-	display: none;
+    display: none;
 }
 
-.component .table thead th.sortable {
-	cursor: pointer;
-}
-
-.component .table thead th div {
-	display: flex;
-    gap: 0.5em;
-	align-items: center;
-}
-
-.component .table thead th div span.header {
-	flex-grow: 1;
-	text-align: left;
-}
-
-.component .table thead th div span.sortable {
-	display: inline-block;
-	width: 1em;
-}
-
-.component .table thead th div em {
-	display: none;
-}
-
-.component .table thead th div em.icon {
-    display: inline-block;
-}
-
-.component .table thead th.ascending div em.ascending {
-	display: inline;
-}
-
-.component .table thead th.descending div em.descending {
-	display: inline;
-}
-
-.component .table thead th div em.sortable {
-	display: inline;
-    color: #ddd;
-}
-
-.component .table thead th.ascending div em.sortable {
-	display: none;
-}
-
-.component .table thead th.descending div em.sortable {
-	display: none;
-}
-
-.component .table thead th.selector {
-    width: var(--jui-table-selectorwidth);
-}
-
-.component .table tbody td.selector {
-    width: var(--jui-table-selectorwidth);
-}
-
-.component #unfiltered {
-    position: absolute;
-    inset: 0;
-}
-
-.component #filtered {
-    position: absolute;
-    inset: 0;
-}
-
+.component #unfiltered,
+.component #filtered,
 .component #error {
     position: absolute;
     inset: 0;
 }
 
+/* ---------------------------------------------------------------------------
+ * Header.
+ * ------------------------------------------------------------------------- */
+
+.component .table thead tr {
+    background: var(--cpt-tbl-header-bg);
+}
+
+.component .table thead th {
+    padding: var(--cpt-tbl-header-padding);
+    border-bottom: var(--cpt-tbl-header-border);
+}
+
+.component .table thead th.sortable {
+    cursor: pointer;
+}
+
+.component .table thead th div {
+    display: flex;
+    gap: var(--cpt-tbl-header-gap);
+    align-items: center;
+    color: var(--cpt-tbl-header-color);
+    font-size: var(--cpt-tbl-header-font-size);
+    font-weight: var(--cpt-tbl-header-font-weight);
+    text-transform: var(--cpt-tbl-header-text-transform);
+    letter-spacing: var(--cpt-tbl-header-letter-spacing);
+}
+
+.component .table thead th div span.header {
+    flex-grow: 1;
+    text-align: left;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    user-select: none;
+}
+
+.component .table thead th div span.sortable {
+    display: inline-block;
+    width: 1em;
+}
+
+.component .table thead th div em {
+    display: none;
+}
+
+.component .table thead th div em.icon {
+    display: inline-block;
+    color: var(--cpt-tbl-header-icon-color);
+}
+
+.component .table thead th.ascending div em.ascending {
+    display: inline;
+}
+
+.component .table thead th.descending div em.descending {
+    display: inline;
+}
+
+.component .table thead th div em.sortable {
+    display: inline;
+    color: var(--cpt-tbl-sort-indicator-color);
+}
+
+.component .table thead th.ascending div em.sortable,
+.component .table thead th.descending div em.sortable {
+    display: none;
+}
+
+.component .table thead th.selector,
+.component .table tbody td.selector {
+    width: var(--cpt-tbl-selector-width);
+}
+
+/* ---------------------------------------------------------------------------
+ * Body.
+ * ------------------------------------------------------------------------- */
+
+.component .table tbody tr td {
+    padding: var(--cpt-tbl-cell-padding);
+    border-bottom: var(--cpt-tbl-row-border);
+    color: var(--cpt-tbl-cell-color);
+}
+
+.component .table tbody tr:last-child td {
+    border-bottom: none;
+}
+
 .component .table .clickable tr {
-	cursor: pointer;
+    cursor: pointer;
+}
+
+.component .table tr:hover td {
+    background: var(--cpt-tbl-hover-bg);
 }
 
 .component .table .clickable tr:hover td {
-	background: var(--jui-table-hover-bg);
+    background: var(--cpt-tbl-hover-clickable-bg);
 }

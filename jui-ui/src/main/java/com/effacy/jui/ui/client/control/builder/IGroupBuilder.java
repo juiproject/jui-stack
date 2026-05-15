@@ -557,6 +557,14 @@ public interface IGroupBuilder<SRC,DST> extends IDomInsertableContainer<IGroupBu
              *              the label.
              */
             public void updateLabel(String label);
+
+            /**
+             * Updates the guidance.
+             * 
+             * @param guidance
+             *                 the guidance text.
+             */
+            public void updateGuidance(String guidance);
         }
 
         /**

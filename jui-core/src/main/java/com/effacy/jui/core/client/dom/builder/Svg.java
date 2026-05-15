@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import elemental2.dom.DomGlobal;
 import elemental2.dom.Element;
 import elemental2.dom.Node;
 

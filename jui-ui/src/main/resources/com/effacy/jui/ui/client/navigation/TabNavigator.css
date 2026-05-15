@@ -1,4 +1,5 @@
 .component {
+    --cpt-tabbedpanel-font-family: var(--jui-font-family-heading);
     --cpt-tabbedpanel-warn: var(--jui-tabset-warn);
     --cpt-tabbedpanel-outline: var(--jui-tabset-line);
     --cpt-tabbedpanel-outline-active: var(--jui-tabset-line-light);
@@ -19,13 +20,13 @@
     --cpt-tabnavigator-indicator-size: 0.8em;
 
     --cpt-navigator-line-color: var(--jui-role-border-default);
-    --cpt-navigator-group-font-family: var(--jui-font-family-heading);
+    --cpt-navigator-group-font-family: var(--cpt-tabbedpanel-font-family);
     --cpt-navigator-group-text-size: 0.8em;
     --cpt-navigator-group-text-color: var(--jui-role-text-muted);
     --cpt-navigator-item-bg-color: transparent;
     --cpt-navigator-item-bg-color-hover: var(--cpt-navigator-item-bg-color);
     --cpt-navigator-item-bg-color-active: var(--cpt-navigator-item-bg-color-hover);
-    --cpt-navigator-item-font-family: var(--jui-font-family-heading);
+    --cpt-navigator-item-font-family: var(--cpt-tabbedpanel-font-family);
     --cpt-navigator-item-text-size: 1em;
     --cpt-navigator-item-text-color: var(--jui-role-text-default);
     --cpt-navigator-item-text-color-hover: var(--cpt-navigator-item-text-color);

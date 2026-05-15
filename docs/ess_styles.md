@@ -1275,7 +1275,8 @@ Declared in `Theme.Scale.css`. Shared across all components so layouts stay rhyt
 | `--jui-font-family-control` | `var(--jui-font-family)` | Font for form controls. Flows through `--jui-comp-control-font-family` to `input`/`textarea`/`SelectionControl`. Override if controls need a distinct family (e.g. a narrow face for dense forms). |
 | `--jui-font-family-mono` | ui-monospace, monospace | Code / monospace contexts. Intentionally standalone — does **not** fall back to the base. |
 | `--jui-font-family-sans` | legacy alias for `--jui-font-family` | Kept in `Theme.Legacy.css` for backward compatibility. New code should use `--jui-font-family`. |
-| `--jui-font-size-xs` | 0.75rem | Captions, micro-labels. |
+| `--jui-font-size-2xs` | 0.6875rem | Uppercase eyebrows / kv-card heads. All-caps labels sit at cap height so they read larger than nominal — use this tier instead of `xs` for them. |
+| `--jui-font-size-xs` | 0.75rem | Captions, micro-labels (mixed case). |
 | `--jui-font-size-sm` | 0.875rem | Secondary text. |
 | `--jui-font-size-md` | 1rem | Body default. |
 | `--jui-font-size-lg` | 1.125rem | Lead paragraphs, emphasised body. |

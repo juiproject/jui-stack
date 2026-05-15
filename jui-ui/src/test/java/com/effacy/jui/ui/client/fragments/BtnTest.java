@@ -9,7 +9,7 @@ public class BtnTest extends AbstractJUITest {
     @Test
     public void button_with_icon_and_label() {
         build(Btn.$("Save").icon("fa-save"))
-            .print()
+            //.print()
             .htmlEquals("""
                 <div>
                     <button class="fragment">

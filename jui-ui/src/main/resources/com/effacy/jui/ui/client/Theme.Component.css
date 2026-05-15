@@ -30,15 +30,26 @@
     --jui-comp-control-opacity-disabled: 0.5;
     --jui-comp-control-opacity-readonly: 0.5;
 
-    --jui-comp-button-height: var(--jui-control-height);
+    --jui-comp-button-height: auto;
     --jui-comp-button-surface: var(--jui-role-interactive-primary);
     --jui-comp-button-surface-hover: var(--jui-role-interactive-primary-hover);
-    --jui-comp-button-surface-disabled: var(--jui-role-surface-sunken);
+    --jui-comp-button-surface-disabled: transparent;
     --jui-comp-button-border: var(--jui-role-interactive-primary);
-    --jui-comp-button-border-disabled: var(--jui-role-disabled);
+    --jui-comp-button-border-disabled: var(--jui-role-border-default);
     --jui-comp-button-radius: var(--jui-radius-sm);
     --jui-comp-button-text: var(--jui-role-interactive-primary-on);
-    --jui-comp-button-text-disabled: var(--jui-role-disabled-strong);
+    --jui-comp-button-text-disabled: var(--jui-role-text-disabled);
+    --jui-comp-button-disabled-opacity: 1;
+    --jui-comp-button-padding-block: 0.45em;
+    --jui-comp-button-padding-inline: 0.75em;
+    --jui-comp-button-font-size: inherit;
+    --jui-comp-button-font-weight: 400;
+    --jui-comp-button-text-lineheight: 1.4;
+    --jui-comp-button-gap: 0.5em;
+    --jui-comp-button-margin: 2px;
+    --jui-comp-button-letter-spacing: 0.02em;
+    --jui-comp-button-waiting-surface: var(--jui-role-surface-sunken);
+    --jui-comp-button-waiting-border: var(--jui-role-disabled);
     --jui-comp-button-waiting-text: var(--jui-role-disabled-strong);
     --jui-comp-button-focus-border: var(--jui-role-focus-ring);
     --jui-comp-button-focus-shadow: var(--jui-role-focus-shadow);
@@ -87,11 +98,21 @@
     --jui-comp-dialog-link: var(--jui-role-text-link);
     --jui-comp-dialog-close: var(--jui-role-text-default);
 
+    --jui-comp-table-surface: transparent;
+    --jui-comp-table-radius: var(--jui-radius-none);
+    --jui-comp-table-shadow: var(--jui-elevation-0);
     --jui-comp-table-header-surface: var(--jui-role-surface-muted);
+    --jui-comp-table-sticky-surface: var(--jui-role-surface-canvas);
     --jui-comp-table-border: var(--jui-role-border-default);
     --jui-comp-table-row-border: var(--jui-role-border-subtle);
+    --jui-comp-table-row-hover: transparent;
+    --jui-comp-table-row-hover-clickable: var(--jui-role-surface-muted);
     --jui-comp-table-heading-text: var(--jui-role-text-default);
     --jui-comp-table-heading-icon: var(--jui-role-text-muted);
+    --jui-comp-table-cell-text: var(--jui-role-text-default);
+    --jui-comp-table-sort-indicator: var(--jui-role-border-default);
+    --jui-comp-table-mask-opacity: 0.5;
+    --jui-comp-table-selector-width: 3.5em;
 
     --jui-comp-notification-radius: var(--jui-radius-xs);
     --jui-comp-notification-info-accent: var(--jui-role-feedback-info);

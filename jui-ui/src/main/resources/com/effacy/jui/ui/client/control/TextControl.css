@@ -1,17 +1,37 @@
 .component {
+    /* Defaults flow from the shared --jui-textctl-* / --jui-comp-control-*
+       layer so design-wide retunes propagate everywhere. Variants
+       override at the local --cpt-textctl-* layer below — see
+       TextControl.Config.Variant for the per-variant token sets that
+       reach in here. */
     --cpt-textctl-size: var(--jui-textctl-size, var(--jui-font-size-md));
     --cpt-textctl-padding: var(--jui-textctl-padding, 0 var(--jui-space-3));
     --cpt-textctl-height: var(--jui-textctl-height, var(--jui-comp-control-height));
     --cpt-textctl-border: var(--jui-textctl-border, var(--jui-comp-control-border));
+    --cpt-textctl-border-hover: var(--jui-textctl-border-hover, var(--cpt-textctl-border));
     --cpt-textctl-border-radius: var(--jui-textctl-border-radius, var(--jui-comp-control-radius));
     --cpt-textctl-bg: var(--jui-textctl-bg, var(--jui-comp-control-surface));
+    --cpt-textctl-bg-hover: var(--jui-textctl-bg-hover, var(--cpt-textctl-bg));
+    --cpt-textctl-bg-focus: var(--jui-textctl-bg-focus, var(--cpt-textctl-bg));
+    --cpt-textctl-transition: var(--jui-textctl-transition, none);
     --cpt-textctl-text: var(--jui-textctl-text, var(--jui-comp-control-text));
     --cpt-textctl-text-disabled: var(--jui-textctl-text-disabled, var(--jui-comp-control-text-disabled));
     --cpt-textctl-text-readonly: var(--jui-textctl-text-readonly, var(--jui-comp-control-text-readonly));
     --cpt-textctl-text-placeholder: var(--jui-textctl-text-placeholder, var(--jui-comp-control-text-placeholder));
+    --cpt-textctl-placeholder-style: var(--jui-textctl-placeholder-style, normal);
     --cpt-textctl-icon: var(--jui-textctl-icon, var(--jui-comp-control-action));
     --cpt-textctl-icon-disabled: var(--jui-textctl-icon-disabled, var(--jui-comp-control-action-disabled));
     --cpt-textctl-icon-readonly: var(--jui-textctl-icon-readonly, var(--jui-comp-control-action-readonly));
+}
+
+.component:hover .inner {
+    border-color: var(--cpt-textctl-border-hover);
+    background: var(--cpt-textctl-bg-hover);
+}
+
+.component input::placeholder {
+    color: var(--cpt-textctl-text-placeholder);
+    font-style: var(--cpt-textctl-placeholder-style);
 }
 
 .component .inner {
@@ -21,11 +41,16 @@
     box-sizing: content-box;
     padding: var(--cpt-textctl-padding);
     background: var(--cpt-textctl-bg);
+    transition: var(--cpt-textctl-transition);
     display: flex;
     flex-direction: row;
     gap: var(--jui-space-2);
     align-items: center;
     color: var(--cpt-textctl-text);
+}
+
+.component.focus .inner {
+    background: var(--cpt-textctl-bg-focus);
 }
 
 .component.read_only em.left {

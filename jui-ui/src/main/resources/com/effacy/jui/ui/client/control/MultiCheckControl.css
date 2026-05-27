@@ -3,7 +3,13 @@
     --jui-multicheckctl-border-radius: 20px;
     --jui-multicheckctl-border-width: 0;
     --jui-multicheckctl-border-color: transparent;
+    /* Hover overlay on the outer toggle surround — Variant.INLINE
+       uses these to swap the background + border on hover so the
+       control reads as "click to edit". Defaults are no-op (match
+       resting state) so non-INLINE variants see no change. */
+    --jui-multicheckctl-border-color-hover: var(--jui-multicheckctl-border-color);
 	--jui-multicheckctl-bg: #ccc;
+    --jui-multicheckctl-bg-hover: var(--jui-multicheckctl-bg);
     --jui-multicheckctl-padding: 2px;
     --jui-multicheckctl-item-weight: 500;
     --jui-multicheckctl-item-text:  #fff;
@@ -88,6 +94,11 @@
 	border-radius: var(--jui-multicheckctl-border-radius);
 	background: var(--jui-multicheckctl-bg);
 	padding: var(--jui-multicheckctl-padding);
+}
+
+.component:hover .inner .item div.toggle {
+    border-color: var(--jui-multicheckctl-border-color-hover);
+    background: var(--jui-multicheckctl-bg-hover);
 }
 
 .component .inner .item div.toggle label {

@@ -1,69 +1,109 @@
 .component {
-	--jui-textareactl-size: 1em;
-    --jui-textareactl-padding: 0.55em;
-    --jui-textareactl-counter-limit: var(--jui-color-error70);
-    --jui-textareactl-counter-text-color: var(--jui-ctl-text);
-    --jui-textareactl-bg: var(--jui-ctl-bg);
-    --jui-textareactl-text: var(--jui-ctl-text);
-    --jui-textareactl-border: var(--jui-ctl-border);
-    --jui-textareactl-border-radius: var(--jui-ctl-border-radius);
-    --jui-textareactl-disabled-text: var(--jui-ctl-text-disabled);
-    --jui-textareactl-readonly-text: var(--jui-ctl-text-readonly);
-    --jui-textareactl-counter-text-size: 0.9em;
+    /* Defaults flow from the shared --jui-textareactl-* / --jui-comp-control-*
+       layer so design-wide retunes propagate everywhere. Variants
+       override at the local --cpt-textareactl-* layer below — see
+       TextAreaControl.Config.Variant for the per-variant token sets that
+       reach in here. */
+    --cpt-textareactl-size: var(--jui-textareactl-size, var(--jui-font-size-md));
+    --cpt-textareactl-padding: var(--jui-textareactl-padding, 0.55em);
+    --cpt-textareactl-bg: var(--jui-textareactl-bg, var(--jui-comp-control-surface));
+    --cpt-textareactl-bg-hover: var(--jui-textareactl-bg-hover, var(--cpt-textareactl-bg));
+    --cpt-textareactl-bg-focus: var(--jui-textareactl-bg-focus, var(--cpt-textareactl-bg));
+    --cpt-textareactl-transition: var(--jui-textareactl-transition, none);
+    --cpt-textareactl-text: var(--jui-textareactl-text, var(--jui-comp-control-text));
+    --cpt-textareactl-text-disabled: var(--jui-textareactl-text-disabled, var(--jui-comp-control-text-disabled));
+    --cpt-textareactl-text-readonly: var(--jui-textareactl-text-readonly, var(--jui-comp-control-text-readonly));
+    --cpt-textareactl-text-placeholder: var(--jui-textareactl-text-placeholder, var(--jui-comp-control-text-placeholder));
+    --cpt-textareactl-placeholder-style: var(--jui-textareactl-placeholder-style, normal);
+    --cpt-textareactl-border: var(--jui-textareactl-border, var(--jui-comp-control-border));
+    --cpt-textareactl-border-hover: var(--jui-textareactl-border-hover, var(--cpt-textareactl-border));
+    --cpt-textareactl-border-radius: var(--jui-textareactl-border-radius, var(--jui-comp-control-radius));
+    --cpt-textareactl-icon: var(--jui-textareactl-icon, var(--jui-comp-control-action));
+    --cpt-textareactl-counter-limit: var(--jui-textareactl-counter-limit, var(--jui-color-error70));
+    --cpt-textareactl-counter-text-color: var(--jui-textareactl-counter-text-color, var(--cpt-textareactl-text));
+    --cpt-textareactl-counter-text-size: var(--jui-textareactl-counter-text-size, 0.9em);
 }
 
 .component .inner {
-	padding: var(--jui-textareactl-padding);
-	border: 1px solid var(--jui-textareactl-border);
-	border-radius: var(--jui-textareactl-border-radius);
-	box-sizing: content-box;
-	background: var(--jui-textareactl-bg);
-	display: flex;
-	flex-direction: column;
-	gap: 0.5em;
-	align-items: normal;
-	color: var(--jui-textareactl-text);
+    padding: var(--cpt-textareactl-padding);
+    border: 1px solid var(--cpt-textareactl-border);
+    border-radius: var(--cpt-textareactl-border-radius);
+    box-sizing: content-box;
+    background: var(--cpt-textareactl-bg);
+    transition: var(--cpt-textareactl-transition);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+    align-items: normal;
+    color: var(--cpt-textareactl-text);
     overflow: hidden;
+    position: relative;
+}
+
+.component:hover .inner {
+    border-color: var(--cpt-textareactl-border-hover);
+    background: var(--cpt-textareactl-bg-hover);
+}
+
+.component.focus .inner {
+    background: var(--cpt-textareactl-bg-focus);
 }
 
 .component textarea {
-	padding: 0;
-	margin: 0;
-	background: inherit;
-	color: inherit;
-	outline: none;
-	border: none;
-	resize: none;
+    padding: 0;
+    margin: 0;
+    background: inherit;
+    color: inherit;
+    outline: none;
+    border: none;
+    resize: none;
     transition: min-height 0.2s ease;
     min-height: 0;
-    font-size: var(--jui-textareactl-size);
+    font-size: var(--cpt-textareactl-size);
+}
+
+.component textarea::placeholder {
+    color: var(--cpt-textareactl-text-placeholder);
+    font-style: var(--cpt-textareactl-placeholder-style);
 }
 
 .component.resizable textarea {
-	resize: auto;
+    resize: auto;
 }
 
 .component.disabled textarea {
-	color: var(--jui-textareactl-disabled-text);
-	cursor: not-allowed;
+    color: var(--cpt-textareactl-text-disabled);
+    cursor: not-allowed;
 }
 
 .component.read_only textarea {
-	color: var(--jui-textareactl-readonly-text);
-	cursor: not-allowed;
+    color: var(--cpt-textareactl-text-readonly);
+    cursor: not-allowed;
+}
+
+.component em.right {
+    position: absolute;
+    top: 0.5em;
+    right: 0.5em;
+    color: var(--cpt-textareactl-icon);
+    pointer-events: none;
+}
+
+.component .inner.icon_right textarea {
+    padding-right: 1.5em;
 }
 
 .component .counter {
     text-align: right;
-    font-size: var(--jui-textareactl-counter-text-size);
+    font-size: var(--cpt-textareactl-counter-text-size);
     margin-top: 0.25em;
-    color: var(--jui-textareactl-counter-text-color);
+    color: var(--cpt-textareactl-counter-text-color);
 }
 
 .component .counter.limit {
-    color: var(--jui-textareactl-counter-limit);
+    color: var(--cpt-textareactl-counter-limit);
 }
 
 .component.waiting .inner * {
-	visibility: hidden;
+    visibility: hidden;
 }

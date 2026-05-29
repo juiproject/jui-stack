@@ -7,6 +7,7 @@ import com.effacy.jui.core.client.control.IControl;
 import com.effacy.jui.core.client.control.IControl.Value;
 import com.effacy.jui.core.client.control.IInvalidListener;
 import com.effacy.jui.core.client.control.IModifiedListener;
+import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.validation.model.IErrorMessage;
 
 /**
@@ -104,22 +105,37 @@ public class ControlFormHandler<SRC,DST> {
 
         String reference;
 
+        IModifiedListener modifiedListener = IModifiedListener.create (c -> {
+            for (IModifiedHandler modifiedHandler : modifiedHandlers)
+                modifiedHandler.onModified(control);
+        });
+
+        IInvalidListener invalidListener = IInvalidListener.create((ctl,msg) -> {
+            for (IInvalidationHandler invalidationHandler : invalidationHandlers)
+                invalidationHandler.onInvalidation(control, reference, false);
+        }, ctl -> {
+            for (IInvalidationHandler invalidationHandler : invalidationHandlers)
+                invalidationHandler.onInvalidation(control, reference, true);
+        });
+
         ControlHandler(IControl<W> control, String reference, IGetter<W, SRC> getter, ISetter<W, DST> setter) {
             this.control = control;
             this.reference = reference;
             this.getter = getter;
             this.setter = setter;
-            control.addListener (IModifiedListener.create (c -> {
-                for (IModifiedHandler modifiedHandler : modifiedHandlers)
-                    modifiedHandler.onModified(control);
-            }));
-            control.addListener(IInvalidListener.create((ctl,msg) -> {
-                for (IInvalidationHandler invalidationHandler : invalidationHandlers)
-                    invalidationHandler.onInvalidation(control, reference, false);
-            }, ctl -> {
-                for (IInvalidationHandler invalidationHandler : invalidationHandlers)
-                    invalidationHandler.onInvalidation(control, reference, true);
-            }));
+            control.addListener (modifiedListener);
+            control.addListener(invalidListener);
+        }
+
+        /**
+         * Detaches from the control.
+         */
+        void detach() {
+            control.removeListener (modifiedListener);
+            control.removeListener(invalidListener);
+            control = null;
+            getter = null;
+            setter = null;
         }
 
         boolean dirty() {
@@ -206,6 +222,14 @@ public class ControlFormHandler<SRC,DST> {
     private List<IModifiedHandler> modifiedHandlers = new ArrayList<>();
 
     private List<IInvalidationHandler> invalidationHandlers = new ArrayList<>();
+
+    /**
+     * Clears all the registered controls and detaches from them.
+     */
+    public void detach() {
+        controls.forEach(ControlHandler::detach);
+        controls.clear();
+    }
 
     public ControlFormHandler<SRC,DST> setterApplyWhenNotDirty() {
         return setterApplyWhenNotDirty(true);

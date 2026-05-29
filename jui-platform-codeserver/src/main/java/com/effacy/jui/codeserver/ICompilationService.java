@@ -153,8 +153,19 @@ public interface ICompilationService {
 
     /**
      * Captures the status of the service.
+     *
+     * @param moduleNames
+     *                    the modules being served.
+     * @param warnings
+     *                    any startup warnings to surface to the client.
+     * @param publicUrl
+     *                    the externally-visible URL the code server is
+     *                    reachable at (no trailing slash) when the server sits
+     *                    behind a proxy or port-forwarder, or {@code null}
+     *                    when callers should construct a URL from the inbound
+     *                    request.
      */
-    public record ServiceDescriptor(List<String> moduleNames, List<String> warnings) {}
+    public record ServiceDescriptor(List<String> moduleNames, List<String> warnings, String publicUrl) {}
     
     /**
      * A reference to a compiler artefact.

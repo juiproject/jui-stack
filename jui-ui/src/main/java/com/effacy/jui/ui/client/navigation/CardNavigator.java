@@ -520,6 +520,11 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         private Style style = Style.STANDARD;
 
         /**
+         * See {@link #hideNavigation(boolean)}.
+         */
+        private boolean hideNavigation = false;
+
+        /**
          * See {@link #title(String)}.
          */
         private String title;
@@ -555,6 +560,11 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         private IOnNavigationHandler navigationHandler;
 
         /**
+         * See {@link #navigationNotifier(Consumer)}.
+         */
+        private Consumer<List<CardConfiguration>> navigationNotifier;
+
+        /**
          * Assigns a presentation style.
          * 
          * @param style
@@ -564,6 +574,18 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
         public Config style(Style style) {
             if (style != null)
                 this.style = style;
+            return this;
+        }
+
+        /**
+         * Hides the navigation (i.e. the cards) and just renders the active card.
+         * 
+         * @param hideNavigation
+         *                       {@code true} to hide the navigation.
+         * @return this configuration instance.
+         */
+        public Config hideNavigation(boolean hideNavigation) {
+            this.hideNavigation = hideNavigation;
             return this;
         }
 
@@ -680,6 +702,18 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
          */
         public Config navigationHandler(IOnNavigationHandler navigationHandler) {
             this.navigationHandler = navigationHandler;
+            return this;
+        }
+
+        /**
+         * Invoked when there is a change in naviation.
+         * 
+         * @param navigationNotifier
+         *                           the notifier (accepts the current navigation path).
+         * @return this configuration.
+         */
+        public Config navigationNotifier(Consumer<List<CardConfiguration>> navigationNotifier) {
+            this.navigationNotifier = navigationNotifier;
             return this;
         }
 
@@ -984,14 +1018,18 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
                 if (getRoot() == null)
                     return Promise.create (ActivateOutcome.ACTIVATED);
                 getRoot().classList.remove(styles().body());
-                if (!config().style.showHeaderAtTop() || config().titleOnlyInBreadcrumb) {
-                    JQuery.$ (headerEl).hide ();
-                } else {
-                    buildInto(headerEl, header -> {
-                        H2.$ (header).text (config().title);
-                    });
-                    JQuery.$ (headerEl).show ();
+                if (headerEl != null) {
+                    if (!config().style.showHeaderAtTop() || config().titleOnlyInBreadcrumb) {
+                        JQuery.$ (headerEl).hide ();
+                    } else {
+                        buildInto(headerEl, header -> {
+                            H2.$ (header).text (config().title);
+                        });
+                        JQuery.$ (headerEl).show ();
+                    }
                 }
+                if (config().navigationNotifier != null)
+                    config().navigationNotifier.accept(new ArrayList<>());
                 if (navigatorCpt instanceof INavigationAware)
                     ((INavigationAware) navigatorCpt).onNavigateTo (context);
                 if (navigatorCpt instanceof IActivateAware)
@@ -1002,10 +1040,14 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             // Generate the header.
             CardConfiguration card = (CardConfiguration) child;
             List<CardConfiguration> path = config().path(card);
-            buildInto(headerEl, header -> {
-                buildBreadcrumb (header, context, path);
-            });
-            JQuery.$ (headerEl).show();
+            if (headerEl != null) {
+                buildInto(headerEl, header -> {
+                    buildBreadcrumb (header, context, path);
+                });
+                JQuery.$ (headerEl).show();
+            }
+            if (config().navigationNotifier != null)
+                config().navigationNotifier.accept(path);
 
             // Mark on the root the current state for testing.
             if (Debug.isTestMode ())
@@ -1030,9 +1072,13 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             // can easily be changed.
             CardConfiguration card = (CardConfiguration) activeChild();
             if ((path != null) && (card != null) && (card.reference != null) && (card.reference.length > 0)) {
-                if (path.isEmpty() || !card.reference[0].equals(path.get(0)))
-                    for (int i = card.reference.length - 1; i >= 0; i--)
-                    path.add(0, card.reference[i]);
+                if (path.isEmpty() || !card.reference[0].equals(path.get(0))) {
+                    for (int i = card.reference.length - 1; i >= 0; i--) {
+                        path.add(0, card.reference[i]);
+                        context.metadata("label." + card.reference[i], card.label());
+                    }
+                }
+
             }
             super.onNavigationBackward(context, path, propagator);
             onAfterNavigate(path);
@@ -1241,11 +1287,13 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
     protected INodeProvider buildNode(Element el, Config data) {
         return Wrap.$ (el).$ (root -> {
             Div.$ (root).style (styles ().wrap ()).$ (wrap -> {
-                Header.$ (wrap).$ (header -> {
-                    header.style (styles ().header ());
-                    header.by ("header");
-                    H2.$ (header).text (config().title);
-                });
+                if (!config().hideNavigation) {
+                    Header.$ (wrap).$ (header -> {
+                        header.style (styles ().header ());
+                        header.by ("header");
+                        H2.$ (header).text (config().title);
+                    });
+                }
                 Div.$ (wrap).$ (body -> {
                     body.style (styles ().body ());
                     body.use (region (REGION_BODY, new CardFitLayout.Config (true).effect (config ().effect).build ()));

@@ -1419,6 +1419,16 @@ public class Component<C extends Component.Config> implements IEventListener, IC
     }
 
     /**
+     * Determines if the passed component has been marked for reuse (see {@link #reuse(IComponent)}).
+     *
+     * @see com.effacy.jui.core.client.component.IComponent.IParent#reused(com.effacy.jui.core.client.component.IComponent)
+     */
+    @Override
+    public boolean reused(IComponent child) {
+        return (reusedComponents != null) && reusedComponents.contains (child);
+    }
+
+    /**
      * Performs a re-rendering of the component. This will dispose of all components
      * and attachments (so these need to be re-done).
      * <p>
@@ -3412,6 +3422,16 @@ public class Component<C extends Component.Config> implements IEventListener, IC
         }
 
         /**
+         * Reuse is tracked at the enclosing-Component level; delegate so
+         * that when an AP-parented child orphans, the reuse-preservation
+         * branch in {@link Component#orphan()} fires correctly.
+         */
+        @Override
+        public boolean reused(IComponent child) {
+            return Component.this.reused (child);
+        }
+
+        /**
          * Attaches the associated component.
          */
         public void attach() {
@@ -3868,6 +3888,16 @@ public class Component<C extends Component.Config> implements IEventListener, IC
         }
 
         /**
+         * Reuse is tracked at the enclosing-Component level; delegate so
+         * that when a region-parented child orphans, the reuse-preservation
+         * branch in {@link Component#orphan()} fires correctly.
+         */
+        @Override
+        public boolean reused(IComponent child) {
+            return Component.this.reused (child);
+        }
+
+        /**
          * Attaches the items in the region.
          */
         public void attach() {
@@ -3984,15 +4014,23 @@ public class Component<C extends Component.Config> implements IEventListener, IC
     @Override
     public void orphan() {
         if (parent != null) {
+            // Capture reuse status BEFORE we drop the parent reference —
+            // a reused child is being detached as part of a rerender,
+            // not a final removal. Both event listeners *and* descendant
+            // DOM are preserved so the next reparent finds an intact
+            // subtree (otherwise an inner AP.detach() would have called
+            // child.getRoot().remove(), stripping nested components like
+            // SelectionControl's selector dropdown).
+            boolean reused = parent.reused (this);
+
             parent.orhpan (this);
             parent = null;
 
-            // Detach if attached (which will cascade through the children).
-            if (isAttached ())
-                detach ();
-
-            // Remove listeners.
-            removeAllListeners ();
+            if (!reused) {
+                if (isAttached ())
+                    detach ();
+                removeAllListeners ();
+            }
         }
     }
 

@@ -39,6 +39,22 @@ public class CodeServerMojo extends AbstractMojo {
     private int port;
 
     /**
+     * The externally-visible URL the code server is reachable at when running
+     * behind a proxy or port-forwarder (e.g. GitHub Codespaces).
+     * <p>
+     * When unset, the plugin will auto-derive a value if it detects that it is
+     * running inside a GitHub Codespace (i.e. {@code CODESPACE_NAME} and
+     * {@code GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN} are present in the
+     * environment), forming
+     * {@code https://${CODESPACE_NAME}-${port}.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}}.
+     * Pass an empty string or {@code -} to suppress auto-derivation.
+     * <p>
+     * Injected from passed parameter {@code jui.publicUrl}.
+     */
+    @Parameter(property = "jui.publicUrl")
+    private String publicUrl;
+
+    /**
      * The logging level to use.
      * <p>
      * For GWT the options are {@code INFO} (default), {@code DEBUG} and
@@ -223,6 +239,12 @@ public class CodeServerMojo extends AbstractMojo {
         args.add(sourceLevel);
         args.add("-port");
         args.add(Integer.toString (port));
+        String resolvedPublicUrl = resolvePublicUrl();
+        if (resolvedPublicUrl != null) {
+            args.add("-publicUrl");
+            args.add(resolvedPublicUrl);
+            getLog().info("Code server public URL: " + resolvedPublicUrl);
+        }
         args.addAll(module);
 
         // Display the command being executed if in diagnose mode.
@@ -244,6 +266,28 @@ public class CodeServerMojo extends AbstractMojo {
         // Run the compilation job.
         new JavaRunner(getLog(), project, session, toolchainManager, jdkToolchain, jvm)
             .execute(cp, args);
+    }
+
+    /**
+     * Resolves the public URL to pass to the code server. Honours an explicitly
+     * configured {@link #publicUrl}; otherwise auto-derives one when running
+     * inside a GitHub Codespace.
+     *
+     * @return the resolved URL, or {@code null} if none should be passed.
+     */
+    protected String resolvePublicUrl() {
+        if (publicUrl != null) {
+            String trimmed = publicUrl.trim();
+            // Allow explicit opt-out of auto-derivation by passing "" or "-".
+            if (trimmed.isEmpty() || "-".equals(trimmed))
+                return null;
+            return trimmed;
+        }
+        String codespace = System.getenv("CODESPACE_NAME");
+        String domain = System.getenv("GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN");
+        if ((codespace == null) || codespace.isEmpty() || (domain == null) || domain.isEmpty())
+            return null;
+        return "https://" + codespace + "-" + port + "." + domain;
     }
 
     /**

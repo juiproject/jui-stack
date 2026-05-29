@@ -30,11 +30,13 @@ import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.builder.Input;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.platform.css.client.CssResource;
+import com.effacy.jui.platform.util.client.Logger;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.Element;
+import elemental2.dom.Event;
 import elemental2.dom.HTMLInputElement;
 
 public class TextControl extends Control<String, TextControl.Config> {
@@ -43,66 +45,113 @@ public class TextControl extends Control<String, TextControl.Config> {
      * Configuration and construction
      ************************************************************************/
 
-     /**
-      * The default style to employ when one is not assign explicitly.
-      */
-     public static Config.Style DEFAULT_STYLE = Config.Style.STANDARD;
-
     /**
      * Configuration for building a {@link TextControl}.
      */
     public static class Config extends Control.Config<String, Config> {
 
         /********************************************************************
-         * Styles for the tab set.
+         * Variants — token-driven presentation overlays.
          ********************************************************************/
 
         /**
-         * Style for the tab set (defines presentation configuration including CSS).
+         * Variant for the component. Each variant reaches into the
+         * {@code --cpt-textctl-*} token layer at the root, overriding
+         * specific tokens that the underlying CSS already consumes.
+         * Pure-token overlays unless they swap the entire ILocalCSS
+         * sheet (which only {@link #STANDARD} does).
          */
-        public interface Style {
+        @FunctionalInterface
+        public interface Variant {
+
+            /** Applies variant configuration. */
+            void configure(Config cfg);
 
             /**
-             * The CSS styles.
+             * Standard visual style — bordered field with the shared
+             * control surface. Default; switches to the standard CSS
+             * sheet (resetting any prior variant-applied token overlays
+             * is the caller's responsibility).
              */
-            public ILocalCSS styles();
+            public static final Variant STANDARD = config -> {};
 
             /**
-             * Convenience to create a style.
-             * 
-             * @param styles
-             *                     the CSS styles.
-             * @param selectorIcon
-             *                     the CSS class to use for the selector icon.
-             * @return the associated style.
+             * Transparent visual style — no border / background until
+             * hover; italic placeholder; compact padding. Suited for
+             * search inputs and inline-edit fields.
              */
-            public static Style create(final ILocalCSS styles) {
-                return new Style () {
-
-                    @Override
-                    public ILocalCSS styles() {
-                        return styles;
-                    }
-
-                };
-            }
+            public static final Variant TRANSPARENT = config -> {
+                config.css("""
+                    --cpt-textctl-bg: transparent;
+                    --cpt-textctl-border: transparent;
+                    --cpt-textctl-border-hover: var(--jui-comp-control-border);
+                    --cpt-textctl-padding: 0 0.25em;
+                    --cpt-textctl-placeholder-style: italic;
+                """);
+            };
 
             /**
-             * Standard style.
+             * Inline-edit visual style — very light outline at rest,
+             * slightly darker background on hover, and a dim pencil
+             * affordance on the right hinting that the value is
+             * editable in place. Suited for click-to-edit fields
+             * embedded directly in a read-oriented surface.
              */
-            public static final Style STANDARD = Style.create (StandardLocalCSS.instance ());
+            public static final Variant INLINE = config -> {
+                config.css("""
+                    --cpt-textctl-bg: transparent;
+                    --cpt-textctl-bg-hover: var(--jui-color-neutral10);
+                    --cpt-textctl-border: var(--jui-color-neutral10);
+                    --cpt-textctl-border-hover: var(--jui-color-neutral20);
+                    --cpt-textctl-padding: 0 0.4em;
+                    --cpt-textctl-icon: var(--jui-color-neutral40);
+                """);
+                config.iconRight (FontAwesome.pencil ());
+            };
+        }
+
+        /********************************************************************
+         * Backward-compat Style — bridged onto Variant.
+         ********************************************************************/
+
+        /**
+         * Style for the tab set (defines presentation configuration
+         * including CSS).
+         * <p>
+         * Retained for backward compatibility — implementations that
+         * supply a custom {@link ILocalCSS} (see {@code TextControlStyleSoft}
+         * in the policy-app theme) continue to work; the default
+         * {@link #configure} implementation bridges onto
+         * {@link Variant#configure} by applying the supplied styles.
+         * Prefer {@link Variant} for new code.
+         */
+        @Deprecated
+        public interface Style extends Variant {
 
             /**
-             * Transparent style.
+             * Transparent style — preserved as a Style for compat with
+             * existing {@code cfg.style(Style.TRANSPARENT)} call sites.
+             * Routes via {@link Variant#TRANSPARENT}; the {@link #styles()}
+             * accessor returns the standard sheet (the transparent
+             * presentation is now applied as a token overlay rather
+             * than via a separate stylesheet).
              */
-            public static final Style TRANSPARENT = Style.create (TransparentLocalCSS.instance ());
+            @Deprecated
+            public static final Style TRANSPARENT = new Style () {
 
+                @Override
+                public void configure(Config cfg) {
+                    Variant.TRANSPARENT.configure (cfg);
+                }
+            };
         }
 
         /**
-         * The styles to apply to the tab set.
+         * The styles bundle in effect. Variants typically leave this
+         * as {@link StandardLocalCSS} and overlay token CSS at the
+         * root; a custom {@link Style} can swap to a different sheet.
          */
-        private Style style = (DEFAULT_STYLE != null) ? DEFAULT_STYLE : Style.STANDARD;
+        private ILocalCSS styles = StandardLocalCSS.instance ();
 
         /**
          * See {@link #max(int)}.
@@ -147,26 +196,92 @@ public class TextControl extends Control<String, TextControl.Config> {
         }
 
         /**
+         * Construct with a specific variant.
+         *
+         * @param variant
+         *                the variant.
+         */
+        public Config(Variant variant) {
+            super ();
+            variant (variant);
+        }
+
+        /**
          * Construct with a style.
-         * 
+         *
          * @param style
          *              the style.
          */
+        @Deprecated
         public Config(Style style) {
+            super ();
             style (style);
         }
 
         /**
-         * Assigns a different style.
-         * 
+         * Assigns a presentation variant.
+         *
+         * @param variant
+         *                the variant (default is {@link Variant#STANDARD}).
+         * @return this configuration instance.
+         */
+        public Config variant(Variant variant) {
+            if (variant != null)
+                variant.configure (this);
+            return this;
+        }
+
+        /**
+         * Assigns a set of presentation variants in order.
+         *
+         * @param variants
+         *                 the variants.
+         * @return this configuration instance.
+         */
+        public Config variant(Variant... variants) {
+            if (variants != null) {
+                for (Variant variant : variants)
+                    variant (variant);
+            }
+            return this;
+        }
+
+        /**
+         * Assigns a presentation style.
+         *
          * @param style
-         *              the style.
+         *              the style (default is {@link Style#STANDARD}).
          * @return this configuration.
          */
+        @Deprecated
         public Config style(Style style) {
             if (style != null)
-                this.style = style;
+                style.configure (this);
             return this;
+        }
+
+        /**
+         * Assigns the styles bundle to use for the control. Variants
+         * call this when swapping the underlying sheet (typically only
+         * {@link Variant#STANDARD} and {@link Style#create} bridges).
+         *
+         * @param styles
+         *               the styles.
+         * @return this configuration instance.
+         */
+        public Config styles(ILocalCSS styles) {
+            if (styles != null)
+                this.styles = styles;
+            return this;
+        }
+
+        /**
+         * Getter for {@link #styles(ILocalCSS)}.
+         */
+        public ILocalCSS getStyles() {
+            if (styles == null)
+                styles = StandardLocalCSS.instance ();
+            return styles;
         }
 
         /**
@@ -426,7 +541,7 @@ public class TextControl extends Control<String, TextControl.Config> {
      * Styles (made available to selection).
      */
     protected ILocalCSS styles() {
-        return config ().style.styles ();
+        return config ().getStyles ();
     }
 
     /********************************************************************
@@ -473,43 +588,6 @@ public class TextControl extends Control<String, TextControl.Config> {
         public static ILocalCSS instance() {
             if (STYLES == null) {
                 STYLES = (StandardLocalCSS) GWT.create (StandardLocalCSS.class);
-                STYLES.ensureInjected ();
-            }
-            return STYLES;
-        }
-    }
-
-
-
-    /**
-     * Component CSS.
-     */
-    @CssResource(value = {
-        IComponentCSS.COMPONENT_CSS,
-        "com/effacy/jui/ui/client/control/Control.css",
-        "com/effacy/jui/ui/client/control/TextControl.css",
-        "com/effacy/jui/ui/client/control/TextControl_Override.css"
-    }, stylesheet = """
-        .component {
-            --jui-textctl-bg: transparent;
-            --jui-textctl-border: transparent;
-            --jui-ctl-bg-disabled: transparent;
-            --jui-textctl-padding: 0 0.25em;
-        }
-        .component:hover {
-            --jui-textctl-border: #eaeaea;
-        }
-        .component input::placeholder {
-            font-style: italic;
-        }
-    """)
-    public static abstract class TransparentLocalCSS implements ILocalCSS {
-
-        private static TransparentLocalCSS STYLES;
-
-        public static ILocalCSS instance() {
-            if (STYLES == null) {
-                STYLES = (TransparentLocalCSS) GWT.create (TransparentLocalCSS.class);
                 STYLES.ensureInjected ();
             }
             return STYLES;

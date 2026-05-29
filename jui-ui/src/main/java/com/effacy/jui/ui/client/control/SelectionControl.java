@@ -87,11 +87,13 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
     public static class Config<V> extends Control.Config<V, Config<V>> implements ISelectorMenuConfig<V> {
 
         /********************************************************************
-         * Styles for the tab set.
+         * Variants — token-driven presentation overlays.
          ********************************************************************/
 
         /**
-         * Style for the tab set (defines presentation configuration including CSS).
+         * Variant for the component. Each variant reaches into the
+         * {@code --cpt-selectctl-*} token layer at the root, overriding
+         * specific tokens that the underlying CSS already consumes.
          */
         @FunctionalInterface
         public interface Variant {
@@ -103,6 +105,36 @@ public class SelectionControl<V> extends Control<V, SelectionControl.Config<V>> 
              *            the configuration to apply the variant to.
              */
             void configure(Config<?> cfg);
+
+            /**
+             * Standard visual style — bordered field with the shared
+             * control surface. Default; resetting any prior
+             * variant-applied token overlays is the caller's
+             * responsibility.
+             */
+            public static final Variant STANDARD = config -> {
+                // No token overrides — falls through to the defaults
+                // expressed by the underlying CSS.
+            };
+
+            /**
+             * Inline-edit visual style — very light outline at rest,
+             * slightly darker background on hover, dim chevron
+             * affordance. Suited for click-to-edit fields embedded
+             * directly in a read-oriented surface.
+             */
+            public static final Variant INLINE = config -> {
+                config.css("""
+                    --cpt-selectctl-bg: transparent;
+                    --cpt-selectctl-bg-hover: var(--jui-color-neutral10);
+                    --cpt-selectctl-border: var(--jui-color-neutral10);
+                    --cpt-selectctl-border-hover: var(--jui-color-neutral20);
+                    --cpt-selectctl-padding: 0.4em 0.4em;
+                    --cpt-selectctl-height: unset;
+                    --cpt-selectctl-gap: 0.4em;
+                    --cpt-selectctl-text-light: var(--jui-color-neutral40);
+                """);
+            };
 
         }
 

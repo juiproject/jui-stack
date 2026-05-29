@@ -102,9 +102,7 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
              * cells in a single rounded surround. The default; applies
              * no overrides on top of the base CSS.
              */
-            public static final Variant STANDARD = config -> {
-                // Defaults from MultiCheckControl.css; nothing extra.
-            };
+            public static final Variant STANDARD = config -> {};
 
             /**
              * Panel variant — separate boxed cells with hairline borders.
@@ -145,6 +143,37 @@ public class MultiCheckControl<V> extends Control<V, MultiCheckControl.Config<V>
                 --jui-multicheckctl-item-text: var(--jui-role-text-muted);
                 --jui-multicheckctl-item-weight: 500;
                 --jui-multicheckctl-item-hover-bg: transparent;
+                --jui-multicheckctl-item-selected-bg: var(--jui-role-surface-canvas);
+                --jui-multicheckctl-item-selected-text: var(--jui-role-text-default);
+                --jui-multicheckctl-item-selected-weight: 600;
+                --jui-multicheckctl-item-selected-shadow:
+                    0 1px 2px rgba(0,0,0,0.06),
+                    0 0 0 1px rgba(0,0,0,0.06);
+            """);
+
+            /**
+             * Inline-edit visual style — very light outline at rest,
+             * slightly darker background on hover, dim un-selected
+             * items with a clean white "pill" for the selected one.
+             * Tight padding. Suited for click-to-edit segmented
+             * fields embedded directly in a read-oriented surface.
+             */
+            public static final Variant INLINE = config -> config.css("""
+                --jui-multicheckctl-border-radius: 8px;
+                --jui-multicheckctl-border-width: 1px;
+                --jui-multicheckctl-border-color: transparent;
+                --jui-multicheckctl-border-color-hover: transparent;
+                --jui-multicheckctl-bg: transparent;
+                --jui-multicheckctl-bg-hover: var(--jui-color-neutral10);
+                --jui-multicheckctl-padding: 1px;
+                --jui-multicheckctl-size: 0.875em;
+                --jui-multicheckctl-item-border-radius: 5px;
+                --jui-multicheckctl-item-border-radius-inner: 5px;
+                --jui-multicheckctl-item-padding-tb: 4px;
+                --jui-multicheckctl-item-padding-lr: 10px;
+                --jui-multicheckctl-item-text: var(--jui-color-neutral40);
+                --jui-multicheckctl-item-weight: 500;
+                --jui-multicheckctl-item-hover-bg: var(--jui-color-neutral20);
                 --jui-multicheckctl-item-selected-bg: var(--jui-role-surface-canvas);
                 --jui-multicheckctl-item-selected-text: var(--jui-role-text-default);
                 --jui-multicheckctl-item-selected-weight: 600;

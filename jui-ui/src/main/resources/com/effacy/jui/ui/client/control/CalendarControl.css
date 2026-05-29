@@ -9,6 +9,19 @@
     --jui-calendarctl-selector-item: var(--jui-color-primary50);
     --jui-calendarctl-selector-item-hover: var(--jui-color-primary40);
     --jui-calendarctl-selector-item-selected: var(--jui-color-primary60);
+
+    /* Per-instance token layer — variants overlay these to retune
+       the look without swapping the stylesheet. Defaults flow from
+       the shared --jui-calendarctl-* / --jui-ctl-* layer. */
+    --cpt-calendarctl-bg: var(--jui-calendarctl-bg, var(--jui-ctl-bg));
+    --cpt-calendarctl-bg-hover: var(--jui-calendarctl-bg-hover, var(--cpt-calendarctl-bg));
+    --cpt-calendarctl-border: var(--jui-calendarctl-border, var(--jui-ctl-border));
+    --cpt-calendarctl-border-hover: var(--jui-calendarctl-border-hover, var(--cpt-calendarctl-border));
+    --cpt-calendarctl-border-radius: var(--jui-calendarctl-border-radius, var(--jui-ctl-border-radius));
+    --cpt-calendarctl-padding: var(--jui-calendarctl-padding, 0 0.75em);
+    --cpt-calendarctl-height: var(--jui-calendarctl-height, var(--jui-ctl-height));
+    --cpt-calendarctl-gap: var(--jui-calendarctl-gap, 0.5em);
+    --cpt-calendarctl-icon: var(--jui-calendarctl-icon-color, var(--jui-calendarctl-icon));
 }
 
 .component {
@@ -18,21 +31,26 @@
 }
 
 .component .inner {
-    height: var(--jui-ctl-height);
-	border: 1px solid var(--jui-ctl-border);
-	border-radius: var(--jui-ctl-border-radius);
+    height: var(--cpt-calendarctl-height);
+	border: 1px solid var(--cpt-calendarctl-border);
+	border-radius: var(--cpt-calendarctl-border-radius);
 	box-sizing: content-box;
-	padding: 0 0.75em;
-	background: var(--jui-ctl-bg);
+	padding: var(--cpt-calendarctl-padding);
+	background: var(--cpt-calendarctl-bg);
 	display: flex;
 	flex-direction: row;
-	gap: 0.5em;
+	gap: var(--cpt-calendarctl-gap);
 	align-items: center;
 	color: var(--jui-ctl-text);
 }
 
+.component:hover .inner {
+    border-color: var(--cpt-calendarctl-border-hover);
+    background: var(--cpt-calendarctl-bg-hover);
+}
+
 .component em {
-    color: var(--jui-calendarctl-icon);
+    color: var(--cpt-calendarctl-icon);
 }
 
 .component.read_only em {

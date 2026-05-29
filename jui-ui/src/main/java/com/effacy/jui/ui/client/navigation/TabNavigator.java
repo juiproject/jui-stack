@@ -63,6 +63,7 @@ import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.platform.util.client.With;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.effacy.jui.ui.client.modal.Modal.IModalController;
+import com.effacy.jui.ui.client.navigation.CardNavigator.Config.CardConfiguration;
 import com.effacy.jui.ui.client.navigation.TabCollection.ITabConfig;
 import com.effacy.jui.ui.client.navigation.TabCollection.ITabGroupConfig;
 import com.effacy.jui.ui.client.navigation.TabCollection.TabConfig;
@@ -1065,7 +1066,15 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
     /**
      * Underlying navigation handler.
      */
-    private NavigationHandler<INavigationAwareItem> handler = new NavigationHandler<INavigationAwareItem> ();
+    private NavigationHandler<INavigationAwareItem> handler = new NavigationHandler<INavigationAwareItem> () {
+        @Override
+        protected void backPropagate(NavigationContext context, INavigationAwareItem item, List<String> childpath) {
+            TabConfig tab = config().tabs.findTab (item.getReference ());
+            if (tab != null)
+                context.metadata("label." + item.getReference (), tab.label);
+            super.backPropagate(context, item, childpath);
+        }
+    };
 
     /**
      * {@inheritDoc}

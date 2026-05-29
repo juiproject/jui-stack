@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn -pl jui-platform-codeserver test)",
+      "Bash(free -h; echo \"---\"; nproc; echo \"---\"; cat /proc/meminfo | head -5)",
+      "Read(//proc/**)",
+      "Bash(dmesg)",
+      "Bash(journalctl --since \"10 minutes ago\")"
+    ]
+  }
+}

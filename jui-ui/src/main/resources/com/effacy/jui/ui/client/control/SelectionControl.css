@@ -1,88 +1,106 @@
 .component {
-    --jui-selectctl-border: var(--jui-ctl-border);
-    --jui-selectctl-text: var(--jui-ctl-text);
-    --jui-selectctl-text-light: var(--jui-ctl-text-placeholder);
-    --jui-selectctl-bg: var(--jui-ctl-bg);
-    --jui-selectctl-icon-color: var(--jui-selectctl-text-light);
-    --jui-selectctl-prompt-color: var(--jui-selectctl-text-light);
-    --jui-selectctl-prompt-weight: 600;
+    /* Defaults flow from the shared --jui-selectctl-* / --jui-ctl-* layer
+       so design-wide retunes propagate everywhere. Variants override at
+       the local --cpt-selectctl-* layer below — see
+       SelectionControl.Config.Variant for the per-variant token sets
+       that reach in here. */
+    --cpt-selectctl-bg: var(--jui-selectctl-bg, var(--jui-ctl-bg));
+    --cpt-selectctl-bg-hover: var(--jui-selectctl-bg-hover, var(--cpt-selectctl-bg));
+    --cpt-selectctl-border: var(--jui-selectctl-border, var(--jui-ctl-border));
+    --cpt-selectctl-border-radius: var(--jui-ctl-border-radius);
+    --cpt-selectctl-border-hover: var(--jui-selectctl-border-hover, var(--cpt-selectctl-border));
+    --cpt-selectctl-padding: var(--jui-selectctl-padding, 0 0.75em);
+    --cpt-selectctl-gap: var(--jui-selectctl-gap, 0.75em);
+    --cpt-selectctl-text: var(--jui-selectctl-text, var(--jui-ctl-text));
+    --cpt-selectctl-text-light: var(--jui-selectctl-text-light, var(--jui-ctl-text-placeholder));
+    --cpt-selectctl-icon-color: var(--jui-selectctl-icon-color, var(--cpt-selectctl-text-light));
+    --cpt-selectctl-prompt-color: var(--jui-selectctl-prompt-color, var(--cpt-selectctl-text-light));
+    --cpt-selectctl-prompt-weight: var(--jui-selectctl-prompt-weight, 600);
+    --cpt-selectctl-transition: var(--jui-selectctl-transition, none);
+    --cpt-selectctl-height: var(--jui-ctl-height);
 }
 
 .component {
-	position: relative;
-	cursor: pointer;
+    position: relative;
+    cursor: pointer;
 }
 
 .component .inner {
-    height: var(--jui-ctl-height);
-	outline: none;
-	border: 1px solid var(--jui-selectctl-border);
-	border-radius: var(--jui-ctl-border-radius);
-	box-sizing: content-box;
-	padding: 0 0.75em;
-	background: var(--jui-selectctl-bg);
-	display: flex;
-	flex-direction: row;
-	gap: 0.75em;
-	align-items: center;
-	color: var(--jui-selectctl-text);
+    height: var(--cpt-selectctl-height);
+    outline: none;
+    border: 1px solid var(--cpt-selectctl-border);
+    border-radius: var(--cpt-selectctl-border-radius);
+    box-sizing: content-box;
+    padding: var(--cpt-selectctl-padding);
+    background: var(--cpt-selectctl-bg);
+    transition: var(--cpt-selectctl-transition);
+    display: flex;
+    flex-direction: row;
+    gap: var(--cpt-selectctl-gap);
+    align-items: center;
+    color: var(--cpt-selectctl-text);
+}
+
+.component:hover .inner {
+    border-color: var(--cpt-selectctl-border-hover);
+    background: var(--cpt-selectctl-bg-hover);
 }
 
 .component.read_only .inner em.read_only {
-	display: inline;
+    display: inline;
 }
 
 .component .inner em.read_only {
-	display: none;
+    display: none;
 }
 
 .component.waiting .inner * {
-	visibility: hidden;
+    visibility: hidden;
 }
 
 .component .inner em.icon_left {
-    color: var(--jui-selectctl-icon-color);
+    color: var(--cpt-selectctl-icon-color);
 }
 
 .component .inner span.prompt {
-    color: var(--jui-selectctl-prompt-color);
-    font-weight: var(--jui-selectctl-prompt-weight);
+    color: var(--cpt-selectctl-prompt-color);
+    font-weight: var(--cpt-selectctl-prompt-weight);
     white-space: nowrap;
 }
 
 .component .inner #content {
-	flex-grow: 1;
-	display: block;
-	min-width: 3em;
-	min-height: 1em;
+    flex-grow: 1;
+    display: block;
+    min-width: 3em;
+    min-height: 1em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .component.empty .inner #content {
-	color: var(--jui-ctl-text-placeholder);
+    color: var(--cpt-selectctl-text-light);
 }
 
 .component .inner #content span {
-	font-family: var(--jui-ctl-font);
+    font-family: var(--jui-ctl-font);
 }
 
 .component .inner #remove {
-	color: var(--jui-action);
-	cursor: pointer;
+    color: var(--jui-action);
+    cursor: pointer;
 }
 
 .component.empty .inner #remove {
-	visibility: hidden;
+    visibility: hidden;
 }
 
 .component:hover .inner #remove {
-	color: var(-jui-action);
+    color: var(-jui-action);
 }
 
 .component #selector {
-	z-index: 10;
+    z-index: 10;
     position: absolute;
     top: 100%;
     right: 0;
@@ -92,12 +110,12 @@
 }
 
 .component #selector.selector_top {
-	bottom: 100%;
-	top: auto;
+    bottom: 100%;
+    top: auto;
 }
 
 .component #selector.selector_left {
-	left: 0;
+    left: 0;
 }
 
 .component.open #selector {
@@ -107,11 +125,11 @@
 
 .component .inner em.open {
     transition: transform 0.1s;
-    color: var(--jui-selectctl-text-light);
+    color: var(--cpt-selectctl-text-light);
 }
 
 .component .inner em.open:hover {
-    color: var(--jui-selectctl-text);
+    color: var(--cpt-selectctl-text);
 }
 
 .component.open .inner em.open {
@@ -120,10 +138,10 @@
 
 .component .inner em#remove {
     transition: transform 0.3s;
-    color: var(--jui-selectctl-text-light);
+    color: var(--cpt-selectctl-text-light);
 }
 
 .component .inner em#remove:hover {
-    color: var(--jui-selectctl-text);
+    color: var(--cpt-selectctl-text);
     transform: rotate(90deg);
 }

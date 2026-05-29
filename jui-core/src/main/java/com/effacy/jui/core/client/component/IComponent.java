@@ -313,7 +313,7 @@ public interface IComponent extends IObservable, IDisposable, IRenderable {
          * <p>
          * The only expectation is that the parent removes the child component from its
          * scope.
-         * 
+         *
          * @param child
          *              the child to orphan.
          */
@@ -321,16 +321,33 @@ public interface IComponent extends IObservable, IDisposable, IRenderable {
 
         /**
          * Determines if the parent is attached (to the DOM).
-         * 
+         *
          * @return {@code true} if it is.
          */
         public boolean isAttached();
 
         /**
          * Returns a test ID relative to the parent.
-         * 
+         *
          * @return the test ID.
          */
         public String getTestId();
+
+        /**
+         * Whether the passed child is marked for reuse across this parent's
+         * re-renders (see {@code Component.reuse(...)}).
+         * <p>
+         * Used by {@code Component.orphan()} to skip listener-clearing when
+         * the child is being detached as part of a rerender cycle (rather
+         * than a final removal). Defaults to {@code false} for parents
+         * that don't track reuse.
+         *
+         * @param child
+         *              the child to check.
+         * @return {@code true} if the child is reused by this parent.
+         */
+        public default boolean reused(IComponent child) {
+            return false;
+        }
     }
 }

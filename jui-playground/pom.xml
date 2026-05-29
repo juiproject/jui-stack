@@ -143,7 +143,7 @@
             </goals>
             <configuration>
               <module>com.effacy.jui.playground.PlaygroundApp</module>
-              <jvmArgs>-Xmx4096M,-Xss1024k</jvmArgs>
+              <jvmArgs>-Xmx2g,-Xss1024k</jvmArgs>
               <style>OBF</style>
               <webappDirectory>${basedir}/src/main/resources/static</webappDirectory>
             </configuration>
@@ -280,6 +280,32 @@
                 </goals>
               </execution>
             </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- Auto-activated overlay applied when running inside a GitHub Codespace. -->
+    <!-- Layers Codespaces-specific overrides on top of the codeserver profile: -->
+    <!-- a smaller heap to fit a 2-core / 8 GB Codespace, and an explicit       -->
+    <!-- publicUrl built from the Codespaces environment so the code server's  -->
+    <!-- source-map and dev-mode redirect URLs resolve to the externally-      -->
+    <!-- forwarded HTTPS host rather than localhost. See CODESPACES.md.        -->
+    <profile>
+      <id>codespaces</id>
+      <activation>
+        <property><name>env.CODESPACE_NAME</name></property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.effacy.jui</groupId>
+            <artifactId>jui-maven-plugin</artifactId>
+            <version>${revision}</version>
+            <configuration>
+              <jvmArgs>-Xmx2g</jvmArgs>
+              <publicUrl>https://${env.CODESPACE_NAME}-9876.${env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}</publicUrl>
+            </configuration>
           </plugin>
         </plugins>
       </build>

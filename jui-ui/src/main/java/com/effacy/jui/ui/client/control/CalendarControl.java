@@ -109,6 +109,58 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
      */
     public static class Config extends Control.Config<CalendarDate, CalendarControl.Config> {
 
+        /********************************************************************
+         * Variants — token-driven presentation overlays.
+         ********************************************************************/
+
+        /**
+         * Variant for the component. Each variant reaches into the
+         * {@code --cpt-calendarctl-*} token layer at the root, overriding
+         * specific tokens that the underlying CSS already consumes.
+         */
+        @FunctionalInterface
+        public interface Variant {
+
+            /**
+             * Apply the variant to the control configuration.
+             *
+             * @param cfg
+             *            the configuration to apply the variant to.
+             */
+            void configure(Config cfg);
+
+            /**
+             * Standard visual style — bordered field with the shared
+             * control surface. Default; resetting any prior
+             * variant-applied token overlays is the caller's
+             * responsibility.
+             */
+            public static final Variant STANDARD = config -> {
+                // No token overrides — falls through to the defaults
+                // expressed by the underlying CSS.
+            };
+
+            /**
+             * Inline-edit visual style — very light outline at rest,
+             * slightly darker background on hover, dim icon affordance.
+             * Suited for click-to-edit fields embedded directly in a
+             * read-oriented surface.
+             */
+            public static final Variant INLINE = config -> {
+                config.css("""
+                    --cpt-calendarctl-bg: transparent;
+                    --cpt-calendarctl-bg-hover: var(--jui-color-neutral10);
+                    --cpt-calendarctl-border: var(--jui-color-neutral10);
+                    --cpt-calendarctl-border-hover: var(--jui-color-neutral20);
+                    --cpt-calendarctl-padding: 0.15em 0.4em;
+                    --cpt-calendarctl-height: unset;
+                    --cpt-calendarctl-gap: 0.4em;
+                    --cpt-calendarctl-icon: var(--jui-color-neutral40);
+                """);
+            };
+
+        }
+
         /**
          * The format style for the date.
          */
@@ -287,6 +339,34 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
         public Config formatLocale(String formatLocale) {
             if (formatLocale != null)
                 this.formatLocale = () -> formatLocale;
+            return this;
+        }
+
+        /**
+         * Assigns a presentation variant.
+         *
+         * @param variant
+         *                the variant (default is {@link Variant#STANDARD}).
+         * @return this configuration instance.
+         */
+        public Config variant(Variant variant) {
+            if (variant != null)
+                variant.configure (this);
+            return this;
+        }
+
+        /**
+         * Assigns a set of presentation variants in order.
+         *
+         * @param variants
+         *                 the variants.
+         * @return this configuration instance.
+         */
+        public Config variant(Variant... variants) {
+            if (variants != null) {
+                for (Variant variant : variants)
+                    variant (variant);
+            }
             return this;
         }
 

@@ -178,6 +178,19 @@
     var dev_mode_on = mod['superdevmode'] ||
         window.sessionStorage[dev_mode_key];
 
+    // GWT's compiled nocache.js sets canRedirect=false on https: pages as a
+    // conservative mixed-content guard (the historical assumption being that
+    // the code server only ever runs over http:). When the page itself is
+    // on https: the code server is also reachable over https: (Codespaces
+    // forwards both as https:), so the redirect is fine. Pre-seed the dev
+    // mode flag in that case so the bookmarklet's gating check passes,
+    // matching the manual workaround documented for HTTPS environments.
+    if (!dev_mode_on && !mod.canRedirect &&
+        window.location.protocol === 'https:') {
+      window.sessionStorage[dev_mode_key] = 'true';
+      dev_mode_on = true;
+    }
+
     if (!dev_mode_on && !mod.canRedirect) {
       return 'This module doesn\'t have Super Dev Mode enabled.';
     }

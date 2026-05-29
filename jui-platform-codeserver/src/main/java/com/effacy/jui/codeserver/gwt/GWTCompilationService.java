@@ -44,6 +44,7 @@ public class GWTCompilationService implements ICompilationService {
     private ILogger logger;
     private JobRunner runner;
     private List<CompilerModule> modules;
+    private Options options;
 
     public static class CodeServerRunnerException extends Exception {
         public CodeServerRunnerException(String message) {
@@ -63,6 +64,7 @@ public class GWTCompilationService implements ICompilationService {
      * @throws UnableToCompleteException on error.
      */
     public GWTCompilationService(TreeLogger logger, Options options, File workingDir) throws UnableToCompleteException {
+        this.options = options;
         this.baseLogger = logger;
         this.logger = new ILogger () {
             public void info(String message) {
@@ -111,7 +113,7 @@ public class GWTCompilationService implements ICompilationService {
         List<String> moduleNames = new ArrayList<> ();
         modules.forEach(module -> moduleNames.add (module.outputModuleName()));
         List<String> warnings = new ArrayList<> ();
-        return new ServiceDescriptor(moduleNames, warnings);
+        return new ServiceDescriptor(moduleNames, warnings, options.getPublicUrl());
     }
 
     @Override

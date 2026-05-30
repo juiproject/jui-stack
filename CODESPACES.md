@@ -145,6 +145,22 @@ The `-publicUrl` argument is consumed by `CodeServer` and is used in three place
 
 When `-publicUrl` is unset the code server falls back to its previous behaviour (using the configured `-bindAddress`/`-port`, or values from the inbound request). This means everything described here is backward-compatible: nothing changes for developers running on a local machine.
 
+### The application linker (`JuiCrossSiteIframeLinker`)
+
+`-publicUrl` only fixes the URLs the *code server* emits. There is a second half: the **application's own compiled bootstrap** (`<module>.nocache.js`) decides whether to redirect to the code server at all, and that decision is baked in at compile time by the GWT linker — the code server cannot change it after the fact.
+
+Stock GWT's `CrossSiteIframeLinker` bakes two guards into that bootstrap that both fail in a Codespace, because the application page is served over `https:` on a forwarded subdomain:
+
+1. **Scheme guard.** The redirect is only attempted when the page protocol is `http:` or `file:`. On an `https:` Codespaces page the guard is `false`, so the redirect block is skipped entirely and the page silently loads its *pre-compiled standalone* permutation — **Dev Mode On** appears to do nothing.
+2. **URL whitelist.** Even with the redirect attempted, the dev-mode URL is validated against the `devModeUrlWhitelistRegexp` configuration property, whose default only matches `http://localhost` / `http://127.0.0.1`. The Codespaces code server URL (`https://<codespace>-9876.app.github.dev`) does not match and is discarded.
+
+JUI therefore binds the `xsiframe` linker to `com.effacy.jui.platform.linker.JuiCrossSiteIframeLinker` (in `jui-platform`; see `com/google/gwt/core/CrossSiteIframeLinker.gwt.xml`), a subclass that additionally permits `https:` pages and broadens the default whitelist to include `app.github.dev` / `githubpreview.dev`. An explicitly configured `devModeUrlWhitelistRegexp` still takes precedence.
+
+This is a compile-time property of the application, so two consequences follow:
+
+- **The application must be (re)compiled against this version of `jui-platform`** for **Dev Mode On** to work in a Codespace. Pulling the framework change alone is not enough — an application whose `*.nocache.js` was compiled against the stock linker keeps falling back to standalone until it is rebuilt (`mvn install`, or `mvn -pl <app> compile`).
+- Nothing changes for local `http://localhost` development: the broadened guards are supersets of the originals.
+
 ## Troubleshooting
 
 ### `Dev Mode On` produces a "Couldn't load … from Super Dev Mode server" dialog

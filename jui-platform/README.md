@@ -174,3 +174,5 @@ Here the products of compilation are generated, involved are three types of link
 1. Pre-linker that produces artefacts that are seen by the primary linker(s).
 2. Primary-linker that process the JS output and pre-linker outputs (i.e. generates the `.nocache.js` bootstrapper, `.cache.js` JS file and `deferred/<n>.js` deferred JS files).
 3. Post-linker that generates the final artefacts for packaging, including supporting artefacts such as source maps.
+
+In our case linking is performed by `JuiCrossSiteIframeLinker` (configured in `CrossSiteIframeLinker.gwt.xml`) which extends `CrossSiteIframeLinker` and allows for additional codeserver location (in particular GitHub codespaces). The `devModeUrlWhitelistRegexp` for the linker can be used to override the whitelist of locations.

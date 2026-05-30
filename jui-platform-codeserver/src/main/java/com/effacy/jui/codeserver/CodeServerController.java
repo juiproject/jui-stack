@@ -27,6 +27,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -512,16 +513,51 @@ public class CodeServerController {
             response.setHeader ("Pragma", "no-cache");
             response.setHeader ("Expires", TIME_IN_THE_PAST);
             response.setDateHeader ("Date", new Date ().getTime ());
+            response.setContentType (java.nio.file.Files.probeContentType (artefact.file().toPath ()));
+
+            String acceptEncoding = request.getHeader ("Accept-Encoding");
+            boolean acceptsGzip = (acceptEncoding != null) && acceptEncoding.contains ("gzip");
+
             if (artefact.gzipped()) {
-                if (!request.getHeader ("Accept-Encoding").contains ("gzip")) {
+                // The artefact is already gzipped on disk (precompress linker). We do not
+                // inflate it here, so the client must accept gzip.
+                if (!acceptsGzip) {
                     response.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED);
                     compiler.logger ().warn ("client doesn't accept gzip; bailing");
                     return;
                 }
                 response.setHeader ("Content-Encoding", "gzip");
+                Files.copy (artefact.file(), response.getOutputStream ());
+                return;
             }
-            response.setContentType (java.nio.file.Files.probeContentType (artefact.file().toPath ()));
+
+            // In Super Dev Mode the precompress linker is disabled (see Recompiler), so large
+            // text artefacts - most notably the multi-MB *.cache.js - are emitted uncompressed.
+            // Compress them on the fly when the client accepts it; this dramatically reduces
+            // transfer time over a proxied / port-forwarded connection (e.g. GitHub Codespaces).
+            // Already-compressed binary artefacts (fonts, images) are streamed as-is. Disabled
+            // via the code server's -nocompress flag.
+            if (compiler.descriptor ().compress () && acceptsGzip && isCompressibleArtefact (artefact.file().getName ())) {
+                response.setHeader ("Content-Encoding", "gzip");
+                try (GZIPOutputStream gzip = new GZIPOutputStream (response.getOutputStream ())) {
+                    Files.copy (artefact.file(), gzip);
+                }
+                return;
+            }
+
             Files.copy (artefact.file(), response.getOutputStream ());
         });
+    }
+
+    /**
+     * Determines whether an artefact, identified by file name, is worth gzipping on
+     * the fly. Restricted to text-shaped outputs (scripts, styles, maps, etc.); binary
+     * artefacts such as fonts and images are already compressed and gain nothing.
+     */
+    private static boolean isCompressibleArtefact(String name) {
+        String n = name.toLowerCase ();
+        return n.endsWith (".js") || n.endsWith (".css") || n.endsWith (".html")
+            || n.endsWith (".json") || n.endsWith (".map") || n.endsWith (".txt")
+            || n.endsWith (".xml") || n.endsWith (".symbolmap");
     }
 }

@@ -85,6 +85,7 @@ public class Options {
     private String preferredHost = ArgHandlerBindAddress.DEFAULT_BIND_ADDRESS;
     private int port = 9876;
     private String publicUrl = null;
+    private boolean compress = true;
 
     private TreeLogger.Type logLevel = TreeLogger.Type.INFO;
     
@@ -287,6 +288,21 @@ public class Options {
     }
 
     /**
+     * Whether the code server should compress (gzip) compressible text artefacts
+     * (such as the {@code *.cache.js}) on the fly when the client accepts it.
+     * <p>
+     * Defaults to {@code true}. In Super Dev Mode the precompress linker is
+     * disabled, so these artefacts are emitted uncompressed; serving them gzipped
+     * dramatically reduces transfer time over a proxied / port-forwarded
+     * connection (e.g. GitHub Codespaces). Disable with {@code -nocompress} (for
+     * example when fronted by a proxy that already compresses, or to simplify
+     * debugging of raw responses).
+     */
+    public boolean isCompress() {
+        return compress;
+    }
+
+    /**
      * These are overriding source locations that are to be prepended to the
      * classpath.
      * 
@@ -337,6 +353,7 @@ public class Options {
             registerHandler(new NoPrecompileFlag());
             registerHandler(new PortFlag());
             registerHandler(new PublicUrlFlag());
+            registerHandler(new CompressFlag());
             registerHandler(new SourceFlag());
             registerHandler(new WorkDirFlag());
             registerHandler(new LauncherDir());
@@ -591,6 +608,31 @@ public class Options {
                 value = value.substring(0, value.length() - 1);
             publicUrl = value;
             return 1;
+        }
+    }
+
+    private class CompressFlag extends ArgHandlerFlag {
+
+        @Override
+        public String getLabel() {
+            return "compress";
+        }
+
+        @Override
+        public String getPurposeSnippet() {
+            return "Gzip compressible text artefacts (e.g. *.cache.js) on the fly when the client accepts it. "
+                + "Disable with -nocompress (e.g. when fronted by a proxy that already compresses).";
+        }
+
+        @Override
+        public boolean setFlag(boolean value) {
+            compress = value;
+            return true;
+        }
+
+        @Override
+        public boolean getDefaultValue() {
+            return compress;
         }
     }
 

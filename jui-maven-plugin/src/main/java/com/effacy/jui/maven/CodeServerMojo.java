@@ -55,6 +55,22 @@ public class CodeServerMojo extends AbstractMojo {
     private String publicUrl;
 
     /**
+     * Whether the code server should gzip compressible text artefacts (such as
+     * the {@code *.cache.js}) on the fly when the client accepts it.
+     * <p>
+     * Defaults to {@code true}. In Super Dev Mode the precompress linker is
+     * disabled, so these artefacts are otherwise served uncompressed; gzipping
+     * them dramatically reduces transfer time over a proxied / port-forwarded
+     * connection (e.g. GitHub Codespaces). Set to {@code false} (passes
+     * {@code -nocompress}) when the code server is fronted by a proxy that
+     * already compresses, or to inspect raw responses while debugging.
+     * <p>
+     * Injected from passed parameter {@code jui.compress}.
+     */
+    @Parameter(property = "jui.compress", defaultValue = "true")
+    private boolean compress;
+
+    /**
      * The logging level to use.
      * <p>
      * For GWT the options are {@code INFO} (default), {@code DEBUG} and
@@ -245,6 +261,8 @@ public class CodeServerMojo extends AbstractMojo {
             args.add(resolvedPublicUrl);
             getLog().info("Code server public URL: " + resolvedPublicUrl);
         }
+        if (!compress)
+            args.add("-nocompress");
         args.addAll(module);
 
         // Display the command being executed if in diagnose mode.

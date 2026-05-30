@@ -113,7 +113,7 @@ public class GWTCompilationService implements ICompilationService {
         List<String> moduleNames = new ArrayList<> ();
         modules.forEach(module -> moduleNames.add (module.outputModuleName()));
         List<String> warnings = new ArrayList<> ();
-        return new ServiceDescriptor(moduleNames, warnings, options.getPublicUrl());
+        return new ServiceDescriptor(moduleNames, warnings, options.getPublicUrl(), options.isCompress());
     }
 
     @Override

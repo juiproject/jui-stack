@@ -6,6 +6,8 @@ If you have not used the code server before, read [Code server](docs/app_codeser
 
 The instructions use the `jui-playground` module as the running example. Because the playground is a JUI project like any other, the same steps apply to any JUI project that is built and run with Maven.
 
+**There is a caveat that that is that the codeserver needs to be public at this time for this to work.**
+
 ## Why Codespaces is different
 
 On a developer's local machine the application and the code server both bind to `localhost`. The browser sees both at the same hostname and reaches them by port (e.g. `localhost:8080` for the app and `localhost:9876` for the code server).
@@ -38,7 +40,7 @@ In the `.devcontainer/devcontainer.json` of the project (create one if it does n
   "portsAttributes": {
     "8080": {
       "label": "App",
-      "visibility": "public"
+      "visibility": "private"
     },
     "9876": {
       "label": "JUI Code Server",
@@ -48,7 +50,7 @@ In the `.devcontainer/devcontainer.json` of the project (create one if it does n
 }
 ```
 
-Both ports are set to `public` because the application page (served from one origin) loads scripts and source maps from the code server origin. Private ports require an auth cookie that browsers will not send across origins in this configuration.
+The codeserver port is set to `public` because the application page (served from one origin) loads scripts and source maps from the code server origin. Private ports require an auth cookie that browsers will not send across origins in this configuration.
 
 > If you prefer to keep your application port private, only the code server port (`9876`) must be public. The application port can remain private as long as you reach it through the regular Codespaces port-forwarding flow.
 

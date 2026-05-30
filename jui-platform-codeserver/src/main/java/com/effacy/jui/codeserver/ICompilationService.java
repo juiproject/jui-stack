@@ -164,8 +164,11 @@ public interface ICompilationService {
      *                    behind a proxy or port-forwarder, or {@code null}
      *                    when callers should construct a URL from the inbound
      *                    request.
+     * @param compress
+     *                    whether compressible text artefacts should be gzipped
+     *                    on the fly when the client accepts it.
      */
-    public record ServiceDescriptor(List<String> moduleNames, List<String> warnings, String publicUrl) {}
+    public record ServiceDescriptor(List<String> moduleNames, List<String> warnings, String publicUrl, boolean compress) {}
     
     /**
      * A reference to a compiler artefact.

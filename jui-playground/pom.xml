@@ -287,6 +287,9 @@
 
     <profile>
       <id>codeserver-codespaces</id>
+      <activation>
+        <property><name>env.CODESPACE_NAME</name></property>
+      </activation>
       <build>
         <plugins>
           <plugin>

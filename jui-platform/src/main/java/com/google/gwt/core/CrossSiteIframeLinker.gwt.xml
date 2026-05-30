@@ -14,7 +14,14 @@
 
 <!-- Defines the cross-site iframe linker and it's subclasses  -->
 <module>
-  <define-linker name="xsiframe" class="com.google.gwt.core.linker.CrossSiteIframeLinker" />
+  <!--
+     - xsiframe is bound to the JUI subclass (not the stock GWT
+     - CrossSiteIframeLinker) so the Super Dev Mode redirect works when the
+     - application page is served over https: behind a port forwarder such as
+     - GitHub Codespaces. See JuiCrossSiteIframeLinker for the rationale.
+    -->
+  <define-linker name="xsiframe" class="com.effacy.jui.platform.linker.JuiCrossSiteIframeLinker" />
+  <!-- <define-linker name="xsiframe" class="com.google.gwt.core.linker.CrossSiteIframeLinker" /> -->
   <define-linker name="direct_install" class="com.google.gwt.core.linker.DirectInstallLinker" />
   <define-configuration-property name="xsiframe.failIfScriptTag" is-multi-valued="FALSE"/>
 

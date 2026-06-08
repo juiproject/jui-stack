@@ -145,3 +145,33 @@
     color: var(--cpt-selectctl-text);
     transform: rotate(90deg);
 }
+
+/* ------------------------------------------------------------------------
+ * Inline-flat affordance (reqspace addition; candidate for upstream).
+ *
+ * Token hooks so a Variant can present the control as inline text: hide the
+ * chevron and clear-cross at rest, give the value a dashed underline, and
+ * reveal the affordances on hover or while the selector is open. Defaults
+ * preserve the standard presentation.
+ * ---------------------------------------------------------------------- */
+.component .inner em.open {
+    display: var(--cpt-selectctl-chevron-display, inline-block);
+}
+
+.component .inner em#remove {
+    display: var(--cpt-selectctl-remove-display, inline-block);
+}
+
+.component .inner #content {
+    border-bottom: var(--cpt-selectctl-content-underline, none);
+    padding-bottom: var(--cpt-selectctl-content-underline-pad, 0);
+}
+
+.component:hover .inner em.open,
+.component.open .inner em.open {
+    display: inline-block;
+}
+
+.component:hover:not(.empty) .inner em#remove {
+    display: inline-block;
+}

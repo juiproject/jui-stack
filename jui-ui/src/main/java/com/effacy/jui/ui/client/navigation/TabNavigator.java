@@ -63,7 +63,6 @@ import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.platform.util.client.With;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.effacy.jui.ui.client.modal.Modal.IModalController;
-import com.effacy.jui.ui.client.navigation.CardNavigator.Config.CardConfiguration;
 import com.effacy.jui.ui.client.navigation.TabCollection.ITabConfig;
 import com.effacy.jui.ui.client.navigation.TabCollection.ITabGroupConfig;
 import com.effacy.jui.ui.client.navigation.TabCollection.TabConfig;
@@ -1233,7 +1232,7 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
          *              the count.
          */
         public void updateCount(int count) {
-            if (count <= 0) {
+            if (count < 0) {
                 el.classList.remove (styles ().count ());
             } else {
                 el.classList.add (styles ().count ());
@@ -1386,12 +1385,12 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         // Any counts.
         for (TabGroupConfig group : config ().tabs.getTabGroups ()) {
             for (TabConfig tab : group.getTabs ()) {
-                if (tab.count > 0)
+                if (tab.count >= 0)
                     _updateTabCount (tab.reference, tab.count);
             }
         }
     }
-   
+
     @Override
     protected INodeProvider buildNode(Element el, Config data) {
         return Wrap.$ (el).$ (root -> {
@@ -1501,7 +1500,7 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         for (TabGroupConfig group : config ().tabs.getTabGroups ()) {
             for (TabConfig tab : group.getTabs ()) {
                 tabs.get (tab.reference).group = group.idx;
-                if (tab.count > 0)
+                if (tab.count >= 0)
                     _updateTabCount (tab.reference, tab.count);
             }
         }

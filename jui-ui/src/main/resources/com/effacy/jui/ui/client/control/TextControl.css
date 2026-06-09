@@ -4,6 +4,7 @@
        override at the local --cpt-textctl-* layer below — see
        TextControl.Config.Variant for the per-variant token sets that
        reach in here. */
+    --cpt-textctl-font: inherit;
     --cpt-textctl-size: var(--jui-textctl-size, var(--jui-font-size-md));
     --cpt-textctl-padding: var(--jui-textctl-padding, 0 var(--jui-space-3));
     --cpt-textctl-height: var(--jui-textctl-height, var(--jui-comp-control-height));
@@ -22,11 +23,19 @@
     --cpt-textctl-icon: var(--jui-textctl-icon, var(--jui-comp-control-action));
     --cpt-textctl-icon-disabled: var(--jui-textctl-icon-disabled, var(--jui-comp-control-action-disabled));
     --cpt-textctl-icon-readonly: var(--jui-textctl-icon-readonly, var(--jui-comp-control-action-readonly));
+    --cpt-textctl-bg-readonly-hover: var(--cpt-textctl-bg-hover);
+    --cpt-textctl-border-readonly-hover: var(--cpt-textctl-border-hover);
 }
 
 .component:hover .inner {
     border-color: var(--cpt-textctl-border-hover);
     background: var(--cpt-textctl-bg-hover);
+}
+
+.component.read_only:hover .inner,
+.component.disabled:hover .inner {
+    background: var(--cpt-textctl-bg-readonly-hover);
+    border-color: var(--cpt-textctl-border-readonly-hover);
 }
 
 .component input::placeholder {
@@ -75,6 +84,7 @@
     border: none;
     width: 100%;
     font-size: var(--cpt-textctl-size);
+    font-family: var(--cpt-textctl-font);
 }
 
 .component.disabled input {

@@ -892,6 +892,17 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
     }
 
     /**
+     * Construct with configuration built by the passed builder.
+     * 
+     * @param configBuilder
+     *                     the configuration builder.
+     */
+    public CardNavigator(Consumer<Config> configBuilder) {
+        this (new Config ());
+        configBuilder.accept(config());
+    }
+
+    /**
      * Assigns a custom navigator (rather than using the default card layout).
      * <p>
      * A mechanism needs to be provided to allow the passed component to invoke

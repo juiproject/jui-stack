@@ -147,7 +147,7 @@
 }
 
 /* ------------------------------------------------------------------------
- * Inline-flat affordance (reqspace addition; candidate for upstream).
+ * Inline-flat affordance.
  *
  * Token hooks so a Variant can present the control as inline text: hide the
  * chevron and clear-cross at rest, give the value a dashed underline, and

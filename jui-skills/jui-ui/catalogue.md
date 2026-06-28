@@ -8,6 +8,12 @@ composing or extending a standard artefact over hand-rolling one. These are also
 implementations: when you do need a custom variant, read the closest standard one first (see
 [Inspecting the JUI source](SKILL.md#inspecting-the-jui-source)).
 
+> **Check the host project's own artefacts first.** This catalogue is the **framework** standard set.
+> The application you are working in will usually add its own custom components, controls and fragments,
+> plus a dedicated **`Variants`** class of named looks/configurations. Prefer those for consistency —
+> search the project's UI packages — and only fall back to the standard artefacts below, or build new,
+> when nothing project-specific fits.
+
 Naming conventions you will see throughout:
 
 - `XxxCreator` — a helper with `build(cfg)` (construct) and `$(parent, cfg)` (build-and-insert) methods.

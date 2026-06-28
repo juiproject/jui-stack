@@ -27,6 +27,11 @@ invoke the matching skill (each is a sibling directory shipped alongside this on
 | A small, reusable piece of DOM with no component lifecycle, inserted into a parent's build | **Fragment** | `Fragment<F>`, `FragmentWithChildren<F>` | **jui-fragments** |
 | To style any of the above — localised CSS, CSS variables, style packs, variants | **Style** | `ILocalCSS` / `@CssResource` | **jui-styles** |
 
+Two further skills cut across all of the above (every kind of artefact builds DOM and may be styled):
+**jui-dombuilder** (building and **re-rendering** DOM — the element/event API and the rules for
+updating DOM at runtime) and **jui-styles** (CSS and variants). Reach for them from within whichever
+building-block skill you are using.
+
 Quick decision guide:
 
 - **Is it a form field** (text, number, selection, checkbox, date, upload…)? → a **Control**. First
@@ -47,9 +52,16 @@ A component supplies its DOM either by overriding `buildNode(Element)` or by cal
 in its constructor, building with the DomBuilder element classes (`Div`, `Span`, `H3`, `A`, `Button`,
 …) under `Wrap.$(el).$(root -> { … })`. Elements are referenced for later update via `.by("name")`
 (read back with `dom.first("name")`). Events attach with `.onclick(...)` / `.on(...)`. Update at
-runtime by rebuilding into a captured element (`buildInto(el, …)`) or call `rerender()`. Styling is a
-local `ILocalCSS` (CSS scoped under the auto-applied `.component` class). The **jui-components** and
-**jui-styles** skills cover this in full — read them before writing rendering or CSS code.
+runtime by rebuilding into a captured element (the component's `buildInto(el, …)`) or call
+`rerender()`. Styling is a local `ILocalCSS` (CSS scoped under the auto-applied `.component` class).
+
+> **Re-render trap (the most common rendering bug):** to redraw a section that contains events or
+> child components, use the **component's** `buildInto(...)`, never the static `Wrap.buildInto(...)`
+> (which renders the DOM but leaves handlers dead). For substantial change prefer `rerender()` over
+> component state. The **jui-dombuilder** skill covers this in full.
+
+The **jui-dombuilder**, **jui-components** and **jui-styles** skills cover rendering and CSS in full —
+read them before writing rendering or CSS code.
 
 ## What already exists — use it before building
 
@@ -63,6 +75,19 @@ artefact to a need or to a custom variant you are about to write.
 Construction conventions to expect: every standard artefact has a `Config` builder and an `XxxCreator`
 helper (`build(cfg)` / `$(parent, cfg)`); controls additionally have a one-stop `Controls` factory
 (`Controls.text(...)`, `Controls.selector(...)`, …).
+
+**Check the host project's own artefacts too — before the framework's.** Beyond the standard JUI
+catalogue, a project will usually have its **own** custom components, controls and fragments (and a
+dedicated **`Variants`** class of named looks/configurations layered on the standard ones). Prefer
+these for consistency: they encode the application's conventions. Search the project's UI packages for
+existing artefacts and a `Variants` class, and reuse them; only fall back to the standard catalogue, or
+build new, when nothing fits.
+
+**Variants.** Components, controls and fragments are generally configured through *variants* — named,
+reusable bundles of style and other configuration applied repeatably to give an artefact a particular
+look or behaviour in a given context (fragments via `IFragmentVariant`/`variant(...)`; components and
+controls via a `Config.Style` style pack). Projects collect their variants in a `Variants` class. The
+**jui-styles** skill elaborates the model.
 
 ## Inspecting the JUI source
 
@@ -126,13 +151,41 @@ files from `jui-stack/docs/`.
 
 ## Workflow
 
+First decide whether you are **changing existing UI** or **building new UI** — the two follow
+different paths.
+
+### Modifying existing UI
+
+Most UI work is editing something that already exists. Start from the existing artefact, not a blank
+page.
+
+1. **Locate the artefact** — find the component/control/fragment that renders the screen or element in
+   question (grep the project UI packages for the on-screen text, style names, or class). Read it in
+   full, along with any `README.md` in its package and the artefacts it composes.
+2. **Identify what kind it is and how it renders** — `buildNode`/`renderer`, which elements are
+   captured (`.by()`/`.use()`), what is a child component, what state it holds. This tells you whether
+   your change is a render tweak, an event/handler change, or a structural change.
+3. **Match the established pattern** — follow the conventions already in that file and its neighbours
+   (naming, variants used, style approach) rather than introducing a new style. Reuse the project's
+   existing artefacts and `Variants` before adding anything new.
+4. **Make the change surgically, then update the view correctly** — for runtime DOM updates use the
+   right mechanism (jui-dombuilder): the component's `buildInto`/`rerender()` for interactive content,
+   never `Wrap.buildInto`. Invoke the matching building-block skill for the details of the kind you are
+   editing, and jui-styles for any CSS.
+
+### Building new UI
+
 1. **Classify the work** — which of the four building blocks is it? Use the decision guide above.
-2. **Reuse first** — open [catalogue.md](catalogue.md); if a standard control/component/fragment fits,
-   configure it via its `Creator` / `Controls` helper rather than building new.
+2. **Reuse first** — check the **project's own** custom components/controls/fragments and its
+   `Variants` class, then [catalogue.md](catalogue.md) for the standard suite. If an existing
+   artefact fits, configure it (via its `Creator` / `Controls` helper, and any matching variant)
+   rather than building new.
 3. **If building new, invoke the specialised skill** — jui-components, jui-controls, jui-fragments,
    or jui-styles — and follow its patterns.
 4. **Read the closest standard artefact** for the pattern (from the jui-stack source or an extracted
    jar) before writing a custom variant.
-5. **Style via jui-styles** — localised CSS scoped under `.component`; tokens/variables over hard-coded
-   values.
-6. **Consult the docs** for anything subtle (navigation, focus/blur, stores, modals).
+5. **Build and update DOM via jui-dombuilder** — and when re-rendering, use the component's
+   `buildInto`/`rerender()` (never `Wrap.buildInto` for interactive content).
+6. **Style via jui-styles** — localised CSS scoped under `.component`; tokens/variables over hard-coded
+   values; reuse variants from the project `Variants` class.
+7. **Consult the docs** for anything subtle (navigation, focus/blur, stores, modals).

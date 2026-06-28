@@ -129,6 +129,10 @@ protected void valueToSource(String value) {
 
 Render the control's DOM. Note that controls use the two-argument version `buildNode(Element el, Config data)` where `data` is the configuration. This differs from `SimpleComponent` which uses `buildNode(Element el)`.
 
+For DOM-building detail — and the rules for re-rendering part of a control at runtime (a `Control` *is*
+a `Component`, so use its `buildInto`/`rerender()`, never the static `Wrap.buildInto`, for interactive
+content) — see the **jui-dombuilder** skill.
+
 ```java
 @Override
 protected INodeProvider buildNode(Element el, Config data) {
@@ -245,6 +249,14 @@ For comprehensive styling guidance -- localised CSS, CSS variables, style packs,
 - `ILocalCSS` extends `IControlCSS` (not `IComponentCSS`)
 - `IControlCSS` extends `IComponentCSS` and adds: `invalid()`, `read_only()`, `waiting()`
 - `@CssResource` must include **both** `IComponentCSS.COMPONENT_CSS` and `IControlCSS.CONTROL_CSS`
+
+## Style Variants
+
+Controls follow the same **variant** model as components: a variant is a named, reusable bundle of
+style/configuration (declared as a `Style` interface in `Config`) applied repeatably to give the
+control a particular look in a particular context. The template below shows the pattern; see the
+`jui-styles` skill (the **Variants** section) for the full treatment, and prefer reusing variants from
+the project's dedicated `Variants` class where one exists.
 
 ## Full Template with Style Variants
 

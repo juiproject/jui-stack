@@ -7,6 +7,7 @@
     --frag-pill-border: transparent;
     --frag-pill-border-width: 1px;
     --frag-pill-radius: 999px;
+    --frag-pill-max-width: none;
     --frag-pill-padding-tb: 2px;
     --frag-pill-padding-lr: 8px;
     --frag-pill-font-size: 0.72rem;
@@ -33,6 +34,7 @@
     letter-spacing: var(--frag-pill-letter-spacing);
     line-height: 1.4;
     text-wrap-mode: nowrap;
+    max-width: var(--frag-pill-max-width);
     box-sizing: border-box;
 }
 
@@ -40,4 +42,12 @@
     color: var(--frag-pill-icon-color);
     font-size: var(--frag-pill-icon-size);
     line-height: 1;
+    flex-shrink: 0;
+}
+
+.fragment .label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
 }

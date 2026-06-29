@@ -214,7 +214,7 @@ public class Pill {
                 pill.testId (testId);
             if (!StringSupport.empty(icon))
                 Em.$ (pill).style (styles().icon(), icon);
-            Span.$ (pill).text (label);
+            Span.$ (pill).style (styles().label()).text (label);
             return pill;
         }
 
@@ -223,6 +223,8 @@ public class Pill {
     public static interface ILocalCSS extends IFragmentCSS {
 
         String icon();
+
+        String label();
     }
 
     @CssResource({

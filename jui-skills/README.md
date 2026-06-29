@@ -6,17 +6,18 @@ structured instruction set (a `SKILL.md` file, optionally with supporting refere
 an agent how to work with a specific facet of JUI, following the framework's conventions, patterns and
 best practices.
 
-The skills are organised as **one general entry point, four building-block skills and two cross-cutting
-skills**:
+The skills are organised as **one general entry point, four building-block skills, two cross-cutting
+skills and one feature skill**:
 
 | Skill | Directory | Role | Purpose |
 |-------|-----------|------|---------|
 | `jui-ui` | `jui-ui/` | **Entry point** | Describes the JUI UI mechanism and the four kinds of artefact; helps decide *what* to build and *which* skill to use; catalogues the standard controls/components/fragments; explains how to inspect the JUI source and find the docs. Triggers on any UI work. |
-| `jui-components` | `jui-components/` | Building block | Create JUI components (`SimpleComponent`, `Component<Config>`, `StateComponent<V>`) — DOM building, event handling, lifecycle, modal dialogs. |
+| `jui-components` | `jui-components/` | Building block | Create JUI components (`SimpleComponent`, `Component<Config>`, `StateComponent<V>`) — DOM building, event handling, lifecycle. |
 | `jui-controls` | `jui-controls/` | Building block | Create JUI controls (`Control<V, C>`) — value management, dirty detection, validation, focus, form integration. |
 | `jui-fragments` | `jui-fragments/` | Building block | Create JUI fragments (`Fragment<F>`, `FragmentWithChildren<F>`) — reusable DOM building blocks. |
 | `jui-dombuilder` | `jui-dombuilder/` | Cross-cutting | Build and **update** DOM with DomBuilder — element/event API, element extraction, and the rules for re-rendering at runtime (`Wrap.buildInto` vs the component's `buildInto` vs `rerender()`, `StateComponent`). Referenced by the building-block skills. |
 | `jui-styles` | `jui-styles/` | Cross-cutting | Style JUI elements — localised CSS, CSS variables, style packs, variants. Referenced by the building-block skills. |
+| `jui-modals` | `jui-modals/` | Feature | Build modals and dialogs (`Modal`, `ModalDialog`, `ModalDialogCreator`, `NotificationDialog`) — the dialog-enabling `open()`/`IDialogOpener` pattern, create/update form pairs, confirmations, custom dialog subclasses. Builds on `jui-components`/`jui-controls`. |
 
 The intended flow: `jui-ui` is invoked for any UI task, classifies the work, points at the existing
 standard artefacts (and the host project's own artefacts / `Variants` class) to reuse, and routes to
@@ -61,7 +62,7 @@ To install the skills into a project:
 ```bash
 # From the project root (where .claude/ lives)
 mkdir -p .claude/skills
-for s in jui-ui jui-components jui-controls jui-fragments jui-dombuilder jui-styles; do
+for s in jui-ui jui-components jui-controls jui-fragments jui-dombuilder jui-styles jui-modals; do
   cp -r path/to/jui-stack/jui-skills/$s .claude/skills/
 done
 ```
@@ -70,7 +71,7 @@ Or using symlinks (keeps the skills in sync with the jui-stack source):
 
 ```bash
 mkdir -p .claude/skills
-for s in jui-ui jui-components jui-controls jui-fragments jui-dombuilder jui-styles; do
+for s in jui-ui jui-components jui-controls jui-fragments jui-dombuilder jui-styles jui-modals; do
   ln -s path/to/jui-stack/jui-skills/$s .claude/skills/$s
 done
 ```

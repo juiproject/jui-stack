@@ -145,6 +145,7 @@ They are the lightest-weight building block. To author your own, use the **jui-f
 | `IconBtn` | Icon-only button with an on-click handler. |
 | `ToggleBtn` | A simple on/off toggle button. |
 | `Icon` | Renders an icon (e.g. a FontAwesome class). |
+| `Pill` | A small rounded status/tag badge — optional leading icon (FontAwesome) and text; fully tokenised (`--frag-pill-*`) with standard variants (`NEUTRAL`, `OUTLINE`, `INFO`, `SUCCESS`, `WARNING`, `DANGER`) that supply colour and a relevant icon. |
 | `Card` | A card surface container (optionally hover-lift). |
 | `CardHeader` | A header row for a `Card`. |
 | `Stack` | A flex stack (vertical or horizontal) with a gap. |

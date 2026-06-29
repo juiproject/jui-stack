@@ -564,84 +564,12 @@ Set flags on `Component` (typically in the application entry point):
 
 ## Modal Dialogs
 
-### Simple dialog
-
-```java
-public class MyComponent extends SimpleComponent {
-
-    private static IDialogOpener<Void, Void> DIALOG;
-
-    public static void open() {
-        if (DIALOG == null)
-            DIALOG = ModalDialogCreator.<Void, Void, MyComponent>dialog(
-                new MyComponent(), cfg -> {
-                    cfg.style(ModalStyle.UNIFORM)
-                        .title("My Dialog")
-                        .type(Type.CENTER)
-                        .width(Length.px(500));
-                }, b -> b.label("cancel"), b -> b.label("Confirm"));
-        DIALOG.open(null, null);
-    }
-}
-```
-
-### Processing dialog (with result)
-
-Implement `IProcessable<R>` to return a result through the dialog callback:
-
-```java
-public class MyForm extends SimpleComponent implements IProcessable<Long> {
-
-    private static IDialogOpener<Void, Long> DIALOG;
-
-    public static void open(Consumer<Optional<Long>> cb) {
-        if (DIALOG == null)
-            DIALOG = ModalDialogCreator.<Void, Long, MyForm>dialog(
-                new MyForm(), cfg -> {
-                    cfg.style(ModalStyle.UNIFORM)
-                        .title("Create")
-                        .type(Type.CENTER)
-                        .width(Length.px(500));
-                }, b -> b.label("cancel"), b -> b.label("Create"));
-        DIALOG.open(null, cb);
-    }
-
-    @Override
-    public void process(Consumer<Optional<Long>> outcome) {
-        // Empty optional = failure (dialog stays open).
-        // Non-empty optional = success (dialog closes).
-        outcome.accept(Optional.of(resultId));
-    }
-}
-```
-
-### Configurable dialog (with input data)
-
-Implement `IEditable<T>` to receive data when the dialog opens:
-
-```java
-public class MyEditor extends SimpleComponent implements IEditable<MyData> {
-
-    private static IDialogOpener<MyData, Void> DIALOG;
-
-    public static void open(MyData data) {
-        if (DIALOG == null)
-            DIALOG = ModalDialogCreator.<MyData, Void, MyEditor>dialog(
-                new MyEditor(), cfg -> {
-                    cfg.style(ModalStyle.UNIFORM)
-                        .title("Edit")
-                        .type(Type.CENTER)
-                        .width(Length.px(500));
-                }, b -> b.label("cancel"), b -> b.label("Save"));
-        DIALOG.open(data, null);
-    }
-
-    @Override
-    public void edit(MyData data) {
-        // Populate from data.
-    }
-}
-```
+A component is frequently opened **in a dialog** (create/edit forms, confirmations, custom panels) via
+a static `open(...)` method backed by a shared `IDialogOpener`, implementing `IProcessable` (apply),
+`IEditable` (seed on open) and `IResetable` (clean baseline). That is a topic in its own right —
+**use the `jui-modals` skill** for the dialog-enabling pattern, create/update form pairs,
+`ModalDialogCreator` / `ModalDialog` / `NotificationDialog`, actions, and lifecycle. Build the
+component here; wrap and drive it there.
 
 ## Behavioural Interfaces
 

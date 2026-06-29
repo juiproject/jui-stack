@@ -32,6 +32,13 @@ Two further skills cut across all of the above (every kind of artefact builds DO
 updating DOM at runtime) and **jui-styles** (CSS and variants). Reach for them from within whichever
 building-block skill you are using.
 
+One **feature** skill sits on top of the building blocks: **jui-modals** — modals and dialogs
+(`Modal`, `ModalDialog`, `ModalDialogCreator`, `NotificationDialog`): the dialog-enabling
+`open()`/`IDialogOpener` pattern, create/update form pairs, confirmation/alert prompts, and custom
+dialog subclasses. Whenever the work is "open this in a dialog", a create/edit form, or a
+confirmation, build the contents with jui-components/jui-controls and use **jui-modals** to wrap and
+drive them.
+
 Quick decision guide:
 
 - **Is it a form field** (text, number, selection, checkbox, date, upload…)? → a **Control**. First

@@ -310,7 +310,7 @@ public abstract class PaginatedStore<V> extends StoreSelection<V> implements IPa
 
     /**
      * Reloads with the given page size (the first page will be loaded).
-     * 
+     *
      * @param pageSize
      *                 the page size (will be updated to internally).
      */
@@ -318,6 +318,25 @@ public abstract class PaginatedStore<V> extends StoreSelection<V> implements IPa
         this.pageSize = pageSize;
         this.page = 0;
         reload ();
+    }
+
+    /**
+     * Reloads the current page range <em>in place</em>.
+     * <p>
+     * Unlike {@link #reload()} the existing contents are not cleared up-front: they remain
+     * visible until the fresh results arrive and atomically replace them. This avoids the
+     * list visibly emptying (a "flash") when refreshing content that is largely unchanged.
+     * <p>
+     * On the very first load (status {@link Status#UNLOADED}) this defers to
+     * {@link #reload()} as there is nothing to retain.
+     */
+    public void refresh() {
+        if (status == Status.UNLOADED) {
+            reload ();
+            return;
+        }
+        statusMessage = null;
+        _load (page, pageSize, true);
     }
 
     /**

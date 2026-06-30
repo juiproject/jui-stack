@@ -69,6 +69,7 @@ public class Tools {
 
     public static final ITool BULLET_LIST = toggleBlock(BlockType.NLIST, r -> Em.$(r).style(FontAwesome.listDots()), "Bullet List");
     public static final ITool NUMBERED_LIST = toggleBlock(BlockType.OLIST, r -> Em.$(r).style(FontAwesome.listNumeric()), "Numbered List");
+    public static final ITool QUOTE = toggleBlock(BlockType.QUOTE, r -> Em.$(r).style(FontAwesome.quoteLeft()), "Quote");
 
     /************************************************************************
      * Action tools.

@@ -234,7 +234,14 @@ public class MarkdownParser {
                 emitHeading(handler, lines[0], partialBlock);
             } else if (isTableBlock(lines)) {
                 emitTable(handler, lines, partialBlock);
-            } else if (isListBlock(lines)) {
+            } else if (isQuoteBlock(lines)) {
+                emitQuote(handler, lines, partialBlock);
+            } else if (isListStart(lines)) {
+                // The block begins with a list item: treat the whole block as a list.
+                // emitList folds soft-wrapped continuation lines into their item, so a
+                // list whose items span multiple lines is not mis-parsed (the first item
+                // is no longer dropped to a paragraph because its wrapped line is not a
+                // marker line).
                 emitList(handler, lines, partialBlock);
             } else {
                 // Check for a list starting mid-paragraph (e.g. intro text
@@ -250,29 +257,10 @@ public class MarkdownParser {
                     }
                     handler.endBlock(BlockType.PARA);
 
-                    // Find where the contiguous list items end.
-                    int listEnd = lines.length;
-                    for (int l = listStart; l < lines.length; l++) {
-                        if (lines[l].trim().isEmpty())
-                            continue;
-                        if (!isListItem(lines[l])) {
-                            listEnd = l;
-                            break;
-                        }
-                    }
-
-                    // Copy list lines; append any trailing non-list continuation
-                    // to the last list item (single-newline continuation).
-                    String[] listLines = new String[listEnd - listStart];
+                    // Emit the list from the transition onward; emitList folds any
+                    // soft-wrapped continuation lines into the item they belong to.
+                    String[] listLines = new String[lines.length - listStart];
                     System.arraycopy(lines, listStart, listLines, 0, listLines.length);
-                    if (listEnd < lines.length) {
-                        StringBuilder continuation = new StringBuilder(listLines[listLines.length - 1]);
-                        for (int l = listEnd; l < lines.length; l++) {
-                            if (!lines[l].trim().isEmpty())
-                                continuation.append(" ").append(lines[l].trim());
-                        }
-                        listLines[listLines.length - 1] = continuation.toString();
-                    }
                     emitList(handler, listLines, partialBlock);
                 } else {
                     handler.startBlock(BlockType.PARA);
@@ -450,6 +438,47 @@ public class MarkdownParser {
         return true;
     }
 
+    /**
+     * Determines whether the block <em>starts</em> a list — i.e. its first non-empty line
+     * is a list item. Unlike {@link #isListBlock(String[])} (which requires every line to
+     * be a marker line) this admits lists whose items soft-wrap across several lines; the
+     * continuation lines are folded into their item by {@link #emitList}.
+     */
+    private static boolean isListStart(String[] lines) {
+        if (lines == null)
+            return false;
+        for (String line : lines) {
+            if (line.trim().isEmpty())
+                continue;
+            return isListItem(line);
+        }
+        return false;
+    }
+
+    /**
+     * The indentation level of a list line: every 2 spaces (a tab counting as 3) is one
+     * level. Matches the indentation the serializer emits.
+     */
+    private static int indentLevel(String line) {
+        int spaces = 0;
+        for (int i = 0; i < line.length(); i++) {
+            if (line.charAt(i) == ' ')
+                spaces++;
+            else if (line.charAt(i) == '\t')
+                spaces += 3;
+            else
+                break;
+        }
+        return (spaces + 1) / 3;
+    }
+
+    /** A single list item accumulated across one marker line and any continuation lines. */
+    private static class ListItem {
+        int indent;
+        boolean ordered;
+        String content = "";
+    }
+
     private static boolean isListItem(String line) {
         String trimmed = line.trim();
         if (trimmed.length() < 2)
@@ -473,48 +502,95 @@ public class MarkdownParser {
     }
 
     private void emitList(IEventBuilder<?> handler, String[] lines, boolean partial) {
-        for (int l = 0; l < lines.length; l++) {
-            if (lines[l].trim().isEmpty())
+        // Group lines into items. A line beginning with a list marker starts a new item;
+        // a subsequent non-marker line is a soft-wrapped (lazy) continuation and is folded
+        // into the current item — so an item whose text wraps across lines is kept whole
+        // (and, importantly, the first item is not split off into a paragraph). Each
+        // resulting item becomes its own list block.
+        List<ListItem> items = new ArrayList<>();
+        ListItem current = null;
+        for (String raw : lines) {
+            if (raw.trim().isEmpty())
                 continue;
-
-            boolean partialLine = partial && (l == lines.length - 1);
-
-            // Determine indent level from leading whitespace (2+ spaces or 1 tab = 1 level).
-            int spaces = 0;
-            for (int i = 0; i < lines[l].length(); i++) {
-                if (lines[l].charAt(i) == ' ')
-                    spaces++;
-                else if (lines[l].charAt(i) == '\t')
-                    spaces += 3;
-                else
-                    break;
-            }
-            int indent = (spaces + 1) / 3;
-
-            String trimmed = lines[l].trim();
-            String content = "";
-            boolean ordered = false;
-
-            char first = trimmed.charAt(0);
-            if ((first == '-') || (first == '*') || (first == '+')) {
-                content = trimmed.substring(trimmed.indexOf(' ') + 1);
-            } else {
-                int dotIndex = trimmed.indexOf('.');
-                if (dotIndex > 0) {
-                    content = trimmed.substring(dotIndex + 1).trim();
-                    ordered = true;
+            if (isListItem(raw)) {
+                current = new ListItem();
+                current.indent = indentLevel(raw);
+                String trimmed = raw.trim();
+                char first = trimmed.charAt(0);
+                if ((first == '-') || (first == '*') || (first == '+')) {
+                    // Strip the marker character and any following whitespace.
+                    current.content = trimmed.substring(1).trim();
+                } else {
+                    int dotIndex = trimmed.indexOf('.');
+                    current.ordered = true;
+                    current.content = (dotIndex >= 0) ? trimmed.substring(dotIndex + 1).trim() : "";
                 }
+                items.add(current);
+            } else if (current != null) {
+                String continuation = raw.trim();
+                current.content = current.content.isEmpty() ? continuation : (current.content + " " + continuation);
             }
+        }
 
-            BlockType type = ordered ? BlockType.OLIST : BlockType.NLIST;
+        for (int idx = 0; idx < items.size(); idx++) {
+            ListItem item = items.get(idx);
+            boolean partialLine = partial && (idx == (items.size() - 1));
+            BlockType type = item.ordered ? BlockType.OLIST : BlockType.NLIST;
             handler.startBlock(type);
-            if (indent > 0)
-                handler.meta("indent", String.valueOf(indent));
+            if (item.indent > 0)
+                handler.meta("indent", String.valueOf(item.indent));
             handler.startLine();
-            emitLineContent(handler, content, partialLine);
+            emitLineContent(handler, item.content, partialLine);
             handler.endLine();
             handler.endBlock(type);
         }
+    }
+
+    /************************************************************************
+     * Block quote.
+     ************************************************************************/
+
+    /**
+     * A block is a quote when its first non-empty line begins with a {@code >}
+     * marker. Subsequent lines are folded in (lazy continuation), with their own
+     * {@code >} marker stripped where present.
+     */
+    private static boolean isQuoteBlock(String[] lines) {
+        if (lines == null)
+            return false;
+        for (String line : lines) {
+            if (line.trim().isEmpty())
+                continue;
+            return line.trim().startsWith(">");
+        }
+        return false;
+    }
+
+    /**
+     * Strips a leading {@code >} quote marker (and a single following space) from a
+     * line. Lines without a marker (lazy continuations) are returned trimmed.
+     */
+    private static String stripQuoteMarker(String line) {
+        String trimmed = line.trim();
+        if (!trimmed.startsWith(">"))
+            return trimmed;
+        trimmed = trimmed.substring(1);
+        if (trimmed.startsWith(" "))
+            trimmed = trimmed.substring(1);
+        return trimmed;
+    }
+
+    private void emitQuote(IEventBuilder<?> handler, String[] lines, boolean partial) {
+        handler.startBlock(BlockType.QUOTE);
+        for (int l = 0; l < lines.length; l++) {
+            boolean partialLine = partial && (l == lines.length - 1);
+            String content = stripQuoteMarker(lines[l]);
+            handler.startLine();
+            if (!content.isEmpty())
+                emitLineContent(handler, content, partialLine);
+            handler.endLine();
+        }
+        handler.endBlock(BlockType.QUOTE);
     }
 
     /************************************************************************

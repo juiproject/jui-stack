@@ -310,6 +310,9 @@ public class DomBuilderBuilder implements IEventBuilder<IDomInsertableContainer<
             case H5:
                 el = h(target, topHeadingLevel + 4);
                 break;
+            case QUOTE:
+                el = Custom.$(target, "blockquote");
+                break;
             case TABLE:
                 el = Table.$(target);
                 tableHeaders = 0;

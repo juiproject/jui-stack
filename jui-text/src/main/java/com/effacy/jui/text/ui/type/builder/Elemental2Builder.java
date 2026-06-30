@@ -316,6 +316,9 @@ public class Elemental2Builder implements IEventBuilder<Element> {
             case H5:
                 el = createHeading(topHeadingLevel + 4);
                 break;
+            case QUOTE:
+                el = createElement("blockquote");
+                break;
             case TABLE:
                 el = createElement("table");
                 tableHeaders = 0;

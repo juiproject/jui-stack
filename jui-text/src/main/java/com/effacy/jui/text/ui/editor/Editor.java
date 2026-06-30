@@ -242,7 +242,9 @@ public class Editor extends Component<Editor.Config> {
      *            the document to load.
      */
     public void load(FormattedText doc) {
-        if (doc == null)
+        // A null or empty document has no blocks, but editing assumes at least one block
+        // exists (e.g. the insert step indexes block 0). Seed a single empty paragraph.
+        if ((doc == null) || doc.empty())
             doc = new FormattedText().block(BlockType.PARA, b -> b.line(""));
         state = EditorState.create(doc);
         history.clear();
@@ -817,9 +819,10 @@ public class Editor extends Component<Editor.Config> {
                 FormattedBlock blk = state.doc().getBlocks().get(blockIdx);
                 int offset = sel.isCursor() ? sel.anchorOffset() : sel.fromOffset();
 
-                // Empty list item: convert to paragraph instead of splitting.
+                // Empty list item / quote line: convert to paragraph instead of splitting
+                // (so a trailing Enter exits the list or quote).
                 if (sel.isCursor()
-                        && blk.getType().is(BlockType.NLIST, BlockType.OLIST)
+                        && blk.getType().is(BlockType.NLIST, BlockType.OLIST, BlockType.QUOTE)
                         && (Positions.contentSize(blk) == 0)) {
                     applyTransaction(Commands.setBlockType(state, BlockType.PARA));
                     break;
@@ -848,8 +851,8 @@ public class Editor extends Component<Editor.Config> {
                         applyTransaction(Commands.outdent(state));
                         break;
                     }
-                    // List item at indent 0: exit list (convert to paragraph).
-                    if (blk2.getType().is(BlockType.NLIST, BlockType.OLIST)) {
+                    // List item / quote at indent 0: exit (convert to paragraph).
+                    if (blk2.getType().is(BlockType.NLIST, BlockType.OLIST, BlockType.QUOTE)) {
                         applyTransaction(Commands.setBlockType(state, BlockType.PARA));
                         break;
                     }
@@ -1202,6 +1205,12 @@ public class Editor extends Component<Editor.Config> {
         }
         .component p {
             margin: 0 0 0.15em 0;
+        }
+        .component blockquote.block {
+            margin: 0.35em 0;
+            padding: 0.4em 0 0.4em 1em;
+            border-left: 3px solid rgba(135,131,120,.35);
+            color: #5b6168;
         }
         .component .indent1 { margin-left: 1.5em; }
         .component .indent2 { margin-left: 3em; }

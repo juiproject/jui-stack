@@ -19,6 +19,7 @@ import java.util.List;
 
 import com.effacy.jui.core.client.dom.builder.Br;
 import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
+import com.effacy.jui.core.client.dom.builder.Custom;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Fragment;
 import com.effacy.jui.core.client.dom.builder.H1;
@@ -140,6 +141,8 @@ public class FText extends Fragment<FText> {
                 h(parent, topHeadingLevel + 1).$(p -> insert(p, blk.getLines()));
             } else if (blk.typeIs (BlockType.H3)) {
                 h(parent, topHeadingLevel + 2).$(p -> insert(p, blk.getLines()));
+            } else if (blk.typeIs (BlockType.QUOTE)) {
+                Custom.$ (parent, "blockquote").style ("quote").$ (p -> insert(p, blk.getLines()));
             }
         });
     }

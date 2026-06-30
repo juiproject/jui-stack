@@ -22,6 +22,7 @@ public class FormattedTextStyles {
         BLOCK_STYLES.put (BlockType.NLIST, new String[] { "block", "list_bullet" });
         BLOCK_STYLES.put (BlockType.OLIST, new String[] { "block", "list_number" });
         BLOCK_STYLES.put (BlockType.CODE, new String[] { "block", "code_block" });
+        BLOCK_STYLES.put (BlockType.QUOTE, new String[] { "block", "quote" });
         BLOCK_STYLES.put (BlockType.H1, new String[] { "block" });
         BLOCK_STYLES.put (BlockType.H2, new String[] { "block" });
         BLOCK_STYLES.put (BlockType.H3, new String[] { "block" });
@@ -151,6 +152,13 @@ public class FormattedTextStyles {
     font-size: 0.95em;
     line-height: 1.45;
     padding: 0;
+}
+
+.standard > .quote {
+    margin: 0.5em 0;
+    padding: 0.4em 0 0.4em 1em;
+    border-left: 3px solid rgba(135,131,120,.35);
+    color: #5b6168;
 }
 
 .standard > .indent1 {

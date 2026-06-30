@@ -119,7 +119,13 @@ public class FormattedBlock {
          * Fenced code block.
          */
         CODE(BlockTypeConstraint.LINES),
-        
+
+        /**
+         * Block quote (markdown {@code > ...}). A prose block (lines with inline
+         * formatting), rendered as a quotation.
+         */
+        QUOTE(BlockTypeConstraint.LINES),
+
         /**
          * Equation.
          */
@@ -841,7 +847,7 @@ public class FormattedBlock {
         blk.type = type;
 
         // Strip out any formatting for headings, etc.
-        if (!blk.typeIs (BlockType.PARA, BlockType.NLIST, BlockType.OLIST))
+        if (!blk.typeIs (BlockType.PARA, BlockType.NLIST, BlockType.OLIST, BlockType.QUOTE))
             blk.getLines ().forEach (line -> line.stripFormatting ());
         return blk;
     }

@@ -160,6 +160,9 @@ public class MarkdownSerializer {
                 appendLines(sb, block, "\n");
                 sb.append("\n```");
                 break;
+            case QUOTE:
+                serializeQuote(sb, block);
+                break;
             case NLIST:
                 appendListItems(sb, block, "- ", depth);
                 break;
@@ -173,6 +176,23 @@ public class MarkdownSerializer {
             default:
                 appendLines(sb, block, "\n");
                 break;
+        }
+    }
+
+    /**
+     * Serializes a block quote: every line is prefixed with {@code > } (an empty
+     * line becomes a bare {@code >}), reproducing the markdown the parser consumed.
+     */
+    private static void serializeQuote(StringBuilder sb, FormattedBlock block) {
+        List<FormattedLine> lines = block.getLines();
+        for (int i = 0; i < lines.size(); i++) {
+            if (i > 0)
+                sb.append("\n");
+            String content = serializeLine(lines.get(i));
+            if (content.isEmpty())
+                sb.append(">");
+            else
+                sb.append("> ").append(content);
         }
     }
 

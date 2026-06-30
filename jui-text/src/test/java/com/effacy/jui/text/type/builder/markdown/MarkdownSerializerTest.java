@@ -58,6 +58,20 @@ public class MarkdownSerializerTest {
     }
 
     @Test
+    public void testBlockQuoteRoundTrip() {
+        String md = "> **What this is.** A short note\n> that wraps onto a second line.";
+        FormattedText ft = FormattedText.markdown(md);
+        assertEquals(md, MarkdownSerializer.serialize(ft));
+    }
+
+    @Test
+    public void testBlockQuoteWithBlankLineRoundTrip() {
+        String md = "> First paragraph.\n>\n> Second paragraph.";
+        FormattedText ft = FormattedText.markdown(md);
+        assertEquals(md, MarkdownSerializer.serialize(ft));
+    }
+
+    @Test
     public void testBoldAndItalic() {
         FormattedText ft = FormattedText.markdown("This is ***bold italic*** text");
         String result = MarkdownSerializer.serialize(ft);

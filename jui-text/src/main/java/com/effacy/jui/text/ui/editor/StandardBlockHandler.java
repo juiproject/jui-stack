@@ -41,7 +41,8 @@ public class StandardBlockHandler implements IBlockHandler {
     @Override
     public boolean accepts(BlockType type) {
         return type.is(BlockType.PARA, BlockType.H1, BlockType.H2, BlockType.H3,
-                BlockType.H4, BlockType.H5, BlockType.NLIST, BlockType.OLIST);
+                BlockType.H4, BlockType.H5, BlockType.NLIST, BlockType.OLIST,
+                BlockType.QUOTE);
     }
 
     @Override
@@ -122,6 +123,8 @@ public class StandardBlockHandler implements IBlockHandler {
             return DomGlobal.document.createElement("h4");
         if (type == BlockType.H5)
             return DomGlobal.document.createElement("h5");
+        if (type == BlockType.QUOTE)
+            return DomGlobal.document.createElement("blockquote");
         Element el = DomGlobal.document.createElement("p");
         if (type == BlockType.NLIST)
             el.classList.add(ctx.styles().listBullet());

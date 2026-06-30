@@ -247,6 +247,11 @@ public class DomBuilderFormattedTextRenderer {
                     renderLines(block, el);
                 }
                 break;
+            case QUOTE:
+                el = Custom.$(root, "blockquote");
+                applyBlockStyles(el, type);
+                renderLines(block, el);
+                break;
             case TABLE:
                 renderTable(block);
                 break;

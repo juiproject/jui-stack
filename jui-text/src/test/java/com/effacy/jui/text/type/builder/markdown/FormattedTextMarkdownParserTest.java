@@ -626,6 +626,81 @@ public class FormattedTextMarkdownParserTest {
     }
 
     @Test
+    public void testWrappedListItemsFoldContinuationLines() {
+        // A list whose items soft-wrap across lines: each item's continuation line is
+        // folded into that item (a single space joining them), and inline formatting on
+        // the marker line is preserved.
+        FormattedText result = FormattedText.markdown(
+            "- First **item** that wraps\n  onto a second line.\n- Second item\n  also wrapping.");
+
+        assertEquals(2, result.getBlocks().size());
+
+        FormattedBlock b0 = result.getBlocks().get(0);
+        assertEquals(BlockType.NLIST, b0.getType());
+        assertEquals("First item that wraps onto a second line.", b0.getLines().get(0).getText());
+        assertEquals(1, b0.getLines().get(0).getFormatting().size());
+        assertTrue(b0.getLines().get(0).getFormatting().get(0).getFormats().contains(FormatType.BLD));
+
+        FormattedBlock b1 = result.getBlocks().get(1);
+        assertEquals(BlockType.NLIST, b1.getType());
+        assertEquals("Second item also wrapping.", b1.getLines().get(0).getText());
+    }
+
+    @Test
+    public void testListBeginningBlockIsNotSplitToParagraph() {
+        // Regression: when a list's first item wraps onto a second line, the whole block
+        // still begins with a list marker, so it must parse as a list. Previously the
+        // first item was dropped to a paragraph (rendering a literal "- ...") while only
+        // the second item became a bullet.
+        FormattedText result = FormattedText.markdown(
+            "- **Stresses.** Capture, applied at creation rather than after\n" +
+            "  the fact; the demand spine.\n" +
+            "- **Surfaces.** Confirmed in shape — endorsing the idea is the path\n" +
+            "  later. Drive back to the CSD.");
+
+        assertEquals(2, result.getBlocks().size());
+        assertEquals(BlockType.NLIST, result.getBlocks().get(0).getType());
+        assertEquals(BlockType.NLIST, result.getBlocks().get(1).getType());
+
+        String first = result.getBlocks().get(0).getLines().get(0).getText();
+        assertFalse(first.startsWith("- "), "first item must not retain the literal list marker");
+        assertTrue(first.startsWith("Stresses."));
+        assertTrue(first.endsWith("the demand spine."));
+
+        String second = result.getBlocks().get(1).getLines().get(0).getText();
+        assertTrue(second.startsWith("Surfaces."));
+        assertTrue(second.endsWith("Drive back to the CSD."));
+    }
+
+    @Test
+    public void testBlockQuote() {
+        FormattedText result = FormattedText.markdown("> **Note.** Be careful here.\n> A second line.");
+
+        assertEquals(1, result.getBlocks().size());
+        FormattedBlock b = result.getBlocks().get(0);
+        assertEquals(BlockType.QUOTE, b.getType());
+        assertEquals(2, b.getLines().size());
+        // The '>' markers are stripped; inline formatting on the quote is preserved.
+        assertEquals("Note. Be careful here.", b.getLines().get(0).getText());
+        assertTrue(b.getLines().get(0).getFormatting().get(0).getFormats().contains(FormatType.BLD));
+        assertEquals("A second line.", b.getLines().get(1).getText());
+    }
+
+    @Test
+    public void testBlockQuoteWithBlankLine() {
+        // A bare '>' line is a blank line inside the quote (one block, not two).
+        FormattedText result = FormattedText.markdown("> First.\n>\n> Second.");
+
+        assertEquals(1, result.getBlocks().size());
+        FormattedBlock b = result.getBlocks().get(0);
+        assertEquals(BlockType.QUOTE, b.getType());
+        assertEquals(3, b.getLines().size());
+        assertEquals("First.", b.getLines().get(0).getText());
+        assertEquals("", b.getLines().get(1).getText());
+        assertEquals("Second.", b.getLines().get(2).getText());
+    }
+
+    @Test
     public void testMixedDocument() {
         String markdown = "# Document Title\n\n" +
                          "Introduction paragraph.\n\n" +

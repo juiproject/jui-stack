@@ -171,6 +171,7 @@ public class Editor extends Component<Editor.Config> {
         boolean paragraphAfterHeading = true;
         IListIndexFormatter listIndexFormatter = Editor::defaultListIndex;
         boolean debugLog;
+        String placeholder;
 
         /**
          * Configures whether pressing Enter at the end of a heading (H1–H3)
@@ -196,6 +197,15 @@ public class Editor extends Component<Editor.Config> {
          */
         public Config debugLog(boolean enable) {
             this.debugLog = enable;
+            return this;
+        }
+
+        /**
+         * Sets placeholder text shown when the editor is empty (a single empty paragraph).
+         * When {@code null} (the default) no placeholder is shown.
+         */
+        public Config placeholder(String placeholder) {
+            this.placeholder = placeholder;
             return this;
         }
     }
@@ -224,6 +234,8 @@ public class Editor extends Component<Editor.Config> {
     protected INodeProvider buildNode(Element el, Config data) {
         return Wrap.$(el).$(root -> {
             root.attr("contenteditable", "true");
+            if (data.placeholder != null)
+                root.attr("data-placeholder", data.placeholder);
         }).build(ctx -> {
             editorEl = el;
             render();
@@ -441,6 +453,28 @@ public class Editor extends Component<Editor.Config> {
         ensureCursorVisible();
         updateToolbarState();
         handlers.forEach(h -> h.afterRender(ctx));
+        updatePlaceholder();
+    }
+
+    /**
+     * Toggles the {@code data-empty} marker (paired with {@code data-placeholder} in CSS)
+     * so the placeholder shows only when the document is blank — a single empty paragraph.
+     */
+    private void updatePlaceholder() {
+        if ((editorEl == null) || (config().placeholder == null))
+            return;
+        if (isBlank())
+            editorEl.setAttribute("data-empty", "true");
+        else
+            editorEl.removeAttribute("data-empty");
+    }
+
+    private boolean isBlank() {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if (blocks.size() != 1)
+            return false;
+        FormattedBlock blk = blocks.get(0);
+        return (blk.getType() == BlockType.PARA) && (Positions.contentSize(blk) == 0);
     }
 
     /**
@@ -1160,9 +1194,18 @@ public class Editor extends Component<Editor.Config> {
             padding: 0.5em;
             flex: 1;
             overflow: auto;
+            position: relative;
         }
         .component:focus {
             outline: none;
+        }
+        .component[data-placeholder][data-empty]::before {
+            content: attr(data-placeholder);
+            position: absolute;
+            top: calc(0.5em + 2px);
+            left: 0.5em;
+            color: #9aa0a6;
+            pointer-events: none;
         }
         .component .block {
             margin: 0 0 0.15em 0;

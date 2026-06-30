@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
 import com.effacy.jui.text.type.FormattedText;
+import com.effacy.jui.text.type.builder.FormattedTextBuilder;
 
 /**
  * Tests for {@link MarkdownSerializer}. Most tests verify round-tripping
@@ -55,6 +56,14 @@ public class MarkdownSerializerTest {
         FormattedText ft = FormattedText.markdown("This is *italic* text");
         String result = MarkdownSerializer.serialize(ft);
         assertEquals("This is *italic* text", result);
+    }
+
+    @Test
+    public void testFenceRoundTrip() {
+        String md = "```mermaid\ngraph TD;\nA-->B;\n```";
+        FormattedText ft = new MarkdownParser().fence(info -> "mermaid".equals(info))
+            .parse(new FormattedTextBuilder(), md);
+        assertEquals(md, MarkdownSerializer.serialize(ft));
     }
 
     @Test

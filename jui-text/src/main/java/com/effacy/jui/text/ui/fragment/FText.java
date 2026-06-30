@@ -143,6 +143,8 @@ public class FText extends Fragment<FText> {
                 h(parent, topHeadingLevel + 2).$(p -> insert(p, blk.getLines()));
             } else if (blk.typeIs (BlockType.QUOTE)) {
                 Custom.$ (parent, "blockquote").style ("quote").$ (p -> insert(p, blk.getLines()));
+            } else if (blk.typeIs (BlockType.FENCE)) {
+                Custom.$ (parent, "pre").style ("code_block").$ (pre -> Custom.$ (pre, "code").text (blk.flatten ()));
             }
         });
     }

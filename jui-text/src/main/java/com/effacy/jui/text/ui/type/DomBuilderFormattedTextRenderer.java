@@ -252,6 +252,13 @@ public class DomBuilderFormattedTextRenderer {
                 applyBlockStyles(el, type);
                 renderLines(block, el);
                 break;
+            case FENCE:
+                // Read-only fallback: show the fenced source as a code block (the rich,
+                // registry-driven rendering is applied in the editor's FenceBlockHandler).
+                el = Custom.$(root, "pre");
+                applyBlockStyles(el, type);
+                Custom.$(el, "code").text(block.flatten());
+                break;
             case TABLE:
                 renderTable(block);
                 break;

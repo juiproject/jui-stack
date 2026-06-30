@@ -293,6 +293,32 @@ public class Tools {
     }
 
     /**
+     * Creates a tool that inserts a generic fenced block ({@code BlockType.FENCE}) of the
+     * given info string (e.g. {@code mermaid}), with a text label.
+     *
+     * @see #fence(String, Consumer, String)
+     */
+    public static ITool fence(String info, String label, String tooltip) {
+        return fence(info, btn -> btn.text(label), tooltip);
+    }
+
+    /**
+     * Creates a tool that inserts a generic fenced block ({@code BlockType.FENCE}) of the
+     * given info string, with custom button content. The fence is rendered (and edited) by
+     * the {@link IFenceRenderer} registered for {@code info} (see {@link Fences}).
+     *
+     * @param info
+     *              the fence info string (e.g. {@code mermaid}).
+     * @param content
+     *              populates the button's inner content.
+     * @param tooltip
+     *              the button tooltip.
+     */
+    public static ITool fence(String info, Consumer<ElementBuilder> content, String tooltip) {
+        return action(content, tooltip, cmd -> cmd.insertFence(info));
+    }
+
+    /**
      * Creates a stateless anchored action tool with a text label.
      *
      * @see #anchoredAction(Consumer, String, BiConsumer)

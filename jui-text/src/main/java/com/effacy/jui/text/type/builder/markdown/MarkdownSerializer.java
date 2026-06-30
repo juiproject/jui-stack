@@ -160,6 +160,15 @@ public class MarkdownSerializer {
                 appendLines(sb, block, "\n");
                 sb.append("\n```");
                 break;
+            case FENCE:
+                String info = (block.getMeta() != null) ? block.meta("info") : null;
+                sb.append("```");
+                if (info != null && !info.isBlank())
+                    sb.append(info);
+                sb.append("\n");
+                appendLines(sb, block, "\n");
+                sb.append("\n```");
+                break;
             case QUOTE:
                 serializeQuote(sb, block);
                 break;

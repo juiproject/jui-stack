@@ -9,6 +9,7 @@ import com.effacy.jui.text.type.FormattedLine;
 import com.effacy.jui.text.type.FormattedText;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
+import com.effacy.jui.text.type.builder.FormattedTextBuilder;
 
 public class FormattedTextMarkdownParserTest {
 
@@ -698,6 +699,37 @@ public class FormattedTextMarkdownParserTest {
         assertEquals("First.", b.getLines().get(0).getText());
         assertEquals("", b.getLines().get(1).getText());
         assertEquals("Second.", b.getLines().get(2).getText());
+    }
+
+    @Test
+    public void testFenceBlockWhenSelected() {
+        FormattedText result = new MarkdownParser()
+            .fence(info -> "mermaid".equals(info))
+            .parse(new FormattedTextBuilder(), "```mermaid\ngraph TD;\nA-->B;\n```");
+
+        assertEquals(1, result.getBlocks().size());
+        FormattedBlock b = result.getBlocks().get(0);
+        assertEquals(BlockType.FENCE, b.getType());
+        assertEquals("mermaid", b.meta("info"));
+        assertEquals(2, b.getLines().size());
+        assertEquals("graph TD;", b.getLines().get(0).getText());
+        assertEquals("A-->B;", b.getLines().get(1).getText());
+    }
+
+    @Test
+    public void testFenceDefaultsToCode() {
+        // Without a fence selector, a fenced block is a CODE block (no regression).
+        FormattedText result = FormattedText.markdown("```mermaid\ngraph TD;\n```");
+        assertEquals(1, result.getBlocks().size());
+        assertEquals(BlockType.CODE, result.getBlocks().get(0).getType());
+    }
+
+    @Test
+    public void testFenceOnlyRoutesSelectedInfo() {
+        // mermaid -> FENCE, but an unselected language stays CODE.
+        FormattedText code = new MarkdownParser().fence(info -> "mermaid".equals(info))
+            .parse(new FormattedTextBuilder(), "```java\nint x = 1;\n```");
+        assertEquals(BlockType.CODE, code.getBlocks().get(0).getType());
     }
 
     @Test

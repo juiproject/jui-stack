@@ -44,6 +44,15 @@ public interface IEditorCommands {
     void insertDiagram();
 
     /**
+     * Inserts a generic fenced block ({@code BlockType.FENCE}) carrying the given info
+     * string after the current block, then opens its source editor.
+     *
+     * @param info
+     *             the fence info string (e.g. {@code mermaid}).
+     */
+    void insertFence(String info);
+
+    /**
      * Inserts text at the current cursor position, replacing any active
      * selection.
      *

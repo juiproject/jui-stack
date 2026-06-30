@@ -226,6 +226,7 @@ public class Editor extends Component<Editor.Config> {
         history = new History();
         handlers.add(new EquationBlockHandler());
         handlers.add(new DiagramBlockHandler());
+        handlers.add(new FenceBlockHandler());
         handlers.add(new TableBlockHandler());
         handlers.add(new StandardBlockHandler());
     }
@@ -373,6 +374,15 @@ public class Editor extends Component<Editor.Config> {
                 int preBlock = preSel.isCursor() ? preSel.anchorBlock() : preSel.fromBlock();
                 applyTransaction(Commands.insertDiagram(state));
                 handlerFor(BlockType.DIA).focusBlock(preBlock + 1, ctx);
+            }
+
+            @Override
+            public void insertFence(String info) {
+                syncSelectionFromDom();
+                Selection preSel = state.selection();
+                int preBlock = preSel.isCursor() ? preSel.anchorBlock() : preSel.fromBlock();
+                applyTransaction(Commands.insertFence(state, info));
+                handlerFor(BlockType.FENCE).focusBlock(preBlock + 1, ctx);
             }
 
             @Override

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
@@ -101,6 +102,29 @@ public class MarkdownParser {
      * See {@link #urlResolver(BiFunction)}.
      */
     private BiFunction<String, UrlType, String> urlResolver;
+
+    /**
+     * See {@link #fence(Predicate)}.
+     */
+    private Predicate<String> fenceSelector;
+
+    /**
+     * Configures which fenced blocks (```` ```info ... ``` ````) are parsed as a generic
+     * {@link com.effacy.jui.text.type.FormattedBlock.BlockType#FENCE} — rendered pluggably
+     * by their info string (e.g. {@code mermaid}) — rather than a fenced code block
+     * ({@link com.effacy.jui.text.type.FormattedBlock.BlockType#CODE}). The predicate is
+     * tested against the fence's info string (the text after the opening ```` ``` ````).
+     * When {@code null} (the default) every fence is a code block, preserving prior
+     * behaviour; both serialize back to an identical ```` ``` ```` fence either way.
+     *
+     * @param fenceSelector
+     *                      tests an info string; {@code true} → FENCE, otherwise CODE.
+     * @return this parser for chaining.
+     */
+    public MarkdownParser fence(Predicate<String> fenceSelector) {
+        this.fenceSelector = fenceSelector;
+        return this;
+    }
 
     /**
      * Marks the content as potentially incomplete (e.g. streaming). Unclosed
@@ -205,7 +229,10 @@ public class MarkdownParser {
             boolean partialBlock = (p == lastBlockIndex);
 
             if (block.code) {
-                emitCodeBlock(handler, block, partialBlock);
+                if ((fenceSelector != null) && fenceSelector.test(block.lang))
+                    emitFence(handler, block, partialBlock);
+                else
+                    emitCodeBlock(handler, block, partialBlock);
                 continue;
             }
 
@@ -355,6 +382,23 @@ public class MarkdownParser {
             handler.endLine();
         }
         handler.endBlock(BlockType.CODE);
+    }
+
+    /**
+     * Emits a generic fenced block (see {@link #fence(Predicate)}): the info string becomes
+     * the {@code info} meta and the body is carried verbatim as the block's lines.
+     */
+    private void emitFence(IEventBuilder<?> handler, ParsedBlock block, boolean partial) {
+        handler.startBlock(BlockType.FENCE);
+        if ((block.lang != null) && !block.lang.isEmpty())
+            handler.meta("info", block.lang);
+        for (int i = 0; i < block.lines.size(); i++) {
+            handler.startLine();
+            if (!block.lines.get(i).isEmpty())
+                handler.text(block.lines.get(i));
+            handler.endLine();
+        }
+        handler.endBlock(BlockType.FENCE);
     }
 
     private static class ParsedBlock {

@@ -127,6 +127,14 @@ public class FormattedBlock {
         QUOTE(BlockTypeConstraint.LINES),
 
         /**
+         * A generic fenced block (markdown ```` ```info ... ``` ````) with a pluggable
+         * renderer keyed by its info string (e.g. {@code mermaid}). The raw body is held as
+         * the block's lines (unformatted); the info string is the {@code info} meta. Atomic
+         * in the editor — rendered by a registered handler, edited via its source.
+         */
+        FENCE(BlockTypeConstraint.LINES),
+
+        /**
          * Equation.
          */
         EQN(BlockTypeConstraint.CONTENT_AND_LINES),

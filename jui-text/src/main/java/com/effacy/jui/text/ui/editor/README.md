@@ -14,7 +14,9 @@ Every transaction triggers a full re-render (clear `innerHTML`, rebuild all bloc
 
 Rendering and event handling for each block family is delegated to a pluggable `IBlockHandler`. The editor maintains an ordered list of handlers; for every operation it iterates the list and delegates to the first handler whose `accepts(BlockType)` returns `true`. This allows new block types to be added without modifying `Editor` itself.
 
-`StandardBlockHandler` covers paragraph, heading, and list types. `TableBlockHandler` covers `TABLE` blocks. New block types are registered in `Editor`'s constructor via `handlers.add(...)`. Each handler can override only the lifecycle methods it needs: `beginRender`, `render`, `afterRender`, `beforeApplyTransaction`, `handleKeyDown`, `handleBeforeInput`, `handlePaste`, `handleFormatToggle`, and `focusBlock`.
+The handlers registered in `Editor`'s constructor, in order, are: `EquationBlockHandler` (`EQN`), `DiagramBlockHandler` (`DIA`), `FenceBlockHandler` (`FENCE`), `TableBlockHandler` (`TABLE`), and `StandardBlockHandler` (paragraph, headings, lists, and block-quote). The list is consulted in order, and `StandardBlockHandler` is last so it also serves as the fallback for any unmatched type. New block types are registered the same way — `handlers.add(...)` — without modifying `Editor`. Each handler can override only the lifecycle methods it needs: `beginRender`, `render`, `afterRender`, `beforeApplyTransaction`, `handleKeyDown`, `handleBeforeInput`, `handlePaste`, `handleFormatToggle`, and `focusBlock`.
+
+`FENCE` is special: rather than being a single fixed block type, it is a **pluggable** family driven by a registry of `IFenceRenderer`s keyed by the fence's info string (see [Fenced blocks](#fenced-blocks-pluggable)).
 
 ## Editing rules
 
@@ -23,7 +25,7 @@ Rendering and event handling for each block family is delegated to a pluggable `
 | Input | Behaviour |
 |-------|-----------|
 | Character | Inserts text at cursor. With a range selection, replaces the selection. |
-| Backspace | Deletes one character before cursor. At a line break, joins the two lines. At offset 0 of an indented block, reduces indent by one level. At offset 0 of a non-indented list item, converts to paragraph (exits the list). At offset 0 of a non-indented, non-list block, joins with the previous block (regardless of type). With a range selection, deletes the selection. |
+| Backspace | Deletes one character before cursor. At a line break, joins the two lines. At offset 0 of an indented block, reduces indent by one level. At offset 0 of a non-indented list item or quote, converts to paragraph (exits the list or quote). At offset 0 of a non-indented, non-list/quote block, joins with the previous block (regardless of type). With a range selection, deletes the selection. |
 | Delete | Deletes one character after cursor. At a line break, joins the two lines. At end of block, joins with the next block (regardless of type — e.g. list item absorbs following paragraph). With a range selection, deletes the selection. |
 | Ctrl+Backspace | Deletes the word before the cursor. At offset 0, joins with previous block. |
 | Ctrl+Delete | Deletes the word after the cursor. At end of block, joins with next block. |
@@ -42,7 +44,7 @@ Rendering and event handling for each block family is delegated to a pluggable `
 | Context | Behaviour |
 |---------|-----------|
 | End of heading (H1/H2/H3) | New block becomes a paragraph (configurable via `paragraphAfterHeading(boolean)`, default `true`). |
-| Empty list item (NLIST/OLIST) | Converts the block to a paragraph, exiting the list. |
+| Empty list item or quote line (NLIST/OLIST/QUOTE) | Converts the block to a paragraph, exiting the list or quote. |
 | All other cases | Splits the block; the new block inherits the type of the original. |
 
 ### Formatting shortcuts
@@ -98,7 +100,11 @@ Each column border (except the rightmost) has an invisible 6 px drag handle posi
 | H3 | `<h3>` | H3 button |
 | NLIST | `<p>` with bullet marker via CSS `::before` | Bullet list button (toggle) |
 | OLIST | `<p>` with numbered marker via CSS `::before` and `data-list-index` | Numbered list button (toggle) |
+| QUOTE | `<blockquote>` | Quote button (toggle) |
 | TABLE | `<div>` wrapper containing `<table>` with per-cell contenteditable inner divs | Insert table button |
+| FENCE | Atomic `<div contenteditable="false">` rendered by a pluggable `IFenceRenderer` (code-block fallback) | `Tools.fence(info, …)` — see [Fenced blocks](#fenced-blocks-pluggable) |
+
+`StandardBlockHandler` also accepts `H4`/`H5` (rendered `<h4>`/`<h5>`), though the standard toolbar only exposes H1–H3.
 
 List toolbar buttons use `toggleBlockType` — clicking when the block is already that list type converts it back to a paragraph.
 
@@ -117,6 +123,85 @@ Ordered list numbering is indent-aware. Each indent level maintains its own coun
 ```
 
 The marker style cycles by indent level: numeric (0), lowercase alpha (1), lowercase roman (2), then repeats. This is configurable via `listIndexFormatter(IListIndexFormatter)` — the formatter receives the indent level and counter value and returns the display string.
+
+## Fenced blocks (pluggable)
+
+A **fenced block** is the editor's extensibility point for rich, non-prose content carried by a Markdown fence — ` ```mermaid `, ` ```math `, ` ```note `, etc. Rather than baking each kind into the editor, the `FENCE` block type is a generic carrier and the rendering/editing of a given kind is supplied by a **plugin** registered against the fence's *info string* (the token after the opening ` ``` `).
+
+### The model
+
+A `FENCE` `FormattedBlock` holds:
+
+- the raw fenced body as the block's **lines** (unformatted), and
+- the info string as the `info` **meta** (`block.meta("info")`).
+
+It is atomic in the editor (`contenteditable="false"`) and round-trips to Markdown as ` ```<info>\n<body>\n``` ` — identical syntax to a fenced code block, so a fence is lossless whether or not a plugin is registered for it.
+
+### The registry
+
+Plugins implement `IFenceRenderer` and register with the static `Fences` registry:
+
+```java
+public interface IFenceRenderer {
+    boolean accepts(String info);                       // e.g. "mermaid".equals(info)
+    void render(Element target, String info, String content);  // may be async
+    default String label(String info)       { return info; }
+    default String placeholder(String info) { return "Enter " + label(info) + " source…"; }
+
+    // optional: supply your own editor (return false to use the built-in source editor)
+    default boolean edit(Element anchor, String info, String content,
+                         Consumer<String> apply, Runnable remove) { return false; }
+}
+
+Fences.register(myRenderer);
+IFenceRenderer r = Fences.rendererFor(info);   // first accepting renderer, or null
+boolean known   = Fences.isRegistered(info);
+```
+
+`render` populates the given (cleared) element however it likes, and may do so asynchronously (load a library, then fill in SVG). The *same* `render` drives the live preview in the source editor, so a plugin gets a preview for free.
+
+### Editor behaviour (`FenceBlockHandler`)
+
+- **Render** — an atomic `<div class="fence" contenteditable="false">` containing the renderer's output (or, when no renderer is registered for the info string, the body as a `<pre><code>` code block), with an info chip in the corner.
+- **Edit** — clicking the block opens an editor. By default this is a `FencePanel`: a source textarea plus a live preview produced by the renderer (Apply replaces the block's lines via a `ReplaceBlockStep`; Remove deletes it). A renderer may supply its **own** editor by overriding `IFenceRenderer.edit(anchor, info, content, apply, remove)` — open the editor and return `true`, calling `apply` on save and `remove` on delete; return `false` to use the built-in panel.
+- **Insert** — `IEditorCommands.insertFence(String info)` inserts an empty fence of that kind after the current block and opens its editor. The toolbar factory `Tools.fence(info, content, tooltip)` wraps this as a button.
+
+### Parsing
+
+The parser only produces `FENCE` blocks when told which info strings are "special"; otherwise every fence stays a `CODE` block (so behaviour is unchanged for callers that do not opt in):
+
+```java
+new MarkdownParser()
+    .fence(Fences::isRegistered)            // registered infos → FENCE, others → CODE
+    .parse(new FormattedTextBuilder(), markdown);
+```
+
+Passing `Fences::isRegistered` ties parsing to the registry: registering a plugin is all that is needed for its fences to parse as `FENCE` and render through it. The serializer emits `FENCE` and `CODE` identically (a ` ``` ` fence), so both round-trip.
+
+### Read-only rendering
+
+The model-driven read-only renderers (`DomBuilderFormattedTextRenderer`, the `FText` fragment) render `FENCE` as a code block — legible and round-tripping. Rich, registry-driven read-only rendering (e.g. a mermaid diagram outside the editor) is a follow-up; today the *editor* is where fences render richly.
+
+### Example plugin — Mermaid
+
+`Mermaid` is a bundled `IFenceRenderer` for the `mermaid` info string. `Mermaid.install()` registers it (idempotent); thereafter ` ```mermaid ` fences render as diagrams. It loads the Mermaid library on demand from a CDN (`ScriptInjector.injectFromUrl`, URL in `Mermaid.CDN_URL`) and renders to SVG via Mermaid's v10 Promise API, falling back to the source on error.
+
+To plug in your own Mermaid editor (keeping the diagram rendering, replacing only the editing UI):
+
+```java
+Mermaid.editor((anchor, content, apply, remove) -> {
+    // open your editor; call apply.accept(newSource) on save, remove.run() on delete
+});
+```
+
+### Adding a plugin
+
+1. Implement `IFenceRenderer` for your info string.
+2. `Fences.register(...)` it at start-up.
+3. Parse with `.fence(Fences::isRegistered)`.
+4. (Optional) add a `Tools.fence("<info>", …)` button to the toolbar.
+
+No changes to `Editor`, the parser, or the serializer are required.
 
 ## Rendering details
 
@@ -180,15 +265,17 @@ Popup-based tools (link, variable) use `ToolPopupPanel` as a shared base for flo
 |----------|-------------|
 | `BOLD`, `ITALIC`, `UNDERLINE`, `STRIKETHROUGH`, `SUBSCRIPT`, `SUPERSCRIPT`, `CODE`, `HIGHLIGHT` | Inline format toggles |
 | `H1`, `H2`, `H3`, `PARAGRAPH` | Block type setters |
-| `BULLET_LIST`, `NUMBERED_LIST` | Block type toggles |
+| `BULLET_LIST`, `NUMBERED_LIST`, `QUOTE` | Block type toggles |
 | `TABLE` | Inserts a 2x3 table |
+| `EQUATION`, `DIAGRAM` | Insert an equation / diagram block |
 | `SEPARATOR` | Visual divider between tool groups |
 
-Link and variable tools require a data source and are created via factory methods rather than constants:
+Link, variable, image and fence tools require a parameter (a data source, or a fence info string) and are created via factory methods rather than constants:
 
 ```java
 Tools.link(r -> Em.$(r).style(FontAwesome.link()), "Link", MyApp::filterLinks)
 Tools.variable("{}", "Variable", MyApp::filterVariables)
+Tools.fence("mermaid", r -> Em.$(r).style(FontAwesome.diagramProject()), "Mermaid diagram")
 ```
 
 ### Configuration
@@ -294,8 +381,10 @@ The `IEditorCommands` interface is how tools drive the editor. All commands oper
 |--------|-------------|
 | `toggleFormat(FormatType)` | Toggles an inline format on the selection |
 | `setBlockType(BlockType)` | Sets the block type of the current block |
-| `toggleBlockType(BlockType)` | Toggles a block type (e.g. list on/off) |
+| `toggleBlockType(BlockType)` | Toggles a block type (e.g. list/quote on/off) |
 | `insertTable(int rows, int cols)` | Inserts a table after the current block |
+| `insertEquation()` / `insertDiagram()` | Inserts an equation / diagram block after the current block |
+| `insertFence(String info)` | Inserts a fenced block of the given info string, then opens its editor |
 | `insertText(String text)` | Inserts text at the cursor, replacing any selection |
 | `syncSelection()` | Freezes the DOM selection into the editor's internal state — call before opening popups |
 | `currentLink()` | Returns the link URL at the cursor, or `null` |
@@ -309,8 +398,15 @@ The `IEditorCommands` interface is how tools drive the editor. All commands oper
 |------|---------|
 | `Editor.java` | Main component — rendering, event handling, CSS |
 | `IBlockHandler.java` | Pluggable block handler interface — render, event hooks, focus |
-| `StandardBlockHandler.java` | Handler for PARA, H1–H3, NLIST, OLIST block types |
+| `StandardBlockHandler.java` | Handler for PARA, H1–H5, NLIST, OLIST and QUOTE block types |
 | `TableBlockHandler.java` | Handler for TABLE blocks — cell editing, column resizing, CSS |
+| `EquationBlockHandler.java` / `EquationPanel.java` | Handler + editor for EQN (equation) blocks |
+| `DiagramBlockHandler.java` / `DiagramPanel.java` | Handler + editor for DIA (PlantUML diagram) blocks |
+| `FenceBlockHandler.java` | Handler for FENCE blocks — atomic render via the registry, click-to-edit |
+| `IFenceRenderer.java` | Plugin interface for a fence kind — `accepts(info)` + `render(target, info, content)` |
+| `Fences.java` | Registry of fence renderers keyed by info string |
+| `FencePanel.java` | Source editor for a fence block, with a renderer-driven live preview |
+| `Mermaid.java` | Bundled fence plugin — renders ` ```mermaid ` fences as diagrams (CDN-loaded) |
 | `IEditorContext.java` | Context passed to block handlers — editor element, state, transaction helpers |
 | `EditorSupport2.java` | JsInterop bridge for selection read/write and input event helpers |
 | `jui_text_editor2.js` | Native JS — leaf traversal, line parsing, character counting, offset resolution, selection read/set, cell helpers |
@@ -348,6 +444,19 @@ FormattedTextEditor editor = new FormattedTextEditor(new FormattedTextEditor.Con
                Tools.SEPARATOR,
                Tools.variable("{}", "Variable", MyApp::filterVariables))));
 ```
+
+### `FormattedTextEditor.Config` options
+
+Beyond `editor(...)` and `toolbar(...)`, the control exposes:
+
+| Option | Effect |
+|--------|--------|
+| `placeholder(String)` | Placeholder text shown when the document is empty (a single empty paragraph). |
+| `contentMinHeight(Length)` | A minimum height on the editable *content area* (not the whole control), so clicking anywhere in it places the cursor; the control then sizes to its content. |
+| `height(Length)` | A minimum height on the whole control (the older option; `contentMinHeight` is usually preferred). |
+| `variant(Variant)` | A reusable look. `Variant.SEAMLESS` removes all borders and the focus highlight so the editor sits flush in its container. |
+| `detachedToolbar()` | Binds the toolbar but does not render it inside the control — the host places it (e.g. a full-width strip); supply the toolbar instance via `toolbar(Supplier)`. |
+| `position(Position)` / `noFocus()` / `borderless()` | Toolbar position and individual border/focus toggles (subsumed by `SEAMLESS`). |
 
 # Appendix
 

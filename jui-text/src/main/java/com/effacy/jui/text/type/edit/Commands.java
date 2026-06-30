@@ -1962,6 +1962,35 @@ public final class Commands {
     }
 
     /**
+     * Inserts a generic fenced block ({@link BlockType#FENCE}) carrying the given info
+     * string after the current block.
+     *
+     * @param state
+     *              the current editor state.
+     * @param info
+     *              the fence info string (e.g. {@code mermaid}).
+     * @return the transaction, or {@code null} if the selection is invalid.
+     */
+    public static Transaction insertFence(EditorState state, String info) {
+        Selection sel = state.selection();
+        int blockIdx = sel.isCursor() ? sel.anchorBlock() : sel.fromBlock();
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+
+        FormattedBlock fence = new FormattedBlock(BlockType.FENCE);
+        if ((info != null) && !info.isEmpty())
+            fence.meta("info", info);
+
+        Transaction tr = Transaction.create();
+        if (!sel.isCursor())
+            addDeleteRangeSteps(tr, state);
+        tr.step(new InsertBlockStep(blockIdx + 1, fence));
+        tr.setSelection(Selection.cursor(blockIdx + 1, 0));
+        return tr;
+    }
+
+    /**
      * Adds a new row to the table at the given block index. The new row is
      * appended at the bottom with the same number of columns.
      *

@@ -125,6 +125,7 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
         private boolean nofocus;
         private boolean borderless;
         private String placeholder;
+        private boolean detachedToolbar;
 
         /**
          * Applies a standard configuration.
@@ -229,6 +230,19 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
          */
         public Config placeholder(String placeholder) {
             this.placeholder = placeholder;
+            return this;
+        }
+
+        /**
+         * Detaches the toolbar from this control: the toolbar (supplied via
+         * {@link #toolbar(Supplier)}) is still bound to the editor, but it is <em>not</em>
+         * rendered inside the control — the host renders it wherever it likes (e.g. a
+         * full-width strip above the editor). The control renders only the editor area.
+         *
+         * @return this configuration instance.
+         */
+        public Config detachedToolbar() {
+            this.detachedToolbar = true;
             return this;
         }
 
@@ -378,7 +392,9 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
                 root.style(styles().nofocus());
             if (data.borderless)
                 root.style(styles().borderless());
-            Div.$(root).style(styles().toolbar()).$(toolbar);
+            // When detached, the toolbar is bound (above) but placed by the host, not here.
+            if (!data.detachedToolbar)
+                Div.$(root).style(styles().toolbar()).$(toolbar);
             var editorArea = Div.$(root).style(styles().editor());
             if (data.contentMinHeight != null)
                 editorArea.css(CSS.MIN_HEIGHT, data.contentMinHeight);

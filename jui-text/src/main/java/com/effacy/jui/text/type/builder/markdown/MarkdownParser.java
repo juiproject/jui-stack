@@ -500,20 +500,22 @@ public class MarkdownParser {
     }
 
     /**
-     * The indentation level of a list line: every 2 spaces (a tab counting as 3) is one
-     * level. Matches the indentation the serializer emits.
+     * The leading indentation of a line in columns (a space is one column, a tab four —
+     * CommonMark's tab stop). Used to derive relative nesting; the absolute value is not
+     * significant, only how it compares to the surrounding items.
      */
-    private static int indentLevel(String line) {
-        int spaces = 0;
+    private static int leadingWidth(String line) {
+        int w = 0;
         for (int i = 0; i < line.length(); i++) {
-            if (line.charAt(i) == ' ')
-                spaces++;
-            else if (line.charAt(i) == '\t')
-                spaces += 3;
+            char c = line.charAt(i);
+            if (c == ' ')
+                w++;
+            else if (c == '\t')
+                w += 4;
             else
                 break;
         }
-        return (spaces + 1) / 3;
+        return w;
     }
 
     /** A single list item accumulated across one marker line and any continuation lines. */
@@ -551,14 +553,25 @@ public class MarkdownParser {
         // into the current item — so an item whose text wraps across lines is kept whole
         // (and, importantly, the first item is not split off into a paragraph). Each
         // resulting item becomes its own list block.
+        // Nesting is derived from *relative* indentation via a stack of column widths, so
+        // documents authored elsewhere (2-, 3- or 4-space steps, tabs, or marker-relative
+        // indentation) all map to the correct depth: an item indented more than the current
+        // level opens a deeper level; less indentation pops back. The stack's base level is
+        // never popped, so a whole list indented under some outer context still starts at 0.
         List<ListItem> items = new ArrayList<>();
+        List<Integer> indentStack = new ArrayList<>();
         ListItem current = null;
         for (String raw : lines) {
             if (raw.trim().isEmpty())
                 continue;
             if (isListItem(raw)) {
+                int width = leadingWidth(raw);
+                while ((indentStack.size() > 1) && (width < indentStack.get(indentStack.size() - 1)))
+                    indentStack.remove(indentStack.size() - 1);
+                if (indentStack.isEmpty() || (width > indentStack.get(indentStack.size() - 1)))
+                    indentStack.add(width);
                 current = new ListItem();
-                current.indent = indentLevel(raw);
+                current.indent = indentStack.size() - 1;
                 String trimmed = raw.trim();
                 char first = trimmed.charAt(0);
                 if ((first == '-') || (first == '*') || (first == '+')) {

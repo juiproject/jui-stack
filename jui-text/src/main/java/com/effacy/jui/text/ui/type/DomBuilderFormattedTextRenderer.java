@@ -376,9 +376,10 @@ public class DomBuilderFormattedTextRenderer {
     private void renderSegment(TextSegment segment, IDomInsertableContainer<?> target) {
         String text = segment.text();
 
-        // Variable — render as plain text.
+        // Variable — render as a chip (styled by the shared richtext stylesheet), matching the
+        // editor so the two surfaces present variables identically.
         if (segment.variable()) {
-            Text.$(target, text);
+            Span.$(target).style("variable").text(text);
             return;
         }
 

@@ -123,8 +123,13 @@ public class StandardBlockHandler implements IBlockHandler {
             return DomGlobal.document.createElement("h4");
         if (type == BlockType.H5)
             return DomGlobal.document.createElement("h5");
-        if (type == BlockType.QUOTE)
-            return DomGlobal.document.createElement("blockquote");
+        if (type == BlockType.QUOTE) {
+            // The "quote" class lets the shared richtext stylesheet (FormattedTextStyles) style
+            // the blockquote — the same class the read-only renderer applies.
+            Element blockquote = DomGlobal.document.createElement("blockquote");
+            blockquote.classList.add("quote");
+            return blockquote;
+        }
         if (type == BlockType.CODE) {
             Element pre = DomGlobal.document.createElement("pre");
             pre.classList.add("code_block");

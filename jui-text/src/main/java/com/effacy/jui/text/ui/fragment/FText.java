@@ -15,28 +15,18 @@
  ******************************************************************************/
 package com.effacy.jui.text.ui.fragment;
 
-import java.util.List;
-
-import com.effacy.jui.core.client.dom.builder.Br;
 import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
-import com.effacy.jui.core.client.dom.builder.Custom;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Fragment;
-import com.effacy.jui.core.client.dom.builder.H1;
-import com.effacy.jui.core.client.dom.builder.H2;
-import com.effacy.jui.core.client.dom.builder.H3;
-import com.effacy.jui.core.client.dom.builder.H4;
-import com.effacy.jui.core.client.dom.builder.H5;
-import com.effacy.jui.core.client.dom.builder.H6;
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
-import com.effacy.jui.core.client.dom.builder.P;
-import com.effacy.jui.platform.util.client.Itr;
-import com.effacy.jui.text.type.FormattedBlock.BlockType;
-import com.effacy.jui.text.type.FormattedLine;
 import com.effacy.jui.text.type.FormattedText;
+import com.effacy.jui.text.ui.type.DomBuilderFormattedTextRenderer;
+import com.effacy.jui.text.ui.type.FormattedTextStyles;
 
 /**
- * Renders {@link FormattedText}.
+ * Renders {@link FormattedText} read-only, using the shared {@link DomBuilderFormattedTextRenderer}
+ * (the single model→DOM renderer) scoped by the {@code richtext} content stylesheet — so a
+ * fragment, a chat bubble and the editor all present formatted text identically.
  */
 public class FText extends Fragment<FText> {
 
@@ -119,57 +109,13 @@ public class FText extends Fragment<FText> {
     @Override
     protected void buildInto(ElementBuilder root) {
         if (!skipStyle)
-            root.style ("juiFragFText");
+            root.style (FormattedTextStyles.styles ().richtext ());
         _build (root);
     }
 
     private void _build(ContainerBuilder<?> parent) {
-        text.getBlocks ().forEach (blk -> {
-            if (blk.typeIs (BlockType.PARA, BlockType.NLIST, BlockType.OLIST)) {
-                P.$ (parent).$ (p -> {
-                    if (blk.typeIs (BlockType.NLIST))
-                        p.style ("list_bullet");
-                    if (blk.typeIs (BlockType.OLIST))
-                        p.style ("list_number");
-                    if (blk.getIndent() > 0)
-                        p.style ("indent" + blk.getIndent ());
-                    insert(p, blk.getLines ());
-                });
-            } else if (blk.typeIs (BlockType.H1)) {
-                h(parent, topHeadingLevel).$(p -> insert(p, blk.getLines()));
-            } else if (blk.typeIs (BlockType.H2)) {
-                h(parent, topHeadingLevel + 1).$(p -> insert(p, blk.getLines()));
-            } else if (blk.typeIs (BlockType.H3)) {
-                h(parent, topHeadingLevel + 2).$(p -> insert(p, blk.getLines()));
-            } else if (blk.typeIs (BlockType.QUOTE)) {
-                Custom.$ (parent, "blockquote").style ("quote").$ (p -> insert(p, blk.getLines()));
-            } else if (blk.typeIs (BlockType.FENCE)) {
-                Custom.$ (parent, "pre").style ("code_block").$ (pre -> Custom.$ (pre, "code").text (blk.flatten ()));
-            }
-        });
-    }
-
-    protected ContainerBuilder<?> h(ContainerBuilder<?> p, int level) {
-        if (level <= 1)
-            return H1.$ (p);
-        if (level == 2)
-            return H2.$ (p);
-        if (level == 3)
-            return H3.$ (p);
-        if (level == 4)
-            return H4.$ (p);
-        if (level == 5)
-            return H5.$ (p);
-        if (level == 6)
-            return H6.$ (p);
-        return H6.$ (p);
-    }
-
-    protected void insert(ContainerBuilder<?> p, List<FormattedLine> lines) {
-        Itr.forEach (lines, (c,line) -> {
-            if (!c.first ())
-                Br.$ (p);
-            FLine.$ (p, line);
-        });
+        new DomBuilderFormattedTextRenderer (parent)
+            .topHeadingLevel (topHeadingLevel)
+            .render (text);
     }
 }

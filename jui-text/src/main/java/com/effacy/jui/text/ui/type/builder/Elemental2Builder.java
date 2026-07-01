@@ -44,8 +44,8 @@ import elemental2.dom.Node;
  * MarkdownParser.parse(handler, true, streamedContent);
  * </pre>
  * <p>
- * The caller should add the CSS class {@code juiFragFText} to the root element
- * for block-level spacing and indent styles.
+ * The caller should add the content scope class ({@code FormattedTextStyles.styles().richtext()})
+ * to the root element so the block, heading, list, quote, code and inline-format styles resolve.
  *
  * @see IEventBuilder
  */

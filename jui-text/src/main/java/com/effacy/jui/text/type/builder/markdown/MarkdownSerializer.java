@@ -108,15 +108,16 @@ public class MarkdownSerializer {
             if (numberBlocks)
                 sb.append("[").append(blockNumber++).append("] ");
 
-            // Group consecutive list blocks of the same type into a single list.
-            if (block.getType() == FormattedBlock.BlockType.NLIST || block.getType() == FormattedBlock.BlockType.OLIST) {
-                FormattedBlock.BlockType listType = block.getType();
+            // Group all consecutive list blocks — of either marker type — into a single list, so
+            // a nested list with mixed markers (e.g. a bullet sublist inside a numbered list)
+            // stays one list and ordered numbering resumes correctly after the sublist.
+            if (isListBlock(block)) {
                 List<FormattedBlock> group = new ArrayList<>();
-                while (i < blocks.size() && blocks.get(i).getType() == listType) {
+                while (i < blocks.size() && isListBlock(blocks.get(i))) {
                     group.add(blocks.get(i));
                     i++;
                 }
-                serializeListGroup(sb, group, listType);
+                serializeListGroup(sb, group);
             } else {
                 serializeBlock(sb, block, 0);
                 i++;
@@ -205,28 +206,48 @@ public class MarkdownSerializer {
         }
     }
 
+    /** Upper bound on list nesting depth tracked for ordered numbering. */
+    private static final int MAX_LIST_DEPTH = 32;
+
+    private static boolean isListBlock(FormattedBlock block) {
+        FormattedBlock.BlockType type = block.getType();
+        return (type == FormattedBlock.BlockType.NLIST) || (type == FormattedBlock.BlockType.OLIST);
+    }
+
     /**
-     * Serializes a group of consecutive list blocks (each block may have one or
-     * more lines) into a single markdown list.
+     * Serializes a group of consecutive list blocks (of either marker type, each with one or
+     * more lines) into a single markdown list. Each block carries its own marker (bullet vs
+     * number). Ordered items are numbered <em>per nesting level</em>: descending to a deeper
+     * level restarts that level at 1, and a shallower/equal level resumes its running count —
+     * so a numbered list resumes after a nested sublist (even an unordered one). Mirrors the
+     * editor's on-screen numbering.
      */
-    private static void serializeListGroup(StringBuilder sb, List<FormattedBlock> group, FormattedBlock.BlockType listType) {
-        boolean ordered = (listType == FormattedBlock.BlockType.OLIST);
-        int itemNumber = 1;
+    private static void serializeListGroup(StringBuilder sb, List<FormattedBlock> group) {
+        int[] counters = new int[MAX_LIST_DEPTH];
+        int prevIndent = -1;
         boolean first = true;
         for (FormattedBlock block : group) {
-            String indent = "  ".repeat(block.getIndent());
+            int depth = Math.max(0, Math.min(block.getIndent(), MAX_LIST_DEPTH - 1));
+            boolean ordered = (block.getType() == FormattedBlock.BlockType.OLIST);
+            // Descending resets every level deeper than the one we came from (so a new sublevel
+            // starts at 1), regardless of marker type; a shallower/equal level is left running.
+            if ((prevIndent >= 0) && (depth > prevIndent)) {
+                for (int j = prevIndent + 1; j < counters.length; j++)
+                    counters[j] = 0;
+            }
+            String indent = "  ".repeat(depth);
             for (FormattedLine line : block.getLines()) {
                 if (!first)
                     sb.append("\n");
                 first = false;
                 sb.append(indent);
-                if (ordered) {
-                    sb.append(itemNumber++).append(". ");
-                } else {
+                if (ordered)
+                    sb.append(++counters[depth]).append(". ");
+                else
                     sb.append("- ");
-                }
                 sb.append(serializeLine(line));
             }
+            prevIndent = depth;
         }
     }
 
@@ -271,6 +292,8 @@ public class MarkdownSerializer {
         List<FormattedBlock> rows = table.getBlocks();
         if (rows == null || rows.isEmpty())
             return;
+        String alignMeta = (table.getMeta() != null) ? table.meta("align") : null;
+        String[] align = ((alignMeta != null) && !alignMeta.isEmpty()) ? alignMeta.split(",") : new String[0];
         for (int r = 0; r < rows.size(); r++) {
             if (r > 0)
                 sb.append("\n");
@@ -283,10 +306,22 @@ public class MarkdownSerializer {
             }
             if (r == 0) {
                 sb.append("\n|");
-                for (int c = 0; c < row.getBlocks().size(); c++)
-                    sb.append(" --- |");
+                int cols = row.getBlocks().size();
+                for (int c = 0; c < cols; c++) {
+                    String a = (c < align.length) ? align[c] : "L";
+                    sb.append(" ").append(tableSeparator(a)).append(" |");
+                }
             }
         }
+    }
+
+    /** The header-separator token for a parsed column alignment ({@code C}, {@code R}, else left). */
+    private static String tableSeparator(String align) {
+        if ("C".equals(align))
+            return ":---:";
+        if ("R".equals(align))
+            return "---:";
+        return "---";
     }
 
     /************************************************************************

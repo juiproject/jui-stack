@@ -910,37 +910,37 @@ public class FormattedTextMarkdownParserTest {
         // First ordered item — no indent meta.
         FormattedBlock olist1 = result.getBlocks().get(1);
         assertEquals(BlockType.OLIST, olist1.getType());
-        assertNull(olist1.meta("indent"));
+        assertEquals(0, olist1.getIndent());
         FormattedLine olist1Line = olist1.getLines().get(0);
         assertTrue(olist1Line.getText().contains("First item:"));
 
         // Nested unordered sub-item — indent "1".
         FormattedBlock nlist1 = result.getBlocks().get(2);
         assertEquals(BlockType.NLIST, nlist1.getType());
-        assertEquals("1", nlist1.meta("indent"));
+        assertEquals(1, nlist1.getIndent());
 
         // Second ordered item — no indent.
         FormattedBlock olist2 = result.getBlocks().get(3);
         assertEquals(BlockType.OLIST, olist2.getType());
-        assertNull(olist2.meta("indent"));
+        assertEquals(0, olist2.getIndent());
 
         // Three nested sub-items — all indent "1".
         for (int i = 4; i <= 6; i++) {
             FormattedBlock nlist = result.getBlocks().get(i);
             assertEquals(BlockType.NLIST, nlist.getType());
-            assertEquals("1", nlist.meta("indent"));
+            assertEquals(1, nlist.getIndent());
         }
 
         // Third ordered item — no indent.
         FormattedBlock olist3 = result.getBlocks().get(7);
         assertEquals(BlockType.OLIST, olist3.getType());
-        assertNull(olist3.meta("indent"));
+        assertEquals(0, olist3.getIndent());
 
         // Two nested sub-items — indent "1".
         for (int i = 8; i <= 9; i++) {
             FormattedBlock nlist = result.getBlocks().get(i);
             assertEquals(BlockType.NLIST, nlist.getType());
-            assertEquals("1", nlist.meta("indent"));
+            assertEquals(1, nlist.getIndent());
         }
     }
 
@@ -965,14 +965,14 @@ public class FormattedTextMarkdownParserTest {
         // Top-level items — no indent.
         for (int i = 1; i <= 3; i++) {
             assertEquals(BlockType.NLIST, result.getBlocks().get(i).getType());
-            assertNull(result.getBlocks().get(i).meta("indent"));
+            assertEquals(0, result.getBlocks().get(i).getIndent());
         }
 
         // Sub-items — indent "1".
         for (int i = 4; i <= 6; i++) {
             FormattedBlock sub = result.getBlocks().get(i);
             assertEquals(BlockType.NLIST, sub.getType());
-            assertEquals("1", sub.meta("indent"));
+            assertEquals(1, sub.getIndent());
         }
 
         assertEquals("sub-item 1", result.getBlocks().get(4).getLines().get(0).getText());

@@ -113,6 +113,58 @@ public class TableBlockHandler implements IBlockHandler {
     }
 
     @Override
+    public void syncFromDom(IEditorContext ctx) {
+        // Cells edit natively (contenteditable) and normally only sync to the model on blur, so
+        // when the value is read (mode switch / autosave) with edits still in the DOM they would
+        // be lost. Flush every cell of every table from the DOM here.
+        for (int bi = 0; bi < ctx.state().doc().getBlocks().size(); bi++) {
+            FormattedBlock table = ctx.state().doc().getBlocks().get(bi);
+            if (table.getType() != BlockType.TABLE)
+                continue;
+            FormattedBlock clone = table.clone();
+            boolean changed = false;
+            int ri = 0;
+            for (FormattedBlock row : clone.getBlocks()) {
+                if (row.getType() != BlockType.TROW)
+                    continue;
+                int ci = 0;
+                for (FormattedBlock cell : row.getBlocks()) {
+                    if (cell.getType() != BlockType.TCELL)
+                        continue;
+                    elemental2.dom.Element cellEl = ctx.editorEl().querySelector(
+                            "[data-table-index='" + bi + "'][data-row='" + ri + "'][data-col='" + ci + "']");
+                    if (cellEl != null) {
+                        String domText = (cellEl.textContent == null) ? "" : cellEl.textContent;
+                        if (!domText.equals(cellText(cell))) {
+                            cell.getLines().clear();
+                            FormattedLine domLine = buildLineFromCellDom(cellEl, ctx);
+                            if (domLine.length() > 0)
+                                cell.getLines().add(domLine);
+                            changed = true;
+                        }
+                    }
+                    ci++;
+                }
+                ri++;
+            }
+            if (changed) {
+                Transaction tr = Transaction.create();
+                tr.step(new ReplaceBlockStep(bi, clone));
+                tr.setSelection(ctx.state().selection());
+                ctx.applyTransactionSilent(tr);
+            }
+        }
+    }
+
+    /** The concatenated plain text of a cell's lines (for change detection against the DOM). */
+    private static String cellText(FormattedBlock cell) {
+        StringBuilder sb = new StringBuilder();
+        for (FormattedLine line : cell.getLines())
+            sb.append(line.getText());
+        return sb.toString();
+    }
+
+    @Override
     public boolean handleKeyDown(KeyboardEvent ke, IEditorContext ctx) {
         // Cell keydown listeners call ke.stopPropagation(), so cell keys
         // never reach here. This guard is a defensive backstop only.

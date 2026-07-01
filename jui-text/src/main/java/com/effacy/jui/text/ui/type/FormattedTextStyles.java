@@ -164,22 +164,43 @@ public class FormattedTextStyles {
     font-family: var(--jui-richtext-mono-font, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace);
     line-height: normal;
     background: var(--jui-richtext-code-bg, rgba(135,131,120,.15));
-    color: var(--jui-richtext-code-color, #EB5757);
+    color: var(--jui-richtext-code-color, inherit);
     border-radius: 4px;
     font-size: 85%;
     padding: 0.2em 0.4em;
 }
 
-.richtext > .code_block {
+.richtext .variable {
+    background: var(--jui-richtext-variable-bg, #e0e7ff);
+    color: var(--jui-richtext-variable-color, #3730a3);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-weight: 500;
+    display: inline;
+    user-select: all;
+    cursor: default;
+}
+
+.richtext img {
+    max-width: 100%;
+    height: auto;
+    vertical-align: middle;
+    border-radius: 4px;
+}
+
+/* Elements are qualified (pre./blockquote.) so these win over the editor's structural
+   .block padding when the editor scopes its content with the richtext class. */
+.richtext > pre.code_block {
     margin: 0.75em 0;
     padding: 0.85em 1em;
     overflow-x: auto;
-    white-space: pre;
+    white-space: pre-wrap;
     background: var(--jui-richtext-codeblock-bg, rgba(135,131,120,.15));
     border-radius: var(--jui-richtext-codeblock-radius, 8px);
 }
 
-.richtext > .code_block > code {
+.richtext > pre.code_block > code {
     font-family: var(--jui-richtext-mono-font, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace);
     color: inherit;
     background: transparent;
@@ -188,7 +209,7 @@ public class FormattedTextStyles {
     padding: 0;
 }
 
-.richtext > .quote {
+.richtext > blockquote.quote {
     margin: 0.7em 0;
     padding: 0.55em 0.9em;
     border-left: 3px solid var(--jui-richtext-quote-border, rgba(135,131,120,.35));
@@ -202,11 +223,19 @@ public class FormattedTextStyles {
 }
 
 .richtext > .indent2 {
-    margin-left: 3.25em;
+    margin-left: 3em;
 }
 
 .richtext > .indent3 {
-    margin-left: 4.75em;
+    margin-left: 4.5em;
+}
+
+.richtext > .indent4 {
+    margin-left: 6em;
+}
+
+.richtext > .indent5 {
+    margin-left: 7.5em;
 }
 
 .richtext > .list_bullet {

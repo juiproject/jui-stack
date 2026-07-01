@@ -209,26 +209,40 @@ public class FormattedText implements Iterable<FormattedBlock> {
     public int computeHash() {
         int h = 0;
         if (blocks != null) {
-            for (FormattedBlock block : blocks) {
-                // The (h << 5) - h pattern accommodates overflow (<< in JavaScrip truncates to
-                // 32 bits) and provides a good distribution.
-                h = (h << 5) - h + block.getType().hashCode();
-                h = (h << 5) - h + block.getIndent();
-                if (block.getMeta() != null)
-                    h = (h << 5) - h + block.getMeta().hashCode();
-                for (FormattedLine line : block.getLines()) {
-                    h = (h << 5) - h + line.getText().hashCode();
-                    if (line.getFormatting() != null) {
-                        for (FormattedLine.Format fmt : line.getFormatting()) {
-                            h = (h << 5) - h + fmt.getIndex();
-                            h = (h << 5) - h + fmt.getLength();
-                            h = (h << 5) - h + fmt.getFormats().hashCode();
-                            if (fmt.getMeta() != null)
-                                h = (h << 5) - h + fmt.getMeta().hashCode();
-                        }
-                    }
+            for (FormattedBlock block : blocks)
+                h = hashBlock(h, block);
+        }
+        return h;
+    }
+
+    /**
+     * Folds a block (and its nested blocks) into a running hash. Nested blocks must be included
+     * so that content held in child blocks — a {@code TABLE}'s {@code TROW}/{@code TCELL} cells —
+     * participates in the hash; otherwise a table-only change is invisible to the editor's
+     * equality/dirty checks and a re-parse would not refresh the view.
+     */
+    private static int hashBlock(int h, FormattedBlock block) {
+        // The (h << 5) - h pattern accommodates overflow (<< in JavaScript truncates to 32 bits)
+        // and provides a good distribution.
+        h = (h << 5) - h + block.getType().hashCode();
+        h = (h << 5) - h + block.getIndent();
+        if (block.getMeta() != null)
+            h = (h << 5) - h + block.getMeta().hashCode();
+        for (FormattedLine line : block.getLines()) {
+            h = (h << 5) - h + line.getText().hashCode();
+            if (line.getFormatting() != null) {
+                for (FormattedLine.Format fmt : line.getFormatting()) {
+                    h = (h << 5) - h + fmt.getIndex();
+                    h = (h << 5) - h + fmt.getLength();
+                    h = (h << 5) - h + fmt.getFormats().hashCode();
+                    if (fmt.getMeta() != null)
+                        h = (h << 5) - h + fmt.getMeta().hashCode();
                 }
             }
+        }
+        if (block.getBlocks() != null) {
+            for (FormattedBlock child : block.getBlocks())
+                h = hashBlock(h, child);
         }
         return h;
     }

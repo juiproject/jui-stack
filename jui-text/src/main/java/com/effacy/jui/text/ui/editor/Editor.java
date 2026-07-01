@@ -21,6 +21,7 @@ import com.effacy.jui.text.type.edit.EditorState;
 import com.effacy.jui.text.type.edit.History;
 import com.effacy.jui.text.type.edit.Positions;
 import com.effacy.jui.text.type.edit.Selection;
+import com.effacy.jui.text.ui.type.FormattedTextStyles;
 import com.effacy.jui.text.type.edit.Transaction;
 import com.effacy.jui.text.type.edit.step.SetBlockTypeStep;
 import com.google.gwt.core.client.GWT;
@@ -239,6 +240,10 @@ public class Editor extends Component<Editor.Config> {
                 root.attr("data-placeholder", data.placeholder);
         }).build(ctx -> {
             editorEl = el;
+            // Scope the content to the shared richtext stylesheet (also injects it), so headings,
+            // inline formats, quotes and code render from FormattedTextStyles — the same sheet the
+            // read-only renderer uses — rather than being duplicated here.
+            el.classList.add(FormattedTextStyles.styles().richtext());
             render();
             attachEventListeners();
         });
@@ -269,6 +274,9 @@ public class Editor extends Component<Editor.Config> {
      * Returns the current document.
      */
     public FormattedText value() {
+        // Flush any DOM-only edits (e.g. table cells edited natively via contenteditable, which
+        // otherwise sync only on blur) so the returned value reflects the current DOM.
+        handlers.forEach(h -> h.syncFromDom(ctx));
         return state.doc();
     }
 
@@ -494,7 +502,7 @@ public class Editor extends Component<Editor.Config> {
         line.sequence().forEach(segment -> {
             if (segment.variable()) {
                 Element chip = DomGlobal.document.createElement("span");
-                chip.classList.add(styles().variable());
+                chip.classList.add("variable");
                 chip.setAttribute("contenteditable", "false");
                 chip.textContent = segment.text();
                 parent.appendChild(chip);
@@ -514,7 +522,6 @@ public class Editor extends Component<Editor.Config> {
                 if ((alt != null) && !alt.isEmpty())
                     img.setAttribute("alt", alt);
                 img.setAttribute("contenteditable", "false");
-                img.classList.add(styles().inlineImage());
                 parent.appendChild(img);
                 parent.appendChild(DomGlobal.document.createTextNode(""));
             } else if (segment.contains(FormatType.A)) {
@@ -1188,10 +1195,6 @@ public class Editor extends Component<Editor.Config> {
 
         String listNumber();
 
-        String variable();
-
-        String inlineImage();
-
     }
 
     @CssResource(value = {
@@ -1241,85 +1244,12 @@ public class Editor extends Component<Editor.Config> {
             left: 0.15em;
             content: attr(data-list-index) '.';
         }
-        .component h1 {
-            font-size: var(--jui-richtext-h1-size, 1.8em);
-            font-weight: var(--jui-richtext-heading-weight, 500);
-            line-height: 1.25;
-            margin: 0.9em 0 0.3em 0;
-        }
-        .component h2 {
-            font-size: var(--jui-richtext-h2-size, 1.5em);
-            font-weight: var(--jui-richtext-heading-weight, 500);
-            line-height: 1.25;
-            margin: 0.8em 0 0.25em 0;
-        }
-        .component h3 {
-            font-size: var(--jui-richtext-h3-size, 1.25em);
-            font-weight: var(--jui-richtext-heading-weight, 500);
-            line-height: 1.3;
-            margin: 0.7em 0 0.2em 0;
-        }
+        /* Paragraph spacing is editor-specific (the read-only renderer spaces paragraphs
+           differently), so it stays here. Headings, inline formats (fmt_*), quotes, code
+           blocks and indent margins are all provided by the shared richtext stylesheet
+           (FormattedTextStyles), scoped via the richtext class on the editor root. */
         .component p {
             margin: 0 0 0.2em 0;
-        }
-        .component blockquote.block {
-            margin: 0.7em 0;
-            padding: 0.55em 0.9em;
-            border-left: 3px solid var(--jui-richtext-quote-border, rgba(135,131,120,.35));
-            border-radius: var(--jui-richtext-quote-radius, 6px);
-            background: var(--jui-richtext-quote-bg, rgba(135,131,120,.06));
-            color: var(--jui-richtext-quote-color, #5b6168);
-        }
-        .component .indent1 { margin-left: 1.5em; }
-        .component .indent2 { margin-left: 3em; }
-        .component .indent3 { margin-left: 4.5em; }
-        .component .indent4 { margin-left: 6em; }
-        .component .indent5 { margin-left: 7.5em; }
-        .component .fmt_bold { font-weight: 600; }
-        .component .fmt_italic { font-style: italic; }
-        .component .fmt_underline { text-decoration: underline; }
-        .component .fmt_strike { text-decoration: line-through; }
-        .component .fmt_strike.fmt_underline { text-decoration: underline line-through; }
-        .component .fmt_superscript { vertical-align: super; font-size: 0.8em; }
-        .component .fmt_subscript { vertical-align: sub; font-size: 0.8em; }
-        .component .fmt_highlight { background-color: var(--jui-richtext-highlight-bg, #F5EB72); }
-        .component .fmt_code {
-            font-family: var(--jui-richtext-mono-font, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace);
-            line-height: normal;
-            background: var(--jui-richtext-code-bg, rgba(135,131,120,.15));
-            color: var(--jui-richtext-code-color, #EB5757);
-            border-radius: 4px;
-            font-size: 85%;
-            padding: 0.2em 0.4em;
-        }
-        .component .code_block {
-            margin: 0.9em 0;
-            padding: 0.75em 1em;
-            font-family: var(--jui-richtext-mono-font, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace);
-            font-size: 0.9em;
-            line-height: 1.5;
-            background: var(--jui-richtext-codeblock-bg, rgba(135,131,120,.15));
-            border-radius: var(--jui-richtext-codeblock-radius, 8px);
-            white-space: pre-wrap;
-            overflow-x: auto;
-        }
-        .component .variable {
-            background: #e0e7ff;
-            color: #3730a3;
-            padding: 1px 6px;
-            border-radius: 3px;
-            font-size: 0.85em;
-            font-weight: 500;
-            display: inline;
-            user-select: all;
-            cursor: default;
-        }
-        .component .inlineImage {
-            max-width: 100%;
-            height: auto;
-            vertical-align: middle;
-            border-radius: 4px;
-            cursor: default;
         }
     """)
     public static abstract class LocalCSS implements ILocalCSS {

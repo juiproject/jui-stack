@@ -174,7 +174,19 @@ public class FormattedTextBuilder implements IEventBuilder<FormattedText> {
 
     @Override
     public void meta(String name, String value) {
-        blockStack.peek().meta(name, value);
+        FormattedBlock block = blockStack.peek();
+        // "indent" is a first-class block property (read by the serializer, renderer and
+        // editor via getIndent()), not a free-form meta entry — bridge it onto the field so
+        // parsed nesting is preserved rather than silently flattened.
+        if ("indent".equals(name)) {
+            try {
+                block.setIndent(Integer.parseInt(value));
+            } catch (NumberFormatException e) {
+                // Ignore a malformed indent value (leave the default level 0).
+            }
+            return;
+        }
+        block.meta(name, value);
     }
 
     @Override

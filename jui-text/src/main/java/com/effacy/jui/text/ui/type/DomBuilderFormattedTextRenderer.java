@@ -61,8 +61,9 @@ import com.effacy.jui.text.type.FormattedLine.TextSegment;
  *     .render(formattedText);
  * </pre>
  * <p>
- * The caller should apply the CSS class {@code juiFragFText} to the parent
- * element for block-level spacing and indent styles.
+ * The caller should apply the content scope class {@link FormattedTextStyles.IFormattedTextCSS#richtext()}
+ * (via {@code FormattedTextStyles.styles().richtext()}) to the parent element so the block,
+ * heading, list, quote, code and inline-format styles resolve.
  *
  * @see FormattedText
  * @see FormattedTextStyles

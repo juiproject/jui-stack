@@ -241,6 +241,29 @@ A TABLE block renders as:
 
 The outer wrapper has `contenteditable="false"` so the editor's own `beforeinput` / `selectionchange` logic ignores it. Each cell has an inner `tableCellContent` div that is the actual `contenteditable="true"` element, carrying `data-table-index`, `data-row`, and `data-col` attributes. The resize handle is a sibling of this div, outside the contenteditable scope. Column widths use `<col>` elements under a `<colgroup>` so `table-layout: fixed` respects the explicit percentages.
 
+## Styling and CSS
+
+CSS is organised into three layers with distinct responsibilities. Keep them separate — do not put content typography into the editor's structural sheet, and do not duplicate content styles per plugin.
+
+### 1. Editor structure (`Editor.LocalCSS`)
+
+The inline `@CssResource` on `Editor` (scoped to the obfuscated `.component` root) styles only the *editor's own structure and chrome*: the contenteditable surface, block spacing, list markers, placeholder, variable/inline-image affordances. Configurable values are exposed as CSS custom properties with defaults, e.g. `--jui-ftext-placeholder-color`. Content colours reuse the shared `--jui-richtext-*` tokens (below) so a single retheme covers both the editor and read-only presentation.
+
+This layer should **not** carry content typography that a consumer would want to restyle (heading sizes, quote/code appearance) — that lives in layer 3.
+
+### 2. Plugin CSS (owned by each plugin)
+
+Each block handler / fence renderer that needs styling declares its **own** `@CssResource` and injects it lazily on first render (see `FenceBlockHandler`, `DiagramBlockHandler`, `EquationBlockHandler`, `FencePanel`). A plugin owns the CSS for both its in-editor affordance and its rendered output; nothing plugin-specific belongs in the core sheets.
+
+### 3. Content formatting (`FormattedTextStyles`) — shared, themeable, read-only-equivalent
+
+`FormattedTextStyles` is the single source of truth for how *rendered content* looks (headings, inline formats `fmt_*`, `code_block`, `quote`, `list_bullet`/`list_number`, `indent*`). It is applied by adding the scope class `FormattedTextStyles.styles().richtext()` to a container; the read-only `DomBuilderFormattedTextRenderer`, chat bubbles and the catalogue markdown view all use it, so read-only presentation matches the editor.
+
+- **Theme via tokens.** Presentation is driven by `--jui-richtext-*` custom properties (`--jui-richtext-h2-size`, `--jui-richtext-code-bg`, `--jui-richtext-quote-border`, …), each with a default. Because custom properties inherit, a consumer retheme by setting these on any ancestor — e.g. an editor/control variant's `css()` on the root — with no specificity fight and no obfuscated class to target.
+- **Replace wholesale.** To supply an entirely different stylesheet, implement `IFormattedTextCSS` with your own `@CssResource` (or extend `StandardFormattedTextCSS`) and register it via `FormattedTextStyles.styles(myProvider)`. The content class names the renderer applies (`fmt_*`, `code_block`, `quote`, `list_bullet`, `list_number`, `indent*`, and the heading elements) are the contract to honour.
+
+> **Note (in progress):** the editor's *content* typography is being migrated out of layer 1 to consume layer 3's `richtext` scope directly, so editor and read-only render from one sheet. Until that lands, heading/paragraph typography is still defined in `Editor.LocalCSS`; the token names already align.
+
 ## Toolbar and tools
 
 The toolbar is decoupled from the editor via the `ITool` interface. Each tool is a stateless descriptor that renders a button into the toolbar and optionally returns a `Handle` for tracking active state. Standard tools are available as constants on `Tools` and custom tools can be created by implementing `ITool` directly or using the factory methods on `Tools`.

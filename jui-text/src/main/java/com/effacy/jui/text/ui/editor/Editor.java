@@ -1214,15 +1214,15 @@ public class Editor extends Component<Editor.Config> {
             position: absolute;
             top: calc(0.5em + 2px);
             left: 0.5em;
-            color: #9aa0a6;
+            color: var(--jui-ftext-placeholder-color, #9aa0a6);
             pointer-events: none;
         }
         .component .block {
-            margin: 0 0 0.15em 0;
             padding: 2px 0;
             min-height: 1em;
             white-space: pre-wrap;
         }
+        .component .block:first-child { margin-top: 0; }
         .component .listBullet {
             position: relative;
             padding-left: 1.5em;
@@ -1242,28 +1242,33 @@ public class Editor extends Component<Editor.Config> {
             content: attr(data-list-index) '.';
         }
         .component h1 {
-            font-size: 1.8em;
-            font-weight: 500;
-            margin: 0 0 0.15em 0;
+            font-size: var(--jui-richtext-h1-size, 1.8em);
+            font-weight: var(--jui-richtext-heading-weight, 500);
+            line-height: 1.25;
+            margin: 0.9em 0 0.3em 0;
         }
         .component h2 {
-            font-size: 1.5em;
-            font-weight: 500;
-            margin: 0 0 0.15em 0;
+            font-size: var(--jui-richtext-h2-size, 1.5em);
+            font-weight: var(--jui-richtext-heading-weight, 500);
+            line-height: 1.25;
+            margin: 0.8em 0 0.25em 0;
         }
         .component h3 {
-            font-size: 1.25em;
-            font-weight: 500;
-            margin: 0 0 0.15em 0;
+            font-size: var(--jui-richtext-h3-size, 1.25em);
+            font-weight: var(--jui-richtext-heading-weight, 500);
+            line-height: 1.3;
+            margin: 0.7em 0 0.2em 0;
         }
         .component p {
-            margin: 0 0 0.15em 0;
+            margin: 0 0 0.2em 0;
         }
         .component blockquote.block {
-            margin: 0.35em 0;
-            padding: 0.4em 0 0.4em 1em;
-            border-left: 3px solid rgba(135,131,120,.35);
-            color: #5b6168;
+            margin: 0.7em 0;
+            padding: 0.55em 0.9em;
+            border-left: 3px solid var(--jui-richtext-quote-border, rgba(135,131,120,.35));
+            border-radius: var(--jui-richtext-quote-radius, 6px);
+            background: var(--jui-richtext-quote-bg, rgba(135,131,120,.06));
+            color: var(--jui-richtext-quote-color, #5b6168);
         }
         .component .indent1 { margin-left: 1.5em; }
         .component .indent2 { margin-left: 3em; }
@@ -1277,15 +1282,26 @@ public class Editor extends Component<Editor.Config> {
         .component .fmt_strike.fmt_underline { text-decoration: underline line-through; }
         .component .fmt_superscript { vertical-align: super; font-size: 0.8em; }
         .component .fmt_subscript { vertical-align: sub; font-size: 0.8em; }
-        .component .fmt_highlight { background-color: #F5EB72; }
+        .component .fmt_highlight { background-color: var(--jui-richtext-highlight-bg, #F5EB72); }
         .component .fmt_code {
-            font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace;
+            font-family: var(--jui-richtext-mono-font, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace);
             line-height: normal;
-            background: rgba(135,131,120,.15);
-            color: #EB5757;
+            background: var(--jui-richtext-code-bg, rgba(135,131,120,.15));
+            color: var(--jui-richtext-code-color, #EB5757);
             border-radius: 4px;
             font-size: 85%;
             padding: 0.2em 0.4em;
+        }
+        .component .code_block {
+            margin: 0.9em 0;
+            padding: 0.75em 1em;
+            font-family: var(--jui-richtext-mono-font, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace);
+            font-size: 0.9em;
+            line-height: 1.5;
+            background: var(--jui-richtext-codeblock-bg, rgba(135,131,120,.15));
+            border-radius: var(--jui-richtext-codeblock-radius, 8px);
+            white-space: pre-wrap;
+            overflow-x: auto;
         }
         .component .variable {
             background: #e0e7ff;

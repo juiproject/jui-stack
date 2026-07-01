@@ -760,7 +760,7 @@ public class ChatPanel extends Component<ChatPanel.Config> {
                 .text((isUser && !StringSupport.empty(text)) ? text : "");
         }, dom -> ref[0] = dom.first("bubble"));
         if (!isUser)
-            ref[0].classList.add(FormattedTextStyles.styles().standard());
+            ref[0].classList.add(FormattedTextStyles.styles().richtext());
         if (!isUser && !StringSupport.empty(text))
             MarkdownParser.parse(p -> p.partial(false), configureHandler(ref[0]), text);
         scrollToBottom();
@@ -901,7 +901,7 @@ public class ChatPanel extends Component<ChatPanel.Config> {
     private void appendSystemMessage(String message) {
         stopThinkingIndicator();
         Element bubble = appendMessage("assistant", null);
-        bubble.classList.remove(FormattedTextStyles.styles().standard());
+        bubble.classList.remove(FormattedTextStyles.styles().richtext());
         bubble.classList.add(styles().error());
         bubble.textContent = message;
     }

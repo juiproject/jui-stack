@@ -37,9 +37,36 @@ public class LinkPanel extends ToolPopupPanel {
      ************************************************************************/
 
     /**
-     * A selectable link suggestion.
+     * A selectable link suggestion. An item with a {@code null} url is
+     * <em>informational</em>: it is rendered as a non-selectable note (e.g. "no
+     * matches for …") rather than a pickable suggestion.
      */
-    public record AnchorItem(String label, String url) {}
+    public record AnchorItem(String label, String url) {
+
+        /** Convenience for an informational (non-selectable) note row. */
+        public static AnchorItem note(String label) {
+            return new AnchorItem(label, null);
+        }
+    }
+
+    /**
+     * An asynchronous provider of link suggestions: given the typed text, supply the
+     * matching items to the consumer (e.g. from a remote search). Responses arriving
+     * for a superseded query are discarded by the panel.
+     */
+    @FunctionalInterface
+    public interface IAnchorSource {
+
+        /**
+         * Queries for suggestions matching the typed text.
+         *
+         * @param text
+         *                the typed text (may be empty — suppliers may return defaults).
+         * @param results
+         *                accepts the matching items when available.
+         */
+        void query(String text, java.util.function.Consumer<List<AnchorItem>> results);
+    }
 
     /**
      * Callback for link panel actions.
@@ -50,6 +77,15 @@ public class LinkPanel extends ToolPopupPanel {
          * Called when the user applies a URL.
          */
         void onApply(String url);
+
+        /**
+         * As {@link #onApply(String)} with the display label of a picked suggestion
+         * ({@code null} for a manually entered URL). Defaults to delegating to
+         * {@link #onApply(String)}.
+         */
+        default void onApply(String url, String label) {
+            onApply(url);
+        }
 
         /**
          * Called when the user removes the existing link.
@@ -65,7 +101,7 @@ public class LinkPanel extends ToolPopupPanel {
      * Shows the link panel below {@code anchor} without suggestions.
      */
     public static void show(Element anchor, String currentUrl, ILinkPanelCallback callback) {
-        show(anchor, currentUrl, null, callback);
+        show(anchor, currentUrl, (IAnchorSource) null, callback);
     }
 
     /**
@@ -82,7 +118,39 @@ public class LinkPanel extends ToolPopupPanel {
      *               the callback for apply/remove actions.
      */
     public static void show(Element anchor, String currentUrl, Function<String, List<AnchorItem>> options, ILinkPanelCallback callback) {
-        LinkPanel panel = new LinkPanel(currentUrl, options, callback);
+        show(anchor, currentUrl, (options == null) ? (IAnchorSource) null
+            : (text, results) -> results.accept(options.apply(text)), callback);
+    }
+
+    /**
+     * Shows the link panel below {@code anchor} with an asynchronous suggestion source
+     * (e.g. a remote search).
+     *
+     * @param anchor
+     *               the element to anchor the panel to.
+     * @param currentUrl
+     *               the current link URL (or {@code null} if no link exists).
+     * @param source
+     *               optional asynchronous supplier of suggestions for the typed text
+     *               (or {@code null} for no suggestions).
+     * @param callback
+     *               the callback for apply/remove actions.
+     */
+    public static void show(Element anchor, String currentUrl, IAnchorSource source, ILinkPanelCallback callback) {
+        show(anchor, currentUrl, source, 0, callback);
+    }
+
+    /**
+     * As {@link #show(Element, String, IAnchorSource, ILinkPanelCallback)} but with a
+     * fixed panel width.
+     *
+     * @param width
+     *               the panel width in pixels ({@code <= 0} falls back to
+     *               {@link #DEFAULT_WIDTH}, and failing that the panel is content-sized).
+     */
+    public static void show(Element anchor, String currentUrl, IAnchorSource source, int width, ILinkPanelCallback callback) {
+        LinkPanel panel = new LinkPanel(currentUrl, source, callback);
+        panel.width = (width > 0) ? width : DEFAULT_WIDTH;
         panel.show(anchor);
     }
 
@@ -90,14 +158,26 @@ public class LinkPanel extends ToolPopupPanel {
      * Instance state.
      ************************************************************************/
 
+    /**
+     * The default fixed width (px) for the panel. When {@code 0} (and no width is
+     * passed to {@link #show(Element, String, IAnchorSource, int, ILinkPanelCallback)})
+     * the panel is content-sized. Assign once at start-up to fix the width
+     * application-wide.
+     */
+    public static int DEFAULT_WIDTH = 0;
+
     private String currentUrl;
-    private Function<String, List<AnchorItem>> options;
+    private IAnchorSource options;
     private ILinkPanelCallback callback;
     private HTMLInputElement input;
     private Element suggestionListEl;
     private List<AnchorItem> currentItems;
+    /** The fixed panel width in pixels ({@code <= 0} = content-sized). */
+    private int width = DEFAULT_WIDTH;
+    /** Discards suggestion responses that arrive for a superseded query. */
+    private int querySeq;
 
-    private LinkPanel(String currentUrl, Function<String, List<AnchorItem>> options, ILinkPanelCallback callback) {
+    private LinkPanel(String currentUrl, IAnchorSource options, ILinkPanelCallback callback) {
         this.currentUrl = currentUrl;
         this.options = options;
         this.callback = callback;
@@ -111,6 +191,8 @@ public class LinkPanel extends ToolPopupPanel {
     protected void buildContent(ElementBuilder root) {
         root.style(styles().linkPanel())
             .style(options != null, styles().linkPanelVertical());
+        if (width > 0)
+            root.css("width", width + "px");
         if (options != null) {
             // Vertical layout: input row with optional Remove button, then suggestion list.
             Div.$(root).style(styles().inputRow()).$(inputRow -> {
@@ -126,10 +208,11 @@ public class LinkPanel extends ToolPopupPanel {
                         String idx = target.getAttribute("data-idx");
                         if ((idx != null) && !idx.isEmpty()) {
                             int i = Integer.parseInt(idx);
-                            if ((currentItems != null) && (i >= 0) && (i < currentItems.size())) {
+                            if ((currentItems != null) && (i >= 0) && (i < currentItems.size())
+                                    && (currentItems.get(i).url() != null)) {
                                 e.stopEvent();
                                 hide();
-                                callback.onApply(currentItems.get(i).url());
+                                callback.onApply(currentItems.get(i).url(), currentItems.get(i).label());
                             }
                             return;
                         }
@@ -202,25 +285,37 @@ public class LinkPanel extends ToolPopupPanel {
     }
 
     private void updateSuggestions(String text) {
-        currentItems = options.apply(text);
-        Wrap.buildInto(suggestionListEl, root -> {
-            if ((currentItems != null) && !currentItems.isEmpty()) {
-                for (int i = 0; i < currentItems.size(); i++) {
-                    Div.$(root).style(styles().suggestionItem())
-                        .attr("data-idx", String.valueOf(i))
-                        .text(currentItems.get(i).label());
-                }
-            } else {
-                Div.$(root).style(styles().hintItem()).$(hint -> {
-                    Span.$(hint).style(styles().hintIcon()).text("\u2295");
-                    Div.$(hint).$(info -> {
-                        Div.$(info).style(styles().hintLabel())
-                            .text(text.isEmpty() ? "..." : text);
-                        Div.$(info).style(styles().hintDesc())
-                            .text("Type a complete URL to link");
+        final int seq = ++querySeq;
+        options.query(text, items -> {
+            // A newer query has superseded this response (async sources).
+            if (seq != querySeq)
+                return;
+            currentItems = items;
+            Wrap.buildInto(suggestionListEl, root -> {
+                if ((currentItems != null) && !currentItems.isEmpty()) {
+                    for (int i = 0; i < currentItems.size(); i++) {
+                        AnchorItem item = currentItems.get(i);
+                        if (item.url() == null) {
+                            // Informational note — not selectable.
+                            Div.$(root).style(styles().hintItem()).text(item.label());
+                            continue;
+                        }
+                        Div.$(root).style(styles().suggestionItem())
+                            .attr("data-idx", String.valueOf(i))
+                            .text(item.label());
+                    }
+                } else {
+                    Div.$(root).style(styles().hintItem()).$(hint -> {
+                        Span.$(hint).style(styles().hintIcon()).text("\u2295");
+                        Div.$(hint).$(info -> {
+                            Div.$(info).style(styles().hintLabel())
+                                .text(text.isEmpty() ? "..." : text);
+                            Div.$(info).style(styles().hintDesc())
+                                .text("Type a complete URL to link");
+                        });
                     });
-                });
-            }
+                }
+            });
         });
     }
 

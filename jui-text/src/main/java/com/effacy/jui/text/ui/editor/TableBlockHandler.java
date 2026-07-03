@@ -198,6 +198,31 @@ public class TableBlockHandler implements IBlockHandler {
     }
 
     @Override
+    public void focusBlockEnd(int blockIndex, IEditorContext ctx) {
+        List<FormattedBlock> blocks = ctx.state().doc().getBlocks();
+        if ((blockIndex < 0) || (blockIndex >= blocks.size()))
+            return;
+        FormattedBlock table = blocks.get(blockIndex);
+        int lastRow = -1;
+        int lastCol = 0;
+        int r = 0;
+        for (FormattedBlock row : table.getBlocks()) {
+            if (row.getType() != BlockType.TROW)
+                continue;
+            int c = 0;
+            for (FormattedBlock cell : row.getBlocks()) {
+                if (cell.getType() == BlockType.TCELL)
+                    c++;
+            }
+            lastRow = r;
+            lastCol = Math.max(0, c - 1);
+            r++;
+        }
+        if (lastRow >= 0)
+            focusCell(blockIndex, lastRow, lastCol, false, ctx);
+    }
+
+    @Override
     public boolean handleFormatToggle(FormatType type, IEditorContext ctx) {
         elemental2.dom.Element cellEl = Js.uncheckedCast(
                 EditorSupport.cellFromSelection(ctx.editorEl()));
@@ -985,7 +1010,8 @@ public class TableBlockHandler implements IBlockHandler {
                 .item("Insert row above", () -> ctx.applyTransaction(Commands.insertTableRowAbove(ctx.state(), tableIndex, rowIndex)))
                 .item("Insert row below", () -> ctx.applyTransaction(Commands.insertTableRowBelow(ctx.state(), tableIndex, rowIndex)))
                 .sep()
-                .item("Delete row", () -> ctx.applyTransaction(Commands.deleteTableRow(ctx.state(), tableIndex, rowIndex)));
+                .item("Delete row", () -> ctx.applyTransaction(Commands.deleteTableRow(ctx.state(), tableIndex, rowIndex)))
+                .item("Delete table", () -> ctx.applyTransaction(Commands.deleteTable(ctx.state(), tableIndex)));
         if (rowIndex == 0) {
             boolean isHeader = isTableHeaderRow(tableIndex, ctx);
             menu.sep();
@@ -1027,6 +1053,7 @@ public class TableBlockHandler implements IBlockHandler {
                 .item("Insert column right", () -> ctx.applyTransaction(Commands.insertTableColumnRight(ctx.state(), tableIndex, colIndex)))
                 .sep()
                 .item("Delete column", () -> ctx.applyTransaction(Commands.deleteTableColumn(ctx.state(), tableIndex, colIndex)))
+                .item("Delete table", () -> ctx.applyTransaction(Commands.deleteTable(ctx.state(), tableIndex)))
                 .showBelow(handleEl);
     }
 

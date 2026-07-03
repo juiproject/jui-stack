@@ -51,6 +51,17 @@ public interface IFenceRenderer {
     }
 
     /**
+     * Whether this renderer renders a fence with an <em>empty</em> body. Defaults to
+     * {@code false}, in which case an empty fence shows the editor's "click to add"
+     * prompt instead. Return {@code true} for fence kinds whose body is optional
+     * configuration rather than the content itself (the rendering being derived, e.g.
+     * from live data).
+     */
+    default boolean rendersEmpty() {
+        return false;
+    }
+
+    /**
      * Placeholder text for the source editor. Defaults to a generic prompt.
      */
     default String placeholder(String info) {

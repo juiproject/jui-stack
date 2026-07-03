@@ -15,6 +15,7 @@
  ******************************************************************************/
 package com.effacy.jui.text.type.edit;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -947,8 +948,8 @@ public final class Commands {
      * @return the transaction, or {@code null} if the selection is a cursor.
      */
     public static Transaction removeLink(EditorState state) {
-        Selection sel = state.selection();
-        if (sel.isCursor())
+        Selection sel = linkSelection(state);
+        if (sel == null)
             return null;
         List<FormattedBlock> blocks = state.doc().getBlocks();
         int fromBlock = sel.fromBlock();
@@ -984,8 +985,8 @@ public final class Commands {
     public static Transaction updateLink(EditorState state, String newUrl) {
         if ((newUrl == null) || newUrl.isEmpty())
             return null;
-        Selection sel = state.selection();
-        if (sel.isCursor())
+        Selection sel = linkSelection(state);
+        if (sel == null)
             return null;
         List<FormattedBlock> blocks = state.doc().getBlocks();
         int fromBlock = sel.fromBlock();
@@ -1006,6 +1007,93 @@ public final class Commands {
         }
         tr.setSelection(state.selection());
         return tr;
+    }
+
+    /**
+     * Inserts linked text at the cursor — used when the link tool is applied in
+     * <em>open space</em> (no range selection and no link under the cursor): the given
+     * display text (falling back to the URL itself) is inserted and linked to the URL,
+     * with the cursor landing after it.
+     *
+     * @param state
+     *              the current editor state.
+     * @param url
+     *              the link URL.
+     * @param text
+     *              the display text ({@code null}/empty inserts the URL itself).
+     * @return the transaction, or {@code null} if the URL is empty or the selection is
+     *         not a cursor.
+     */
+    public static Transaction insertLink(EditorState state, String url, String text) {
+        if ((url == null) || url.isEmpty())
+            return null;
+        Selection sel = state.selection();
+        if (!sel.isCursor())
+            return null;
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int blockIdx = sel.anchorBlock();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+        String content = ((text == null) || text.isEmpty()) ? url : text;
+        int offset = sel.anchorOffset();
+        FormattedBlock clone = blocks.get(blockIdx).clone();
+        clone.insert(offset, content);
+        clone.addFormat(offset, content.length(), FormatType.A);
+        setLinkMetaOnRange(clone, offset, content.length(), url);
+        Transaction tr = Transaction.create();
+        tr.step(new ReplaceBlockStep(blockIdx, clone));
+        tr.setSelection(Selection.cursor(blockIdx, offset + content.length()));
+        return tr;
+    }
+
+    /**
+     * Resolves the selection a link operation applies to: the selection itself when a
+     * range, otherwise the extent of the link ({@link FormatType#A} run) containing the
+     * cursor — contiguous link segments are merged, so a link with mixed inline
+     * formatting is treated as one run. Returns {@code null} when the selection is a
+     * cursor sitting in no link (there is nothing for a link operation to act on).
+     */
+    private static Selection linkSelection(EditorState state) {
+        Selection sel = state.selection();
+        if (!sel.isCursor())
+            return sel;
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int blockIdx = sel.anchorBlock();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+        FormattedBlock blk = blocks.get(blockIdx);
+        int target = sel.anchorOffset();
+
+        // Collect the A-format intervals (block-absolute), in order.
+        List<int[]> intervals = new ArrayList<>();
+        int lineStart = 0;
+        for (FormattedLine line : blk.getLines()) {
+            for (FormattedLine.Format fmt : line.getFormatting()) {
+                if (!fmt.getFormats().contains(FormatType.A))
+                    continue;
+                intervals.add(new int[] { lineStart + fmt.getIndex(), lineStart + fmt.getIndex() + fmt.getLength() });
+            }
+            lineStart += line.length() + 1;
+        }
+        intervals.sort((a, b) -> Integer.compare(a[0], b[0]));
+
+        // Merge contiguous intervals and return the merged run containing the cursor
+        // (a cursor at either edge of the run counts as within it).
+        int runStart = -1;
+        int runEnd = -1;
+        for (int[] interval : intervals) {
+            if ((runEnd >= 0) && (interval[0] <= runEnd)) {
+                runEnd = Math.max(runEnd, interval[1]);
+            } else {
+                if ((runStart >= 0) && (target >= runStart) && (target <= runEnd))
+                    break;
+                runStart = interval[0];
+                runEnd = interval[1];
+            }
+        }
+        if ((runStart >= 0) && (target >= runStart) && (target <= runEnd))
+            return Selection.range(blockIdx, runStart, blockIdx, runEnd);
+        return null;
     }
 
     /**
@@ -1896,8 +1984,46 @@ public final class Commands {
         // Insert the table after the current block.
         tr.step(new InsertBlockStep(blockIdx + 1, table));
 
+        // When the table lands as the last block, follow it with an empty paragraph so
+        // there is somewhere for the caret to land after it.
+        if ((blockIdx + 1) >= blocks.size()) {
+            FormattedBlock para = new FormattedBlock(BlockType.PARA);
+            para.line("");
+            tr.step(new InsertBlockStep(blockIdx + 2, para));
+        }
+
         // Selection points to the table block; caller should focus cell (0, 0).
         tr.setSelection(Selection.cursor(blockIdx + 1, 0));
+        return tr;
+    }
+
+    /**
+     * Deletes the whole table at the given block index (the row / column context
+     * menus' "Delete table"). When the table is the only block it is replaced with an
+     * empty paragraph (editing assumes at least one block exists).
+     *
+     * @param state
+     *              the current editor state.
+     * @param tableBlockIndex
+     *              the index of the table block.
+     * @return the transaction, or {@code null} if the index is not a table.
+     */
+    public static Transaction deleteTable(EditorState state, int tableBlockIndex) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if ((tableBlockIndex < 0) || (tableBlockIndex >= blocks.size()))
+            return null;
+        if (blocks.get(tableBlockIndex).getType() != BlockType.TABLE)
+            return null;
+        Transaction tr = Transaction.create();
+        if (blocks.size() == 1) {
+            FormattedBlock para = new FormattedBlock(BlockType.PARA);
+            para.line("");
+            tr.step(new ReplaceBlockStep(tableBlockIndex, para));
+            tr.setSelection(Selection.cursor(tableBlockIndex, 0));
+            return tr;
+        }
+        tr.step(new DeleteBlockStep(tableBlockIndex));
+        tr.setSelection(Selection.cursor(Math.max(0, tableBlockIndex - 1), 0));
         return tr;
     }
 
@@ -1986,6 +2112,13 @@ public final class Commands {
         if (!sel.isCursor())
             addDeleteRangeSteps(tr, state);
         tr.step(new InsertBlockStep(blockIdx + 1, fence));
+        // A fence is atomic (the caret cannot enter it) — when it lands as the last
+        // block, follow it with an empty paragraph so there is somewhere to type.
+        if ((blockIdx + 1) >= blocks.size()) {
+            FormattedBlock para = new FormattedBlock(BlockType.PARA);
+            para.line("");
+            tr.step(new InsertBlockStep(blockIdx + 2, para));
+        }
         tr.setSelection(Selection.cursor(blockIdx + 1, 0));
         return tr;
     }

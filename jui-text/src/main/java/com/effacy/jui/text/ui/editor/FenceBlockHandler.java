@@ -48,7 +48,7 @@ public class FenceBlockHandler implements IBlockHandler {
         wrapper.appendChild(body);
 
         IFenceRenderer renderer = Fences.rendererFor(info);
-        if (StringSupport.empty(content)) {
+        if (StringSupport.empty(content) && ((renderer == null) || !renderer.rendersEmpty())) {
             Element empty = DomGlobal.document.createElement("div");
             empty.classList.add(styles().fenceEmpty());
             String label = (renderer != null) ? renderer.label(info) : (StringSupport.empty(info) ? "fenced" : info);

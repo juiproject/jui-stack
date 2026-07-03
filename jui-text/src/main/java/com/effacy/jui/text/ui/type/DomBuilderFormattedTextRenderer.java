@@ -23,6 +23,7 @@ import java.util.List;
 import com.effacy.jui.core.client.dom.builder.A;
 import com.effacy.jui.core.client.dom.builder.Br;
 import com.effacy.jui.core.client.dom.builder.Custom;
+import com.effacy.jui.core.client.dom.builder.Div;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.H1;
 import com.effacy.jui.core.client.dom.builder.H2;
@@ -44,6 +45,11 @@ import com.effacy.jui.text.type.FormattedText;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
 import com.effacy.jui.text.type.FormattedLine.TextSegment;
+import com.effacy.jui.text.ui.editor.Fences;
+import com.effacy.jui.text.ui.editor.IFenceRenderer;
+
+import elemental2.dom.Element;
+import jsinterop.base.Js;
 
 /**
  * Renders a {@link FormattedText} model into a JUI
@@ -253,13 +259,28 @@ public class DomBuilderFormattedTextRenderer {
                 applyBlockStyles(el, type);
                 renderLines(block, el);
                 break;
-            case FENCE:
-                // Read-only fallback: show the fenced source as a code block (the rich,
-                // registry-driven rendering is applied in the editor's FenceBlockHandler).
-                el = Custom.$(root, "pre");
-                applyBlockStyles(el, type);
-                Custom.$(el, "code").text(block.flatten());
+            case FENCE: {
+                // Registry-driven rendering (matching the editor's FenceBlockHandler): a
+                // registered renderer produces the rich representation; otherwise fall back
+                // to showing the fenced source as a code block.
+                String info = block.meta("info");
+                String content = block.flatten();
+                IFenceRenderer renderer = Fences.rendererFor(info);
+                boolean hasContent = (content != null) && !content.isEmpty();
+                if ((renderer != null) && (hasContent || renderer.rendersEmpty())) {
+                    el = Div.$(root);
+                    applyBlockStyles(el, type);
+                    el.use(n -> {
+                        Element target = Js.uncheckedCast(n);
+                        renderer.render(target, info, content);
+                    });
+                } else {
+                    el = Custom.$(root, "pre");
+                    applyBlockStyles(el, type);
+                    Custom.$(el, "code").text(content);
+                }
                 break;
+            }
             case TABLE:
                 renderTable(block);
                 break;

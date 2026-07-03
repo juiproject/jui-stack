@@ -23,6 +23,7 @@ import com.effacy.jui.text.type.edit.Positions;
 import com.effacy.jui.text.type.edit.Selection;
 import com.effacy.jui.text.ui.type.FormattedTextStyles;
 import com.effacy.jui.text.type.edit.Transaction;
+import com.effacy.jui.text.type.edit.step.DeleteBlockStep;
 import com.effacy.jui.text.type.edit.step.SetBlockTypeStep;
 import com.google.gwt.core.client.GWT;
 
@@ -264,10 +265,29 @@ public class Editor extends Component<Editor.Config> {
         // exists (e.g. the insert step indexes block 0). Seed a single empty paragraph.
         if ((doc == null) || doc.empty())
             doc = new FormattedText().block(BlockType.PARA, b -> b.line(""));
+        // A trailing atomic block (fence/diagram/equation) or table leaves the caret
+        // nowhere to land after it — ensure an editable paragraph follows.
+        List<FormattedBlock> blocks = doc.getBlocks();
+        if (!blocks.isEmpty()) {
+            BlockType last = blocks.get(blocks.size() - 1).getType();
+            if (atomicBlock(last) || (last == BlockType.TABLE))
+                doc.block(BlockType.PARA, b -> b.line(""));
+        }
         state = EditorState.create(doc);
         history.clear();
         if (editorEl != null)
             render();
+    }
+
+    /**
+     * Block types that render atomically ({@code contenteditable="false"}) — the caret
+     * cannot be placed inside them, so deletion treats them as a unit (see the
+     * {@code deleteContentBackward}/{@code deleteContentForward} handling). Tables are
+     * deliberately not included (they are editable within, and deleting a whole table on
+     * a single keystroke would be too destructive).
+     */
+    private static boolean atomicBlock(BlockType type) {
+        return type.is(BlockType.FENCE, BlockType.DIA, BlockType.EQN);
     }
 
     /**
@@ -414,7 +434,17 @@ public class Editor extends Component<Editor.Config> {
 
             @Override
             public void applyLink(String url) {
-                applyTransaction(Commands.updateLink(state, url));
+                applyLink(url, null);
+            }
+
+            @Override
+            public void applyLink(String url, String label) {
+                Transaction tr = Commands.updateLink(state, url);
+                // Open space (no selection, no link under the cursor): insert the
+                // label (or the URL itself) as the linked text.
+                if (tr == null)
+                    tr = Commands.insertLink(state, url, label);
+                applyTransaction(tr);
             }
 
             @Override
@@ -907,6 +937,24 @@ public class Editor extends Component<Editor.Config> {
                         applyTransaction(Commands.setBlockType(state, BlockType.PARA));
                         break;
                     }
+                    // Atomic previous block (fence/diagram/equation): the caret cannot
+                    // enter it, so delete it as a unit rather than attempting a join.
+                    if (sel2.anchorBlock() > 0) {
+                        FormattedBlock prev = state.doc().getBlocks().get(sel2.anchorBlock() - 1);
+                        if (atomicBlock(prev.getType())) {
+                            Transaction tr2 = Transaction.create();
+                            tr2.step(new DeleteBlockStep(sel2.anchorBlock() - 1));
+                            tr2.setSelection(Selection.cursor(sel2.anchorBlock() - 1, 0));
+                            applyTransaction(tr2);
+                            break;
+                        }
+                        // Table previous block: traverse into its last cell rather than
+                        // joining (the table is deleted via its context menus).
+                        if (prev.getType() == BlockType.TABLE) {
+                            handlerFor(BlockType.TABLE).focusBlockEnd(sel2.anchorBlock() - 1, ctx);
+                            break;
+                        }
+                    }
                     // Join with previous block (cross-type allowed).
                     applyTransaction(Commands.forceJoinWithPrevious(state));
                     break;
@@ -944,6 +992,25 @@ public class Editor extends Component<Editor.Config> {
                         state.setSelection(Selection.range(selFwd.anchorBlock(), varRange[0], selFwd.anchorBlock(), varRange[1]));
                         applyTransaction(Commands.deleteSelection(state));
                         break;
+                    }
+                    // Atomic next block (fence/diagram/equation): deleting forward from
+                    // the end of the current block removes it as a unit. A table is
+                    // traversed into (first cell) rather than deleted.
+                    FormattedBlock curBlk = state.doc().getBlocks().get(selFwd.anchorBlock());
+                    if ((selFwd.anchorOffset() >= Positions.contentSize(curBlk))
+                            && (selFwd.anchorBlock() + 1 < state.doc().getBlocks().size())) {
+                        FormattedBlock next = state.doc().getBlocks().get(selFwd.anchorBlock() + 1);
+                        if (atomicBlock(next.getType())) {
+                            Transaction trAtomic = Transaction.create();
+                            trAtomic.step(new DeleteBlockStep(selFwd.anchorBlock() + 1));
+                            trAtomic.setSelection(Selection.cursor(selFwd.anchorBlock(), selFwd.anchorOffset()));
+                            applyTransaction(trAtomic);
+                            break;
+                        }
+                        if (next.getType() == BlockType.TABLE) {
+                            handlerFor(BlockType.TABLE).focusBlock(selFwd.anchorBlock() + 1, ctx);
+                            break;
+                        }
                     }
                 }
                 Transaction tr3 = Commands.deleteCharAfter(state);

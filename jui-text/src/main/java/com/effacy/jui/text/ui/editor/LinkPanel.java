@@ -1,6 +1,7 @@
 package com.effacy.jui.text.ui.editor;
 
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.effacy.jui.core.client.component.IComponentCSS;
@@ -13,6 +14,7 @@ import com.effacy.jui.core.client.dom.builder.Input;
 import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.platform.css.client.CssResource;
+import com.effacy.jui.text.ui.editor.LinkPanel.AnchorItem;
 import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.Element;
@@ -65,7 +67,7 @@ public class LinkPanel extends ToolPopupPanel {
          * @param results
          *                accepts the matching items when available.
          */
-        void query(String text, java.util.function.Consumer<List<AnchorItem>> results);
+        void query(String text, Consumer<List<AnchorItem>> results);
     }
 
     /**

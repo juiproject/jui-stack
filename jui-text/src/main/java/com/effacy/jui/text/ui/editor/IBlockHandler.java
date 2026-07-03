@@ -159,6 +159,21 @@ public interface IBlockHandler {
     default void focusBlock(int blockIndex, IEditorContext ctx) {}
 
     /**
+     * As {@link #focusBlock(int, IEditorContext)} but placing the caret at the
+     * <em>end</em> of the block's content (e.g. the last table cell). Used when the
+     * block is entered from below (a backward deletion or upward traversal from the
+     * following block). Defaults to {@link #focusBlock(int, IEditorContext)}.
+     *
+     * @param blockIndex
+     *                   the index of the block to focus.
+     * @param ctx
+     *                   the editor context.
+     */
+    default void focusBlockEnd(int blockIndex, IEditorContext ctx) {
+        focusBlock(blockIndex, ctx);
+    }
+
+    /**
      * Called by the editor when the DOM selection changes but
      * {@link EditorSupport#readSelection} returns {@code null} (indicating
      * that the cursor is not in a standard block element, e.g. it is inside a

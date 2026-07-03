@@ -87,6 +87,20 @@ public interface IEditorCommands {
     void applyLink(String url);
 
     /**
+     * As {@link #applyLink(String)} with a display label. When the link is applied in
+     * open space (a cursor with no link under it) the label (falling back to the URL)
+     * is inserted as the linked text; otherwise the label is ignored.
+     *
+     * @param url
+     *              the URL to apply.
+     * @param label
+     *              the display label ({@code null} for a manually entered URL).
+     */
+    default void applyLink(String url, String label) {
+        applyLink(url);
+    }
+
+    /**
      * Removes the link from the current selection.
      */
     void removeLink();

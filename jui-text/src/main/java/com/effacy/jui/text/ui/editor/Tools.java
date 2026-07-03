@@ -362,6 +362,59 @@ public class Tools {
     }
 
     /**
+     * Creates a link tool with custom button content and an <em>asynchronous</em>
+     * suggestion source (e.g. a remote search). Named distinctly from
+     * {@link #link(Consumer, String, Function)} — an overload would make existing
+     * implicitly-typed lambda call sites ambiguous.
+     *
+     * @see #link(Consumer, String, Function)
+     */
+    public static ITool linkAsync(Consumer<ElementBuilder> content, String tooltip, LinkPanel.IAnchorSource source) {
+        return linkAsync(content, tooltip, 0, source);
+    }
+
+    /**
+     * As {@link #linkAsync(Consumer, String, LinkPanel.IAnchorSource)} but with a fixed
+     * width for the link panel.
+     *
+     * @param width
+     *              the panel width in pixels ({@code <= 0} falls back to
+     *              {@link LinkPanel#DEFAULT_WIDTH}, and failing that content-sized).
+     */
+    public static ITool linkAsync(Consumer<ElementBuilder> content, String tooltip, int width, LinkPanel.IAnchorSource source) {
+        return ctx -> {
+            Element[] btn = new Element[1];
+            Button.$(ctx.parent()).style(ctx.styles().tbtn()).$(content).attr("title", tooltip)
+                .use(n -> btn[0] = (Element) n)
+                .on(e -> {
+                    e.stopEvent();
+                    if (ctx.commands() == null)
+                        return;
+                    ctx.commands().syncSelection();
+                    String currentUrl = ctx.commands().currentLink();
+                    LinkPanel.show(btn[0], currentUrl, source, width, new LinkPanel.ILinkPanelCallback() {
+
+                        @Override
+                        public void onApply(String url) {
+                            ctx.commands().applyLink(url);
+                        }
+
+                        @Override
+                        public void onApply(String url, String label) {
+                            ctx.commands().applyLink(url, label);
+                        }
+
+                        @Override
+                        public void onRemove() {
+                            ctx.commands().removeLink();
+                        }
+                    });
+                }, UIEventType.ONMOUSEDOWN);
+            return null;
+        };
+    }
+
+    /**
      * Creates a link tool with custom button content. The button freezes
      * the selection, then opens a {@link LinkPanel} for applying, editing,
      * or removing a link. The tool owns the popup and data source; the
@@ -390,6 +443,11 @@ public class Tools {
                         @Override
                         public void onApply(String url) {
                             ctx.commands().applyLink(url);
+                        }
+
+                        @Override
+                        public void onApply(String url, String label) {
+                            ctx.commands().applyLink(url, label);
                         }
 
                         @Override

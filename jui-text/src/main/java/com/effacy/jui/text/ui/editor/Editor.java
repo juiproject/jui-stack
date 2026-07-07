@@ -427,6 +427,12 @@ public class Editor extends Component<Editor.Config> {
             }
 
             @Override
+            public boolean hasRangeSelection() {
+                syncSelectionFromDom();
+                return !state.selection().isCursor();
+            }
+
+            @Override
             public String currentLink() {
                 syncSelectionFromDom();
                 return extractLinkUrl(state.selection());
@@ -450,6 +456,27 @@ public class Editor extends Component<Editor.Config> {
             @Override
             public void removeLink() {
                 applyTransaction(Commands.removeLink(state));
+            }
+
+            @Override
+            public String currentComment() {
+                syncSelectionFromDom();
+                return extractCommentReference(state.selection());
+            }
+
+            @Override
+            public void applyComment(String reference) {
+                applyTransaction(Commands.applyComment(state, reference));
+            }
+
+            @Override
+            public void removeComment() {
+                applyTransaction(Commands.removeComment(state));
+            }
+
+            @Override
+            public void removeComment(String reference) {
+                applyTransaction(Commands.removeComment(state, reference));
             }
 
             @Override
@@ -562,6 +589,7 @@ public class Editor extends Component<Editor.Config> {
                     if (href.startsWith("http"))
                         a.setAttribute("target", "_blank");
                 }
+                applyCommentReference(a, segment);
                 a.textContent = segment.text();
                 parent.appendChild(a);
             } else {
@@ -571,10 +599,25 @@ public class Editor extends Component<Editor.Config> {
                     if (cls != null)
                         span.classList.add(cls);
                 }
+                applyCommentReference(span, segment);
                 span.appendChild(DomGlobal.document.createTextNode(segment.text()));
                 parent.appendChild(span);
             }
         });
+    }
+
+    /**
+     * Marks the element with the segment's comment reference (as a
+     * {@code data-comment} attribute) when the segment carries a comment
+     * anchor — the hook external comment surfaces use to locate and wire up
+     * the anchored range.
+     */
+    private void applyCommentReference(Element el, FormattedLine.TextSegment segment) {
+        if (!segment.contains(FormatType.CMT) || !segment.hasMeta())
+            return;
+        String reference = segment.meta().get(FormattedLine.META_COMMENT);
+        if ((reference != null) && !reference.isEmpty())
+            el.setAttribute("data-comment", reference);
     }
 
     /************************************************************************
@@ -732,6 +775,32 @@ public class Editor extends Component<Editor.Config> {
                 if ((target >= absStart) && (target < absEnd) && fmt.getFormats().contains(FormatType.A)) {
                     if (fmt.getMeta() != null)
                         return fmt.getMeta().get(FormattedLine.META_LINK);
+                }
+            }
+            lineStart += line.length() + 1;
+        }
+        return null;
+    }
+
+    /**
+     * Extracts the comment reference at the anchor position of the given
+     * selection, or {@code null} if no comment anchor exists there.
+     */
+    private String extractCommentReference(Selection sel) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int blockIdx = sel.anchorBlock();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+        FormattedBlock blk = blocks.get(blockIdx);
+        int target = sel.anchorOffset();
+        int lineStart = 0;
+        for (FormattedLine line : blk.getLines()) {
+            for (FormattedLine.Format fmt : line.getFormatting()) {
+                int absStart = lineStart + fmt.getIndex();
+                int absEnd = absStart + fmt.getLength();
+                if ((target >= absStart) && (target < absEnd) && fmt.getFormats().contains(FormatType.CMT)) {
+                    if (fmt.getMeta() != null)
+                        return fmt.getMeta().get(FormattedLine.META_COMMENT);
                 }
             }
             lineStart += line.length() + 1;
@@ -1243,6 +1312,7 @@ public class Editor extends Component<Editor.Config> {
         FORMAT_CLASSES.put(FormatType.SUB, "fmt_subscript");
         FORMAT_CLASSES.put(FormatType.CODE, "fmt_code");
         FORMAT_CLASSES.put(FormatType.HL, "fmt_highlight");
+        FORMAT_CLASSES.put(FormatType.CMT, "fmt_comment");
     }
 
     /************************************************************************

@@ -70,6 +70,12 @@ public interface IEditorCommands {
     void syncSelection();
 
     /**
+     * Determines whether the current selection is a range (as opposed to a
+     * collapsed cursor). Synchronises the selection first.
+     */
+    boolean hasRangeSelection();
+
+    /**
      * Returns the link URL at the current cursor position, or {@code null}
      * if the cursor is not inside a link. Call {@link #syncSelection()}
      * first to ensure the selection is up to date.
@@ -104,6 +110,39 @@ public interface IEditorCommands {
      * Removes the link from the current selection.
      */
     void removeLink();
+
+    /**
+     * Returns the comment reference at the current cursor position, or
+     * {@code null} if the cursor is not inside a comment anchor. Call
+     * {@link #syncSelection()} first to ensure the selection is up to date.
+     */
+    String currentComment();
+
+    /**
+     * Applies a comment anchor with the given reference to the current range
+     * selection. If the selection is a cursor (collapsed) this is a no-op.
+     *
+     * @param reference
+     *                  the comment reference (i.e. the associated comment's
+     *                  identifier).
+     */
+    void applyComment(String reference);
+
+    /**
+     * Removes the comment anchor from the current selection (or the comment
+     * run containing the cursor).
+     */
+    void removeComment();
+
+    /**
+     * Removes every comment anchor carrying the given reference across the
+     * document. Selection-independent — for removal driven from an external
+     * comment surface (e.g. deleting a comment card).
+     *
+     * @param reference
+     *                  the comment reference.
+     */
+    void removeComment(String reference);
 
     /**
      * Inserts a variable at the current cursor position.

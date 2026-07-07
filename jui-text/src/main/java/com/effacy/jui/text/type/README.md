@@ -274,6 +274,7 @@ Each block type declares a `BlockTypeConstraint` that describes what content it 
 | `SUB` | Subscript | (programmatic only) |
 | `CODE` | Inline code | `` `text` `` |
 | `HL` | Highlight | (programmatic only) |
+| `CMT` | Comment anchor (expects `comment` metadata referencing the associated comment; may be ignored by renderers) | (programmatic only) |
 | `A` | Anchor/link | `[label](url)` |
 
 ### Block operations

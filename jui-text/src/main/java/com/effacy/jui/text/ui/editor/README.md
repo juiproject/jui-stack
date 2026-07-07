@@ -293,13 +293,23 @@ Popup-based tools (link, variable) use `ToolPopupPanel` as a shared base for flo
 | `EQUATION`, `DIAGRAM` | Insert an equation / diagram block |
 | `SEPARATOR` | Visual divider between tool groups |
 
-Link, variable, image and fence tools require a parameter (a data source, or a fence info string) and are created via factory methods rather than constants:
+Link, variable, image, fence and comment tools require a parameter (a data source, a fence info string, or a handler) and are created via factory methods rather than constants:
 
 ```java
 Tools.link(r -> Em.$(r).style(FontAwesome.link()), "Link", MyApp::filterLinks)
 Tools.variable("{}", "Variable", MyApp::filterVariables)
 Tools.fence("mermaid", r -> Em.$(r).style(FontAwesome.diagramProject()), "Mermaid diagram")
+Tools.comment(r -> Em.$(r).style(FontAwesome.comment()), "Comment", MyApp::openComposer)
 ```
+
+The comment tool anchors a comment to the selection (`FormatType.CMT` carrying the comment's
+reference as `comment` metadata). The editor owns only the anchor: the passed
+`Tools.ICommentHandler` is invoked with the selection frozen (and the reference under the
+cursor, if any) and owns the composer/comment lifecycle, applying the anchor via
+`IEditorCommands.applyComment(reference)` (or clearing it via `removeComment()`). Anchored
+segments render with the `fmt_comment` class and a `data-comment` attribute for external
+comment surfaces to wire against. The `CMT` format has no markdown representation — it is
+shed on markdown serialisation.
 
 ### Configuration
 

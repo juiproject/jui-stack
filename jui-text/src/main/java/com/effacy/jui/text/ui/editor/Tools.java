@@ -557,6 +557,89 @@ public class Tools {
     }
 
     /**
+     * Handler invoked when the comment tool is activated (see
+     * {@link #comment(Consumer, String, ICommentHandler)}). The handler owns
+     * the comment experience (composer popup, comment creation, etc.); the
+     * editor provides only data-level commands. On completion the handler
+     * applies the anchor with
+     * {@link IEditorCommands#applyComment(String)} (or removes it with
+     * {@link IEditorCommands#removeComment()}).
+     */
+    @FunctionalInterface
+    public interface ICommentHandler {
+
+        /**
+         * Invoked with the selection frozen.
+         *
+         * @param commands
+         *                 the editor commands (for applying or removing the
+         *                 anchor).
+         * @param anchor
+         *                 the tool button element (for popup anchoring).
+         * @param reference
+         *                 the comment reference under the cursor, or
+         *                 {@code null} when the selection is not in an
+         *                 existing comment.
+         */
+        void open(IEditorCommands commands, Element anchor, String reference);
+    }
+
+    /**
+     * Creates a comment tool with a text label.
+     *
+     * @see #comment(Consumer, String, ICommentHandler)
+     */
+    public static ITool comment(String label, String tooltip, ICommentHandler handler) {
+        return comment(btn -> btn.text(label), tooltip, handler);
+    }
+
+    /**
+     * Creates a comment tool with custom button content. The button freezes
+     * the selection then delegates to the handler, passing the comment
+     * reference under the cursor (if any). The handler owns the popup and
+     * comment lifecycle; it applies the anchor via
+     * {@link IEditorCommands#applyComment(String)} when the comment is
+     * established. The handle tracks whether the cursor is inside a comment
+     * anchor ({@link FormatType#CMT}).
+     *
+     * @param content
+     *              populates the button's inner content.
+     * @param tooltip
+     *              the button tooltip.
+     * @param handler
+     *              the comment handler.
+     */
+    public static ITool comment(Consumer<ElementBuilder> content, String tooltip, ICommentHandler handler) {
+        return ctx -> {
+            Element[] btn = new Element[1];
+            Button.$(ctx.parent()).style(ctx.styles().tbtn()).$(content).attr("title", tooltip)
+                .use(n -> btn[0] = (Element) n)
+                .on(e -> {
+                    e.stopEvent();
+                    if (ctx.commands() == null)
+                        return;
+                    ctx.commands().syncSelection();
+                    handler.open(ctx.commands(), btn[0], ctx.commands().currentComment());
+                }, UIEventType.ONMOUSEDOWN);
+            return new ITool.Handle() {
+
+                @Override
+                public void updateState(BlockType activeBlockType, Set<FormatType> activeFormats) {
+                    if (activeFormats.contains(FormatType.CMT))
+                        btn[0].classList.add(ctx.styles().tbtnActive());
+                    else
+                        btn[0].classList.remove(ctx.styles().tbtnActive());
+                }
+
+                @Override
+                public void updateCellState(Set<FormatType> activeFormats) {
+                    updateState(null, activeFormats);
+                }
+            };
+        };
+    }
+
+    /**
      * Creates a visual separator (vertical line between tool groups). No
      * state tracking is performed.
      */

@@ -50,6 +50,11 @@ public class FormattedLine {
     public static final String META_IMAGE = "src";
 
     /**
+     * Meta-data key for comment reference information.
+     */
+    public static final String META_COMMENT = "comment";
+
+    /**
      * Meta-data key for image width (in pixels).
      */
     public static final String META_WIDTH = "width";
@@ -108,6 +113,13 @@ public class FormattedLine {
          * Anchor (expects {@code link} metadata).
          */
         A,
+
+        /**
+         * Comment anchor (expects {@code comment} metadata referencing the
+         * associated comment). Purely referential — carries no markdown
+         * representation and may be ignored by renderers.
+         */
+        CMT,
 
         /**
          * Image (expects {@code src} metadata, text is alt text).

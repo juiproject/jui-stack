@@ -40,6 +40,7 @@ public class FormattedTextStyles {
     static {
         LINE_STYLES.put (FormattedLine.FormatType.BLD, "bold");
         LINE_STYLES.put (FormattedLine.FormatType.CODE, "code");
+        LINE_STYLES.put (FormattedLine.FormatType.CMT, "comment");
         LINE_STYLES.put (FormattedLine.FormatType.HL, "highlight");
         LINE_STYLES.put (FormattedLine.FormatType.ITL, "italic");
         LINE_STYLES.put (FormattedLine.FormatType.STR, "strike");
@@ -158,6 +159,11 @@ public class FormattedTextStyles {
 
 .richtext .fmt_highlight {
     background-color: var(--jui-richtext-highlight-bg, #F5EB72);
+}
+
+.richtext .fmt_comment {
+    background-color: var(--jui-richtext-comment-bg, rgba(245, 235, 114, 0.35));
+    border-bottom: 2px solid var(--jui-richtext-comment-border, #E5CE49);
 }
 
 .richtext .fmt_code {

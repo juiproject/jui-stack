@@ -1054,6 +1054,17 @@ public final class Commands {
      * cursor sitting in no link (there is nothing for a link operation to act on).
      */
     private static Selection linkSelection(EditorState state) {
+        return formatRunSelection(state, FormatType.A);
+    }
+
+    /**
+     * Resolves the selection an operation on the given format type applies to: the
+     * selection itself when a range, otherwise the extent of the format run containing
+     * the cursor — contiguous segments carrying the type are merged, so a run with
+     * mixed inline formatting is treated as one. Returns {@code null} when the
+     * selection is a cursor sitting in no such run.
+     */
+    private static Selection formatRunSelection(EditorState state, FormatType type) {
         Selection sel = state.selection();
         if (!sel.isCursor())
             return sel;
@@ -1064,12 +1075,12 @@ public final class Commands {
         FormattedBlock blk = blocks.get(blockIdx);
         int target = sel.anchorOffset();
 
-        // Collect the A-format intervals (block-absolute), in order.
+        // Collect the typed format intervals (block-absolute), in order.
         List<int[]> intervals = new ArrayList<>();
         int lineStart = 0;
         for (FormattedLine line : blk.getLines()) {
             for (FormattedLine.Format fmt : line.getFormatting()) {
-                if (!fmt.getFormats().contains(FormatType.A))
+                if (!fmt.getFormats().contains(type))
                     continue;
                 intervals.add(new int[] { lineStart + fmt.getIndex(), lineStart + fmt.getIndex() + fmt.getLength() });
             }
@@ -1099,20 +1110,36 @@ public final class Commands {
     /**
      * Sets the {@code link} metadata on all {@link FormatType#A} format regions
      * in the block that overlap {@code [start, start+len)}.
+     */
+    private static void setLinkMetaOnRange(FormattedBlock block, int start, int len, String url) {
+        setMetaOnRange(block, start, len, FormatType.A, FormattedLine.META_LINK, url);
+    }
+
+    /**
+     * Clears the {@code link} metadata from all format regions in the block
+     * that overlap {@code [start, start+len)}.
+     */
+    private static void clearLinkMetaOnRange(FormattedBlock block, int start, int len) {
+        clearMetaOnRange(block, start, len, FormattedLine.META_LINK);
+    }
+
+    /**
+     * Sets the given metadata entry on all format regions of the given type in
+     * the block that overlap {@code [start, start+len)}.
      * <p>
      * Defensively copies each format's meta map before mutating it, since
      * {@link FormattedLine#clone()} shares meta maps by reference.
      */
-    private static void setLinkMetaOnRange(FormattedBlock block, int start, int len, String url) {
+    private static void setMetaOnRange(FormattedBlock block, int start, int len, FormatType type, String key, String value) {
         int end = start + len;
         int lineStart = 0;
         for (FormattedLine line : block.getLines()) {
             for (FormattedLine.Format fmt : line.getFormatting()) {
                 int absStart = lineStart + fmt.getIndex();
                 int absEnd = absStart + fmt.getLength();
-                if ((absEnd > start) && (absStart < end) && fmt.getFormats().contains(FormatType.A)) {
+                if ((absEnd > start) && (absStart < end) && fmt.getFormats().contains(type)) {
                     fmt.setMeta(new java.util.HashMap<>(fmt.getMeta()));
-                    fmt.getMeta().put(FormattedLine.META_LINK, url);
+                    fmt.getMeta().put(key, value);
                 }
             }
             lineStart += line.length() + 1;
@@ -1120,13 +1147,13 @@ public final class Commands {
     }
 
     /**
-     * Clears the {@code link} metadata from all format regions in the block
+     * Clears the given metadata entry from all format regions in the block
      * that overlap {@code [start, start+len)}.
      * <p>
      * Defensively copies each format's meta map before mutating it, since
      * {@link FormattedLine#clone()} shares meta maps by reference.
      */
-    private static void clearLinkMetaOnRange(FormattedBlock block, int start, int len) {
+    private static void clearMetaOnRange(FormattedBlock block, int start, int len, String key) {
         int end = start + len;
         int lineStart = 0;
         for (FormattedLine line : block.getLines()) {
@@ -1135,11 +1162,133 @@ public final class Commands {
                 int absEnd = absStart + fmt.getLength();
                 if ((absEnd > start) && (absStart < end)) {
                     fmt.setMeta(new java.util.HashMap<>(fmt.getMeta()));
-                    fmt.getMeta().remove(FormattedLine.META_LINK);
+                    fmt.getMeta().remove(key);
                 }
             }
             lineStart += line.length() + 1;
         }
+    }
+
+    /************************************************************************
+     * Comment commands.
+     ************************************************************************/
+
+    /**
+     * Applies a comment anchor ({@link FormatType#CMT} with comment reference
+     * metadata) to the selected range. Supports multi-block selections.
+     *
+     * @param state
+     *              the current editor state.
+     * @param reference
+     *              the comment reference (i.e. the associated comment's identifier).
+     * @return the transaction, or {@code null} if the selection is a cursor or
+     *         the reference is empty.
+     */
+    public static Transaction applyComment(EditorState state, String reference) {
+        if ((reference == null) || reference.isEmpty())
+            return null;
+        Selection sel = state.selection();
+        if (sel.isCursor())
+            return null;
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int fromBlock = sel.fromBlock();
+        int toBlock = sel.toBlock();
+        Transaction tr = Transaction.create();
+        for (int i = fromBlock; i <= toBlock; i++) {
+            int start = (i == fromBlock) ? sel.fromOffset() : 0;
+            int end = (i == toBlock) ? sel.toOffset() : Positions.contentSize(blocks.get(i));
+            int len = end - start;
+            if (len > 0) {
+                FormattedBlock clone = blocks.get(i).clone();
+                clone.addFormat(start, len, FormatType.CMT);
+                setMetaOnRange(clone, start, len, FormatType.CMT, FormattedLine.META_COMMENT, reference);
+                tr.step(new ReplaceBlockStep(i, clone));
+            }
+        }
+        tr.setSelection(state.selection());
+        return tr;
+    }
+
+    /**
+     * Removes every comment anchor carrying the given reference across the
+     * document ({@link FormatType#CMT} regions whose {@code comment} metadata
+     * equals the reference). Selection-independent — for removal driven from
+     * an external comment surface (e.g. deleting a comment card).
+     *
+     * @param state
+     *              the current editor state.
+     * @param reference
+     *              the comment reference.
+     * @return the transaction, or {@code null} if no anchor carries the
+     *         reference.
+     */
+    public static Transaction removeComment(EditorState state, String reference) {
+        if ((reference == null) || reference.isEmpty())
+            return null;
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        Transaction tr = Transaction.create();
+        boolean found = false;
+        for (int i = 0; i < blocks.size(); i++) {
+            // Collect the block-absolute intervals carrying the reference.
+            List<int[]> intervals = new ArrayList<>();
+            int lineStart = 0;
+            for (FormattedLine line : blocks.get(i).getLines()) {
+                for (FormattedLine.Format fmt : line.getFormatting()) {
+                    if (!fmt.getFormats().contains(FormatType.CMT))
+                        continue;
+                    if (!reference.equals(fmt.getMeta().get(FormattedLine.META_COMMENT)))
+                        continue;
+                    intervals.add(new int[] { lineStart + fmt.getIndex(), fmt.getLength() });
+                }
+                lineStart += line.length() + 1;
+            }
+            if (intervals.isEmpty())
+                continue;
+            found = true;
+            FormattedBlock clone = blocks.get(i).clone();
+            for (int[] interval : intervals) {
+                clearMetaOnRange(clone, interval[0], interval[1], FormattedLine.META_COMMENT);
+                clone.removeFormat(interval[0], interval[1], FormatType.CMT);
+            }
+            tr.step(new ReplaceBlockStep(i, clone));
+        }
+        if (!found)
+            return null;
+        tr.setSelection(state.selection());
+        return tr;
+    }
+
+    /**
+     * Removes a comment anchor ({@link FormatType#CMT} and comment metadata)
+     * from the selected range, or from the comment run containing the cursor.
+     * Supports multi-block selections.
+     *
+     * @param state
+     *              the current editor state.
+     * @return the transaction, or {@code null} if the cursor is not in a
+     *         comment.
+     */
+    public static Transaction removeComment(EditorState state) {
+        Selection sel = formatRunSelection(state, FormatType.CMT);
+        if (sel == null)
+            return null;
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int fromBlock = sel.fromBlock();
+        int toBlock = sel.toBlock();
+        Transaction tr = Transaction.create();
+        for (int i = fromBlock; i <= toBlock; i++) {
+            int start = (i == fromBlock) ? sel.fromOffset() : 0;
+            int end = (i == toBlock) ? sel.toOffset() : Positions.contentSize(blocks.get(i));
+            int len = end - start;
+            if (len > 0) {
+                FormattedBlock clone = blocks.get(i).clone();
+                clearMetaOnRange(clone, start, len, FormattedLine.META_COMMENT);
+                clone.removeFormat(start, len, FormatType.CMT);
+                tr.step(new ReplaceBlockStep(i, clone));
+            }
+        }
+        tr.setSelection(state.selection());
+        return tr;
     }
 
     /************************************************************************

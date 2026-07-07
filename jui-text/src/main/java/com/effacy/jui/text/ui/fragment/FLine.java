@@ -95,6 +95,7 @@ public class FLine extends Fragment<FLine> {
     public static Map<FormattedLine.FormatType,String> STYLES = new HashMap<>();
     static {
         STYLES.put (FormattedLine.FormatType.BLD, "bold");
+        STYLES.put (FormattedLine.FormatType.CMT, "comment");
         STYLES.put (FormattedLine.FormatType.CODE, "code");
         STYLES.put (FormattedLine.FormatType.HL, "highlight");
         STYLES.put (FormattedLine.FormatType.ITL, "italic");

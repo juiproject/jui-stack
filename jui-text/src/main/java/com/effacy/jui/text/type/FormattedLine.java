@@ -65,6 +65,32 @@ public class FormattedLine {
     public static final String META_HEIGHT = "height";
 
     /**
+     * Meta-data key for image (block) alignment: {@code left}, {@code center} or
+     * {@code right}.
+     */
+    public static final String META_ALIGN = "align";
+
+    /**
+     * Meta-data key for the image margin (spacing around the image, in pixels).
+     */
+    public static final String META_MARGIN = "margin";
+
+    /**
+     * Meta-data key for image alt text.
+     */
+    public static final String META_ALT = "alt";
+
+    /**
+     * The sentinel character an inline image occupies in the line text (U+FFFC,
+     * OBJECT REPLACEMENT CHARACTER). An image is an atomic, single-character
+     * segment: its {@link FormatType#IMG} format spans exactly this character, so a
+     * caret offset unambiguously falls before or after the image (a zero-length
+     * format cannot distinguish the two sides). The sentinel exists only in the
+     * in-memory model — the markdown serializer strips it and the parser inserts it.
+     */
+    public static final String IMAGE_SENTINEL = "￼";
+
+    /**
      * Various format types that can be applied in the line.
      */
     public enum FormatType {
@@ -640,6 +666,17 @@ public class FormattedLine {
         text = text.substring(0, start) + text.substring (end);
         if (!getFormatting ().isEmpty ()) {
             for (Format format : new ArrayList<>(getFormatting ())) {
+                if (format.length == 0) {
+                    // A zero-length format (image / atomic marker) is a boundary point,
+                    // not a span. Keep it if it sits at or before the deletion start,
+                    // shift it if it is after, and drop it only if strictly inside the
+                    // deleted range. (Reducing its length here would corrupt it.)
+                    if (format.index >= end)
+                        format.index -= len;
+                    else if (format.index > start)
+                        getFormatting ().remove (format);
+                    continue;
+                }
                 if ((format.index >= start) && (format.index < end)) {
                     // Start of format is in range. Keep only the portion
                     // that extends beyond the deletion (if any).
@@ -651,7 +688,11 @@ public class FormattedLine {
                 } else if (format.index >= end) {
                     format.index -= len;
                 }
-                if ((format.length <= 0) && !format.getFormats().contains(FormatType.IMG))
+                // A format whose span was entirely deleted is dropped. This includes an
+                // image whose sentinel character was deleted (deleting the character
+                // deletes the image); genuinely zero-length formats (variables, legacy)
+                // are boundary points handled above and never reach here.
+                if (format.length <= 0)
                     getFormatting ().remove (format);
             }
         }
@@ -661,18 +702,30 @@ public class FormattedLine {
     public void insert(int start, String text) {
         if ((text == null) || (text.length() == 0))
             return;
+        int len = text.length();
         if ((start < 0) || (start >= this.text.length())) {
+            int at = this.text.length();
             this.text += text;
+            // Shift zero-length formats (an inline image / variable) that sit at the
+            // append point so the inserted text lands before them, not after. Without
+            // this, typing at the start of an image-only line appends after the image.
+            for (Format format : getFormatting()) {
+                if ((format.length == 0) && (format.index >= at))
+                    format.index += len;
+            }
             return;
         }
-        int len = text.length();
         this.text = this.text.substring (0, start) + text + this.text.substring (start);
         for (Format format : getFormatting ()) {
             if (format.index >= start) {
                 format.index += len;
             } else if (format.index + format.length >= start) {
-                // Variable formats are atomic — never expand them on adjacent insertion.
+                // Variable and image formats are atomic — never expand them on
+                // adjacent insertion (typing after an image lands after it, outside
+                // the image's sentinel span).
                 if ((format.meta != null) && format.meta.containsKey(META_VARIABLE))
+                    continue;
+                if (format.getFormats().contains(FormatType.IMG))
                     continue;
                 format.length += len;
             }
@@ -986,8 +1039,12 @@ public class FormattedLine {
             return;
         int offset = text.length ();
         text = text += other.text;
-        for (Format format : other.getFormatting ())
-            getFormatting ().add (new Format (format.index + offset, format.length, format.formats));
+        for (Format format : other.getFormatting ()) {
+            // Copy-construct to preserve meta (image src, links, etc).
+            Format moved = new Format (format);
+            moved.setIndex (format.index + offset);
+            getFormatting ().add (moved);
+        }
     }
 
     /**
@@ -1007,8 +1064,26 @@ public class FormattedLine {
             getFormatting ().clear ();
             return line;
         }
-        if (idx >= length())
-            return new FormattedLine();
+        if (idx >= length()) {
+            // Splitting at the end of the line. A zero-length image sits immediately
+            // after the cursor, so it moves onto the balance line; all other
+            // formatting stays on the left.
+            FormattedLine line = new FormattedLine();
+            if (!getFormatting ().isEmpty ()) {
+                List<Format> divvy = new ArrayList<> (getFormatting ());
+                getFormatting ().clear ();
+                for (Format format : divvy) {
+                    if ((format.length == 0) && (format.index >= idx) && format.getFormats ().contains (FormatType.IMG)) {
+                        Format moved = new Format (format);
+                        moved.setIndex (0);
+                        line.getFormatting ().add (moved);
+                    } else {
+                        getFormatting ().add (format);
+                    }
+                }
+            }
+            return line;
+        }
         FormattedLine line = new FormattedLine();
         line.text = this.text.substring (idx);
         this.text = this.text.substring (0, idx);
@@ -1021,14 +1096,22 @@ public class FormattedLine {
                     getFormatting ().add (format);
                 } else if (format.index >= idx) {
                     // Entirely to the right so add to the right side but update the index (offset
-                    // by -idx).
-                    line.getFormatting ().add (new Format (format.index - idx, format.length, format.formats));
+                    // by -idx). Copy-construct to preserve meta (image src, links, etc).
+                    Format moved = new Format (format);
+                    moved.setIndex (format.index - idx);
+                    line.getFormatting ().add (moved);
                 } else {
                     int diff = idx - format.index;
-                    // Add a portion back to the left side (length adjusted.)
-                    getFormatting ().add (new Format (format.index, diff, format.formats));
-                    // Add a portion to the right (begining at 0 and length adjusted).
-                    line.getFormatting ().add (new Format (0, format.length - diff, format.formats));
+                    // Add a portion back to the left side (length adjusted); copy-construct so
+                    // meta survives on both halves.
+                    Format left = new Format (format);
+                    left.setLength (diff);
+                    getFormatting ().add (left);
+                    // Add a portion to the right (beginning at 0 and length adjusted).
+                    Format right = new Format (format);
+                    right.setIndex (0);
+                    right.setLength (format.length - diff);
+                    line.getFormatting ().add (right);
                 }
             }
         }

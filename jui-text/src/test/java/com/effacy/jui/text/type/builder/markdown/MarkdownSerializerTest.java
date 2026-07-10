@@ -407,4 +407,34 @@ public class MarkdownSerializerTest {
         FormattedText ft = FormattedText.markdown("# Hello\n\nWorld");
         assertEquals(MarkdownSerializer.serialize(ft), new MarkdownSerializer().toMarkdown(ft));
     }
+
+    @Test
+    public void testImageRoundTrip() {
+        String md = "![](http://example.com/a.png)";
+        assertEquals(md, MarkdownSerializer.serialize(FormattedText.markdown(md)));
+    }
+
+    @Test
+    public void testImageWithSizeRoundTrip() {
+        String md = "![](http://example.com/a.png){width=200 height=150}";
+        assertEquals(md, MarkdownSerializer.serialize(FormattedText.markdown(md)));
+    }
+
+    @Test
+    public void testImageWithAlignRoundTrip() {
+        String md = "![](http://example.com/a.png){align=center}";
+        assertEquals(md, MarkdownSerializer.serialize(FormattedText.markdown(md)));
+    }
+
+    @Test
+    public void testImageWithAllAttributesRoundTrip() {
+        String md = "![alt text](http://example.com/a.png){width=320 height=240 align=right margin=12}";
+        assertEquals(md, MarkdownSerializer.serialize(FormattedText.markdown(md)));
+    }
+
+    @Test
+    public void testImageWithMarginRoundTrip() {
+        String md = "![](http://example.com/a.png){margin=8}";
+        assertEquals(md, MarkdownSerializer.serialize(FormattedText.markdown(md)));
+    }
 }

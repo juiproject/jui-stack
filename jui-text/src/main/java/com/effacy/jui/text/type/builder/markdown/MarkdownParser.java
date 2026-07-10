@@ -831,7 +831,7 @@ public class MarkdownParser {
                         resolvedUrl = mapped;
                 }
                 if (link.image)
-                    handler.image(link.label, resolvedUrl, link.width, link.height);
+                    handler.image(link.label, resolvedUrl, link.width, link.height, link.align, link.margin);
                 else
                     handler.link(link.label, resolvedUrl);
 
@@ -971,8 +971,33 @@ public class MarkdownParser {
                             }
                         }
                     }
-                    links.add(new LinkInfo(startPos, urlEnd + 1, line.substring(labelStart + 1, labelEnd), rawUrl, isImage, imgWidth, imgHeight));
-                    pos = urlEnd + 1;
+                    int endPos = urlEnd + 1;
+                    String imgAlign = null;
+                    int imgMargin = -1;
+                    // Parse an optional attribute suffix: "{width=W height=H align=A margin=M}".
+                    if (isImage && (endPos < line.length()) && (line.charAt(endPos) == '{')) {
+                        int braceEnd = line.indexOf('}', endPos + 1);
+                        if (braceEnd != -1) {
+                            for (String part : line.substring(endPos + 1, braceEnd).trim().split(" ")) {
+                                int eq = part.indexOf('=');
+                                if (eq <= 0)
+                                    continue;
+                                String key = part.substring(0, eq).trim();
+                                String val = part.substring(eq + 1).trim();
+                                if ("width".equals(key))
+                                    imgWidth = parsePixelValue(val);
+                                else if ("height".equals(key))
+                                    imgHeight = parsePixelValue(val);
+                                else if ("align".equals(key))
+                                    imgAlign = val;
+                                else if ("margin".equals(key))
+                                    imgMargin = parsePixelValue(val);
+                            }
+                            endPos = braceEnd + 1;
+                        }
+                    }
+                    links.add(new LinkInfo(startPos, endPos, line.substring(labelStart + 1, labelEnd), rawUrl, isImage, imgWidth, imgHeight, imgAlign, imgMargin));
+                    pos = endPos;
                     continue;
                 }
             }
@@ -1088,7 +1113,7 @@ public class MarkdownParser {
         return null;
     }
 
-    private record LinkInfo(int startPos, int endPos, String label, String url, boolean image, int width, int height) {}
+    private record LinkInfo(int startPos, int endPos, String label, String url, boolean image, int width, int height, String align, int margin) {}
 
     private record FormatMarker(int position, String marker, FormatType type) {}
 

@@ -324,4 +324,74 @@ public class FormattedBlockTest {
         // At the left of formatting
         Assertions.assertEquals ("This is a  hubba [{17,7} bld]line of[/] text", blk.clone().insert(10, " hubba ").toString ());
     }
+
+    /**
+     * Block offsets count the line break between lines as one character, so an
+     * insert targeting the end of a middle line must not drift into a later line.
+     */
+    @Test
+    public void testInsert_multiLineOffsets() {
+        FormattedBlock blk = new FormattedBlock (BlockType.PARA)
+            .line (line -> line.append ("aa"))
+            .line (line -> line.append ("bb"))
+            .line (line -> line.append ("cc"));
+
+        // Offsets: "aa" [0,2), break 2, "bb" [3,5), break 5, "cc" [6,8).
+        FormattedBlock endOfBb = blk.clone ();
+        endOfBb.insert (5, "k");
+        Assertions.assertEquals ("bbk", endOfBb.getLines ().get (1).getText ());
+        Assertions.assertEquals ("cc", endOfBb.getLines ().get (2).getText ());
+
+        FormattedBlock startOfBb = blk.clone ();
+        startOfBb.insert (3, "k");
+        Assertions.assertEquals ("kbb", startOfBb.getLines ().get (1).getText ());
+
+        FormattedBlock midCc = blk.clone ();
+        midCc.insert (7, "k");
+        Assertions.assertEquals ("ckc", midCc.getLines ().get (2).getText ());
+    }
+
+    /**
+     * Splitting a line at the boundary between a character and a following image
+     * (cursor at the end of the char) moves the image to the balance block; the
+     * character stays.
+     */
+    @Test
+    public void testSplit_imageAfterCharMovesToBalance() {
+        FormattedBlock blk = new FormattedBlock (BlockType.PARA)
+            .line (line -> {
+                line.append ("k");
+                line.getFormatting ().add (new FormattedLine.Format (1, 0, FormatType.IMG));
+            });
+
+        FormattedBlock right = blk.split (1);
+
+        Assertions.assertEquals (1, blk.getLines ().size ());
+        Assertions.assertEquals ("k", blk.getLines ().get (0).getText ());
+        Assertions.assertEquals (0, blk.getLines ().get (0).getFormatting ().size ());
+        Assertions.assertEquals (1, right.getLines ().size ());
+        Assertions.assertEquals ("", right.getLines ().get (0).getText ());
+        Assertions.assertEquals (1, right.getLines ().get (0).getFormatting ().size ());
+        Assertions.assertTrue (right.getLines ().get (0).getFormatting ().get (0).getFormats ().contains (FormatType.IMG));
+    }
+
+    /**
+     * Deleting a line's last character must keep the line if it still holds a
+     * zero-length image (the line is textless, not empty).
+     */
+    @Test
+    public void testRemove_keepsImageOnlyLine() {
+        FormattedBlock blk = new FormattedBlock (BlockType.PARA)
+            .line (line -> {
+                line.append ("s");
+                line.getFormatting ().add (new FormattedLine.Format (0, 0, FormatType.IMG));
+            });
+
+        blk.remove (0, 1);
+
+        Assertions.assertEquals (1, blk.getLines ().size ());
+        Assertions.assertEquals ("", blk.getLines ().get (0).getText ());
+        Assertions.assertEquals (1, blk.getLines ().get (0).getFormatting ().size ());
+        Assertions.assertTrue (blk.getLines ().get (0).getFormatting ().get (0).getFormats ().contains (FormatType.IMG));
+    }
 }

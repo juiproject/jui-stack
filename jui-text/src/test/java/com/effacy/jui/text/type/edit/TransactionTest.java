@@ -50,6 +50,126 @@ public class TransactionTest {
         return doc.getBlocks().get(blockIndex).getId();
     }
 
+    /**
+     * Typing at the end of a middle line of a multi-line block inserts there — block
+     * offsets count line breaks, so the insert must not drift into a later line.
+     */
+    @Test
+    public void testInsertText_endOfMiddleLine() {
+        FormattedText doc = new FormattedText();
+        doc.block(BlockType.PARA, b -> b.line("aa").line("bb").line("cc"));
+        // End of "bb": offset 2 ("aa") + 1 (break) + 2 ("bb") = 5.
+        EditorState state = EditorState.create(doc, Selection.cursor(0, 5));
+
+        state.apply(Commands.insertText(state, "k"));
+
+        FormattedBlock blk = doc.getBlocks().get(0);
+        Assertions.assertEquals("aa", blk.getLines().get(0).getText());
+        Assertions.assertEquals("bbk", blk.getLines().get(1).getText());
+        Assertions.assertEquals("cc", blk.getLines().get(2).getText());
+    }
+
+    /**
+     * An image occupies one sentinel character, so offset 0 is unambiguously before
+     * it: typed text lands before the image.
+     */
+    @Test
+    public void testInsertText_beforeImage() {
+        FormattedText doc = FormattedText.markdown("![](http://x/a.png)");
+        EditorState state = EditorState.create(doc, Selection.cursor(0, 0));
+
+        state.apply(Commands.insertText(state, "X"));
+
+        FormattedLine line = doc.getBlocks().get(0).getLines().get(0);
+        Assertions.assertEquals("X" + FormattedLine.IMAGE_SENTINEL, line.getText());
+        Assertions.assertEquals(1, line.getFormatting().get(0).getIndex());
+        Assertions.assertEquals(1, line.getFormatting().get(0).getLength());
+    }
+
+    /**
+     * Offset 1 (after the image's sentinel) is unambiguously after it: typed text
+     * lands after the image, and the image format does not stretch over it.
+     */
+    @Test
+    public void testInsertText_afterImage() {
+        FormattedText doc = FormattedText.markdown("![](http://x/a.png)");
+        EditorState state = EditorState.create(doc, Selection.cursor(0, 1));
+
+        state.apply(Commands.insertText(state, "X"));
+
+        FormattedLine line = doc.getBlocks().get(0).getLines().get(0);
+        Assertions.assertEquals(FormattedLine.IMAGE_SENTINEL + "X", line.getText());
+        Assertions.assertEquals(0, line.getFormatting().get(0).getIndex());
+        Assertions.assertEquals(1, line.getFormatting().get(0).getLength());
+    }
+
+    /**
+     * Backspace at the start of an image-bearing block joins it into the previous
+     * block with the image (and its meta) intact.
+     */
+    @Test
+    public void testJoinWithPrevious_preservesImageMeta() {
+        FormattedText doc = FormattedText.markdown("k\n\n![](http://x/a.png){width=10 height=20}");
+        EditorState state = EditorState.create(doc, Selection.cursor(1, 0));
+
+        state.apply(Commands.forceJoinWithPrevious(state));
+
+        Assertions.assertEquals(1, doc.getBlocks().size());
+        FormattedLine line = doc.getBlocks().get(0).getLines().get(0);
+        Assertions.assertEquals("k" + FormattedLine.IMAGE_SENTINEL, line.getText());
+        Assertions.assertEquals(1, line.getFormatting().size());
+        Assertions.assertEquals("http://x/a.png", line.getFormatting().get(0).getMeta().get(FormattedLine.META_IMAGE));
+        Assertions.assertEquals("10", line.getFormatting().get(0).getMeta().get(FormattedLine.META_WIDTH));
+    }
+
+    /**
+     * Backspace after the character preceding an image ("k|[img]") deletes the
+     * character and keeps the image; backspace after the image deletes the image.
+     */
+    @Test
+    public void testDeleteChar_aroundImage() {
+        // Backspace at offset 1 of "k[img]" deletes the k, keeps the image.
+        FormattedText doc = FormattedText.markdown("k![](http://x/a.png)");
+        EditorState state = EditorState.create(doc, Selection.cursor(0, 1));
+        state.apply(Commands.deleteCharBefore(state));
+        FormattedLine line = doc.getBlocks().get(0).getLines().get(0);
+        Assertions.assertEquals(FormattedLine.IMAGE_SENTINEL, line.getText());
+        Assertions.assertEquals(1, line.getFormatting().size());
+        Assertions.assertTrue(line.getFormatting().get(0).getFormats().contains(FormatType.IMG));
+
+        // Backspace at offset 2 of "k[img]" (after the image) deletes the image.
+        FormattedText doc2 = FormattedText.markdown("k![](http://x/a.png)");
+        EditorState state2 = EditorState.create(doc2, Selection.cursor(0, 2));
+        state2.apply(Commands.deleteCharBefore(state2));
+        FormattedLine line2 = doc2.getBlocks().get(0).getLines().get(0);
+        Assertions.assertEquals("k", line2.getText());
+        Assertions.assertEquals(0, line2.getFormatting().size());
+    }
+
+    /**
+     * Pressing Enter with the cursor between a character and a following inline image
+     * (the exact editor path: {@link Commands#splitBlock}) must move the image to the
+     * new block, not delete it.
+     */
+    @Test
+    public void testSplitBlock_cursorBetweenCharAndImage() {
+        FormattedText doc = FormattedText.markdown("k![](http://x/a.png){width=427 height=328 margin=12}");
+        EditorState state = EditorState.create(doc, Selection.cursor(0, 1));
+
+        state.apply(Commands.splitBlock(state));
+
+        Assertions.assertEquals(2, doc.getBlocks().size());
+        Assertions.assertEquals("k", doc.getBlocks().get(0).getLines().get(0).getText());
+        Assertions.assertEquals(0, doc.getBlocks().get(0).getLines().get(0).getFormatting().size());
+        FormattedLine imgLine = doc.getBlocks().get(1).getLines().get(0);
+        Assertions.assertEquals(FormattedLine.IMAGE_SENTINEL, imgLine.getText());
+        Assertions.assertEquals(1, imgLine.getFormatting().size());
+        Assertions.assertEquals(0, imgLine.getFormatting().get(0).getIndex());
+        Assertions.assertEquals(1, imgLine.getFormatting().get(0).getLength());
+        Assertions.assertTrue(imgLine.getFormatting().get(0).getFormats().contains(FormatType.IMG));
+        Assertions.assertEquals("http://x/a.png", imgLine.getFormatting().get(0).getMeta().get(FormattedLine.META_IMAGE));
+    }
+
     /************************************************************************
      * InsertBlockStep
      ************************************************************************/

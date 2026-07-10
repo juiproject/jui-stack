@@ -162,6 +162,50 @@ public interface IEventBuilder<T> {
     }
 
     /**
+     * Called for an inline image within a line, carrying its (block) alignment.
+     * The default delegates to {@link #image(String, String, int, int)}; alignment-aware
+     * builders override this.
+     *
+     * @param alt
+     *            the alt text for the image.
+     * @param src
+     *            the image source URL.
+     * @param width
+     *            the image width in pixels ({@code -1} if not specified).
+     * @param height
+     *            the image height in pixels ({@code -1} if not specified).
+     * @param align
+     *            the block alignment ({@code left}, {@code center}, {@code right}), or
+     *            {@code null}.
+     */
+    default void image(String alt, String src, int width, int height, String align) {
+        image(alt, src, width, height);
+    }
+
+    /**
+     * Called for an inline image within a line, carrying its (block) alignment and
+     * margin. The default delegates to {@link #image(String, String, int, int, String)};
+     * margin-aware builders override this.
+     *
+     * @param alt
+     *            the alt text for the image.
+     * @param src
+     *            the image source URL.
+     * @param width
+     *            the image width in pixels ({@code -1} if not specified).
+     * @param height
+     *            the image height in pixels ({@code -1} if not specified).
+     * @param align
+     *            the block alignment ({@code left}, {@code center}, {@code right}), or
+     *            {@code null}.
+     * @param margin
+     *            the margin in pixels ({@code -1} if not specified).
+     */
+    default void image(String alt, String src, int width, int height, String align, int margin) {
+        image(alt, src, width, height, align);
+    }
+
+    /**
      * Called for a variable placeholder within a line.
      *
      * @param name

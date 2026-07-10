@@ -1859,12 +1859,20 @@ public final class Commands {
             remaining -= line.length() + 1;
         }
         if (targetLine == null) {
+            // A block with no lines (e.g. a freshly-loaded empty document) has nowhere
+            // to anchor the image; give it an empty line to hold it.
+            if (result.getLines().isEmpty())
+                result.line("");
             targetLine = result.getLines().get(result.getLines().size() - 1);
             remaining = targetLine.length();
         }
 
-        // Add a zero-length IMG format at the cursor position.
-        FormattedLine.Format imgFmt = new FormattedLine.Format(remaining, 0, FormatType.IMG);
+        // Insert the image's sentinel character at the cursor position (shifting
+        // existing formats) and cover it with a single-character IMG format. The
+        // sentinel gives the image extent so caret offsets fall unambiguously before
+        // or after it.
+        targetLine.insert(remaining, FormattedLine.IMAGE_SENTINEL);
+        FormattedLine.Format imgFmt = new FormattedLine.Format(remaining, 1, FormatType.IMG);
         imgFmt.getMeta().put(FormattedLine.META_IMAGE, src);
         List<FormattedLine.Format> fmts = targetLine.getFormatting();
         int insertPos = fmts.size();
@@ -1877,7 +1885,8 @@ public final class Commands {
         fmts.add(insertPos, imgFmt);
 
         tr.step(new ReplaceBlockStep(block, result));
-        tr.setSelection(Selection.cursor(block, offset));
+        // Cursor lands after the inserted image.
+        tr.setSelection(Selection.cursor(block, offset + 1));
         return tr;
     }
 
@@ -1899,6 +1908,62 @@ public final class Commands {
                 int absStart = lineStart + fmt.getIndex();
                 if ((absStart == target) && fmt.getFormats().contains(FormatType.IMG)) {
                     line.getFormatting().remove(i);
+                    // Remove the image's sentinel span from the text as well (shifts
+                    // any later formats left). Legacy zero-length images have no span.
+                    if (fmt.getLength() > 0)
+                        line.remove(fmt.getIndex(), fmt.getLength());
+                    Transaction tr = Transaction.create();
+                    tr.step(new ReplaceBlockStep(blockIdx, clone));
+                    tr.setSelection(Selection.cursor(blockIdx, target));
+                    return tr;
+                }
+            }
+            lineStart += line.length() + 1;
+        }
+        return null;
+    }
+
+    /**
+     * Updates the size and/or block alignment of the inline image at the current
+     * cursor position. A {@code null} argument leaves that attribute unchanged; a
+     * non-positive {@code width}/{@code height} or an empty {@code align} clears it.
+     *
+     * @param state
+     *              the current editor state.
+     * @param width
+     *              the image width in pixels, {@code null} to leave unchanged.
+     * @param height
+     *              the image height in pixels, {@code null} to leave unchanged.
+     * @param align
+     *              the block alignment ({@code left}/{@code center}/{@code right}),
+     *              {@code null} to leave unchanged.
+     * @param margin
+     *              the margin in pixels, {@code null} to leave unchanged, non-positive
+     *              to clear.
+     * @return the transaction, or {@code null} if no image is at the cursor.
+     */
+    public static Transaction setImageAttributes(EditorState state, Integer width, Integer height, String align, Integer margin) {
+        Selection sel = state.selection();
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int blockIdx = sel.anchorBlock();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+        FormattedBlock clone = blocks.get(blockIdx).clone();
+        int target = sel.anchorOffset();
+        int lineStart = 0;
+        for (FormattedLine line : clone.getLines()) {
+            for (int i = line.getFormatting().size() - 1; i >= 0; i--) {
+                FormattedLine.Format fmt = line.getFormatting().get(i);
+                int absStart = lineStart + fmt.getIndex();
+                if ((absStart == target) && fmt.getFormats().contains(FormatType.IMG)) {
+                    if (width != null)
+                        setImageMeta(fmt, FormattedLine.META_WIDTH, (width > 0) ? String.valueOf(width) : null);
+                    if (height != null)
+                        setImageMeta(fmt, FormattedLine.META_HEIGHT, (height > 0) ? String.valueOf(height) : null);
+                    if (align != null)
+                        setImageMeta(fmt, FormattedLine.META_ALIGN, align.isEmpty() ? null : align);
+                    if (margin != null)
+                        setImageMeta(fmt, FormattedLine.META_MARGIN, (margin > 0) ? String.valueOf(margin) : null);
                     Transaction tr = Transaction.create();
                     tr.step(new ReplaceBlockStep(blockIdx, clone));
                     tr.setSelection(sel);
@@ -1908,6 +1973,17 @@ public final class Commands {
             lineStart += line.length() + 1;
         }
         return null;
+    }
+
+    /**
+     * Sets (or, when {@code value} is {@code null}, removes) a meta entry on an image
+     * format.
+     */
+    private static void setImageMeta(FormattedLine.Format fmt, String key, String value) {
+        if (value == null)
+            fmt.getMeta().remove(key);
+        else
+            fmt.getMeta().put(key, value);
     }
 
     /************************************************************************

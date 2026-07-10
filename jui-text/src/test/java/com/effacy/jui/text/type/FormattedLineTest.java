@@ -520,4 +520,79 @@ public class FormattedLineTest {
         Assertions.assertTrue(segments.get(3).contains(FormatType.ITL));
         Assertions.assertFalse(segments.get(3).contains(FormatType.A));
     }
+
+    /**
+     * Deleting the character after a zero-length image (the image and the character
+     * share the same index) must preserve the image, not corrupt it.
+     */
+    @Test
+    public void testRemove_preservesZeroLengthImageAtDeletionStart() {
+        FormattedLine line = new FormattedLine();
+        line.append("s");
+        line.getFormatting().add(new FormattedLine.Format(0, 0, FormatType.IMG));
+
+        line.remove(0, 1);
+
+        Assertions.assertEquals("", line.getText());
+        Assertions.assertEquals(1, line.getFormatting().size());
+        Assertions.assertEquals(0, line.getFormatting().get(0).getIndex());
+        Assertions.assertEquals(0, line.getFormatting().get(0).getLength());
+        Assertions.assertTrue(line.getFormatting().get(0).getFormats().contains(FormatType.IMG));
+    }
+
+    /**
+     * Typing at the start of an image-only (empty-text) line inserts the text before
+     * the image, not after it.
+     */
+    @Test
+    public void testInsert_beforeLeadingImageOnEmptyLine() {
+        FormattedLine line = new FormattedLine();
+        line.getFormatting().add(new FormattedLine.Format(0, 0, FormatType.IMG));
+
+        line.insert(0, "X");
+
+        Assertions.assertEquals("X", line.getText());
+        Assertions.assertEquals(1, line.getFormatting().size());
+        Assertions.assertEquals(1, line.getFormatting().get(0).getIndex());
+        List<TextSegment> seq = line.sequence();
+        Assertions.assertEquals("X", seq.get(0).text());
+        Assertions.assertTrue(seq.get(1).image());
+    }
+
+    /**
+     * Typing at the end of a line that ends with an image inserts before the image.
+     */
+    @Test
+    public void testInsert_beforeTrailingImage() {
+        FormattedLine line = new FormattedLine();
+        line.append("ab");
+        line.getFormatting().add(new FormattedLine.Format(2, 0, FormatType.IMG));
+
+        line.insert(2, "X");
+
+        Assertions.assertEquals("abX", line.getText());
+        Assertions.assertEquals(3, line.getFormatting().get(0).getIndex());
+    }
+
+    /**
+     * A zero-length image after a deletion shifts left; one strictly inside the
+     * deleted range is removed.
+     */
+    @Test
+    public void testRemove_shiftsAndDropsZeroLengthImages() {
+        FormattedLine after = new FormattedLine();
+        after.append("ab");
+        after.getFormatting().add(new FormattedLine.Format(1, 0, FormatType.IMG));
+        after.remove(0, 1);
+        Assertions.assertEquals("b", after.getText());
+        Assertions.assertEquals(1, after.getFormatting().size());
+        Assertions.assertEquals(0, after.getFormatting().get(0).getIndex());
+
+        FormattedLine inside = new FormattedLine();
+        inside.append("abc");
+        inside.getFormatting().add(new FormattedLine.Format(1, 0, FormatType.IMG));
+        inside.remove(0, 3);
+        Assertions.assertEquals("", inside.getText());
+        Assertions.assertEquals(0, inside.getFormatting().size());
+    }
 }

@@ -409,16 +409,37 @@ public class DomBuilderFormattedTextRenderer {
             String src = segment.hasMeta() ? segment.meta().get(FormattedLine.META_IMAGE) : null;
             String width = segment.hasMeta() ? segment.meta().get(FormattedLine.META_WIDTH) : null;
             String height = segment.hasMeta() ? segment.meta().get(FormattedLine.META_HEIGHT) : null;
+            String align = segment.hasMeta() ? segment.meta().get(FormattedLine.META_ALIGN) : null;
+            String margin = segment.hasMeta() ? segment.meta().get(FormattedLine.META_MARGIN) : null;
+            // Alt is meta; the segment text is the image's sentinel character (never
+            // rendered).
+            String alt = segment.hasMeta() ? segment.meta().get(FormattedLine.META_ALT) : null;
             ElementBuilder img = Custom.$("img");
             target.insert(img);
             if ((src != null) && !src.isEmpty())
                 img.attr("src", src);
-            if ((text != null) && !text.isEmpty())
-                img.attr("alt", text);
+            if ((alt != null) && !alt.isEmpty())
+                img.attr("alt", alt);
             if ((width != null) && !width.isEmpty())
                 img.attr("width", width);
             if ((height != null) && !height.isEmpty())
                 img.attr("height", height);
+            // Margin applies to all sides; a block alignment (below) then overrides the
+            // horizontal margin on the auto side(s).
+            if ((margin != null) && !margin.isEmpty())
+                img.css("margin", margin + "px");
+            // Block alignment: the image sits on its own line, aligned via auto margins.
+            if ((align != null) && !align.isEmpty()) {
+                img.css("display", "block");
+                if ("center".equals(align)) {
+                    img.css("margin-left", "auto");
+                    img.css("margin-right", "auto");
+                } else if ("right".equals(align)) {
+                    img.css("margin-left", "auto");
+                } else {
+                    img.css("margin-right", "auto");
+                }
+            }
             return;
         }
 

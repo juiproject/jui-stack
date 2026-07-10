@@ -79,8 +79,11 @@ public class StandardBlockHandler implements IBlockHandler {
             el.classList.add("indent" + block.getIndent());
 
         List<FormattedLine> lines = block.getLines();
+        // A single zero-length line still has content if it carries formatting (for
+        // example a zero-length inline image), so it must be rendered — not collapsed
+        // to a bare BR.
         boolean empty = lines.isEmpty()
-                || ((lines.size() == 1) && (lines.get(0).length() == 0));
+                || ((lines.size() == 1) && (lines.get(0).length() == 0) && lines.get(0).getFormatting().isEmpty());
 
         if (empty) {
             // Empty blocks need a BR for contenteditable cursor placement.

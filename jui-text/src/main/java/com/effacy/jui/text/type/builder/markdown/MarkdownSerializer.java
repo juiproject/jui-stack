@@ -334,9 +334,16 @@ public class MarkdownSerializer {
      */
     static String serializeLine(FormattedLine line) {
         String text = line.getText();
-        if (text == null || text.isEmpty())
-            return "";
+        if (text == null)
+            text = "";
         List<FormattedLine.Format> formatting = line.getFormatting();
+        if (text.isEmpty()) {
+            // An otherwise-empty line may still carry an inline image (a zero-length
+            // IMG format), which must survive serialisation as ![](src).
+            if ((formatting != null) && hasLinkOrImage(formatting))
+                return postProcessLinks(text, line);
+            return "";
+        }
         if (formatting == null || formatting.isEmpty())
             return text;
 
@@ -383,6 +390,17 @@ public class MarkdownSerializer {
     }
 
     /**
+     * Determines whether any of the formats is a link or an image.
+     */
+    private static boolean hasLinkOrImage(List<FormattedLine.Format> formatting) {
+        for (FormattedLine.Format fmt : formatting) {
+            if (fmt.getFormats().contains(FormatType.A) || fmt.getFormats().contains(FormatType.IMG))
+                return true;
+        }
+        return false;
+    }
+
+    /**
      * Builds a markdown string for a line that contains link or image formatting.
      * Links and images use {@code [text](url)} / {@code ![alt](url)} syntax while
      * other inline formatting is applied around them.
@@ -413,7 +431,13 @@ public class MarkdownSerializer {
 
             if (isImage) {
                 String src = (fmt.getMeta() != null) ? fmt.getMeta().get(FormattedLine.META_IMAGE) : null;
-                sb.append("![").append(linkText).append("](").append(src != null ? src : "").append(")");
+                // The alt text is meta; the span text is the sentinel character (never
+                // emitted). Legacy alt-as-span-text content falls back to the span.
+                String alt = (fmt.getMeta() != null) ? fmt.getMeta().get(FormattedLine.META_ALT) : null;
+                if (alt == null)
+                    alt = linkText.replace(FormattedLine.IMAGE_SENTINEL, "");
+                sb.append("![").append(alt).append("](").append(src != null ? src : "").append(")");
+                sb.append(imageAttributes(fmt));
             } else {
                 String href = (fmt.getMeta() != null) ? fmt.getMeta().get(FormattedLine.META_LINK) : null;
                 sb.append("[").append(linkText).append("](").append(href != null ? href : "").append(")");
@@ -427,6 +451,34 @@ public class MarkdownSerializer {
             sb.append(serializeSpan(text, pos, text.length(), line.getFormatting()));
 
         return sb.toString();
+    }
+
+    /**
+     * Builds the optional image attribute suffix ({@code {width=W height=H align=A}})
+     * from an image format's meta, or an empty string when it carries none.
+     */
+    private static String imageAttributes(FormattedLine.Format fmt) {
+        if (fmt.getMeta() == null)
+            return "";
+        StringBuilder attrs = new StringBuilder();
+        appendAttribute(attrs, "width", fmt.getMeta().get(FormattedLine.META_WIDTH));
+        appendAttribute(attrs, "height", fmt.getMeta().get(FormattedLine.META_HEIGHT));
+        appendAttribute(attrs, "align", fmt.getMeta().get(FormattedLine.META_ALIGN));
+        appendAttribute(attrs, "margin", fmt.getMeta().get(FormattedLine.META_MARGIN));
+        if (attrs.length() == 0)
+            return "";
+        return "{" + attrs + "}";
+    }
+
+    /**
+     * Appends a {@code key=value} attribute (space-separated) when the value is present.
+     */
+    private static void appendAttribute(StringBuilder sb, String key, String value) {
+        if ((value == null) || value.isEmpty())
+            return;
+        if (sb.length() > 0)
+            sb.append(' ');
+        sb.append(key).append('=').append(value);
     }
 
     /**

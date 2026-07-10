@@ -70,7 +70,33 @@ These toggle the format on the selected range. With a cursor (no selection) they
 |----------|--------|
 | Ctrl+C | Copy — handled natively by the browser (DOM reflects model). |
 | Ctrl+X | Cut — browser copies selection to clipboard; editor deletes selection via transaction. |
-| Ctrl+V | Paste — plain text is read from the clipboard and inserted via `Commands.pasteText`. Multi-line text is split into separate PARA blocks. |
+| Ctrl+V | Paste — plain text is read from the clipboard and inserted via `Commands.pasteText`. Multi-line text is split into separate PARA blocks. When the clipboard carries an image file and an `imageUpload` handler is configured, the image is uploaded and inserted instead (see below). |
+
+### Inline images
+
+Images are **atomic single-character segments** in the model: the line text carries one U+FFFC sentinel character covered by a length-1 `IMG` format, with `src`, `alt`, `width`, `height`, `align` and `margin` as format metadata (see the [type README](../../type/README.md)). This gives an image extent, so caret offsets fall unambiguously before or after it and no editing special-cases are needed:
+
+| Input | Behaviour |
+|-------|-----------|
+| Backspace (caret after image) | Deletes the image (its sentinel character), like any character. Undo restores it fully. |
+| Delete (caret before image) | Deletes the image. |
+| Typing adjacent to an image | Text lands on the caret's side; the image format is never extended by adjacent insertion (atomic, like variables). |
+| Enter between text and image | Ordinary split; the image moves to the new block. |
+
+The native selection helpers (`jui_text_editor.js`) count an `<img>` element as exactly one character in all offset/caret walks, mirroring the model.
+
+**Capture (upload) paths** — enabled by configuring `Config.imageUpload(IImageUploadHandler)`:
+
+- **Paste**: an image file on the clipboard is passed to the handler; on success the returned URL is inserted at the cursor via `Commands.insertImage` (cursor lands after the image).
+- **Drag-and-drop**: dropping an image file places the caret at the drop point (`caretPositionFromPoint`, falling back to the current selection) then follows the same upload/insert flow. Non-image file drops are swallowed.
+
+**Selection overlay** — clicking an image shows a floating overlay with:
+
+- four corner **drag-resize handles** (aspect-locked; live DOM preview, one `Commands.setImageAttributes` transaction committed on release);
+- **align buttons** (left / centre / right block alignment — the image sits on its own line via auto margins);
+- **margin steppers** (±4 px, clamped at 0).
+
+The overlay dismisses on re-render, scroll, or an outside pointer-down.
 
 ### Table cell navigation
 
@@ -490,6 +516,8 @@ Beyond `editor(...)` and `toolbar(...)`, the control exposes:
 | `variant(Variant)` | A reusable look. `Variant.SEAMLESS` removes all borders and the focus highlight so the editor sits flush in its container. |
 | `detachedToolbar()` | Binds the toolbar but does not render it inside the control — the host places it (e.g. a full-width strip); supply the toolbar instance via `toolbar(Supplier)`. |
 | `position(Position)` / `noFocus()` / `borderless()` | Toolbar position and individual border/focus toggles (subsumed by `SEAMLESS`). |
+
+Image capture is configured on the *editor* config (via `editor(cfg -> cfg.imageUpload(handler))`): supply an `IImageUploadHandler` that uploads the pasted/dropped image file and calls back with the URL to embed — see [Inline images](#inline-images).
 
 # Appendix
 

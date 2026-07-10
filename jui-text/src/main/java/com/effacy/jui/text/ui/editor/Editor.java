@@ -28,8 +28,15 @@ import com.effacy.jui.text.type.edit.step.SetBlockTypeStep;
 import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.DomGlobal;
+import elemental2.dom.DOMRect;
 import elemental2.dom.Element;
+import elemental2.dom.Event;
+import elemental2.dom.EventListener;
+import elemental2.dom.HTMLElement;
 import elemental2.dom.KeyboardEvent;
+import elemental2.dom.MouseEvent;
+import elemental2.dom.Node;
+import jsinterop.base.Js;
 
 /**
  * Transaction-based rich text editor component.
@@ -174,6 +181,7 @@ public class Editor extends Component<Editor.Config> {
         IListIndexFormatter listIndexFormatter = Editor::defaultListIndex;
         boolean debugLog;
         String placeholder;
+        IImageUploadHandler imageUpload;
 
         /**
          * Configures whether pressing Enter at the end of a heading (H1–H3)
@@ -208,6 +216,17 @@ public class Editor extends Component<Editor.Config> {
          */
         public Config placeholder(String placeholder) {
             this.placeholder = placeholder;
+            return this;
+        }
+
+        /**
+         * Configures a handler for images introduced into the editor (for example
+         * pasted from the clipboard). When set, pasting an image file uploads it via
+         * the handler and inserts an inline image at the cursor using the returned
+         * {@code src}. When {@code null} (the default) pasted images are ignored.
+         */
+        public Config imageUpload(IImageUploadHandler handler) {
+            this.imageUpload = handler;
             return this;
         }
     }
@@ -512,6 +531,8 @@ public class Editor extends Component<Editor.Config> {
      * delegated to the appropriate {@link IBlockHandler}.
      */
     private void render() {
+        // The DOM (and any selected image element) is rebuilt, so dismiss the overlay.
+        hideImageOverlay();
         rendering = true;
         try {
             editorEl.innerHTML = "";
@@ -549,7 +570,15 @@ public class Editor extends Component<Editor.Config> {
         if (blocks.size() != 1)
             return false;
         FormattedBlock blk = blocks.get(0);
-        return (blk.getType() == BlockType.PARA) && (Positions.contentSize(blk) == 0);
+        if ((blk.getType() != BlockType.PARA) || (Positions.contentSize(blk) != 0))
+            return false;
+        // A zero-length format (e.g. an inline image) is content even though it adds no
+        // characters, so a block carrying one is not blank.
+        for (FormattedLine line : blk.getLines()) {
+            if (!line.getFormatting().isEmpty())
+                return false;
+        }
+        return true;
     }
 
     /**
@@ -575,10 +604,13 @@ public class Editor extends Component<Editor.Config> {
                 String src = segment.meta().get(FormattedLine.META_IMAGE);
                 if ((src != null) && !src.isEmpty())
                     img.setAttribute("src", src);
-                String alt = segment.text();
+                // Alt is meta; the segment text is the image's sentinel character
+                // (never rendered).
+                String alt = segment.meta().get(FormattedLine.META_ALT);
                 if ((alt != null) && !alt.isEmpty())
                     img.setAttribute("alt", alt);
                 img.setAttribute("contenteditable", "false");
+                applyImageAttributes(img, segment.meta());
                 parent.appendChild(img);
                 parent.appendChild(DomGlobal.document.createTextNode(""));
             } else if (segment.contains(FormatType.A)) {
@@ -869,7 +901,309 @@ public class Editor extends Component<Editor.Config> {
         editorEl.addEventListener("keydown", evt -> handleKeyDown((KeyboardEvent) evt));
         editorEl.addEventListener("beforeinput", evt -> handleBeforeInput(evt));
         editorEl.addEventListener("paste", evt -> handlePaste(evt));
+        editorEl.addEventListener("dragover", evt -> handleDragOver(evt));
+        editorEl.addEventListener("drop", evt -> handleDrop(evt));
+        editorEl.addEventListener("click", evt -> handleEditorClick(evt));
+        // Dismiss the image overlay on a pointer-down outside it (and outside the image).
+        DomGlobal.document.addEventListener("mousedown", evt -> handleDocumentMouseDown(evt));
         DomGlobal.document.addEventListener("selectionchange", evt -> syncSelectionFromDom());
+        // Keep the overlay aligned to the image while scrolling would be involved; the
+        // simplest robust behaviour is to dismiss it on scroll.
+        DomGlobal.document.addEventListener("scroll", evt -> hideImageOverlay(), true);
+    }
+
+    /************************************************************************
+     * Image selection overlay (drag-resize handles + block-align toolbar).
+     *
+     * When an inline image is clicked a floating overlay is shown over it with
+     * four corner handles (aspect-locked resize) and a small toolbar (left /
+     * centre / right block alignment). Resizing is a pure-DOM live preview; a
+     * single transaction ({@link Commands#setImageAttributes}) is committed on
+     * release. The overlay is dismissed on any re-render, scroll, or outside
+     * pointer-down.
+     ************************************************************************/
+
+    /** The floating overlay frame (lazily created, appended to {@code body}). */
+    private HTMLElement imageOverlay;
+
+    /** The image element the overlay currently targets, or {@code null}. */
+    private Element selectedImage;
+
+    /** The corner being dragged ({@code nw}/{@code ne}/{@code sw}/{@code se}). */
+    private String resizeCorner;
+
+    private double resizeStartX;
+    private double resizeStartW;
+    private double resizeAspect;
+
+    private EventListener resizeMoveListener;
+    private EventListener resizeUpListener;
+
+    /**
+     * Applies the width/height/(block) alignment meta of an image segment to its
+     * rendered {@code <img>}.
+     */
+    private void applyImageAttributes(Element img, Map<String, String> meta) {
+        if (meta == null)
+            return;
+        String width = meta.get(FormattedLine.META_WIDTH);
+        if ((width != null) && !width.isEmpty())
+            img.setAttribute("width", width);
+        String height = meta.get(FormattedLine.META_HEIGHT);
+        if ((height != null) && !height.isEmpty())
+            img.setAttribute("height", height);
+        String style = imageStyle(meta.get(FormattedLine.META_ALIGN), meta.get(FormattedLine.META_MARGIN));
+        if (style != null)
+            img.setAttribute("style", style);
+    }
+
+    /**
+     * Inline style for an image's margin and block alignment. Margin applies to all
+     * sides; a block alignment then overrides the horizontal margin on the auto
+     * side(s) (the image sits on its own line, aligned via auto margins).
+     */
+    private String imageStyle(String align, String margin) {
+        boolean hasAlign = (align != null) && !align.isEmpty();
+        boolean hasMargin = (margin != null) && !margin.isEmpty();
+        if (!hasAlign && !hasMargin)
+            return null;
+        StringBuilder sb = new StringBuilder();
+        if (hasMargin)
+            sb.append("margin:").append(margin).append("px;");
+        if (hasAlign) {
+            sb.append("display:block;");
+            if ("center".equals(align))
+                sb.append("margin-left:auto;margin-right:auto;");
+            else if ("right".equals(align))
+                sb.append("margin-left:auto;");
+            else
+                sb.append("margin-right:auto;");
+        }
+        return sb.toString();
+    }
+
+    private void handleEditorClick(Event evt) {
+        Element target = Js.cast(evt.target);
+        if ((target != null) && "IMG".equalsIgnoreCase(target.tagName))
+            showImageOverlay(target);
+        else
+            hideImageOverlay();
+    }
+
+    private void handleDocumentMouseDown(Event evt) {
+        if (imageOverlay == null)
+            return;
+        Node target = Js.cast(evt.target);
+        if (target == null)
+            return;
+        // Ignore pointer-downs on the image itself or within the overlay.
+        if ((selectedImage != null) && ((target == selectedImage) || selectedImage.contains(target)))
+            return;
+        if (imageOverlay.contains(target))
+            return;
+        hideImageOverlay();
+    }
+
+    private void showImageOverlay(Element img) {
+        ensureOverlay();
+        selectedImage = img;
+        imageOverlay.style.setProperty("display", "block");
+        positionOverlay();
+    }
+
+    private void hideImageOverlay() {
+        selectedImage = null;
+        endResize();
+        if (imageOverlay != null)
+            imageOverlay.style.setProperty("display", "none");
+    }
+
+    /**
+     * Lazily builds the overlay frame with its four corner handles and the
+     * alignment toolbar.
+     */
+    private void ensureOverlay() {
+        if (imageOverlay != null)
+            return;
+        imageOverlay = styled("position:fixed;display:none;pointer-events:none;border:1px solid #4a90d9;box-sizing:border-box;z-index:1000;");
+        imageOverlay.appendChild(handle("nw", "left:-5px;top:-5px;"));
+        imageOverlay.appendChild(handle("ne", "right:-5px;top:-5px;"));
+        imageOverlay.appendChild(handle("sw", "left:-5px;bottom:-5px;"));
+        imageOverlay.appendChild(handle("se", "right:-5px;bottom:-5px;"));
+        HTMLElement toolbar = styled("position:absolute;top:-30px;left:0;display:flex;gap:2px;pointer-events:auto;");
+        toolbar.appendChild(alignButton("left", "←"));
+        toolbar.appendChild(alignButton("center", "↔"));
+        toolbar.appendChild(alignButton("right", "→"));
+        toolbar.appendChild(marginButton("−", -4));
+        toolbar.appendChild(marginButton("+", 4));
+        imageOverlay.appendChild(toolbar);
+        DomGlobal.document.body.appendChild(imageOverlay);
+    }
+
+    /** Positions the (fixed) overlay frame over the selected image. */
+    private void positionOverlay() {
+        if ((imageOverlay == null) || (selectedImage == null))
+            return;
+        DOMRect r = selectedImage.getBoundingClientRect();
+        imageOverlay.style.setProperty("left", r.left + "px");
+        imageOverlay.style.setProperty("top", r.top + "px");
+        imageOverlay.style.setProperty("width", r.width + "px");
+        imageOverlay.style.setProperty("height", r.height + "px");
+    }
+
+    private HTMLElement handle(String corner, String position) {
+        HTMLElement h = styled("position:absolute;width:10px;height:10px;background:#fff;border:1px solid #4a90d9;box-sizing:border-box;pointer-events:auto;cursor:" + corner + "-resize;" + position);
+        h.addEventListener("mousedown", evt -> startResize(corner, (MouseEvent) evt));
+        return h;
+    }
+
+    private HTMLElement alignButton(String align, String label) {
+        HTMLElement b = styled("pointer-events:auto;cursor:pointer;background:#4a90d9;color:#fff;border:none;border-radius:2px;width:22px;height:22px;font-size:12px;line-height:22px;text-align:center;");
+        b.textContent = label;
+        b.addEventListener("mousedown", evt -> {
+            evt.preventDefault();
+            commitImageAlign(align);
+        });
+        return b;
+    }
+
+    private HTMLElement marginButton(String label, int delta) {
+        HTMLElement b = styled("pointer-events:auto;cursor:pointer;background:#7a7a7a;color:#fff;border:none;border-radius:2px;width:22px;height:22px;font-size:14px;line-height:22px;text-align:center;");
+        b.textContent = label;
+        b.addEventListener("mousedown", evt -> {
+            evt.preventDefault();
+            adjustImageMargin(delta);
+        });
+        return b;
+    }
+
+    private void startResize(String corner, MouseEvent evt) {
+        if (selectedImage == null)
+            return;
+        evt.preventDefault();
+        DOMRect r = selectedImage.getBoundingClientRect();
+        resizeCorner = corner;
+        resizeStartX = evt.clientX;
+        resizeStartW = r.width;
+        resizeAspect = (r.height > 0) ? (r.width / r.height) : 1.0;
+        resizeMoveListener = e -> onResizeMove((MouseEvent) e);
+        resizeUpListener = e -> endResize();
+        DomGlobal.document.addEventListener("mousemove", resizeMoveListener);
+        DomGlobal.document.addEventListener("mouseup", resizeUpListener);
+    }
+
+    private void onResizeMove(MouseEvent evt) {
+        if (selectedImage == null)
+            return;
+        double dx = evt.clientX - resizeStartX;
+        double sign = resizeCorner.endsWith("e") ? 1.0 : -1.0;
+        double newW = resizeStartW + (sign * dx);
+        if (newW < 20)
+            newW = 20;
+        double newH = (resizeAspect > 0) ? (newW / resizeAspect) : newW;
+        selectedImage.setAttribute("width", String.valueOf((int) newW));
+        selectedImage.setAttribute("height", String.valueOf((int) newH));
+        positionOverlay();
+    }
+
+    private void endResize() {
+        if (resizeMoveListener != null) {
+            DomGlobal.document.removeEventListener("mousemove", resizeMoveListener);
+            resizeMoveListener = null;
+        }
+        if (resizeUpListener != null) {
+            DomGlobal.document.removeEventListener("mouseup", resizeUpListener);
+            resizeUpListener = null;
+        }
+        if ((resizeCorner != null) && (selectedImage != null)) {
+            DOMRect r = selectedImage.getBoundingClientRect();
+            resizeCorner = null;
+            commitImageSize((int) r.width, (int) r.height);
+        }
+        resizeCorner = null;
+    }
+
+    private void commitImageSize(int width, int height) {
+        Element img = selectedImage;
+        if (img == null)
+            return;
+        selectImageInModel(img);
+        applyTransaction(Commands.setImageAttributes(state, width, height, null, null));
+    }
+
+    private void commitImageAlign(String align) {
+        Element img = selectedImage;
+        if (img == null)
+            return;
+        selectImageInModel(img);
+        applyTransaction(Commands.setImageAttributes(state, null, null, align, null));
+    }
+
+    /** Steps the selected image's margin by {@code delta} pixels (clamped at 0). */
+    private void adjustImageMargin(int delta) {
+        Element img = selectedImage;
+        if (img == null)
+            return;
+        selectImageInModel(img);
+        int current = 0;
+        String cur = imageMetaAtCursor(FormattedLine.META_MARGIN);
+        if (cur != null) {
+            try {
+                current = Integer.parseInt(cur);
+            } catch (NumberFormatException e) {
+                current = 0;
+            }
+        }
+        int next = Math.max(0, current + delta);
+        applyTransaction(Commands.setImageAttributes(state, null, null, null, next));
+    }
+
+    /**
+     * Reads a meta value of the image format at the current model cursor (used to read
+     * the current margin before stepping it).
+     */
+    private String imageMetaAtCursor(String key) {
+        Selection sel = state.selection();
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int blockIdx = sel.anchorBlock();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+        int target = sel.anchorOffset();
+        int lineStart = 0;
+        for (FormattedLine line : blocks.get(blockIdx).getLines()) {
+            for (FormattedLine.Format fmt : line.getFormatting()) {
+                if (((lineStart + fmt.getIndex()) == target) && fmt.getFormats().contains(FormatType.IMG))
+                    return (fmt.getMeta() != null) ? fmt.getMeta().get(key) : null;
+            }
+            lineStart += line.length() + 1;
+        }
+        return null;
+    }
+
+    /**
+     * Places the model cursor on the given image (by positioning the DOM caret
+     * immediately before it and syncing) so a subsequent image command targets it.
+     */
+    private void selectImageInModel(Element img) {
+        Node parent = img.parentNode;
+        if (parent == null)
+            return;
+        int idx = 0;
+        Node n = parent.firstChild;
+        while ((n != null) && (n != img)) {
+            idx++;
+            n = n.nextSibling;
+        }
+        elemental2.dom.Selection sel = DomGlobal.document.getSelection();
+        if (sel != null)
+            sel.collapse(parent, idx);
+        syncSelectionFromDom();
+    }
+
+    private HTMLElement styled(String cssText) {
+        HTMLElement el = Js.cast(DomGlobal.document.createElement("div"));
+        el.setAttribute("style", cssText);
+        return el;
     }
 
     /**
@@ -1029,11 +1363,9 @@ public class Editor extends Component<Editor.Config> {
                     break;
                 }
                 if (sel2.isCursor()) {
-                    // Atomic image deletion: if cursor is at an image, remove it.
-                    if (findImageAt(sel2.anchorBlock(), sel2.anchorOffset())) {
-                        applyTransaction(Commands.removeImage(state));
-                        break;
-                    }
+                    // Images occupy a single sentinel character, so deleteCharBefore
+                    // naturally removes an image when the caret sits after it (and
+                    // only then) — no image special-case is needed.
                     // Atomic variable deletion: if cursor is inside or at the
                     // end of a variable, delete the entire variable as a unit.
                     int[] varRange = findVariableContaining(sel2.anchorBlock(), sel2.anchorOffset());
@@ -1049,11 +1381,9 @@ public class Editor extends Component<Editor.Config> {
             case "deleteContentForward": {
                 Selection selFwd = state.selection();
                 if (selFwd.isCursor()) {
-                    // Atomic image deletion: if cursor is at an image, remove it.
-                    if (findImageAt(selFwd.anchorBlock(), selFwd.anchorOffset())) {
-                        applyTransaction(Commands.removeImage(state));
-                        break;
-                    }
+                    // Images occupy a single sentinel character, so deleteCharAfter
+                    // naturally removes an image when the caret sits before it — no
+                    // image special-case is needed.
                     // Atomic variable deletion: if cursor is inside or at the
                     // start of a variable, delete the entire variable as a unit.
                     int[] varRange = findVariableAt(selFwd.anchorBlock(), selFwd.anchorOffset());
@@ -1116,6 +1446,23 @@ public class Editor extends Component<Editor.Config> {
             if (h.handlePaste(evt, ctx))
                 return;
         }
+        // Pasted image files (e.g. a screenshot from the clipboard) are uploaded via
+        // the configured handler and inserted as an inline image.
+        IImageUploadHandler imageUpload = config().imageUpload;
+        if (imageUpload != null) {
+            elemental2.dom.File image = firstClipboardImage(evt);
+            if (image != null) {
+                evt.preventDefault();
+                syncSelectionFromDom();
+                imageUpload.upload(image, src -> {
+                    if ((src != null) && !src.isEmpty())
+                        applyTransaction(Commands.insertImage(state, src));
+                }, err -> {
+                    // Best effort: a failed upload leaves the document unchanged.
+                });
+                return;
+            }
+        }
         evt.preventDefault();
         syncSelectionFromDom();
         String text = EditorSupport.getClipboardText(evt);
@@ -1124,6 +1471,96 @@ public class Editor extends Component<Editor.Config> {
         // Normalize line endings (Windows \r\n and old Mac \r).
         text = text.replace("\r\n", "\n").replace("\r", "\n");
         applyTransaction(Commands.pasteText(state, text));
+    }
+
+    /**
+     * Extracts the first image file from a paste event's clipboard, or
+     * {@code null} if the clipboard carries no image.
+     */
+    private elemental2.dom.File firstClipboardImage(elemental2.dom.Event evt) {
+        elemental2.dom.ClipboardEvent ce = Js.uncheckedCast(evt);
+        return firstImageFile(ce.clipboardData);
+    }
+
+    /**
+     * Extracts the first image file from a data transfer (clipboard or drag), or
+     * {@code null} if it carries no image.
+     */
+    private elemental2.dom.File firstImageFile(elemental2.dom.DataTransfer dt) {
+        if ((dt == null) || (dt.files == null))
+            return null;
+        for (elemental2.dom.File file : dt.files.asList()) {
+            if ((file != null) && (file.type != null) && file.type.startsWith("image/"))
+                return file;
+        }
+        return null;
+    }
+
+    /**
+     * Accepts a file drag (so the {@code drop} fires) when an image handler is
+     * configured; other drags are left to their default handling.
+     */
+    private void handleDragOver(elemental2.dom.Event evt) {
+        if ((config().imageUpload != null) && isFileDrag(evt))
+            evt.preventDefault();
+    }
+
+    /**
+     * Handles a dropped image file: uploads it via the configured handler and
+     * inserts it at the drop point.
+     */
+    private void handleDrop(elemental2.dom.Event evt) {
+        IImageUploadHandler imageUpload = config().imageUpload;
+        if ((imageUpload == null) || !isFileDrag(evt))
+            return;
+        // We accepted the file drag on dragover; prevent the browser from opening it.
+        evt.preventDefault();
+        elemental2.dom.DragEvent de = Js.cast(evt);
+        elemental2.dom.File image = firstImageFile(de.dataTransfer);
+        if (image == null)
+            return;
+        placeCaretAtPoint(de.clientX, de.clientY);
+        syncSelectionFromDom();
+        imageUpload.upload(image, src -> {
+            if ((src != null) && !src.isEmpty())
+                applyTransaction(Commands.insertImage(state, src));
+        }, err -> {
+            // Best effort: a failed upload leaves the document unchanged.
+        });
+    }
+
+    /**
+     * Determines whether a drag event carries files (as opposed to text or other
+     * content).
+     */
+    private boolean isFileDrag(elemental2.dom.Event evt) {
+        elemental2.dom.DragEvent de = Js.cast(evt);
+        elemental2.dom.DataTransfer dt = de.dataTransfer;
+        if ((dt == null) || (dt.types == null))
+            return false;
+        for (int i = 0; i < dt.types.length; i++) {
+            if ("Files".equals(dt.types.getAt(i)))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Moves the caret to the given viewport point (the drop location), so a dropped
+     * image is inserted where it lands. Falls back to the current selection where the
+     * browser does not support {@code caretPositionFromPoint}.
+     */
+    private void placeCaretAtPoint(double x, double y) {
+        try {
+            elemental2.dom.CaretPosition pos = DomGlobal.document.caretPositionFromPoint((int) x, (int) y);
+            if ((pos == null) || (pos.offsetNode == null))
+                return;
+            elemental2.dom.Selection sel = DomGlobal.document.getSelection();
+            if (sel != null)
+                sel.collapse(pos.offsetNode, (int) pos.offset);
+        } catch (Throwable e) {
+            // Fall back to the current selection.
+        }
     }
 
     /************************************************************************
@@ -1194,26 +1631,6 @@ public class Editor extends Component<Editor.Config> {
             lineStart += line.length() + 1;
         }
         return null;
-    }
-
-    /**
-     * Returns {@code true} if there is a zero-length IMG format at the given
-     * offset in the block.
-     */
-    private boolean findImageAt(int blockIdx, int offset) {
-        FormattedBlock blk = state.doc().getBlocks().get(blockIdx);
-        int lineStart = 0;
-        for (FormattedLine line : blk.getLines()) {
-            for (FormattedLine.Format fmt : line.getFormatting()) {
-                if (!fmt.getFormats().contains(FormatType.IMG))
-                    continue;
-                int absStart = lineStart + fmt.getIndex();
-                if (absStart == offset)
-                    return true;
-            }
-            lineStart += line.length() + 1;
-        }
-        return false;
     }
 
     /************************************************************************

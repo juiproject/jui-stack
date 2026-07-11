@@ -83,6 +83,16 @@ public interface IEditorCommands {
     String currentLink();
 
     /**
+     * Returns the display text (label) of the link at the current cursor, or of the
+     * current range selection when there is no link — the text a link panel should
+     * pre-fill as the editable label. {@code null} when there is nothing to label.
+     * Call {@link #syncSelection()} first.
+     */
+    default String currentLinkLabel() {
+        return null;
+    }
+
+    /**
      * Applies a link URL to the current range selection. If the selection
      * is a cursor (collapsed) and not inside an existing link, this is a
      * no-op.

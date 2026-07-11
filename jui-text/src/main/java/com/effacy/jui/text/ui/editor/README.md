@@ -102,6 +102,17 @@ The handler is also where upload policy lives (e.g. a size limit): reject by rep
 
 The overlay dismisses on re-render, scroll, or an outside pointer-down.
 
+### Links
+
+Links render as `<a>` and are edited via the toolbar link tool (`Tools.link`), whose `LinkPanel` edits both the **URL** and the display **label** (pre-filled from the link/selection text via `currentLinkLabel()`). Applying only rewrites the link's text when the label actually changed (`Commands.updateLinkContent`) — a URL-only change keeps `Commands.updateLink`, preserving any inline formatting in the run.
+
+How a click on a link behaves is configurable via `Config.linkInteraction(LinkInteraction)`:
+
+- **`EDIT`** (default) — clicking a link positions the caret inside it for inline editing. Suited to a surface with a distinct edit mode.
+- **`NAVIGATE`** — clicking a link **opens** it (via `Config.linkOpenHandler`, else a new browser tab), and **hovering** shows a small floating card with the URL and **Open** / **Edit** actions. Edit targets the hovered link in the model and opens the `LinkPanel` (URL + label). Suited to an always-editable surface with no separate view mode (e.g. attachment links you want clickable). Supply `linkOpenHandler` to route application-specific schemes (e.g. an internal `doc:` reference) yourself. In this mode links carry a **pointer cursor** (the root gets a `navigate` modifier class → `.component.navigate a { cursor: pointer }`) to signal they're clickable.
+
+The hover card mirrors the image overlay: a fixed `body` element positioned above the link (flipping below when tight), kept open while the pointer is on the link or the card, dismissed on scroll / re-render / leave. It appears after a short **hover delay** (`LINK_CARD_SHOW_DELAY`, 450ms) so a passing pointer doesn't flash it; moving directly between two links' cards switches without re-delaying.
+
 ### Table cell navigation
 
 When focus is inside a table cell, keydown is consumed by `TableBlockHandler` and does not reach the editor's standard key processing.
@@ -281,6 +292,18 @@ The inline `@CssResource` on `Editor` (scoped to the obfuscated `.component` roo
 
 This layer should **not** carry content typography that a consumer would want to restyle (heading sizes, quote/code appearance) — that lives in layer 3.
 
+### 1a. Floating affordances (`EditorOverlayCSS`)
+
+The image-selection overlay and the link hover card are appended to `body` (outside the component's scoped DOM), so they carry their own injected sheet, `EditorOverlayCSS`, rather than inline styles. Colours are driven by tokens with layered fallbacks (each chains to an existing jui token, then a literal), so they follow the theme by default and can be restyled app-wide by overriding these on `:root`:
+
+- `--jui-editor-popover-bg` / `--jui-editor-popover-border` / `--jui-editor-popover-fg` / `--jui-editor-popover-muted` / `--jui-editor-popover-hover` / `--jui-editor-popover-shadow` — the floating surface (also used by `LinkPanel`);
+- `--jui-editor-accent` (→ `--jui-ctl-focus`) — the interactive accent (link card Open/Edit, image align buttons, panel Apply/focus);
+- `--jui-editor-neutral` — secondary controls (image margin steppers);
+- `--jui-editor-danger` (→ `--jui-color-error`) — destructive actions (link Remove);
+- `--jui-editor-on-accent` — text/glyph on an accent fill.
+
+(An app overriding a token may use any value the browser accepts — e.g. a multi-layer `box-shadow` — since the override is parsed by the real stylesheet, not GWT's `@CssResource` parser; only the in-sheet *fallbacks* are kept simple.)
+
 ### 2. Plugin CSS (owned by each plugin)
 
 Each block handler / fence renderer that needs styling declares its **own** `@CssResource` and injects it lazily on first render (see `FenceBlockHandler`, `DiagramBlockHandler`, `EquationBlockHandler`, `FencePanel`). A plugin owns the CSS for both its in-editor affordance and its rendered output; nothing plugin-specific belongs in the core sheets.
@@ -293,6 +316,34 @@ Each block handler / fence renderer that needs styling declares its **own** `@Cs
 - **Replace wholesale.** To supply an entirely different stylesheet, implement `IFormattedTextCSS` with your own `@CssResource` (or extend `StandardFormattedTextCSS`) and register it via `FormattedTextStyles.styles(myProvider)`. The content class names the renderer applies (`fmt_*`, `code_block`, `quote`, `list_bullet`, `list_number`, `indent*`, and the heading elements) are the contract to honour.
 
 The editor consumes layer 3 directly: `Editor` adds the `richtext` scope class to its content root, so headings, inline formats (`fmt_*`), quotes, code blocks and indent margins all resolve from `FormattedTextStyles` — editor and read-only render from **one** sheet. `Editor.LocalCSS` keeps only what is genuinely editor-specific: the contenteditable chrome and placeholder, the `.block` structure, the ordered/unordered **list markers** (which the editor draws differently from read-only, via `data-list-index`), paragraph spacing, and the `variable`/`inlineImage` affordances. Block elements carry the shared content classes (`quote`, `code_block`, `indentN`) so the `richtext` rules match; the quote/code rules are element-qualified (`blockquote.quote`, `pre.code_block`) so they win over the editor's structural `.block` padding.
+
+### Content style
+
+The presentation of the content is a `ContentStyle` — a standalone class in `com.effacy.jui.text.ui.type`, **not bound to the editor**. It is an open bag of `--jui-richtext-*` token overrides applied inline on the content root (so they win over the stylesheet defaults, for that subtree only). The editor takes one via `Editor.Config.contentStyle(ContentStyle)`; the same style also drives read-only presentation (see below), so a style means the same thing everywhere.
+
+`ContentStyle` is **not a fixed enum**:
+
+```java
+.contentStyle(ContentStyle.document())                      // a standard configuration
+.contentStyle(ContentStyle.document().blockSpacing("8px"))  // … tweaked
+.contentStyle(new ContentStyle().listIndent("2em").lineHeight("1.7"))  // your own
+```
+
+- **Build your own** with `new ContentStyle()` and the fluent setters (`listIndent`, `listSpacing`, `blockSpacing`, `paragraphSpacing`, `lineHeight`), or `token(name, value)` for any other content token (e.g. `--jui-richtext-h2-size`).
+- **Or use a provided standard**: `ContentStyle.compact()` (the stylesheet defaults — tight, base lists flush) and `ContentStyle.document()` (roomier spacing, base-level lists indented). These are just convenience bundles of the same overrides — copy and tweak freely.
+
+**Use anywhere.** The tokens are consumed by the shared `FormattedTextStyles` sheet, which scopes *both* the editor and the read-only renderer — so a `ContentStyle` works on either:
+
+- **Editor** — `Editor.Config.contentStyle(...)`.
+- **Read-only** — `FText.$(text).contentStyle(...)` (defaults to `document()`), or for a direct `DomBuilderFormattedTextRenderer` call `style.apply(root)` on the scope element yourself.
+
+`ContentStyle.apply(root)` sets a content root up in one call: it applies the `richtext` scope class (which also injects the shared sheet) **and** layers the style's token overrides. It's overloaded for `ElementBuilder` (the presentation path) and `HTMLElement` (the editor's live root). For a bare scope with no density overrides, `ContentStyle.compact().apply(root)`.
+
+There is **no `.document` CSS class or flag** — the "document look" is nothing more than a set of token values. The shared rules consume the knob tokens (`--jui-richtext-list-indent`, `--jui-richtext-list-spacing`, `--jui-richtext-block-spacing`, `--jui-richtext-para-spacing`, `--jui-richtext-line-height`) with the compact values as their `var()` defaults; a `ContentStyle` overrides whichever it wants. To change a look **app-wide**, set the same tokens on `:root` in your theme.
+
+The **base list indent** is folded into the list's `padding-left` and its marker `::before` offset (not a `margin-left`), so it composes additively with the `.indentN` nesting margins and keeps the bullet aligned.
+
+**List items keep their own rhythm.** A list item is a paragraph (it carries `.block` + a list class), so it would otherwise inherit the roomy prose block/paragraph spacing and drift too far from its neighbours. The gap between list items is instead driven by its own `--jui-richtext-list-spacing` token (`listSpacing(...)`, default `3px` padding top/bottom, prose margins zeroed) — so lists stay tight even when `blockSpacing`/`paragraphSpacing` are generous. This holds on both surfaces; the editor's list-item rule is `.block`-qualified so it wins over the shared block padding that also scopes the editor root.
 
 ## Toolbar and tools
 
@@ -451,7 +502,9 @@ The `IEditorCommands` interface is how tools drive the editor. All commands oper
 | `insertText(String text)` | Inserts text at the cursor, replacing any selection |
 | `syncSelection()` | Freezes the DOM selection into the editor's internal state — call before opening popups |
 | `currentLink()` | Returns the link URL at the cursor, or `null` |
+| `currentLinkLabel()` | Returns the display text of the link at the cursor (or the selected text) — pre-fills the panel's label field |
 | `applyLink(String url)` | Applies a link URL to the current range selection |
+| `applyLink(String url, String label)` | Applies the URL and, when the label changed, rewrites the link's display text (`Commands.updateLinkContent`) |
 | `removeLink()` | Removes the link from the current selection |
 | `applyVariable(String name, String label)` | Inserts a variable at the cursor |
 

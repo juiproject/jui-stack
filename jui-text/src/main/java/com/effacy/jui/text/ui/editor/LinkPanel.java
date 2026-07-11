@@ -156,6 +156,24 @@ public class LinkPanel extends ToolPopupPanel {
         panel.show(anchor);
     }
 
+    /**
+     * As {@link #show(Element, String, IAnchorSource, int, ILinkPanelCallback)} but also
+     * shows an editable <b>label</b> (display text) field pre-filled with
+     * {@code currentLabel}. On apply the entered label is passed to
+     * {@link ILinkPanelCallback#onApply(String, String)}.
+     *
+     * @param currentLabel
+     *                     the current display text ({@code null}/empty leaves the label
+     *                     field empty).
+     */
+    public static void show(Element anchor, String currentUrl, String currentLabel, IAnchorSource source, int width, ILinkPanelCallback callback) {
+        LinkPanel panel = new LinkPanel(currentUrl, source, callback);
+        panel.width = (width > 0) ? width : DEFAULT_WIDTH;
+        panel.currentLabel = currentLabel;
+        panel.showLabelField = true;
+        panel.show(anchor);
+    }
+
     /************************************************************************
      * Instance state.
      ************************************************************************/
@@ -169,9 +187,12 @@ public class LinkPanel extends ToolPopupPanel {
     public static int DEFAULT_WIDTH = 0;
 
     private String currentUrl;
+    private String currentLabel;
+    private boolean showLabelField;
     private IAnchorSource options;
     private ILinkPanelCallback callback;
     private HTMLInputElement input;
+    private HTMLInputElement labelInput;
     private Element suggestionListEl;
     private List<AnchorItem> currentItems;
     /** The fixed panel width in pixels ({@code <= 0} = content-sized). */
@@ -191,15 +212,19 @@ public class LinkPanel extends ToolPopupPanel {
 
     @Override
     protected void buildContent(ElementBuilder root) {
+        // A label field (or a suggestion list) forces the stacked (vertical) layout.
+        boolean vertical = (options != null) || showLabelField;
         root.style(styles().linkPanel())
-            .style(options != null, styles().linkPanelVertical());
+            .style(vertical, styles().linkPanelVertical());
         if (width > 0)
             root.css("width", width + "px");
+        if (showLabelField)
+            buildLabelField(root);
         if (options != null) {
-            // Vertical layout: input row with optional Remove button, then suggestion list.
+            // Input row (with optional Remove button), then the suggestion list.
             Div.$(root).style(styles().inputRow()).$(inputRow -> {
                 buildInputField(inputRow);
-                if ((currentUrl != null) && !currentUrl.isEmpty())
+                if (hasUrl())
                     buildRemoveButton(inputRow);
             });
             Div.$(root).style(styles().suggestionList())
@@ -222,20 +247,38 @@ public class LinkPanel extends ToolPopupPanel {
                     }
                 }, UIEventType.ONMOUSEDOWN);
         } else {
-            // Horizontal layout: input + Apply + Remove inline.
-            buildInputField(root);
-            Button.$(root).style(styles().linkBtn()).text("Apply")
-                .on(e -> {
-                    e.stopEvent();
-                    String url = input.value.trim();
-                    if (!url.isEmpty()) {
-                        hide();
-                        callback.onApply(url);
-                    }
-                }, UIEventType.ONMOUSEDOWN);
-            if ((currentUrl != null) && !currentUrl.isEmpty())
-                buildRemoveButton(root);
+            // Input + Apply + Remove on one horizontal row (which sits below the label
+            // field when that is shown, since the root is then a column).
+            Div.$(root).style(styles().inputRow()).$(row -> {
+                buildInputField(row);
+                Button.$(row).style(styles().linkBtn()).text("Apply")
+                    .on(e -> {
+                        e.stopEvent();
+                        applyFromInputs();
+                    }, UIEventType.ONMOUSEDOWN);
+                if (hasUrl())
+                    buildRemoveButton(row);
+            });
         }
+    }
+
+    /** Whether a link already exists (drives the Remove button). */
+    private boolean hasUrl() {
+        return (currentUrl != null) && !currentUrl.isEmpty();
+    }
+
+    /** The entered label ({@code null} when the label field is not shown). */
+    private String label() {
+        return (labelInput != null) ? labelInput.value.trim() : null;
+    }
+
+    /** Applies the entered URL (and label, when shown). */
+    private void applyFromInputs() {
+        String url = input.value.trim();
+        if (url.isEmpty())
+            return;
+        hide();
+        callback.onApply(url, label());
     }
 
     @Override
@@ -252,6 +295,27 @@ public class LinkPanel extends ToolPopupPanel {
      * Helpers.
      ************************************************************************/
 
+    private void buildLabelField(IDomInsertableContainer<?> parent) {
+        Input.$(parent, "text")
+            .style(styles().linkInput())
+            .attr("placeholder", "Display text...")
+            .use(n -> {
+                labelInput = Js.uncheckedCast(n);
+                if ((currentLabel != null) && !currentLabel.isEmpty())
+                    labelInput.value = currentLabel;
+            })
+            .on(e -> {
+                if ("Enter".equals(e.getKey())) {
+                    e.stopEvent();
+                    applyFromInputs();
+                }
+                if ("Escape".equals(e.getKey())) {
+                    e.stopEvent();
+                    hide();
+                }
+            }, UIEventType.ONKEYDOWN);
+    }
+
     private void buildInputField(IDomInsertableContainer<?> parent) {
         Input.$(parent, "text")
             .style(styles().linkInput())
@@ -264,10 +328,14 @@ public class LinkPanel extends ToolPopupPanel {
             .on(e -> {
                 if ("Enter".equals(e.getKey())) {
                     e.stopEvent();
-                    String url = input.value.trim();
-                    if (!url.isEmpty()) {
-                        hide();
-                        callback.onApply(url);
+                    if (showLabelField)
+                        applyFromInputs();
+                    else {
+                        String url = input.value.trim();
+                        if (!url.isEmpty()) {
+                            hide();
+                            callback.onApply(url);
+                        }
                     }
                 }
                 if ("Escape".equals(e.getKey())) {
@@ -361,10 +429,10 @@ public class LinkPanel extends ToolPopupPanel {
     }, stylesheet = """
         .linkPanel {
             position: fixed;
-            background: #fff;
-            border: 1px solid #e5e7eb;
+            background: var(--jui-editor-popover-bg, var(--jui-color-aux-white, #fff));
+            border: 1px solid var(--jui-editor-popover-border, var(--jui-color-neutral20, #e5e7eb));
             border-radius: 6px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
+            box-shadow: var(--jui-editor-popover-shadow, 0 6px 20px rgba(0, 0, 0, 0.14));
             padding: 8px;
             z-index: 10000;
             display: flex;
@@ -378,7 +446,7 @@ public class LinkPanel extends ToolPopupPanel {
             min-width: 280px;
         }
         .linkInput {
-            border: 1px solid #d1d5db;
+            border: 1px solid var(--jui-editor-popover-border, var(--jui-color-neutral30, #d1d5db));
             border-radius: 4px;
             padding: 4px 8px;
             outline: none;
@@ -386,12 +454,12 @@ public class LinkPanel extends ToolPopupPanel {
             font-size: inherit;
         }
         .linkInput:focus {
-            border-color: #3b82f6;
+            border-color: var(--jui-editor-accent, var(--jui-ctl-focus, #3b82f6));
         }
         .linkBtn {
             border: none;
-            background: #3b82f6;
-            color: #fff;
+            background: var(--jui-editor-accent, var(--jui-ctl-focus, #3b82f6));
+            color: var(--jui-editor-on-accent, #fff);
             padding: 4px 10px;
             border-radius: 4px;
             cursor: pointer;
@@ -399,13 +467,10 @@ public class LinkPanel extends ToolPopupPanel {
             white-space: nowrap;
         }
         .linkBtn:hover {
-            background: #2563eb;
+            filter: brightness(0.92);
         }
         .linkBtnDanger {
-            background: #ef4444;
-        }
-        .linkBtnDanger:hover {
-            background: #dc2626;
+            background: var(--jui-editor-danger, var(--jui-color-error, #ef4444));
         }
         .inputRow {
             display: flex;
@@ -426,26 +491,26 @@ public class LinkPanel extends ToolPopupPanel {
             border-radius: 4px;
         }
         .suggestionItem:hover {
-            background: #eff6ff;
-            color: #1d4ed8;
+            background: var(--jui-editor-popover-hover, var(--jui-color-neutral05, #eff6ff));
+            color: var(--jui-editor-accent, var(--jui-ctl-focus, #1d4ed8));
         }
         .hintItem {
             padding: 6px 8px;
             display: flex;
             gap: 8px;
             align-items: center;
-            color: #9ca3af;
+            color: var(--jui-editor-popover-muted, var(--jui-color-neutral60, #9ca3af));
         }
         .hintIcon {
             font-size: 1.1em;
         }
         .hintLabel {
             font-weight: 500;
-            color: #374151;
+            color: var(--jui-editor-popover-fg, var(--jui-color-neutral80, #374151));
         }
         .hintDesc {
             font-size: 0.85em;
-            color: #9ca3af;
+            color: var(--jui-editor-popover-muted, var(--jui-color-neutral60, #9ca3af));
         }
     """)
     public static abstract class LinkPanelCSS implements ILinkPanelCSS {

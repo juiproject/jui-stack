@@ -4323,4 +4323,53 @@ public class TransactionTest {
         Assertions.assertEquals(1, doc2.getBlocks().size());
         Assertions.assertEquals("Target", textAt(doc2, 0));
     }
+
+    /************************************************************************
+     * Link content (URL + label)
+     ************************************************************************/
+
+    /**
+     * Editing an existing link's URL and label rewrites the link run's text and its
+     * URL meta, keeping a single {@link FormatType#A} run over the new label.
+     */
+    @Test
+    public void testUpdateLinkContent_replacesLabelAndUrl() {
+        FormattedText doc = FormattedText.markdown("[hello](http://x/a.pdf)");
+        EditorState state = EditorState.create(doc, Selection.cursor(0, 2)); // inside "hello"
+
+        Transaction tr = Commands.updateLinkContent(state, "http://y/b.pdf", "world");
+        Assertions.assertNotNull(tr);
+        state.apply(tr);
+
+        FormattedLine line = doc.getBlocks().get(0).getLines().get(0);
+        Assertions.assertEquals("world", line.getText());
+        Assertions.assertEquals(1, line.getFormatting().size());
+        FormattedLine.Format fmt = line.getFormatting().get(0);
+        Assertions.assertTrue(fmt.getFormats().contains(FormatType.A));
+        Assertions.assertEquals(0, fmt.getIndex());
+        Assertions.assertEquals(5, fmt.getLength());
+        Assertions.assertEquals("http://y/b.pdf", fmt.getMeta().get(FormattedLine.META_LINK));
+    }
+
+    /**
+     * With no link under a cursor, {@code updateLinkContent} inserts a new linked label.
+     */
+    @Test
+    public void testUpdateLinkContent_insertsWhenNoLink() {
+        FormattedText doc = new FormattedText();
+        doc.block(BlockType.PARA, b -> b.line("ab"));
+        EditorState state = EditorState.create(doc, Selection.cursor(0, 2)); // after "ab", no link
+
+        Transaction tr = Commands.updateLinkContent(state, "http://x/a.pdf", "docs");
+        Assertions.assertNotNull(tr);
+        state.apply(tr);
+
+        FormattedLine line = doc.getBlocks().get(0).getLines().get(0);
+        Assertions.assertEquals("abdocs", line.getText());
+        FormattedLine.Format fmt = line.getFormatting().get(0);
+        Assertions.assertTrue(fmt.getFormats().contains(FormatType.A));
+        Assertions.assertEquals(2, fmt.getIndex());
+        Assertions.assertEquals(4, fmt.getLength());
+        Assertions.assertEquals("http://x/a.pdf", fmt.getMeta().get(FormattedLine.META_LINK));
+    }
 }

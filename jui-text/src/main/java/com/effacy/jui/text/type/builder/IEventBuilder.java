@@ -146,6 +146,24 @@ public interface IEventBuilder<T> {
     void link(String label, String url);
 
     /**
+     * Called for a link within a line that also carries inline formatting (e.g. a link
+     * inside an emphasised span, so the label is italic <em>and</em> a link). The default
+     * ignores the formats and delegates to {@link #link(String, String)}; builders that
+     * can represent formatted links override this.
+     *
+     * @param label
+     *              the link display text.
+     * @param url
+     *              the link URL.
+     * @param formats
+     *              the additional inline formats applied to the label (the link format is
+     *              always implied).
+     */
+    default void link(String label, String url, FormatType... formats) {
+        link(label, url);
+    }
+
+    /**
      * Called for an inline image within a line.
      *
      * @param alt

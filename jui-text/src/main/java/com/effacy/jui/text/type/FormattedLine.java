@@ -677,17 +677,27 @@ public class FormattedLine {
                         getFormatting ().remove (format);
                     continue;
                 }
-                if ((format.index >= start) && (format.index < end)) {
-                    // Start of format is in range. Keep only the portion
-                    // that extends beyond the deletion (if any).
-                    format.length = format.length - (end - format.index);
-                    format.index = start;
-                } else if ((format.index + format.length >= start) && (format.index + format.length < end)) {
-                    // End of format is in range. Reduce the length.
-                    format.length = start - format.index;
-                } else if (format.index >= end) {
+                // Non-zero span: adjust for its overlap with the deletion. Characters
+                // before `start` keep their position and those at or after `end` shift
+                // left by len, so the surviving portion of the format is a single
+                // contiguous run [newStart, newEnd).
+                int fend = format.index + format.length;
+                if (fend <= start)
+                    // Entirely before the deletion — unchanged.
+                    continue;
+                if (format.index >= end) {
+                    // Entirely after the deletion — shift left.
                     format.index -= len;
+                    continue;
                 }
+                // Overlaps the deletion. This includes a deletion strictly inside the
+                // span (neither boundary touched) — the case a start-/end-only
+                // adjustment misses, which would leave the format longer than the text
+                // and corrupt later rendering (sequence() would substring past the end).
+                int newStart = (format.index < start) ? format.index : start;
+                int newEnd = (fend <= end) ? start : (fend - len);
+                format.index = newStart;
+                format.length = newEnd - newStart;
                 // A format whose span was entirely deleted is dropped. This includes an
                 // image whose sentinel character was deleted (deleting the character
                 // deletes the image); genuinely zero-length formats (variables, legacy)

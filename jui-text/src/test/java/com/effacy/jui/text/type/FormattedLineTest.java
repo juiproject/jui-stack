@@ -575,6 +575,53 @@ public class FormattedLineTest {
     }
 
     /**
+     * Deleting a character strictly inside a (non-zero) format span reduces the span's
+     * length so it never exceeds the text — otherwise {@link FormattedLine#sequence()}
+     * would substring past the end and the render would fail (the "link disappears on
+     * backspace" bug). The link itself survives with the shortened text.
+     */
+    @Test
+    public void testRemove_insideLinkSpan_reducesLengthAndKeepsLink() {
+        FormattedLine line = new FormattedLine();
+        line.append("hello");
+        FormattedLine.Format link = new FormattedLine.Format(0, 5, FormatType.A);
+        link.getMeta().put(FormattedLine.META_LINK, "http://x/a.pdf");
+        line.getFormatting().add(link);
+
+        // Delete the middle 'l' (strictly inside the span — neither boundary touched).
+        line.remove(2, 1);
+
+        Assertions.assertEquals("helo", line.getText());
+        Assertions.assertEquals(1, line.getFormatting().size());
+        Assertions.assertEquals(0, line.getFormatting().get(0).getIndex());
+        Assertions.assertEquals(4, line.getFormatting().get(0).getLength()); // was 5, not left at 5
+        // sequence() must not throw and must render the link over the shortened text.
+        List<TextSegment> seq = line.sequence();
+        Assertions.assertEquals(1, seq.size());
+        Assertions.assertEquals("helo", seq.get(0).text());
+        Assertions.assertTrue(seq.get(0).contains(FormatType.A));
+        Assertions.assertEquals("http://x/a.pdf", seq.get(0).link());
+    }
+
+    /**
+     * Deleting the last remaining character of a link removes the link format entirely
+     * (an empty link is dropped, not left as a zero-length A run).
+     */
+    @Test
+    public void testRemove_emptiesLinkSpan_dropsFormat() {
+        FormattedLine line = new FormattedLine();
+        line.append("a");
+        FormattedLine.Format link = new FormattedLine.Format(0, 1, FormatType.A);
+        link.getMeta().put(FormattedLine.META_LINK, "http://x/a.pdf");
+        line.getFormatting().add(link);
+
+        line.remove(0, 1);
+
+        Assertions.assertEquals("", line.getText());
+        Assertions.assertTrue(line.getFormatting().isEmpty());
+    }
+
+    /**
      * A zero-length image after a deletion shifts left; one strictly inside the
      * deleted range is removed.
      */

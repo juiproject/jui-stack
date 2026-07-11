@@ -67,12 +67,16 @@ import jsinterop.base.Js;
  *     .render(formattedText);
  * </pre>
  * <p>
- * The caller should apply the content scope class {@link FormattedTextStyles.IFormattedTextCSS#richtext()}
- * (via {@code FormattedTextStyles.styles().richtext()}) to the parent element so the block,
- * heading, list, quote, code and inline-format styles resolve.
+ * The parent element must be a formatted-text content root: apply a {@link ContentStyle} to
+ * it — {@code ContentStyle.document().apply(root)} — which scopes it with the {@code richtext}
+ * class (so the block, heading, list, quote, code and inline-format styles resolve) <em>and</em>
+ * selects the presentation density (compact vs document spacing). This is the same style the
+ * editor accepts, so both surfaces present identically. (The {@code FText} fragment does this
+ * for you.) For a bare scope with no density overrides, use {@code ContentStyle.compact().apply(root)}.
  *
  * @see FormattedText
  * @see FormattedTextStyles
+ * @see ContentStyle
  */
 public class DomBuilderFormattedTextRenderer {
 

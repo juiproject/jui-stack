@@ -125,6 +125,19 @@ public class FormattedTextStyles {
 .richtext {
     position: relative;
     margin: 0;
+    line-height: var(--jui-richtext-line-height, inherit);
+}
+
+/* Block (paragraph/heading/etc.) vertical rhythm — token-driven so a ContentStyle applies
+   identically here and in the editor (whose root also carries .richtext). Default is compact
+   (2px); the document style makes it roomier. The editor layers its own contenteditable-only
+   block props (min-height, white-space) on top under its .component scope. */
+.richtext > .block {
+    padding: var(--jui-richtext-block-spacing, 2px) 0;
+}
+
+.richtext p {
+    margin: 0 0 var(--jui-richtext-para-spacing, 0.2em) 0;
 }
 
 .richtext .fmt_bold {
@@ -244,28 +257,43 @@ public class FormattedTextStyles {
     margin-left: 7.5em;
 }
 
+/* The base (level-1) list indent is added to the marker padding (and the marker's own
+   offset) so it composes additively with the .indentN nesting margins and keeps the
+   bullet aligned to the text. Default 0 (compact / flush); a content style may set it. */
 .richtext > .list_bullet {
-    padding-left: 1.5em;
+    padding-left: calc(1.5em + var(--jui-richtext-list-indent, 0em));
 }
 
 .richtext > .list_bullet::before {
     position: absolute;
-    left: 1em;
+    left: calc(1em + var(--jui-richtext-list-indent, 0em));
     content: '\\2022';
 }
 
 .richtext > .list_number {
-    padding-left: 1.5em;
+    padding-left: calc(1.5em + var(--jui-richtext-list-indent, 0em));
 }
 
 .richtext > .list_tick {
-    padding-left: 1.5em;
+    padding-left: calc(1.5em + var(--jui-richtext-list-indent, 0em));
 }
 
 .richtext > .list_tick::before {
     position: absolute;
-    left: 1em;
+    left: calc(1em + var(--jui-richtext-list-indent, 0em));
     content: '\\2713';
+}
+
+/* A list item is a paragraph (.block + .list_*), so it would otherwise take the prose block
+   padding and paragraph margin — which the document style makes roomy, pushing items apart.
+   Give list items their own tight vertical rhythm via a dedicated token (default 3px, prose
+   margins zeroed) so the gap stays compact regardless of prose spacing. Placed after the
+   .block rule so it wins for the item's top/bottom padding. Mirrors the editor's list rules. */
+.richtext > .list_bullet, .richtext > .list_number, .richtext > .list_tick {
+    padding-top: var(--jui-richtext-list-spacing, 3px);
+    padding-bottom: var(--jui-richtext-list-spacing, 3px);
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 .richtext h1 {

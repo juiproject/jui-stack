@@ -20,8 +20,8 @@ import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Fragment;
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
 import com.effacy.jui.text.type.FormattedText;
+import com.effacy.jui.text.ui.type.ContentStyle;
 import com.effacy.jui.text.ui.type.DomBuilderFormattedTextRenderer;
-import com.effacy.jui.text.ui.type.FormattedTextStyles;
 
 /**
  * Renders {@link FormattedText} read-only, using the shared {@link DomBuilderFormattedTextRenderer}
@@ -55,6 +55,8 @@ public class FText extends Fragment<FText> {
 
     private boolean skipStyle;
 
+    private ContentStyle contentStyle = ContentStyle.document ();
+
     private int topHeadingLevel = 1;
 
     public FText(FormattedText text, boolean embed) {
@@ -84,6 +86,23 @@ public class FText extends Fragment<FText> {
     }
 
     /**
+     * Assigns the content style (spacing / density) applied to the rendered text.
+     * <p>
+     * Defaults to {@link ContentStyle#document()} (roomier, document-like presentation).
+     * Pass {@link ContentStyle#compact()} for a tight, field-sized rendering, or a custom
+     * style. Has no effect when {@link #skipStyle()} is set (the caller then owns styling).
+     *
+     * @param contentStyle
+     *                     the content style (a {@code null} is treated as
+     *                     {@link ContentStyle#compact()}).
+     * @return this fragment.
+     */
+    public FText contentStyle(ContentStyle contentStyle) {
+        this.contentStyle = (contentStyle == null) ? ContentStyle.compact () : contentStyle;
+        return this;
+    }
+
+    /**
      * Assigns the top heading level.
      * <p>
      * This is the heading level that the first heading will be rendered as.
@@ -108,8 +127,9 @@ public class FText extends Fragment<FText> {
 
     @Override
     protected void buildInto(ElementBuilder root) {
+        // apply() scopes the root with the richtext class AND layers the style's overrides.
         if (!skipStyle)
-            root.style (FormattedTextStyles.styles ().richtext ());
+            (contentStyle != null ? contentStyle : ContentStyle.compact ()).apply (root);
         _build (root);
     }
 

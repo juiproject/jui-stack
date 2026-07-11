@@ -21,7 +21,7 @@ import com.effacy.jui.text.type.edit.EditorState;
 import com.effacy.jui.text.type.edit.History;
 import com.effacy.jui.text.type.edit.Positions;
 import com.effacy.jui.text.type.edit.Selection;
-import com.effacy.jui.text.ui.type.FormattedTextStyles;
+import com.effacy.jui.text.ui.type.ContentStyle;
 import com.effacy.jui.text.type.edit.Transaction;
 import com.effacy.jui.text.type.edit.step.DeleteBlockStep;
 import com.effacy.jui.text.type.edit.step.SetBlockTypeStep;
@@ -175,6 +175,25 @@ public class Editor extends Component<Editor.Config> {
      * Configuration for the editor. Use fluent methods to customise, then pass
      * to the {@link Editor#Editor(Config)} constructor.
      */
+    /**
+     * How the editor treats a click on a link.
+     */
+    public enum LinkInteraction {
+
+        /**
+         * Clicking a link positions the caret inside it for inline editing (the default;
+         * suits a surface with a distinct edit mode).
+         */
+        EDIT,
+
+        /**
+         * Clicking a link opens it (via the configured {@code linkOpenHandler}, else a
+         * new browser tab); hovering reveals a small card to open or edit the link. Suits
+         * an always-editable surface with no separate view mode.
+         */
+        NAVIGATE;
+    }
+
     public static class Config extends Component.Config {
 
         boolean paragraphAfterHeading = true;
@@ -182,6 +201,9 @@ public class Editor extends Component<Editor.Config> {
         boolean debugLog;
         String placeholder;
         IFileUploadHandler fileUpload;
+        LinkInteraction linkInteraction = LinkInteraction.EDIT;
+        java.util.function.Consumer<String> linkOpenHandler;
+        ContentStyle contentStyle = ContentStyle.compact();
 
         /**
          * Configures whether pressing Enter at the end of a heading (H1–H3)
@@ -230,6 +252,36 @@ public class Editor extends Component<Editor.Config> {
             this.fileUpload = handler;
             return this;
         }
+
+        /**
+         * Configures how a click on a link is treated (default {@link LinkInteraction#EDIT}).
+         * See {@link LinkInteraction}.
+         */
+        public Config linkInteraction(LinkInteraction linkInteraction) {
+            this.linkInteraction = (linkInteraction == null) ? LinkInteraction.EDIT : linkInteraction;
+            return this;
+        }
+
+        /**
+         * Configures how a link is opened in {@link LinkInteraction#NAVIGATE} mode (on a
+         * click, or the hover card's <em>Open</em>). Receives the link's URL. When
+         * {@code null} (the default) the link is opened in a new browser tab. Supply this
+         * to route application links (e.g. resolving an internal reference) yourself.
+         */
+        public Config linkOpenHandler(java.util.function.Consumer<String> handler) {
+            this.linkOpenHandler = handler;
+            return this;
+        }
+
+        /**
+         * Configures the content presentation (default is the compact stylesheet). See
+         * {@link ContentStyle} — pass a standard configuration ({@code ContentStyle.document()})
+         * or your own.
+         */
+        public Config contentStyle(ContentStyle contentStyle) {
+            this.contentStyle = (contentStyle == null) ? ContentStyle.compact () : contentStyle;
+            return this;
+        }
     }
 
     /************************************************************************
@@ -261,10 +313,17 @@ public class Editor extends Component<Editor.Config> {
                 root.attr("data-placeholder", data.placeholder);
         }).build(ctx -> {
             editorEl = el;
-            // Scope the content to the shared richtext stylesheet (also injects it), so headings,
-            // inline formats, quotes and code render from FormattedTextStyles — the same sheet the
-            // read-only renderer uses — rather than being duplicated here.
-            el.classList.add(FormattedTextStyles.styles().richtext());
+            // Scope the content to the shared richtext stylesheet and layer the content style's
+            // token overrides — one call does both. This is the same FormattedTextStyles sheet the
+            // read-only renderer uses (so the two present identically), and the same ContentStyle is
+            // usable on a read-only presentation (see FText), so a style means the same everywhere.
+            // No overrides == the stylesheet's compact defaults.
+            ContentStyle contentStyle = (data.contentStyle != null) ? data.contentStyle : ContentStyle.compact();
+            HTMLElement styleEl = Js.uncheckedCast(el);
+            contentStyle.apply(styleEl);
+            // In NAVIGATE mode links are clickable — mark the root so links get a pointer cursor.
+            if (data.linkInteraction == LinkInteraction.NAVIGATE)
+                el.classList.add(styles().navigate());
             render();
             attachEventListeners();
         });
@@ -459,23 +518,24 @@ public class Editor extends Component<Editor.Config> {
             }
 
             @Override
+            public String currentLinkLabel() {
+                syncSelectionFromDom();
+                return extractLinkLabel(state.selection());
+            }
+
+            @Override
             public void applyLink(String url) {
-                applyLink(url, null);
+                doApplyLink(url, null);
             }
 
             @Override
             public void applyLink(String url, String label) {
-                Transaction tr = Commands.updateLink(state, url);
-                // Open space (no selection, no link under the cursor): insert the
-                // label (or the URL itself) as the linked text.
-                if (tr == null)
-                    tr = Commands.insertLink(state, url, label);
-                applyTransaction(tr);
+                doApplyLink(url, label);
             }
 
             @Override
             public void removeLink() {
-                applyTransaction(Commands.removeLink(state));
+                doRemoveLink();
             }
 
             @Override
@@ -816,6 +876,46 @@ public class Editor extends Component<Editor.Config> {
     }
 
     /**
+     * Extracts the display text (label) of the link at the anchor position, or the
+     * selected text when the selection is a (single-block) range with no link. Returns
+     * {@code null} when there is nothing to label. Used to pre-fill the link panel and
+     * to decide whether an apply changed the label.
+     */
+    private String extractLinkLabel(Selection sel) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int blockIdx = sel.anchorBlock();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+        FormattedBlock blk = blocks.get(blockIdx);
+        // Cursor inside a link run: the run's text.
+        int target = sel.anchorOffset();
+        int lineStart = 0;
+        for (FormattedLine line : blk.getLines()) {
+            for (FormattedLine.Format fmt : line.getFormatting()) {
+                int absStart = lineStart + fmt.getIndex();
+                int absEnd = absStart + fmt.getLength();
+                if ((target >= absStart) && (target < absEnd) && fmt.getFormats().contains(FormatType.A)) {
+                    String t = line.getText();
+                    int s = fmt.getIndex();
+                    int e = Math.min(fmt.getIndex() + fmt.getLength(), t.length());
+                    if ((s >= 0) && (s < e))
+                        return t.substring(s, e);
+                }
+            }
+            lineStart += line.length() + 1;
+        }
+        // Range selection with no link: the selected text is the label.
+        if (!sel.isCursor() && (sel.fromBlock() == sel.toBlock())) {
+            String flat = blk.flatten();
+            int from = sel.fromOffset();
+            int to = sel.toOffset();
+            if ((from >= 0) && (to <= flat.length()) && (from < to))
+                return flat.substring(from, to);
+        }
+        return null;
+    }
+
+    /**
      * Extracts the comment reference at the anchor position of the given
      * selection, or {@code null} if no comment anchor exists there.
      */
@@ -905,12 +1005,18 @@ public class Editor extends Component<Editor.Config> {
         editorEl.addEventListener("dragover", evt -> handleDragOver(evt));
         editorEl.addEventListener("drop", evt -> handleDrop(evt));
         editorEl.addEventListener("click", evt -> handleEditorClick(evt));
+        // Link navigate / hover-card (NAVIGATE mode only).
+        editorEl.addEventListener("mouseover", evt -> handleEditorMouseOver(evt));
+        editorEl.addEventListener("mouseout", evt -> handleEditorMouseOut(evt));
         // Dismiss the image overlay on a pointer-down outside it (and outside the image).
         DomGlobal.document.addEventListener("mousedown", evt -> handleDocumentMouseDown(evt));
         DomGlobal.document.addEventListener("selectionchange", evt -> syncSelectionFromDom());
         // Keep the overlay aligned to the image while scrolling would be involved; the
         // simplest robust behaviour is to dismiss it on scroll.
-        DomGlobal.document.addEventListener("scroll", evt -> hideImageOverlay(), true);
+        DomGlobal.document.addEventListener("scroll", evt -> {
+            hideImageOverlay();
+            hideLinkCard();
+        }, true);
     }
 
     /************************************************************************
@@ -985,6 +1091,15 @@ public class Editor extends Component<Editor.Config> {
 
     private void handleEditorClick(Event evt) {
         Element target = Js.cast(evt.target);
+        // NAVIGATE mode: a click on a link opens it rather than placing the caret.
+        if (config().linkInteraction == LinkInteraction.NAVIGATE) {
+            Element anchor = anchorAncestor(target);
+            if (anchor != null) {
+                evt.preventDefault();
+                openLink(anchor.getAttribute("href"));
+                return;
+            }
+        }
         if ((target != null) && "IMG".equalsIgnoreCase(target.tagName))
             showImageOverlay(target);
         else
@@ -1026,12 +1141,12 @@ public class Editor extends Component<Editor.Config> {
     private void ensureOverlay() {
         if (imageOverlay != null)
             return;
-        imageOverlay = styled("position:fixed;display:none;pointer-events:none;border:1px solid #4a90d9;box-sizing:border-box;z-index:1000;");
+        imageOverlay = classed(overlayCss().imgOverlay());
         imageOverlay.appendChild(handle("nw", "left:-5px;top:-5px;"));
         imageOverlay.appendChild(handle("ne", "right:-5px;top:-5px;"));
         imageOverlay.appendChild(handle("sw", "left:-5px;bottom:-5px;"));
         imageOverlay.appendChild(handle("se", "right:-5px;bottom:-5px;"));
-        HTMLElement toolbar = styled("position:absolute;top:-30px;left:0;display:flex;gap:2px;pointer-events:auto;");
+        HTMLElement toolbar = classed(overlayCss().imgToolbar());
         toolbar.appendChild(alignButton("left", "←"));
         toolbar.appendChild(alignButton("center", "↔"));
         toolbar.appendChild(alignButton("right", "→"));
@@ -1053,13 +1168,15 @@ public class Editor extends Component<Editor.Config> {
     }
 
     private HTMLElement handle(String corner, String position) {
-        HTMLElement h = styled("position:absolute;width:10px;height:10px;background:#fff;border:1px solid #4a90d9;box-sizing:border-box;pointer-events:auto;cursor:" + corner + "-resize;" + position);
+        HTMLElement h = classed(overlayCss().imgHandle());
+        // Dynamic per-corner bits (cursor + which corner it sits at) stay inline.
+        h.setAttribute("style", "cursor:" + corner + "-resize;" + position);
         h.addEventListener("mousedown", evt -> startResize(corner, (MouseEvent) evt));
         return h;
     }
 
     private HTMLElement alignButton(String align, String label) {
-        HTMLElement b = styled("pointer-events:auto;cursor:pointer;background:#4a90d9;color:#fff;border:none;border-radius:2px;width:22px;height:22px;font-size:12px;line-height:22px;text-align:center;");
+        HTMLElement b = classed(overlayCss().imgBtn());
         b.textContent = label;
         b.addEventListener("mousedown", evt -> {
             evt.preventDefault();
@@ -1069,7 +1186,7 @@ public class Editor extends Component<Editor.Config> {
     }
 
     private HTMLElement marginButton(String label, int delta) {
-        HTMLElement b = styled("pointer-events:auto;cursor:pointer;background:#7a7a7a;color:#fff;border:none;border-radius:2px;width:22px;height:22px;font-size:14px;line-height:22px;text-align:center;");
+        HTMLElement b = classed(overlayCss().imgBtn(), overlayCss().imgBtnMuted());
         b.textContent = label;
         b.addEventListener("mousedown", evt -> {
             evt.preventDefault();
@@ -1201,10 +1318,268 @@ public class Editor extends Component<Editor.Config> {
         syncSelectionFromDom();
     }
 
-    private HTMLElement styled(String cssText) {
+    /** A {@code <div>} carrying the given (token-driven) overlay CSS class(es). */
+    private HTMLElement classed(String... classNames) {
         HTMLElement el = Js.cast(DomGlobal.document.createElement("div"));
-        el.setAttribute("style", cssText);
+        for (String cls : classNames)
+            el.classList.add(cls);
         return el;
+    }
+
+    private EditorOverlayCSS overlayCss() {
+        return EditorOverlayCSS.Styles.instance();
+    }
+
+    /************************************************************************
+     * Link interaction (NAVIGATE mode: click-to-open + hover card).
+     *
+     * In {@link LinkInteraction#NAVIGATE} mode a click on a link opens it (rather than
+     * placing the caret) and hovering a link shows a small floating card with the URL
+     * and Open / Edit actions. Edit targets the hovered link in the model and opens the
+     * {@link LinkPanel} (URL + label). The card mirrors the image overlay: a fixed body
+     * element positioned relative to the link, dismissed on scroll / re-render / leave.
+     ************************************************************************/
+
+    /** The floating link card (lazily created, appended to {@code body}). */
+    private HTMLElement linkCard;
+
+    /** The URL text element within {@link #linkCard}. */
+    private HTMLElement linkCardUrl;
+
+    /** The link the card currently targets (pending or shown), or {@code null}. */
+    private Element hoveredLink;
+
+    /** Whether the card is currently displayed (as opposed to a pending, delayed show). */
+    private boolean linkCardVisible;
+
+    /** Delay (ms) before a hovered link reveals its card, so a passing pointer doesn't flash it. */
+    private static final int LINK_CARD_SHOW_DELAY = 450;
+
+    /** Pending show timer (setTimeout id), {@code -1} when none. */
+    private double linkCardShowTimer = -1;
+
+    /** Pending hide timer (setTimeout id), {@code -1} when none — a small grace so the
+     *  pointer can travel from the link to the card without the card vanishing. */
+    private double linkCardHideTimer = -1;
+
+    /** Applies (or updates) a link's URL and, when it changed, its display text. */
+    private void doApplyLink(String url, String label) {
+        Transaction tr;
+        // Only rewrite the display text when a non-empty label differs from what is
+        // there now — otherwise keep updateLink, which preserves any inline formatting.
+        String current = extractLinkLabel(state.selection());
+        if ((label != null) && !label.isEmpty() && !label.equals(current))
+            tr = Commands.updateLinkContent(state, url, label);
+        else {
+            tr = Commands.updateLink(state, url);
+            // Open space (no selection, no link under the cursor): insert the label
+            // (or the URL itself) as the linked text.
+            if (tr == null)
+                tr = Commands.insertLink(state, url, label);
+        }
+        if (tr != null)
+            applyTransaction(tr);
+    }
+
+    private void doRemoveLink() {
+        applyTransaction(Commands.removeLink(state));
+    }
+
+    /** The nearest ancestor {@code <a href>} of {@code el} within the editor, else null. */
+    private Element anchorAncestor(Element el) {
+        Element cur = el;
+        while ((cur != null) && (cur != editorEl)) {
+            if ("A".equalsIgnoreCase(cur.tagName) && cur.hasAttribute("href"))
+                return cur;
+            cur = cur.parentElement;
+        }
+        return null;
+    }
+
+    /** Opens a link's URL via the configured handler, else in a new browser tab. */
+    private void openLink(String href) {
+        if ((href == null) || href.isEmpty())
+            return;
+        if (config().linkOpenHandler != null)
+            config().linkOpenHandler.accept(href);
+        else
+            DomGlobal.window.open(href, "_blank");
+    }
+
+    private void handleEditorMouseOver(Event evt) {
+        if (config().linkInteraction != LinkInteraction.NAVIGATE)
+            return;
+        Element anchor = anchorAncestor(Js.cast(evt.target));
+        if (anchor != null)
+            scheduleShowLinkCard(anchor);
+    }
+
+    private void handleEditorMouseOut(Event evt) {
+        if ((config().linkInteraction != LinkInteraction.NAVIGATE) || (hoveredLink == null))
+            return;
+        Node related = Js.uncheckedCast(((MouseEvent) evt).relatedTarget);
+        // Keep the card while the pointer is still on the link or has moved onto the card.
+        if ((related != null) && (hoveredLink.contains(related) || ((linkCard != null) && linkCard.contains(related))))
+            return;
+        // Leaving the link: drop a not-yet-shown (delayed) card outright; if it is already
+        // shown, hide it after a short grace so the pointer can reach the card.
+        cancelShowLinkCard();
+        if (linkCardVisible)
+            scheduleHideLinkCard();
+        else
+            hoveredLink = null;
+    }
+
+    /** Schedules the card for a hovered link after {@link #LINK_CARD_SHOW_DELAY}. */
+    private void scheduleShowLinkCard(Element a) {
+        cancelHideLinkCard();
+        // Same link already pending or shown — nothing to do.
+        if (a == hoveredLink)
+            return;
+        hoveredLink = a;
+        // Moving directly from one link's card to another: switch without re-delaying.
+        if (linkCardVisible) {
+            showLinkCard();
+            return;
+        }
+        cancelShowLinkCard();
+        linkCardShowTimer = DomGlobal.setTimeout(ignored -> showLinkCard(), LINK_CARD_SHOW_DELAY);
+    }
+
+    private void showLinkCard() {
+        cancelShowLinkCard();
+        cancelHideLinkCard();
+        if (hoveredLink == null)
+            return;
+        ensureLinkCard();
+        String href = hoveredLink.getAttribute("href");
+        linkCardUrl.textContent = (href == null) ? "" : href;
+        linkCard.style.setProperty("display", "flex");
+        linkCardVisible = true;
+        positionLinkCard();
+    }
+
+    private void hideLinkCard() {
+        cancelShowLinkCard();
+        cancelHideLinkCard();
+        hoveredLink = null;
+        linkCardVisible = false;
+        if (linkCard != null)
+            linkCard.style.setProperty("display", "none");
+    }
+
+    private void scheduleHideLinkCard() {
+        cancelHideLinkCard();
+        linkCardHideTimer = DomGlobal.setTimeout(ignored -> hideLinkCard(), 200);
+    }
+
+    private void cancelHideLinkCard() {
+        if (linkCardHideTimer >= 0) {
+            DomGlobal.clearTimeout(linkCardHideTimer);
+            linkCardHideTimer = -1;
+        }
+    }
+
+    private void cancelShowLinkCard() {
+        if (linkCardShowTimer >= 0) {
+            DomGlobal.clearTimeout(linkCardShowTimer);
+            linkCardShowTimer = -1;
+        }
+    }
+
+    private void ensureLinkCard() {
+        if (linkCard != null)
+            return;
+        linkCard = classed(overlayCss().linkCard());
+        linkCardUrl = classed(overlayCss().linkCardUrl());
+        linkCard.appendChild(linkCardUrl);
+        HTMLElement actions = classed(overlayCss().linkCardActions());
+        actions.appendChild(linkCardButton("Open", () -> openHoveredLink()));
+        actions.appendChild(linkCardButton("Edit", () -> editHoveredLink()));
+        linkCard.appendChild(actions);
+        // Keep the card open while the pointer is over it; hide when it leaves.
+        linkCard.addEventListener("mouseover", evt -> cancelHideLinkCard());
+        linkCard.addEventListener("mouseout", evt -> {
+            Node related = Js.uncheckedCast(((MouseEvent) evt).relatedTarget);
+            if ((related == null) || !linkCard.contains(related))
+                scheduleHideLinkCard();
+        });
+        DomGlobal.document.body.appendChild(linkCard);
+    }
+
+    private HTMLElement linkCardButton(String label, Runnable action) {
+        HTMLElement b = classed(overlayCss().linkCardBtn());
+        b.textContent = label;
+        b.addEventListener("mousedown", evt -> {
+            evt.preventDefault();
+            action.run();
+        });
+        return b;
+    }
+
+    /** Positions the (fixed) card just above the hovered link, flipping below if tight. */
+    private void positionLinkCard() {
+        if ((linkCard == null) || (hoveredLink == null))
+            return;
+        DOMRect r = hoveredLink.getBoundingClientRect();
+        double top = r.top - linkCard.offsetHeight - 6;
+        if (top < 4)
+            top = r.bottom + 6;
+        linkCard.style.setProperty("left", r.left + "px");
+        linkCard.style.setProperty("top", top + "px");
+    }
+
+    private void openHoveredLink() {
+        if (hoveredLink != null)
+            openLink(hoveredLink.getAttribute("href"));
+    }
+
+    private void editHoveredLink() {
+        Element a = hoveredLink;
+        if (a == null)
+            return;
+        String url = a.getAttribute("href");
+        String label = a.textContent;
+        // Target this link in the model so a subsequent apply/remove acts on it.
+        selectLinkInModel(a);
+        Selection target = state.selection();
+        hideLinkCard();
+        LinkPanel.show(a, url, label, (LinkPanel.IAnchorSource) null, 0, new LinkPanel.ILinkPanelCallback() {
+
+            @Override
+            public void onApply(String u) {
+                onApply(u, null);
+            }
+
+            @Override
+            public void onApply(String u, String l) {
+                state.setSelection(target);
+                doApplyLink(u, l);
+            }
+
+            @Override
+            public void onRemove() {
+                state.setSelection(target);
+                doRemoveLink();
+            }
+        });
+    }
+
+    /**
+     * Places the model cursor inside the given link (by positioning the DOM caret within
+     * its text and syncing) so a subsequent link command targets it.
+     */
+    private void selectLinkInModel(Element a) {
+        Node text = a.firstChild;
+        elemental2.dom.Selection sel = DomGlobal.document.getSelection();
+        if (sel == null)
+            return;
+        if ((text != null) && (text.nodeType == Node.TEXT_NODE)) {
+            int len = (text.textContent == null) ? 0 : text.textContent.length();
+            sel.collapse(text, Math.min(1, len));
+        } else
+            sel.collapse(a, 0);
+        syncSelectionFromDom();
     }
 
     /**
@@ -1761,6 +2136,9 @@ public class Editor extends Component<Editor.Config> {
 
         String listNumber();
 
+        /** Modifier applied to the editor root in {@link LinkInteraction#NAVIGATE} mode. */
+        String navigate();
+
     }
 
     @CssResource(value = {
@@ -1774,9 +2152,15 @@ public class Editor extends Component<Editor.Config> {
             flex: 1;
             overflow: auto;
             position: relative;
+            line-height: var(--jui-richtext-line-height, inherit);
         }
         .component:focus {
             outline: none;
+        }
+        /* In NAVIGATE mode a link is clickable (opens), so show the pointer cursor over it
+           rather than the text caret inherited from .component. */
+        .component.navigate a {
+            cursor: pointer;
         }
         .component[data-placeholder][data-empty]::before {
             content: attr(data-placeholder);
@@ -1787,35 +2171,50 @@ public class Editor extends Component<Editor.Config> {
             pointer-events: none;
         }
         .component .block {
-            padding: 2px 0;
+            padding: var(--jui-richtext-block-spacing, 2px) 0;
             min-height: 1em;
             white-space: pre-wrap;
         }
         .component .block:first-child { margin-top: 0; }
+        /* The base list indent (0 by default; set by the document style) is folded into the
+           marker padding and the marker's own offset, so it composes with .indentN nesting
+           and the bullet stays aligned. Mirrors FormattedTextStyles' read-only list rules. */
         .component .listBullet {
             position: relative;
-            padding-left: 1.5em;
+            padding-left: calc(1.5em + var(--jui-richtext-list-indent, 0em));
         }
         .component .listBullet::before {
             position: absolute;
-            left: 0.35em;
+            left: calc(0.35em + var(--jui-richtext-list-indent, 0em));
             content: '\\2022';
         }
         .component .listNumber {
             position: relative;
-            padding-left: 1.5em;
+            padding-left: calc(1.5em + var(--jui-richtext-list-indent, 0em));
         }
         .component .listNumber::before {
             position: absolute;
-            left: 0.15em;
+            left: calc(0.15em + var(--jui-richtext-list-indent, 0em));
             content: attr(data-list-index) '.';
+        }
+        /* A list item is a paragraph (carries .block + .listX), so it would otherwise inherit
+           the prose block padding and paragraph margin — which the document style makes roomy,
+           pushing items too far apart. Give list items their own tight vertical rhythm via a
+           dedicated token so the gap between them stays compact regardless of prose spacing.
+           Selector qualified with .block (specificity (0,3,0)) so it reliably wins over the
+           shared sheet's .richtext > .block padding (which also scopes the editor root). */
+        .component .block.listBullet, .component .block.listNumber {
+            padding-top: var(--jui-richtext-list-spacing, 3px);
+            padding-bottom: var(--jui-richtext-list-spacing, 3px);
+            margin-top: 0;
+            margin-bottom: 0;
         }
         /* Paragraph spacing is editor-specific (the read-only renderer spaces paragraphs
            differently), so it stays here. Headings, inline formats (fmt_*), quotes, code
            blocks and indent margins are all provided by the shared richtext stylesheet
            (FormattedTextStyles), scoped via the richtext class on the editor root. */
         .component p {
-            margin: 0 0 0.2em 0;
+            margin: 0 0 var(--jui-richtext-para-spacing, 0.2em) 0;
         }
     """)
     public static abstract class LocalCSS implements ILocalCSS {

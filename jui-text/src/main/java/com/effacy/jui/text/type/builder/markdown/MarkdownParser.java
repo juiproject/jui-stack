@@ -847,10 +847,26 @@ public class MarkdownParser {
                     int contentStart = start.position + start.marker.length();
                     int contentEnd = end.position;
                     int endIndex = markers.indexOf(end);
-                    emitFormattedSpan(handler, line, contentStart, contentEnd, markers, i + 1, endIndex, start.type);
+                    // Recursively parse the span's content with the span's format applied, so
+                    // nested markers, links and variables inside it are handled by the same
+                    // logic (and inner links carry the outer format — an emphasised link). This
+                    // replaces a flat emit that re-emitted the raw link/variable markdown as
+                    // literal text and then let the outer walk double-process the links.
+                    String inner = line.substring(contentStart, contentEnd);
+                    if (inner.isEmpty())
+                        // Empty markers (e.g. "****") — preserve the zero-length format.
+                        handler.formatted("", start.type);
+                    else
+                        emitLineContent(new FormatDecorator(handler, start.type), inner, false);
 
                     textPos = end.position + end.marker.length();
                     i = endIndex + 1;
+                    // Links / variables inside the consumed span were emitted by the recursion;
+                    // skip them in this (outer) walk so they are not processed a second time.
+                    while ((linkIdx < links.size()) && (links.get(linkIdx).startPos() < textPos))
+                        linkIdx++;
+                    while ((varIdx < variables.size()) && (variables.get(varIdx).startPos() < textPos))
+                        varIdx++;
                 } else {
                     if (partial && (start.position >= textPos))
                         lastUnmatched = start;
@@ -873,58 +889,90 @@ public class MarkdownParser {
     }
 
     /**
-     * Emits a formatted span, checking for nested marker pairs inside the
-     * region and splitting into segments when found. For example, the italic
-     * span in {@code *text **bold** more*} emits three formatted events:
-     * {@code formatted("text ", ITL)}, {@code formatted("bold", ITL, BLD)},
-     * {@code formatted(" more", ITL)}.
+     * Wraps an {@link IEventBuilder} so inline content parsed within a format span carries that
+     * span's format. Text and formatted segments gain the outer format; links carry it too (a
+     * link inside an emphasised span is an emphasised link). Used to recursively parse a span's
+     * content through {@link #emitLineContent} — so nested markers, links and variables inside
+     * the span are handled by the same logic, rather than the span's raw markdown being emitted
+     * as literal text (and its links then double-processed by the outer walk).
      */
-    private void emitFormattedSpan(IEventBuilder<?> handler, String line, int start, int end, List<FormatMarker> markers, int fromIdx, int toIdx, FormatType outerType) {
-        // Look for matched pairs among markers between fromIdx and toIdx.
-        int pos = start;
-        int idx = fromIdx;
-        boolean foundNested = false;
-        while (idx < toIdx) {
-            FormatMarker innerStart = markers.get(idx);
-            if ((innerStart.position < start) || (innerStart.position >= end)) {
-                idx++;
-                continue;
-            }
-            FormatMarker innerEnd = null;
-            for (int j = idx + 1; j < toIdx; j++) {
-                FormatMarker candidate = markers.get(j);
-                if ((candidate.type == innerStart.type) && candidate.marker.equals(innerStart.marker)) {
-                    innerEnd = candidate;
-                    break;
-                }
-            }
-            if (innerEnd == null) {
-                idx++;
-                continue;
-            }
+    private static class FormatDecorator implements IEventBuilder<Void> {
 
-            foundNested = true;
+        private final IEventBuilder<?> delegate;
+        private final FormatType[] outer;
 
-            // Text before inner pair — formatted with outer type only.
-            if (innerStart.position > pos) {
-                handler.formatted(line.substring(pos, innerStart.position), outerType);
-            }
-
-            // Inner content — formatted with both types.
-            int innerContentStart = innerStart.position + innerStart.marker.length();
-            int innerContentEnd = innerEnd.position;
-            handler.formatted(line.substring(innerContentStart, innerContentEnd), outerType, innerStart.type);
-
-            pos = innerEnd.position + innerEnd.marker.length();
-            idx = markers.indexOf(innerEnd) + 1;
+        FormatDecorator(IEventBuilder<?> delegate, FormatType... outer) {
+            this.delegate = delegate;
+            this.outer = outer;
         }
 
-        if (!foundNested) {
-            // No nested markers — emit as a single formatted event.
-            handler.formatted(line.substring(start, end), outerType);
-        } else if (pos < end) {
-            // Remaining text after the last nested pair.
-            handler.formatted(line.substring(pos, end), outerType);
+        private FormatType[] combine(FormatType[] inner) {
+            // Outer format(s) first, then the inner ones — matching the emit order the flat
+            // (pre-recursion) span handling produced, e.g. formatted("and", BLD, ITL).
+            FormatType[] all = new FormatType[outer.length + inner.length];
+            System.arraycopy(outer, 0, all, 0, outer.length);
+            System.arraycopy(inner, 0, all, outer.length, inner.length);
+            return all;
+        }
+
+        @Override
+        public Void result() {
+            return null;
+        }
+
+        @Override
+        public void startBlock(BlockType type) {
+            delegate.startBlock(type);
+        }
+
+        @Override
+        public void endBlock(BlockType type) {
+            delegate.endBlock(type);
+        }
+
+        @Override
+        public void meta(String name, String value) {
+            delegate.meta(name, value);
+        }
+
+        @Override
+        public void startLine() {
+            delegate.startLine();
+        }
+
+        @Override
+        public void endLine() {
+            delegate.endLine();
+        }
+
+        @Override
+        public void text(String text) {
+            delegate.formatted(text, outer);
+        }
+
+        @Override
+        public void formatted(String text, FormatType... formats) {
+            delegate.formatted(text, combine(formats));
+        }
+
+        @Override
+        public void link(String label, String url) {
+            delegate.link(label, url, outer);
+        }
+
+        @Override
+        public void link(String label, String url, FormatType... formats) {
+            delegate.link(label, url, combine(formats));
+        }
+
+        @Override
+        public void image(String alt, String src, int width, int height, String align, int margin) {
+            delegate.image(alt, src, width, height, align, margin);
+        }
+
+        @Override
+        public void variable(String name, Map<String, String> meta) {
+            delegate.variable(name, meta);
         }
     }
 

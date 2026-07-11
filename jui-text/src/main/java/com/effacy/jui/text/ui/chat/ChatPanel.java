@@ -1642,6 +1642,7 @@ public class ChatPanel extends Component<ChatPanel.Config> {
         }
         .component .bubbleAssistant p.block {
             margin: 0;
+            padding: 0;
         }
         .component .notice {
             align-self: center;

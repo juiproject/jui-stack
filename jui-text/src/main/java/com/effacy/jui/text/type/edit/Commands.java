@@ -1010,6 +1010,50 @@ public final class Commands {
     }
 
     /**
+     * Updates a link's URL <em>and</em> display text (label). Resolves the link run at
+     * the cursor (or the current range selection), replaces its text with {@code label},
+     * and links the new text to {@code url}. When there is no link under a cursor this
+     * inserts a new linked label ({@link #insertLink}). Unlike {@link #updateLink}, this
+     * rewrites the text run, so it flattens any inline formatting within the old label —
+     * callers should prefer {@link #updateLink} when only the URL changes.
+     *
+     * @param state
+     *              the current editor state.
+     * @param url
+     *              the (new) link URL.
+     * @param label
+     *              the (new) display text; {@code null}/empty uses the URL as the text.
+     * @return the transaction, or {@code null} if the URL is empty.
+     */
+    public static Transaction updateLinkContent(EditorState state, String url, String label) {
+        if ((url == null) || url.isEmpty())
+            return null;
+        Selection sel = linkSelection(state);
+        // No link under a cursor — insert a new linked label.
+        if (sel == null)
+            return insertLink(state, url, label);
+        // Links are inline within a single block; a multi-block span only retargets the
+        // URL (rewriting text across blocks is out of scope).
+        if (sel.fromBlock() != sel.toBlock())
+            return updateLink(state, url);
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int blockIdx = sel.fromBlock();
+        int start = sel.fromOffset();
+        int len = sel.toOffset() - start;
+        String content = ((label == null) || label.isEmpty()) ? url : label;
+        FormattedBlock clone = blocks.get(blockIdx).clone();
+        if (len > 0)
+            clone.remove(start, len);
+        clone.insert(start, content);
+        clone.addFormat(start, content.length(), FormatType.A);
+        setLinkMetaOnRange(clone, start, content.length(), url);
+        Transaction tr = Transaction.create();
+        tr.step(new ReplaceBlockStep(blockIdx, clone));
+        tr.setSelection(Selection.cursor(blockIdx, start + content.length()));
+        return tr;
+    }
+
+    /**
      * Inserts linked text at the cursor — used when the link tool is applied in
      * <em>open space</em> (no range selection and no link under the cursor): the given
      * display text (falling back to the URL itself) is inserted and linked to the URL,

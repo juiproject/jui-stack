@@ -392,7 +392,8 @@ public class Tools {
                         return;
                     ctx.commands().syncSelection();
                     String currentUrl = ctx.commands().currentLink();
-                    LinkPanel.show(btn[0], currentUrl, source, width, new LinkPanel.ILinkPanelCallback() {
+                    String currentLabel = ctx.commands().currentLinkLabel();
+                    LinkPanel.show(btn[0], currentUrl, currentLabel, source, width, new LinkPanel.ILinkPanelCallback() {
 
                         @Override
                         public void onApply(String url) {

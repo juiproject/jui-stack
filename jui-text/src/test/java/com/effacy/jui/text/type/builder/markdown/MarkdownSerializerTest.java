@@ -283,6 +283,58 @@ public class MarkdownSerializerTest {
         assertTrue(result.contains("[here](https://example.com)"));
     }
 
+    /**
+     * A link that runs to the end of a line still closes correctly (its {@code ](url)} is
+     * emitted after the final character rather than being dropped).
+     */
+    @Test
+    public void testLinkAtEndOfLine() {
+        FormattedText ft = FormattedText.markdown("See [the docs](https://example.com/docs)");
+        assertEquals("See [the docs](https://example.com/docs)", MarkdownSerializer.serialize(ft));
+    }
+
+    /**
+     * An emphasised span containing a link round-trips exactly — the emphasis stays open across
+     * the link rather than being split around it, and the link is not duplicated. Regression for
+     * a parser bug where the whole span (raw link syntax included) was emitted as one run and the
+     * links were then re-processed, doubling the content on the second link onward.
+     */
+    @Test
+    public void testItalicWrappingLinks() {
+        String md = "*If you are seeking advice refer to [Development](#development) under [Operating scenarios](#operating-scenarios).*";
+        FormattedText ft = FormattedText.markdown(md);
+        assertEquals(md, MarkdownSerializer.serialize(ft));
+    }
+
+    /** A single link inside emphasis round-trips as one emphasised link (no split, no dup). */
+    @Test
+    public void testItalicWrappingSingleLink() {
+        String md = "*see [here](#x) now*";
+        FormattedText ft = FormattedText.markdown(md);
+        assertEquals(md, MarkdownSerializer.serialize(ft));
+    }
+
+    /** Bold wrapping a link round-trips exactly. */
+    @Test
+    public void testBoldWrappingLink() {
+        String md = "**click [here](https://example.com) please**";
+        FormattedText ft = FormattedText.markdown(md);
+        assertEquals(md, MarkdownSerializer.serialize(ft));
+    }
+
+    /**
+     * The rich⇄markdown round trip is idempotent for emphasis-wrapping-links: a second
+     * parse/serialize cycle produces the same markdown as the first (no drift, no duplication).
+     */
+    @Test
+    public void testItalicWrappingLinksIdempotent() {
+        String md = "*a [x](#x) b [y](#y) c*";
+        String once = MarkdownSerializer.serialize(FormattedText.markdown(md));
+        String twice = MarkdownSerializer.serialize(FormattedText.markdown(once));
+        assertEquals(once, twice);
+        assertEquals(md, once);
+    }
+
     @Test
     public void testTable() {
         FormattedText ft = FormattedText.markdown("| A | B |\n| --- | --- |\n| 1 | 2 |");

@@ -18,7 +18,9 @@ package com.effacy.jui.text.ui.type;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.effacy.jui.core.client.dom.builder.A;
 import com.effacy.jui.core.client.dom.builder.Br;
@@ -130,6 +132,14 @@ public class DomBuilderFormattedTextRenderer {
     private ElementBuilder lastLi;
 
     /**
+     * Slug ids assigned to headings so far in this render, with a running count for
+     * de-duplication (a repeated heading text gets {@code slug-1}, {@code slug-2}, …).
+     * These make headings targetable by in-page {@code #anchor} links (see
+     * {@link LinkHandlers#slug(String)}). Reset on each {@link #render(FormattedText)}.
+     */
+    private Map<String, Integer> headingSlugs = new HashMap<>();
+
+    /**
      * Construct with the root container to build into.
      *
      * @param root
@@ -191,6 +201,7 @@ public class DomBuilderFormattedTextRenderer {
     public void render(FormattedText text) {
         if ((text == null) || text.empty())
             return;
+        headingSlugs.clear();
         for (FormattedBlock block : text.getBlocks())
             renderBlock(block);
         closeListContext();
@@ -225,26 +236,31 @@ public class DomBuilderFormattedTextRenderer {
             case H1:
                 el = h(root, topHeadingLevel);
                 applyBlockStyles(el, type);
+                applyHeadingId(el, block);
                 renderLines(block, el);
                 break;
             case H2:
                 el = h(root, topHeadingLevel + 1);
                 applyBlockStyles(el, type);
+                applyHeadingId(el, block);
                 renderLines(block, el);
                 break;
             case H3:
                 el = h(root, topHeadingLevel + 2);
                 applyBlockStyles(el, type);
+                applyHeadingId(el, block);
                 renderLines(block, el);
                 break;
             case H4:
                 el = h(root, topHeadingLevel + 3);
                 applyBlockStyles(el, type);
+                applyHeadingId(el, block);
                 renderLines(block, el);
                 break;
             case H5:
                 el = h(root, topHeadingLevel + 4);
                 applyBlockStyles(el, type);
+                applyHeadingId(el, block);
                 renderLines(block, el);
                 break;
             case NLIST:
@@ -562,6 +578,22 @@ public class DomBuilderFormattedTextRenderer {
         String[] styles = FormattedTextStyles.BLOCK_STYLES.get(type);
         if (styles != null)
             el.style(styles);
+    }
+
+    /**
+     * Gives a heading a slug id so it is targetable by an in-page {@code #anchor} link (e.g.
+     * {@code [x](#operating-scenarios)} finds an "Operating scenarios" heading). Repeated
+     * heading text is de-duplicated ({@code slug}, {@code slug-1}, …), matching the common
+     * markdown-anchor convention.
+     */
+    private void applyHeadingId(ElementBuilder el, FormattedBlock block) {
+        String base = LinkHandlers.slug(block.flatten());
+        if (base.isEmpty())
+            return;
+        Integer seen = headingSlugs.get(base);
+        String id = (seen == null) ? base : (base + "-" + seen);
+        headingSlugs.put(base, (seen == null) ? 1 : (seen + 1));
+        el.attr("id", id);
     }
 
     private void applyIndent(ElementBuilder el, int indent) {

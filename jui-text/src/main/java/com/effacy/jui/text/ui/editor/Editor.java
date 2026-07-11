@@ -22,6 +22,9 @@ import com.effacy.jui.text.type.edit.History;
 import com.effacy.jui.text.type.edit.Positions;
 import com.effacy.jui.text.type.edit.Selection;
 import com.effacy.jui.text.ui.type.ContentStyle;
+import com.effacy.jui.text.ui.type.ILinkHandler;
+import com.effacy.jui.text.ui.type.LinkHandlers;
+import com.effacy.jui.text.ui.type.LinkSupport;
 import com.effacy.jui.text.type.edit.Transaction;
 import com.effacy.jui.text.type.edit.step.DeleteBlockStep;
 import com.effacy.jui.text.type.edit.step.SetBlockTypeStep;
@@ -202,7 +205,7 @@ public class Editor extends Component<Editor.Config> {
         String placeholder;
         IFileUploadHandler fileUpload;
         LinkInteraction linkInteraction = LinkInteraction.EDIT;
-        java.util.function.Consumer<String> linkOpenHandler;
+        ILinkHandler linkHandler = LinkHandlers.standard();
         ContentStyle contentStyle = ContentStyle.compact();
 
         /**
@@ -263,13 +266,22 @@ public class Editor extends Component<Editor.Config> {
         }
 
         /**
-         * Configures how a link is opened in {@link LinkInteraction#NAVIGATE} mode (on a
-         * click, or the hover card's <em>Open</em>). Receives the link's URL. When
-         * {@code null} (the default) the link is opened in a new browser tab. Supply this
-         * to route application links (e.g. resolving an internal reference) yourself.
+         * Configures the link handler — what happens when a link is activated in
+         * {@link LinkInteraction#NAVIGATE} mode (a click, or the hover card's <em>Open</em>).
+         * <p>
+         * Defaults to {@link LinkHandlers#standard()} (external links open in a new tab; in-page
+         * {@code #anchor} links scroll within the content and never reach an SPA hash router;
+         * other schemes are left to the browser). Pass {@link LinkHandlers#standard(ILinkHandler)}
+         * with an application fallback to route custom schemes (e.g. an internal {@code doc:}
+         * reference). This is the same {@link ILinkHandler} the read-only renderer / {@code FText}
+         * accepts, so links behave identically in both.
+         *
+         * @param linkHandler
+         *                    the handler ({@code null} lets links follow their {@code href}).
+         * @return this configuration.
          */
-        public Config linkOpenHandler(java.util.function.Consumer<String> handler) {
-            this.linkOpenHandler = handler;
+        public Config linkHandler(ILinkHandler linkHandler) {
+            this.linkHandler = linkHandler;
             return this;
         }
 
@@ -599,8 +611,11 @@ public class Editor extends Component<Editor.Config> {
             editorEl.innerHTML = "";
             List<FormattedBlock> blocks = state.doc().getBlocks();
             handlers.forEach(h -> h.beginRender(ctx));
+            Map<String, Integer> headingSlugs = new HashMap<>();
             for (int i = 0; i < blocks.size(); i++) {
-                Element el = handlerFor(blocks.get(i).getType()).render(blocks.get(i), i, ctx);
+                FormattedBlock block = blocks.get(i);
+                Element el = handlerFor(block.getType()).render(block, i, ctx);
+                assignHeadingId(el, block, headingSlugs);
                 editorEl.appendChild(el);
             }
         } finally {
@@ -611,6 +626,23 @@ public class Editor extends Component<Editor.Config> {
         updateToolbarState();
         handlers.forEach(h -> h.afterRender(ctx));
         updatePlaceholder();
+    }
+
+    /**
+     * Gives a rendered heading a slug id so an in-page {@code #anchor} click scrolls to it in the
+     * editor too (mirrors the read-only renderer). Repeated heading text is de-duplicated
+     * ({@code slug}, {@code slug-1}, …). Regenerated on each full render.
+     */
+    private void assignHeadingId(Element el, FormattedBlock block, Map<String, Integer> slugs) {
+        if (!block.getType().is(BlockType.H1, BlockType.H2, BlockType.H3, BlockType.H4, BlockType.H5))
+            return;
+        String base = LinkHandlers.slug(block.flatten());
+        if (base.isEmpty())
+            return;
+        Integer seen = slugs.get(base);
+        String id = (seen == null) ? base : (base + "-" + seen);
+        slugs.put(base, (seen == null) ? 1 : (seen + 1));
+        el.setAttribute("id", id);
     }
 
     /**
@@ -1091,12 +1123,13 @@ public class Editor extends Component<Editor.Config> {
 
     private void handleEditorClick(Event evt) {
         Element target = Js.cast(evt.target);
-        // NAVIGATE mode: a click on a link opens it rather than placing the caret.
+        // NAVIGATE mode: a click on a link activates it (via the link handler) rather than
+        // placing the caret. LinkSupport suppresses the default nav (always for #anchors, so
+        // an SPA hash router is never triggered).
         if (config().linkInteraction == LinkInteraction.NAVIGATE) {
             Element anchor = anchorAncestor(target);
             if (anchor != null) {
-                evt.preventDefault();
-                openLink(anchor.getAttribute("href"));
+                LinkSupport.handleClick(evt, editorEl, config().linkHandler);
                 return;
             }
         }
@@ -1396,14 +1429,14 @@ public class Editor extends Component<Editor.Config> {
         return null;
     }
 
-    /** Opens a link's URL via the configured handler, else in a new browser tab. */
-    private void openLink(String href) {
+    /** Activates a link via the configured handler; falls back to opening in a new tab. */
+    private void openLink(Element anchor, String href) {
         if ((href == null) || href.isEmpty())
             return;
-        if (config().linkOpenHandler != null)
-            config().linkOpenHandler.accept(href);
-        else
-            DomGlobal.window.open(href, "_blank");
+        ILinkHandler handler = config().linkHandler;
+        if ((handler != null) && handler.activate(href, anchor, editorEl))
+            return;
+        DomGlobal.window.open(href, "_blank");
     }
 
     private void handleEditorMouseOver(Event evt) {
@@ -1531,7 +1564,7 @@ public class Editor extends Component<Editor.Config> {
 
     private void openHoveredLink() {
         if (hoveredLink != null)
-            openLink(hoveredLink.getAttribute("href"));
+            openLink(hoveredLink, hoveredLink.getAttribute("href"));
     }
 
     private void editHoveredLink() {

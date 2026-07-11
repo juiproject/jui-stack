@@ -22,6 +22,12 @@ import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
 import com.effacy.jui.text.type.FormattedText;
 import com.effacy.jui.text.ui.type.ContentStyle;
 import com.effacy.jui.text.ui.type.DomBuilderFormattedTextRenderer;
+import com.effacy.jui.text.ui.type.ILinkHandler;
+import com.effacy.jui.text.ui.type.LinkHandlers;
+import com.effacy.jui.text.ui.type.LinkSupport;
+
+import elemental2.dom.Element;
+import jsinterop.base.Js;
 
 /**
  * Renders {@link FormattedText} read-only, using the shared {@link DomBuilderFormattedTextRenderer}
@@ -56,6 +62,8 @@ public class FText extends Fragment<FText> {
     private boolean skipStyle;
 
     private ContentStyle contentStyle = ContentStyle.document ();
+
+    private ILinkHandler linkHandler = LinkHandlers.standard ();
 
     private int topHeadingLevel = 1;
 
@@ -103,6 +111,25 @@ public class FText extends Fragment<FText> {
     }
 
     /**
+     * Assigns the link handler — what happens when a link in the rendered text is clicked.
+     * <p>
+     * Defaults to {@link LinkHandlers#standard()} (external links open in a new tab; in-page
+     * {@code #anchor} links scroll within the content and never reach an SPA hash router; other
+     * schemes are left to the browser). Pass {@link LinkHandlers#standard(ILinkHandler)} with an
+     * application fallback to handle custom schemes (e.g. {@code doc:}). Has no effect in the
+     * {@code embed} rendering mode (the caller then owns the content root and its listeners).
+     *
+     * @param linkHandler
+     *                    the link handler ({@code null} disables link interception — links follow
+     *                    their {@code href} natively).
+     * @return this fragment.
+     */
+    public FText linkHandler(ILinkHandler linkHandler) {
+        this.linkHandler = linkHandler;
+        return this;
+    }
+
+    /**
      * Assigns the top heading level.
      * <p>
      * This is the heading level that the first heading will be rendered as.
@@ -130,6 +157,15 @@ public class FText extends Fragment<FText> {
         // apply() scopes the root with the richtext class AND layers the style's overrides.
         if (!skipStyle)
             (contentStyle != null ? contentStyle : ContentStyle.compact ()).apply (root);
+        // Route link clicks through the handler (a delegated listener on the content root, so it
+        // survives content changes). In-page #anchors are intercepted so an SPA hash router is
+        // never triggered — see LinkHandlers.standard().
+        if (linkHandler != null) {
+            root.use (n -> {
+                Element el = Js.uncheckedCast (n);
+                LinkSupport.bind (el, linkHandler);
+            });
+        }
         _build (root);
     }
 

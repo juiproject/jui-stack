@@ -109,9 +109,19 @@ Links render as `<a>` and are edited via the toolbar link tool (`Tools.link`), w
 How a click on a link behaves is configurable via `Config.linkInteraction(LinkInteraction)`:
 
 - **`EDIT`** (default) — clicking a link positions the caret inside it for inline editing. Suited to a surface with a distinct edit mode.
-- **`NAVIGATE`** — clicking a link **opens** it (via `Config.linkOpenHandler`, else a new browser tab), and **hovering** shows a small floating card with the URL and **Open** / **Edit** actions. Edit targets the hovered link in the model and opens the `LinkPanel` (URL + label). Suited to an always-editable surface with no separate view mode (e.g. attachment links you want clickable). Supply `linkOpenHandler` to route application-specific schemes (e.g. an internal `doc:` reference) yourself. In this mode links carry a **pointer cursor** (the root gets a `navigate` modifier class → `.component.navigate a { cursor: pointer }`) to signal they're clickable.
+- **`NAVIGATE`** — clicking a link **activates** it (via the link handler; see below), and **hovering** shows a small floating card with the URL and **Open** / **Edit** actions. Edit targets the hovered link in the model and opens the `LinkPanel` (URL + label). Suited to an always-editable surface with no separate view mode (e.g. attachment links you want clickable). In this mode links carry a **pointer cursor** (the root gets a `navigate` modifier class → `.component.navigate a { cursor: pointer }`) to signal they're clickable.
 
 The hover card mirrors the image overlay: a fixed `body` element positioned above the link (flipping below when tight), kept open while the pointer is on the link or the card, dismissed on scroll / re-render / leave. It appears after a short **hover delay** (`LINK_CARD_SHOW_DELAY`, 450ms) so a passing pointer doesn't flash it; moving directly between two links' cards switches without re-delaying.
+
+#### Link handler (shared with read-only)
+
+What a link *does* when activated is a pluggable `ILinkHandler` (in `com.effacy.jui.text.ui.type`) — the **same** hook the read-only renderer / `FText` accept, so a link behaves identically wherever the content is shown. Set it with `Config.linkHandler(ILinkHandler)`; it defaults to `LinkHandlers.standard()`:
+
+- **External** (`http(s)://`, `mailto:`, `tel:`) → opens in a new tab.
+- **In-page anchor** (`#section`) → the click is **always suppressed** (so it never reaches a single-page-app hash router) and, if a matching element exists in the content, scrolled to. Rendered headings carry a [slug](../type/LinkHandlers.java) id — in **both** the editor and the read-only renderer — so `[x](#operating-scenarios)` scrolls to the "Operating scenarios" heading whether you're viewing or editing. `scrollToAnchor` searches within the content root first, so the right copy is found even if an editor and a read view share the page.
+- **Anything else** (relative, custom schemes like `doc:`) → left to the browser, or handed to an application fallback.
+
+Compose app schemes on top with `LinkHandlers.standard(myFallback)`, where `myFallback` is an `ILinkHandler` that handles its schemes (e.g. `doc:`) and returns `false` otherwise. The read-only side wires the same handler via `LinkSupport.bind(rootElement, handler)` (a delegated click listener) — `FText` does this for you through `FText.linkHandler(...)`.
 
 ### Table cell navigation
 

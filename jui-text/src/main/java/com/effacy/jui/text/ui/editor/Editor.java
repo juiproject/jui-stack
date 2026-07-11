@@ -181,7 +181,7 @@ public class Editor extends Component<Editor.Config> {
         IListIndexFormatter listIndexFormatter = Editor::defaultListIndex;
         boolean debugLog;
         String placeholder;
-        IImageUploadHandler imageUpload;
+        IFileUploadHandler fileUpload;
 
         /**
          * Configures whether pressing Enter at the end of a heading (H1–H3)
@@ -220,13 +220,14 @@ public class Editor extends Component<Editor.Config> {
         }
 
         /**
-         * Configures a handler for images introduced into the editor (for example
-         * pasted from the clipboard). When set, pasting an image file uploads it via
-         * the handler and inserts an inline image at the cursor using the returned
-         * {@code src}. When {@code null} (the default) pasted images are ignored.
+         * Configures a handler for files introduced into the editor (pasted from the
+         * clipboard or dropped in). When set, an image file is uploaded via the handler
+         * and inserted as an inline image at the cursor (using the returned URL as its
+         * {@code src}); any other file is inserted as a link labelled with its file
+         * name. When {@code null} (the default) pasted/dropped files are ignored.
          */
-        public Config imageUpload(IImageUploadHandler handler) {
-            this.imageUpload = handler;
+        public Config fileUpload(IFileUploadHandler handler) {
+            this.fileUpload = handler;
             return this;
         }
     }
@@ -1446,20 +1447,15 @@ public class Editor extends Component<Editor.Config> {
             if (h.handlePaste(evt, ctx))
                 return;
         }
-        // Pasted image files (e.g. a screenshot from the clipboard) are uploaded via
-        // the configured handler and inserted as an inline image.
-        IImageUploadHandler imageUpload = config().imageUpload;
-        if (imageUpload != null) {
-            elemental2.dom.File image = firstClipboardImage(evt);
-            if (image != null) {
+        // Pasted files (e.g. a screenshot or a document from the clipboard) are
+        // uploaded via the configured handler and embedded at the cursor.
+        IFileUploadHandler fileUpload = config().fileUpload;
+        if (fileUpload != null) {
+            elemental2.dom.File file = firstClipboardFile(evt);
+            if (file != null) {
                 evt.preventDefault();
                 syncSelectionFromDom();
-                imageUpload.upload(image, src -> {
-                    if ((src != null) && !src.isEmpty())
-                        applyTransaction(Commands.insertImage(state, src));
-                }, err -> {
-                    // Best effort: a failed upload leaves the document unchanged.
-                });
+                uploadAndEmbed(fileUpload, file);
                 return;
             }
         }
@@ -1474,59 +1470,75 @@ public class Editor extends Component<Editor.Config> {
     }
 
     /**
-     * Extracts the first image file from a paste event's clipboard, or
-     * {@code null} if the clipboard carries no image.
+     * Extracts the first file from a paste event's clipboard, or {@code null} if
+     * the clipboard carries no file.
      */
-    private elemental2.dom.File firstClipboardImage(elemental2.dom.Event evt) {
+    private elemental2.dom.File firstClipboardFile(elemental2.dom.Event evt) {
         elemental2.dom.ClipboardEvent ce = Js.uncheckedCast(evt);
-        return firstImageFile(ce.clipboardData);
+        return firstFile(ce.clipboardData);
     }
 
     /**
-     * Extracts the first image file from a data transfer (clipboard or drag), or
-     * {@code null} if it carries no image.
+     * Extracts the first file from a data transfer (clipboard or drag), or
+     * {@code null} if it carries none.
      */
-    private elemental2.dom.File firstImageFile(elemental2.dom.DataTransfer dt) {
+    private elemental2.dom.File firstFile(elemental2.dom.DataTransfer dt) {
         if ((dt == null) || (dt.files == null))
             return null;
         for (elemental2.dom.File file : dt.files.asList()) {
-            if ((file != null) && (file.type != null) && file.type.startsWith("image/"))
+            if (file != null)
                 return file;
         }
         return null;
     }
 
     /**
-     * Accepts a file drag (so the {@code drop} fires) when an image handler is
+     * Uploads a file via the handler and embeds it at the current selection: an image
+     * file becomes an inline image (the returned URL as its {@code src}); any other
+     * file becomes a link labelled with its file name. A failed (or rejected) upload
+     * leaves the document unchanged — the handler surfaces any user-facing message.
+     */
+    private void uploadAndEmbed(IFileUploadHandler fileUpload, elemental2.dom.File file) {
+        boolean image = (file.type != null) && file.type.startsWith("image/");
+        String name = file.name;
+        fileUpload.upload(file, url -> {
+            if ((url == null) || url.isEmpty())
+                return;
+            if (image)
+                applyTransaction(Commands.insertImage(state, url));
+            else
+                applyTransaction(Commands.insertLink(state, url, name));
+        }, err -> {
+            // Best effort: a failed upload leaves the document unchanged.
+        });
+    }
+
+    /**
+     * Accepts a file drag (so the {@code drop} fires) when a file handler is
      * configured; other drags are left to their default handling.
      */
     private void handleDragOver(elemental2.dom.Event evt) {
-        if ((config().imageUpload != null) && isFileDrag(evt))
+        if ((config().fileUpload != null) && isFileDrag(evt))
             evt.preventDefault();
     }
 
     /**
-     * Handles a dropped image file: uploads it via the configured handler and
-     * inserts it at the drop point.
+     * Handles a dropped file: uploads it via the configured handler and embeds it at
+     * the drop point (an inline image for image files, a link otherwise).
      */
     private void handleDrop(elemental2.dom.Event evt) {
-        IImageUploadHandler imageUpload = config().imageUpload;
-        if ((imageUpload == null) || !isFileDrag(evt))
+        IFileUploadHandler fileUpload = config().fileUpload;
+        if ((fileUpload == null) || !isFileDrag(evt))
             return;
         // We accepted the file drag on dragover; prevent the browser from opening it.
         evt.preventDefault();
         elemental2.dom.DragEvent de = Js.cast(evt);
-        elemental2.dom.File image = firstImageFile(de.dataTransfer);
-        if (image == null)
+        elemental2.dom.File file = firstFile(de.dataTransfer);
+        if (file == null)
             return;
         placeCaretAtPoint(de.clientX, de.clientY);
         syncSelectionFromDom();
-        imageUpload.upload(image, src -> {
-            if ((src != null) && !src.isEmpty())
-                applyTransaction(Commands.insertImage(state, src));
-        }, err -> {
-            // Best effort: a failed upload leaves the document unchanged.
-        });
+        uploadAndEmbed(fileUpload, file);
     }
 
     /**

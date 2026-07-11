@@ -3,6 +3,7 @@ package com.effacy.jui.text.ui.editor;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import com.effacy.jui.core.client.Invoker;
 import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.core.client.control.Control;
 import com.effacy.jui.core.client.dom.INodeProvider;
@@ -126,6 +127,7 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
         private boolean borderless;
         private String placeholder;
         private boolean detachedToolbar;
+        private Invoker onFocusLost;
 
         /**
          * Applies a standard configuration.
@@ -243,6 +245,17 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
          */
         public Config detachedToolbar() {
             this.detachedToolbar = true;
+            return this;
+        }
+
+        /**
+         * Registers a callback invoked when focus leaves the editor entirely (a true
+         * blur — not an internal move, such as into the toolbar). Useful for
+         * flush-on-blur behaviours (for example, prompting an autosave). Routed through
+         * the editor's managed focus handling, so it is torn down with the component.
+         */
+        public Config onFocusLost(Invoker onFocusLost) {
+            this.onFocusLost = onFocusLost;
             return this;
         }
 
@@ -413,7 +426,17 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
      */
     private void attachFocusListeners(Element root) {
         root.addEventListener("focusin", evt -> root.classList.add(styles().focus()));
-        root.addEventListener("focusout", evt -> root.classList.remove(styles().focus()));
+        root.addEventListener("focusout", evt -> {
+            root.classList.remove(styles().focus());
+            // Notify a configured focus-loss handler only when focus leaves the editor
+            // entirely (not on an internal move, e.g. into the toolbar).
+            if (config().onFocusLost != null) {
+                elemental2.dom.FocusEvent fe = Js.uncheckedCast(evt);
+                elemental2.dom.Node related = Js.uncheckedCast(fe.relatedTarget);
+                if ((related == null) || !root.contains(related))
+                    config().onFocusLost.invoke();
+            }
+        });
     }
 
     /************************************************************************

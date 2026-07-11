@@ -70,7 +70,7 @@ These toggle the format on the selected range. With a cursor (no selection) they
 |----------|--------|
 | Ctrl+C | Copy — handled natively by the browser (DOM reflects model). |
 | Ctrl+X | Cut — browser copies selection to clipboard; editor deletes selection via transaction. |
-| Ctrl+V | Paste — plain text is read from the clipboard and inserted via `Commands.pasteText`. Multi-line text is split into separate PARA blocks. When the clipboard carries an image file and an `imageUpload` handler is configured, the image is uploaded and inserted instead (see below). |
+| Ctrl+V | Paste — plain text is read from the clipboard and inserted via `Commands.pasteText`. Multi-line text is split into separate PARA blocks. When the clipboard carries a file and a `fileUpload` handler is configured, the file is uploaded and embedded instead (see below). |
 
 ### Inline images
 
@@ -85,10 +85,14 @@ Images are **atomic single-character segments** in the model: the line text carr
 
 The native selection helpers (`jui_text_editor.js`) count an `<img>` element as exactly one character in all offset/caret walks, mirroring the model.
 
-**Capture (upload) paths** — enabled by configuring `Config.imageUpload(IImageUploadHandler)`:
+**Capture (upload) paths** — enabled by configuring `Config.fileUpload(IFileUploadHandler)`. The same handler covers images and other files; the editor branches on the file's MIME type:
 
-- **Paste**: an image file on the clipboard is passed to the handler; on success the returned URL is inserted at the cursor via `Commands.insertImage` (cursor lands after the image).
-- **Drag-and-drop**: dropping an image file places the caret at the drop point (`caretPositionFromPoint`, falling back to the current selection) then follows the same upload/insert flow. Non-image file drops are swallowed.
+- **Image file** (`image/*`) → uploaded and inserted as an inline image at the cursor via `Commands.insertImage` (cursor lands after the image).
+- **Any other file** (a document attachment) → uploaded and inserted as a **link** labelled with the file's name via `Commands.insertLink` (cursor lands after the link).
+- **Paste**: the first file on the clipboard is embedded as above.
+- **Drag-and-drop**: dropping a file places the caret at the drop point (`caretPositionFromPoint`, falling back to the current selection) then follows the same upload/embed flow.
+
+The handler is also where upload policy lives (e.g. a size limit): reject by reporting via `onError` — optionally surfacing a message to the user — and the document is left unchanged.
 
 **Selection overlay** — clicking an image shows a floating overlay with:
 
@@ -517,7 +521,7 @@ Beyond `editor(...)` and `toolbar(...)`, the control exposes:
 | `detachedToolbar()` | Binds the toolbar but does not render it inside the control — the host places it (e.g. a full-width strip); supply the toolbar instance via `toolbar(Supplier)`. |
 | `position(Position)` / `noFocus()` / `borderless()` | Toolbar position and individual border/focus toggles (subsumed by `SEAMLESS`). |
 
-Image capture is configured on the *editor* config (via `editor(cfg -> cfg.imageUpload(handler))`): supply an `IImageUploadHandler` that uploads the pasted/dropped image file and calls back with the URL to embed — see [Inline images](#inline-images).
+File capture is configured on the *editor* config (via `editor(cfg -> cfg.fileUpload(handler))`): supply an `IFileUploadHandler` that uploads the pasted/dropped file and calls back with the URL to embed — images are embedded inline, other files as links — see [Inline images](#inline-images).
 
 # Appendix
 

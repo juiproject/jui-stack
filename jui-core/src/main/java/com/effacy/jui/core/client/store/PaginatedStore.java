@@ -584,6 +584,14 @@ public abstract class PaginatedStore<V> extends StoreSelection<V> implements IPa
          */
         @Override
         public void onSuccess(List<V> items, int totalAvailable, boolean filtered) {
+            // A request queued while this one was in flight means the load
+            // parameters have since changed (re-scope, new filter); applying these
+            // now-stale results would flash outdated content before the queued
+            // request replaces it, so discard them and move straight on.
+            if (PaginatedStore.this.request != null) {
+                complete ();
+                return;
+            }
             if (addition) {
                 PaginatedStore.this.items.addAll (items);
                 PaginatedStore.this.page = 0;
@@ -617,6 +625,12 @@ public abstract class PaginatedStore<V> extends StoreSelection<V> implements IPa
          */
         @Override
         public void onFailure(String message) {
+            // Superseded by a queued request (see onSuccess) — the failure relates
+            // to stale parameters, so discard it rather than surface an error.
+            if (PaginatedStore.this.request != null) {
+                complete ();
+                return;
+            }
             PaginatedStore.this.statusMessage = message;
             Status prior = PaginatedStore.this.status;
             PaginatedStore.this.status = Status.ERROR;

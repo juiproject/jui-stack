@@ -688,6 +688,27 @@ public class FormattedTextMarkdownParserTest {
     }
 
     @Test
+    public void testBlockQuoteInterruptingParagraph() {
+        // A '>' line directly following a paragraph line (no blank line between)
+        // starts a quote block rather than rendering the marker literally.
+        FormattedText result = FormattedText.markdown("**Job statement.**\n> When a compliance survey is open, I want to report.\nA lazy continuation line.");
+
+        assertEquals(2, result.getBlocks().size());
+
+        FormattedBlock para = result.getBlocks().get(0);
+        assertEquals(BlockType.PARA, para.getType());
+        assertEquals(1, para.getLines().size());
+        assertEquals("Job statement.", para.getLines().get(0).getText());
+        assertTrue(para.getLines().get(0).getFormatting().get(0).getFormats().contains(FormatType.BLD));
+
+        FormattedBlock quote = result.getBlocks().get(1);
+        assertEquals(BlockType.QUOTE, quote.getType());
+        assertEquals(2, quote.getLines().size());
+        assertEquals("When a compliance survey is open, I want to report.", quote.getLines().get(0).getText());
+        assertEquals("A lazy continuation line.", quote.getLines().get(1).getText());
+    }
+
+    @Test
     public void testBlockQuoteWithBlankLine() {
         // A bare '>' line is a blank line inside the quote (one block, not two).
         FormattedText result = FormattedText.markdown("> First.\n>\n> Second.");

@@ -271,10 +271,27 @@ public class MarkdownParser {
                 // marker line).
                 emitList(handler, lines, partialBlock);
             } else {
-                // Check for a list starting mid-paragraph (e.g. intro text
-                // followed by list items without a blank line separator).
+                // Check for a quote or list starting mid-paragraph (e.g. intro text
+                // followed by a '>' line or list items without a blank line
+                // separator). Whichever transition occurs first wins.
                 int listStart = findListTransition(lines);
-                if (listStart > 0) {
+                int quoteStart = findQuoteTransition(lines);
+                if ((quoteStart > 0) && ((listStart <= 0) || (quoteStart < listStart))) {
+                    handler.startBlock(BlockType.PARA);
+                    for (int l = 0; l < quoteStart; l++) {
+                        handler.startLine();
+                        if (!lines[l].isEmpty())
+                            emitLineContent(handler, lines[l], false);
+                        handler.endLine();
+                    }
+                    handler.endBlock(BlockType.PARA);
+
+                    // Emit the quote from the transition onward; emitQuote strips the
+                    // markers and folds lazy continuation lines into the quote.
+                    String[] quoteLines = new String[lines.length - quoteStart];
+                    System.arraycopy(lines, quoteStart, quoteLines, 0, quoteLines.length);
+                    emitQuote(handler, quoteLines, partialBlock);
+                } else if (listStart > 0) {
                     handler.startBlock(BlockType.PARA);
                     for (int l = 0; l < listStart; l++) {
                         handler.startLine();
@@ -621,6 +638,19 @@ public class MarkdownParser {
             return line.trim().startsWith(">");
         }
         return false;
+    }
+
+    /**
+     * Locates the first line after the first that begins with a {@code >} marker —
+     * a quote interrupting a paragraph without an intervening blank line. Returns
+     * -1 when no such line exists.
+     */
+    private static int findQuoteTransition(String[] lines) {
+        for (int i = 1; i < lines.length; i++) {
+            if (lines[i].trim().startsWith(">"))
+                return i;
+        }
+        return -1;
     }
 
     /**

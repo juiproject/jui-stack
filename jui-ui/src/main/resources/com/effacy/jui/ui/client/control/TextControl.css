@@ -5,6 +5,7 @@
        TextControl.Config.Variant for the per-variant token sets that
        reach in here. */
     --cpt-textctl-font: inherit;
+    --cpt-textctl-weight: var(--jui-textctl-weight, normal);
     --cpt-textctl-size: var(--jui-textctl-size, var(--jui-font-size-md));
     --cpt-textctl-padding: var(--jui-textctl-padding, 0 var(--jui-space-3));
     --cpt-textctl-height: var(--jui-textctl-height, var(--jui-comp-control-height));
@@ -85,6 +86,7 @@
     width: 100%;
     font-size: var(--cpt-textctl-size);
     font-family: var(--cpt-textctl-font);
+    font-weight: var(--cpt-textctl-weight);
 }
 
 .component.disabled input {

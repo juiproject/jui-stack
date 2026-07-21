@@ -2,7 +2,7 @@
 
 @media only screen and (max-width: 700px) {
     .component header.vertical {
-        width: 5em;
+        width: 4em;
     }
     .component .tabs .group h6 span {
         display: none;
@@ -19,7 +19,7 @@
 
 @media only screen and (max-width: 500px) {
     .component header.vertical {
-        width: 3.2em;
+        width: 3em;
     }
     .component .tabs .group h6 span {
         display: none;
@@ -36,7 +36,7 @@
         padding: 0.45em;
     }
     .component .tabs ul li div em {
-        margin-left: 0.05em !important;
+        margin-left: 0.5em !important;
     }
     .component .tabs ul li span {
         display: none;

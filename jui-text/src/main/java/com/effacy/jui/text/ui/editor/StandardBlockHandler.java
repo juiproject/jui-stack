@@ -41,7 +41,8 @@ public class StandardBlockHandler implements IBlockHandler {
     @Override
     public boolean accepts(BlockType type) {
         return type.is(BlockType.PARA, BlockType.H1, BlockType.H2, BlockType.H3,
-                BlockType.H4, BlockType.H5, BlockType.NLIST, BlockType.OLIST);
+                BlockType.H4, BlockType.H5, BlockType.NLIST, BlockType.OLIST,
+                BlockType.QUOTE, BlockType.CODE);
     }
 
     @Override
@@ -78,8 +79,11 @@ public class StandardBlockHandler implements IBlockHandler {
             el.classList.add("indent" + block.getIndent());
 
         List<FormattedLine> lines = block.getLines();
+        // A single zero-length line still has content if it carries formatting (for
+        // example a zero-length inline image), so it must be rendered — not collapsed
+        // to a bare BR.
         boolean empty = lines.isEmpty()
-                || ((lines.size() == 1) && (lines.get(0).length() == 0));
+                || ((lines.size() == 1) && (lines.get(0).length() == 0) && lines.get(0).getFormatting().isEmpty());
 
         if (empty) {
             // Empty blocks need a BR for contenteditable cursor placement.
@@ -122,6 +126,18 @@ public class StandardBlockHandler implements IBlockHandler {
             return DomGlobal.document.createElement("h4");
         if (type == BlockType.H5)
             return DomGlobal.document.createElement("h5");
+        if (type == BlockType.QUOTE) {
+            // The "quote" class lets the shared richtext stylesheet (FormattedTextStyles) style
+            // the blockquote — the same class the read-only renderer applies.
+            Element blockquote = DomGlobal.document.createElement("blockquote");
+            blockquote.classList.add("quote");
+            return blockquote;
+        }
+        if (type == BlockType.CODE) {
+            Element pre = DomGlobal.document.createElement("pre");
+            pre.classList.add("code_block");
+            return pre;
+        }
         Element el = DomGlobal.document.createElement("p");
         if (type == BlockType.NLIST)
             el.classList.add(ctx.styles().listBullet());

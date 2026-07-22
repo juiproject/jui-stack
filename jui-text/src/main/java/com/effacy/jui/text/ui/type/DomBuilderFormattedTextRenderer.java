@@ -18,11 +18,14 @@ package com.effacy.jui.text.ui.type;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.effacy.jui.core.client.dom.builder.A;
 import com.effacy.jui.core.client.dom.builder.Br;
 import com.effacy.jui.core.client.dom.builder.Custom;
+import com.effacy.jui.core.client.dom.builder.Div;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.H1;
 import com.effacy.jui.core.client.dom.builder.H2;
@@ -44,6 +47,11 @@ import com.effacy.jui.text.type.FormattedText;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
 import com.effacy.jui.text.type.FormattedLine.TextSegment;
+import com.effacy.jui.text.ui.editor.Fences;
+import com.effacy.jui.text.ui.editor.IFenceRenderer;
+
+import elemental2.dom.Element;
+import jsinterop.base.Js;
 
 /**
  * Renders a {@link FormattedText} model into a JUI
@@ -61,11 +69,16 @@ import com.effacy.jui.text.type.FormattedLine.TextSegment;
  *     .render(formattedText);
  * </pre>
  * <p>
- * The caller should apply the CSS class {@code juiFragFText} to the parent
- * element for block-level spacing and indent styles.
+ * The parent element must be a formatted-text content root: apply a {@link ContentStyle} to
+ * it — {@code ContentStyle.document().apply(root)} — which scopes it with the {@code richtext}
+ * class (so the block, heading, list, quote, code and inline-format styles resolve) <em>and</em>
+ * selects the presentation density (compact vs document spacing). This is the same style the
+ * editor accepts, so both surfaces present identically. (The {@code FText} fragment does this
+ * for you.) For a bare scope with no density overrides, use {@code ContentStyle.compact().apply(root)}.
  *
  * @see FormattedText
  * @see FormattedTextStyles
+ * @see ContentStyle
  */
 public class DomBuilderFormattedTextRenderer {
 
@@ -117,6 +130,14 @@ public class DomBuilderFormattedTextRenderer {
      * nested list elements when indent increases.
      */
     private ElementBuilder lastLi;
+
+    /**
+     * Slug ids assigned to headings so far in this render, with a running count for
+     * de-duplication (a repeated heading text gets {@code slug-1}, {@code slug-2}, …).
+     * These make headings targetable by in-page {@code #anchor} links (see
+     * {@link LinkHandlers#slug(String)}). Reset on each {@link #render(FormattedText)}.
+     */
+    private Map<String, Integer> headingSlugs = new HashMap<>();
 
     /**
      * Construct with the root container to build into.
@@ -180,6 +201,7 @@ public class DomBuilderFormattedTextRenderer {
     public void render(FormattedText text) {
         if ((text == null) || text.empty())
             return;
+        headingSlugs.clear();
         for (FormattedBlock block : text.getBlocks())
             renderBlock(block);
         closeListContext();
@@ -214,26 +236,31 @@ public class DomBuilderFormattedTextRenderer {
             case H1:
                 el = h(root, topHeadingLevel);
                 applyBlockStyles(el, type);
+                applyHeadingId(el, block);
                 renderLines(block, el);
                 break;
             case H2:
                 el = h(root, topHeadingLevel + 1);
                 applyBlockStyles(el, type);
+                applyHeadingId(el, block);
                 renderLines(block, el);
                 break;
             case H3:
                 el = h(root, topHeadingLevel + 2);
                 applyBlockStyles(el, type);
+                applyHeadingId(el, block);
                 renderLines(block, el);
                 break;
             case H4:
                 el = h(root, topHeadingLevel + 3);
                 applyBlockStyles(el, type);
+                applyHeadingId(el, block);
                 renderLines(block, el);
                 break;
             case H5:
                 el = h(root, topHeadingLevel + 4);
                 applyBlockStyles(el, type);
+                applyHeadingId(el, block);
                 renderLines(block, el);
                 break;
             case NLIST:
@@ -247,6 +274,33 @@ public class DomBuilderFormattedTextRenderer {
                     renderLines(block, el);
                 }
                 break;
+            case QUOTE:
+                el = Custom.$(root, "blockquote");
+                applyBlockStyles(el, type);
+                renderLines(block, el);
+                break;
+            case FENCE: {
+                // Registry-driven rendering (matching the editor's FenceBlockHandler): a
+                // registered renderer produces the rich representation; otherwise fall back
+                // to showing the fenced source as a code block.
+                String info = block.meta("info");
+                String content = block.flatten();
+                IFenceRenderer renderer = Fences.rendererFor(info);
+                boolean hasContent = (content != null) && !content.isEmpty();
+                if ((renderer != null) && (hasContent || renderer.rendersEmpty())) {
+                    el = Div.$(root);
+                    applyBlockStyles(el, type);
+                    el.use(n -> {
+                        Element target = Js.uncheckedCast(n);
+                        renderer.render(target, info, content);
+                    });
+                } else {
+                    el = Custom.$(root, "pre");
+                    applyBlockStyles(el, type);
+                    Custom.$(el, "code").text(content);
+                }
+                break;
+            }
             case TABLE:
                 renderTable(block);
                 break;
@@ -363,9 +417,10 @@ public class DomBuilderFormattedTextRenderer {
     private void renderSegment(TextSegment segment, IDomInsertableContainer<?> target) {
         String text = segment.text();
 
-        // Variable — render as plain text.
+        // Variable — render as a chip (styled by the shared richtext stylesheet), matching the
+        // editor so the two surfaces present variables identically.
         if (segment.variable()) {
-            Text.$(target, text);
+            Span.$(target).style("variable").text(text);
             return;
         }
 
@@ -374,16 +429,37 @@ public class DomBuilderFormattedTextRenderer {
             String src = segment.hasMeta() ? segment.meta().get(FormattedLine.META_IMAGE) : null;
             String width = segment.hasMeta() ? segment.meta().get(FormattedLine.META_WIDTH) : null;
             String height = segment.hasMeta() ? segment.meta().get(FormattedLine.META_HEIGHT) : null;
+            String align = segment.hasMeta() ? segment.meta().get(FormattedLine.META_ALIGN) : null;
+            String margin = segment.hasMeta() ? segment.meta().get(FormattedLine.META_MARGIN) : null;
+            // Alt is meta; the segment text is the image's sentinel character (never
+            // rendered).
+            String alt = segment.hasMeta() ? segment.meta().get(FormattedLine.META_ALT) : null;
             ElementBuilder img = Custom.$("img");
             target.insert(img);
             if ((src != null) && !src.isEmpty())
                 img.attr("src", src);
-            if ((text != null) && !text.isEmpty())
-                img.attr("alt", text);
+            if ((alt != null) && !alt.isEmpty())
+                img.attr("alt", alt);
             if ((width != null) && !width.isEmpty())
                 img.attr("width", width);
             if ((height != null) && !height.isEmpty())
                 img.attr("height", height);
+            // Margin applies to all sides; a block alignment (below) then overrides the
+            // horizontal margin on the auto side(s).
+            if ((margin != null) && !margin.isEmpty())
+                img.css("margin", margin + "px");
+            // Block alignment: the image sits on its own line, aligned via auto margins.
+            if ((align != null) && !align.isEmpty()) {
+                img.css("display", "block");
+                if ("center".equals(align)) {
+                    img.css("margin-left", "auto");
+                    img.css("margin-right", "auto");
+                } else if ("right".equals(align)) {
+                    img.css("margin-left", "auto");
+                } else {
+                    img.css("margin-right", "auto");
+                }
+            }
             return;
         }
 
@@ -502,6 +578,22 @@ public class DomBuilderFormattedTextRenderer {
         String[] styles = FormattedTextStyles.BLOCK_STYLES.get(type);
         if (styles != null)
             el.style(styles);
+    }
+
+    /**
+     * Gives a heading a slug id so it is targetable by an in-page {@code #anchor} link (e.g.
+     * {@code [x](#operating-scenarios)} finds an "Operating scenarios" heading). Repeated
+     * heading text is de-duplicated ({@code slug}, {@code slug-1}, …), matching the common
+     * markdown-anchor convention.
+     */
+    private void applyHeadingId(ElementBuilder el, FormattedBlock block) {
+        String base = LinkHandlers.slug(block.flatten());
+        if (base.isEmpty())
+            return;
+        Integer seen = headingSlugs.get(base);
+        String id = (seen == null) ? base : (base + "-" + seen);
+        headingSlugs.put(base, (seen == null) ? 1 : (seen + 1));
+        el.attr("id", id);
     }
 
     private void applyIndent(ElementBuilder el, int indent) {

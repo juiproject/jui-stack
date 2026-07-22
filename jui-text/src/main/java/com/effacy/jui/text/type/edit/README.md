@@ -132,6 +132,13 @@ Redo:     inverse-of-inverse steps + selection=cursor(0,7)  ← forward restored
 | `extractSelection` | — | Read-only query; returns a `FormattedText` containing the selected content |
 | `paste` | Ctrl+V | Inserts `FormattedText` at cursor; deletes selection first if present |
 | `pasteText` | — | Converts plain text (splitting on `\n`) to `FormattedText` and delegates to `paste` |
+| `insertImage` | — | Inserts an inline image at the cursor (deletes selection first); cursor lands after the image |
+| `removeImage` | — | Removes the image at the cursor position (its format and sentinel character) |
+| `setImageAttributes` | — | Updates the width/height/align/margin metadata of the image at the cursor; `null` arguments leave the attribute unchanged, non-positive/empty values clear it |
+
+### Image commands
+
+An inline image is an atomic single-character segment — a U+FFFC sentinel in the line text covered by a length-1 `IMG` format (see the [type README](../README.md)). Because the image has extent, no image special-casing is needed in the deletion commands: `deleteCharBefore` with the caret after an image (or `deleteCharAfter` before it) deletes the sentinel, and the span arithmetic in `FormattedLine.remove` drops the now-empty format. `DeleteTextStep`'s inverse is a block snapshot, so undo restores the image with all its metadata. `splitBlock` between text and an image moves the image to the balance block by ordinary span redistribution.
 
 ### Multi-block delete strategy
 

@@ -1,0 +1,53 @@
+.fragment {
+    /* Token layer — variants override colour here; a design can retune the
+       padding / radius / sizing across every pill at once. Defaults are a
+       neutral grey soft pill. */
+    --frag-pill-bg: var(--jui-color-neutral10);
+    --frag-pill-text: var(--jui-color-neutral60);
+    --frag-pill-border: transparent;
+    --frag-pill-border-width: 1px;
+    --frag-pill-radius: 999px;
+    --frag-pill-max-width: none;
+    --frag-pill-padding-tb: 2px;
+    --frag-pill-padding-lr: 8px;
+    --frag-pill-font-size: 0.72rem;
+    --frag-pill-font-weight: 600;
+    --frag-pill-text-transform: none;
+    --frag-pill-letter-spacing: normal;
+    --frag-pill-gap: 4px;
+    --frag-pill-icon-color: var(--frag-pill-text);
+    --frag-pill-icon-size: 0.95em;
+}
+
+.fragment {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--frag-pill-gap);
+    padding: var(--frag-pill-padding-tb) var(--frag-pill-padding-lr);
+    border: var(--frag-pill-border-width) solid var(--frag-pill-border);
+    border-radius: var(--frag-pill-radius);
+    background-color: var(--frag-pill-bg);
+    color: var(--frag-pill-text);
+    font-size: var(--frag-pill-font-size);
+    font-weight: var(--frag-pill-font-weight);
+    text-transform: var(--frag-pill-text-transform);
+    letter-spacing: var(--frag-pill-letter-spacing);
+    line-height: 1.4;
+    text-wrap-mode: nowrap;
+    max-width: var(--frag-pill-max-width);
+    box-sizing: border-box;
+}
+
+.fragment .icon {
+    color: var(--frag-pill-icon-color);
+    font-size: var(--frag-pill-icon-size);
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.fragment .label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}

@@ -18,6 +18,10 @@
     --cpt-tabnavigator-indicator-top: 4px;
     --cpt-tabnavigator-indicator-right: 4px;
     --cpt-tabnavigator-indicator-size: 0.8em;
+    --cpt-tabnavigator-count-bg: var(--cpt-tabbedpanel-indicator-bg);
+    --cpt-tabnavigator-count-color: var(--cpt-tabbedpanel-indicator);
+    --cpt-tabnavigator-count-size: 0.7em;
+    --cpt-tabnavigator-count-diameter: 1.7em;
 
     --cpt-navigator-line-color: var(--jui-role-border-default);
     --cpt-navigator-group-font-family: var(--cpt-tabbedpanel-font-family);
@@ -106,19 +110,25 @@
 
 .component .tabs ul li div i {
     display: none;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    vertical-align: middle;
+    min-width: var(--cpt-tabnavigator-count-diameter);
+    height: var(--cpt-tabnavigator-count-diameter);
+    margin-left: 0.6em;
+    padding: 0 0.45em;
     font-style: normal;
-    margin-left: 1em;
-    font-size: 0.65em;
-    color: var(--cpt-tabbedpanel-text);
-    background: var(--cpt-tabbedpanel-warn);
-    padding: 0 0.5em;
-    border-radius: 100%;
-    position: relative;
-    top: -0.1em;
+    font-weight: 600;
+    line-height: 1;
+    font-size: var(--cpt-tabnavigator-count-size);
+    color: var(--cpt-tabnavigator-count-color);
+    background: var(--cpt-tabnavigator-count-bg);
+    border-radius: 999px;
 }
 
 .component .tabs ul li.count div i {
-    display: inline-block;
+    display: inline-flex;
 }
 
 .component .tabs ul li>strong {

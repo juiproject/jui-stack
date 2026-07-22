@@ -69,6 +69,7 @@ public class Tools {
 
     public static final ITool BULLET_LIST = toggleBlock(BlockType.NLIST, r -> Em.$(r).style(FontAwesome.listDots()), "Bullet List");
     public static final ITool NUMBERED_LIST = toggleBlock(BlockType.OLIST, r -> Em.$(r).style(FontAwesome.listNumeric()), "Numbered List");
+    public static final ITool QUOTE = toggleBlock(BlockType.QUOTE, r -> Em.$(r).style(FontAwesome.quoteLeft()), "Quote");
 
     /************************************************************************
      * Action tools.
@@ -292,6 +293,32 @@ public class Tools {
     }
 
     /**
+     * Creates a tool that inserts a generic fenced block ({@code BlockType.FENCE}) of the
+     * given info string (e.g. {@code mermaid}), with a text label.
+     *
+     * @see #fence(String, Consumer, String)
+     */
+    public static ITool fence(String info, String label, String tooltip) {
+        return fence(info, btn -> btn.text(label), tooltip);
+    }
+
+    /**
+     * Creates a tool that inserts a generic fenced block ({@code BlockType.FENCE}) of the
+     * given info string, with custom button content. The fence is rendered (and edited) by
+     * the {@link IFenceRenderer} registered for {@code info} (see {@link Fences}).
+     *
+     * @param info
+     *              the fence info string (e.g. {@code mermaid}).
+     * @param content
+     *              populates the button's inner content.
+     * @param tooltip
+     *              the button tooltip.
+     */
+    public static ITool fence(String info, Consumer<ElementBuilder> content, String tooltip) {
+        return action(content, tooltip, cmd -> cmd.insertFence(info));
+    }
+
+    /**
      * Creates a stateless anchored action tool with a text label.
      *
      * @see #anchoredAction(Consumer, String, BiConsumer)
@@ -335,6 +362,60 @@ public class Tools {
     }
 
     /**
+     * Creates a link tool with custom button content and an <em>asynchronous</em>
+     * suggestion source (e.g. a remote search). Named distinctly from
+     * {@link #link(Consumer, String, Function)} — an overload would make existing
+     * implicitly-typed lambda call sites ambiguous.
+     *
+     * @see #link(Consumer, String, Function)
+     */
+    public static ITool linkAsync(Consumer<ElementBuilder> content, String tooltip, LinkPanel.IAnchorSource source) {
+        return linkAsync(content, tooltip, 0, source);
+    }
+
+    /**
+     * As {@link #linkAsync(Consumer, String, LinkPanel.IAnchorSource)} but with a fixed
+     * width for the link panel.
+     *
+     * @param width
+     *              the panel width in pixels ({@code <= 0} falls back to
+     *              {@link LinkPanel#DEFAULT_WIDTH}, and failing that content-sized).
+     */
+    public static ITool linkAsync(Consumer<ElementBuilder> content, String tooltip, int width, LinkPanel.IAnchorSource source) {
+        return ctx -> {
+            Element[] btn = new Element[1];
+            Button.$(ctx.parent()).style(ctx.styles().tbtn()).$(content).attr("title", tooltip)
+                .use(n -> btn[0] = (Element) n)
+                .on(e -> {
+                    e.stopEvent();
+                    if (ctx.commands() == null)
+                        return;
+                    ctx.commands().syncSelection();
+                    String currentUrl = ctx.commands().currentLink();
+                    String currentLabel = ctx.commands().currentLinkLabel();
+                    LinkPanel.show(btn[0], currentUrl, currentLabel, source, width, new LinkPanel.ILinkPanelCallback() {
+
+                        @Override
+                        public void onApply(String url) {
+                            ctx.commands().applyLink(url);
+                        }
+
+                        @Override
+                        public void onApply(String url, String label) {
+                            ctx.commands().applyLink(url, label);
+                        }
+
+                        @Override
+                        public void onRemove() {
+                            ctx.commands().removeLink();
+                        }
+                    });
+                }, UIEventType.ONMOUSEDOWN);
+            return null;
+        };
+    }
+
+    /**
      * Creates a link tool with custom button content. The button freezes
      * the selection, then opens a {@link LinkPanel} for applying, editing,
      * or removing a link. The tool owns the popup and data source; the
@@ -363,6 +444,11 @@ public class Tools {
                         @Override
                         public void onApply(String url) {
                             ctx.commands().applyLink(url);
+                        }
+
+                        @Override
+                        public void onApply(String url, String label) {
+                            ctx.commands().applyLink(url, label);
                         }
 
                         @Override
@@ -468,6 +554,89 @@ public class Tools {
                     });
                 }, UIEventType.ONMOUSEDOWN);
             return null;
+        };
+    }
+
+    /**
+     * Handler invoked when the comment tool is activated (see
+     * {@link #comment(Consumer, String, ICommentHandler)}). The handler owns
+     * the comment experience (composer popup, comment creation, etc.); the
+     * editor provides only data-level commands. On completion the handler
+     * applies the anchor with
+     * {@link IEditorCommands#applyComment(String)} (or removes it with
+     * {@link IEditorCommands#removeComment()}).
+     */
+    @FunctionalInterface
+    public interface ICommentHandler {
+
+        /**
+         * Invoked with the selection frozen.
+         *
+         * @param commands
+         *                 the editor commands (for applying or removing the
+         *                 anchor).
+         * @param anchor
+         *                 the tool button element (for popup anchoring).
+         * @param reference
+         *                 the comment reference under the cursor, or
+         *                 {@code null} when the selection is not in an
+         *                 existing comment.
+         */
+        void open(IEditorCommands commands, Element anchor, String reference);
+    }
+
+    /**
+     * Creates a comment tool with a text label.
+     *
+     * @see #comment(Consumer, String, ICommentHandler)
+     */
+    public static ITool comment(String label, String tooltip, ICommentHandler handler) {
+        return comment(btn -> btn.text(label), tooltip, handler);
+    }
+
+    /**
+     * Creates a comment tool with custom button content. The button freezes
+     * the selection then delegates to the handler, passing the comment
+     * reference under the cursor (if any). The handler owns the popup and
+     * comment lifecycle; it applies the anchor via
+     * {@link IEditorCommands#applyComment(String)} when the comment is
+     * established. The handle tracks whether the cursor is inside a comment
+     * anchor ({@link FormatType#CMT}).
+     *
+     * @param content
+     *              populates the button's inner content.
+     * @param tooltip
+     *              the button tooltip.
+     * @param handler
+     *              the comment handler.
+     */
+    public static ITool comment(Consumer<ElementBuilder> content, String tooltip, ICommentHandler handler) {
+        return ctx -> {
+            Element[] btn = new Element[1];
+            Button.$(ctx.parent()).style(ctx.styles().tbtn()).$(content).attr("title", tooltip)
+                .use(n -> btn[0] = (Element) n)
+                .on(e -> {
+                    e.stopEvent();
+                    if (ctx.commands() == null)
+                        return;
+                    ctx.commands().syncSelection();
+                    handler.open(ctx.commands(), btn[0], ctx.commands().currentComment());
+                }, UIEventType.ONMOUSEDOWN);
+            return new ITool.Handle() {
+
+                @Override
+                public void updateState(BlockType activeBlockType, Set<FormatType> activeFormats) {
+                    if (activeFormats.contains(FormatType.CMT))
+                        btn[0].classList.add(ctx.styles().tbtnActive());
+                    else
+                        btn[0].classList.remove(ctx.styles().tbtnActive());
+                }
+
+                @Override
+                public void updateCellState(Set<FormatType> activeFormats) {
+                    updateState(null, activeFormats);
+                }
+            };
         };
     }
 

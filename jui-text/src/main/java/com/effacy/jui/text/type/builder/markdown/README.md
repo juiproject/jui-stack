@@ -89,8 +89,29 @@ Alignment: `:---` left (default), `:---:` centre, `---:` right. Cells support in
 | `~~text~~` | STR | Strikethrough |
 | `` `text` `` | CODE | Inline code |
 | `[label](url)` | A | Hyperlink |
+| `![alt](url)` | IMG | Inline image (see below) |
 
 Single underscores are only treated as italic at word boundaries — `some_variable_name` is left as plain text.
+
+### Images
+
+An inline image may carry an optional attribute suffix (a non-CommonMark extension in the Pandoc / markdown-it-attrs style):
+
+```markdown
+![alt text](url){width=427 height=328 align=center margin=12}
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `width` / `height` | Size in pixels (either or both) |
+| `align` | Block alignment: `left`, `center` or `right` (the image sits on its own line, aligned via auto margins) |
+| `margin` | Margin in pixels, applied to all sides (a block alignment overrides the horizontal margin on the auto side) |
+
+All attributes are optional and order-independent; the suffix is omitted entirely when no attributes are set, so plain `![alt](url)` round-trips unchanged. A strict external CommonMark renderer will ignore the `{…}` suffix and show the unstyled image.
+
+In the parsed model the image is an atomic single-character segment (a U+FFFC sentinel covered by a length-1 `IMG` format) with `src`, `alt` and the attributes carried as format metadata — see the [type README](../../README.md). The serializer regenerates the markdown form above; the sentinel never appears in serialized output.
+
+The legacy size-in-URL form `![alt](url =WxH)` is still parsed but no longer emitted.
 
 ### Variables
 

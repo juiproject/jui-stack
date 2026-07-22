@@ -36,6 +36,26 @@ public class FormattedTextTest {
         }
     }
 
+    /**
+     * A table-only change must alter {@link FormattedText#computeHash()}. The hash folds in
+     * nested (TROW / TCELL) content, so the editor's equality/dirty check detects table edits
+     * (otherwise re-parsing edited Markdown would not refresh the rich view).
+     */
+    @Test
+    public void computeHash_reflectsNestedTableContent() {
+        FormattedText a = FormattedText.markdown("| A | B |\n| --- | --- |\n| 1 | 2 |");
+        FormattedText b = FormattedText.markdown("| A | B |\n| --- | --- |\n| 1 | 9 |");
+        Assertions.assertNotEquals(a.computeHash(), b.computeHash());
+
+        // Identical tables hash equal.
+        FormattedText c = FormattedText.markdown("| A | B |\n| --- | --- |\n| 1 | 2 |");
+        Assertions.assertEquals(a.computeHash(), c.computeHash());
+
+        // A structural change (an extra row) also changes the hash.
+        FormattedText d = FormattedText.markdown("| A | B |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 |");
+        Assertions.assertNotEquals(a.computeHash(), d.computeHash());
+    }
+
     @Test
     public void test_Serialisation() throws Exception {
         ObjectMapper mapper = new ObjectMapper ();

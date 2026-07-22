@@ -113,6 +113,58 @@ public class TableBlockHandler implements IBlockHandler {
     }
 
     @Override
+    public void syncFromDom(IEditorContext ctx) {
+        // Cells edit natively (contenteditable) and normally only sync to the model on blur, so
+        // when the value is read (mode switch / autosave) with edits still in the DOM they would
+        // be lost. Flush every cell of every table from the DOM here.
+        for (int bi = 0; bi < ctx.state().doc().getBlocks().size(); bi++) {
+            FormattedBlock table = ctx.state().doc().getBlocks().get(bi);
+            if (table.getType() != BlockType.TABLE)
+                continue;
+            FormattedBlock clone = table.clone();
+            boolean changed = false;
+            int ri = 0;
+            for (FormattedBlock row : clone.getBlocks()) {
+                if (row.getType() != BlockType.TROW)
+                    continue;
+                int ci = 0;
+                for (FormattedBlock cell : row.getBlocks()) {
+                    if (cell.getType() != BlockType.TCELL)
+                        continue;
+                    elemental2.dom.Element cellEl = ctx.editorEl().querySelector(
+                            "[data-table-index='" + bi + "'][data-row='" + ri + "'][data-col='" + ci + "']");
+                    if (cellEl != null) {
+                        String domText = (cellEl.textContent == null) ? "" : cellEl.textContent;
+                        if (!domText.equals(cellText(cell))) {
+                            cell.getLines().clear();
+                            FormattedLine domLine = buildLineFromCellDom(cellEl, ctx);
+                            if (domLine.length() > 0)
+                                cell.getLines().add(domLine);
+                            changed = true;
+                        }
+                    }
+                    ci++;
+                }
+                ri++;
+            }
+            if (changed) {
+                Transaction tr = Transaction.create();
+                tr.step(new ReplaceBlockStep(bi, clone));
+                tr.setSelection(ctx.state().selection());
+                ctx.applyTransactionSilent(tr);
+            }
+        }
+    }
+
+    /** The concatenated plain text of a cell's lines (for change detection against the DOM). */
+    private static String cellText(FormattedBlock cell) {
+        StringBuilder sb = new StringBuilder();
+        for (FormattedLine line : cell.getLines())
+            sb.append(line.getText());
+        return sb.toString();
+    }
+
+    @Override
     public boolean handleKeyDown(KeyboardEvent ke, IEditorContext ctx) {
         // Cell keydown listeners call ke.stopPropagation(), so cell keys
         // never reach here. This guard is a defensive backstop only.
@@ -143,6 +195,31 @@ public class TableBlockHandler implements IBlockHandler {
     @Override
     public void focusBlock(int blockIndex, IEditorContext ctx) {
         focusCell(blockIndex, 0, 0, true, ctx);
+    }
+
+    @Override
+    public void focusBlockEnd(int blockIndex, IEditorContext ctx) {
+        List<FormattedBlock> blocks = ctx.state().doc().getBlocks();
+        if ((blockIndex < 0) || (blockIndex >= blocks.size()))
+            return;
+        FormattedBlock table = blocks.get(blockIndex);
+        int lastRow = -1;
+        int lastCol = 0;
+        int r = 0;
+        for (FormattedBlock row : table.getBlocks()) {
+            if (row.getType() != BlockType.TROW)
+                continue;
+            int c = 0;
+            for (FormattedBlock cell : row.getBlocks()) {
+                if (cell.getType() == BlockType.TCELL)
+                    c++;
+            }
+            lastRow = r;
+            lastCol = Math.max(0, c - 1);
+            r++;
+        }
+        if (lastRow >= 0)
+            focusCell(blockIndex, lastRow, lastCol, false, ctx);
     }
 
     @Override
@@ -933,7 +1010,8 @@ public class TableBlockHandler implements IBlockHandler {
                 .item("Insert row above", () -> ctx.applyTransaction(Commands.insertTableRowAbove(ctx.state(), tableIndex, rowIndex)))
                 .item("Insert row below", () -> ctx.applyTransaction(Commands.insertTableRowBelow(ctx.state(), tableIndex, rowIndex)))
                 .sep()
-                .item("Delete row", () -> ctx.applyTransaction(Commands.deleteTableRow(ctx.state(), tableIndex, rowIndex)));
+                .item("Delete row", () -> ctx.applyTransaction(Commands.deleteTableRow(ctx.state(), tableIndex, rowIndex)))
+                .item("Delete table", () -> ctx.applyTransaction(Commands.deleteTable(ctx.state(), tableIndex)));
         if (rowIndex == 0) {
             boolean isHeader = isTableHeaderRow(tableIndex, ctx);
             menu.sep();
@@ -975,6 +1053,7 @@ public class TableBlockHandler implements IBlockHandler {
                 .item("Insert column right", () -> ctx.applyTransaction(Commands.insertTableColumnRight(ctx.state(), tableIndex, colIndex)))
                 .sep()
                 .item("Delete column", () -> ctx.applyTransaction(Commands.deleteTableColumn(ctx.state(), tableIndex, colIndex)))
+                .item("Delete table", () -> ctx.applyTransaction(Commands.deleteTable(ctx.state(), tableIndex)))
                 .showBelow(handleEl);
     }
 

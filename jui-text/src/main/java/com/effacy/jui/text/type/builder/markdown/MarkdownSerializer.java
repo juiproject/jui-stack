@@ -108,15 +108,16 @@ public class MarkdownSerializer {
             if (numberBlocks)
                 sb.append("[").append(blockNumber++).append("] ");
 
-            // Group consecutive list blocks of the same type into a single list.
-            if (block.getType() == FormattedBlock.BlockType.NLIST || block.getType() == FormattedBlock.BlockType.OLIST) {
-                FormattedBlock.BlockType listType = block.getType();
+            // Group all consecutive list blocks — of either marker type — into a single list, so
+            // a nested list with mixed markers (e.g. a bullet sublist inside a numbered list)
+            // stays one list and ordered numbering resumes correctly after the sublist.
+            if (isListBlock(block)) {
                 List<FormattedBlock> group = new ArrayList<>();
-                while (i < blocks.size() && blocks.get(i).getType() == listType) {
+                while (i < blocks.size() && isListBlock(blocks.get(i))) {
                     group.add(blocks.get(i));
                     i++;
                 }
-                serializeListGroup(sb, group, listType);
+                serializeListGroup(sb, group);
             } else {
                 serializeBlock(sb, block, 0);
                 i++;
@@ -160,6 +161,18 @@ public class MarkdownSerializer {
                 appendLines(sb, block, "\n");
                 sb.append("\n```");
                 break;
+            case FENCE:
+                String info = (block.getMeta() != null) ? block.meta("info") : null;
+                sb.append("```");
+                if (info != null && !info.isBlank())
+                    sb.append(info);
+                sb.append("\n");
+                appendLines(sb, block, "\n");
+                sb.append("\n```");
+                break;
+            case QUOTE:
+                serializeQuote(sb, block);
+                break;
             case NLIST:
                 appendListItems(sb, block, "- ", depth);
                 break;
@@ -177,27 +190,64 @@ public class MarkdownSerializer {
     }
 
     /**
-     * Serializes a group of consecutive list blocks (each block may have one or
-     * more lines) into a single markdown list.
+     * Serializes a block quote: every line is prefixed with {@code > } (an empty
+     * line becomes a bare {@code >}), reproducing the markdown the parser consumed.
      */
-    private static void serializeListGroup(StringBuilder sb, List<FormattedBlock> group, FormattedBlock.BlockType listType) {
-        boolean ordered = (listType == FormattedBlock.BlockType.OLIST);
-        int itemNumber = 1;
+    private static void serializeQuote(StringBuilder sb, FormattedBlock block) {
+        List<FormattedLine> lines = block.getLines();
+        for (int i = 0; i < lines.size(); i++) {
+            if (i > 0)
+                sb.append("\n");
+            String content = serializeLine(lines.get(i));
+            if (content.isEmpty())
+                sb.append(">");
+            else
+                sb.append("> ").append(content);
+        }
+    }
+
+    /** Upper bound on list nesting depth tracked for ordered numbering. */
+    private static final int MAX_LIST_DEPTH = 32;
+
+    private static boolean isListBlock(FormattedBlock block) {
+        FormattedBlock.BlockType type = block.getType();
+        return (type == FormattedBlock.BlockType.NLIST) || (type == FormattedBlock.BlockType.OLIST);
+    }
+
+    /**
+     * Serializes a group of consecutive list blocks (of either marker type, each with one or
+     * more lines) into a single markdown list. Each block carries its own marker (bullet vs
+     * number). Ordered items are numbered <em>per nesting level</em>: descending to a deeper
+     * level restarts that level at 1, and a shallower/equal level resumes its running count —
+     * so a numbered list resumes after a nested sublist (even an unordered one). Mirrors the
+     * editor's on-screen numbering.
+     */
+    private static void serializeListGroup(StringBuilder sb, List<FormattedBlock> group) {
+        int[] counters = new int[MAX_LIST_DEPTH];
+        int prevIndent = -1;
         boolean first = true;
         for (FormattedBlock block : group) {
-            String indent = "  ".repeat(block.getIndent());
+            int depth = Math.max(0, Math.min(block.getIndent(), MAX_LIST_DEPTH - 1));
+            boolean ordered = (block.getType() == FormattedBlock.BlockType.OLIST);
+            // Descending resets every level deeper than the one we came from (so a new sublevel
+            // starts at 1), regardless of marker type; a shallower/equal level is left running.
+            if ((prevIndent >= 0) && (depth > prevIndent)) {
+                for (int j = prevIndent + 1; j < counters.length; j++)
+                    counters[j] = 0;
+            }
+            String indent = "  ".repeat(depth);
             for (FormattedLine line : block.getLines()) {
                 if (!first)
                     sb.append("\n");
                 first = false;
                 sb.append(indent);
-                if (ordered) {
-                    sb.append(itemNumber++).append(". ");
-                } else {
+                if (ordered)
+                    sb.append(++counters[depth]).append(". ");
+                else
                     sb.append("- ");
-                }
                 sb.append(serializeLine(line));
             }
+            prevIndent = depth;
         }
     }
 
@@ -242,6 +292,8 @@ public class MarkdownSerializer {
         List<FormattedBlock> rows = table.getBlocks();
         if (rows == null || rows.isEmpty())
             return;
+        String alignMeta = (table.getMeta() != null) ? table.meta("align") : null;
+        String[] align = ((alignMeta != null) && !alignMeta.isEmpty()) ? alignMeta.split(",") : new String[0];
         for (int r = 0; r < rows.size(); r++) {
             if (r > 0)
                 sb.append("\n");
@@ -254,10 +306,22 @@ public class MarkdownSerializer {
             }
             if (r == 0) {
                 sb.append("\n|");
-                for (int c = 0; c < row.getBlocks().size(); c++)
-                    sb.append(" --- |");
+                int cols = row.getBlocks().size();
+                for (int c = 0; c < cols; c++) {
+                    String a = (c < align.length) ? align[c] : "L";
+                    sb.append(" ").append(tableSeparator(a)).append(" |");
+                }
             }
         }
+    }
+
+    /** The header-separator token for a parsed column alignment ({@code C}, {@code R}, else left). */
+    private static String tableSeparator(String align) {
+        if ("C".equals(align))
+            return ":---:";
+        if ("R".equals(align))
+            return "---:";
+        return "---";
     }
 
     /************************************************************************
@@ -270,138 +334,177 @@ public class MarkdownSerializer {
      */
     static String serializeLine(FormattedLine line) {
         String text = line.getText();
-        if (text == null || text.isEmpty())
-            return "";
+        if (text == null)
+            text = "";
         List<FormattedLine.Format> formatting = line.getFormatting();
-        if (formatting == null || formatting.isEmpty())
+        if (text.isEmpty()) {
+            // An otherwise-empty line may still carry an inline image (a zero-length
+            // IMG format), which must survive serialisation as ![](src).
+            if ((formatting != null) && hasLinkOrImage(formatting))
+                return serializeInline(text, line);
+            return "";
+        }
+        if ((formatting == null) || formatting.isEmpty())
             return text;
+        return serializeInline(text, line);
+    }
 
-        // Build a per-character map of active formats.
+    /**
+     * Serializes a line's text with its inline formatting, links and images in a single pass.
+     * <p>
+     * Inline format markers (bold/italic/strike/code) are opened and closed by the run of
+     * characters they cover — and, crucially, are kept open <em>across</em> a link. So an
+     * emphasised span that contains a link round-trips as {@code *… [label](url) …*} rather
+     * than being split into separate emphasis runs on either side of the link (which would
+     * leave a space against a closing marker and re-parse oddly). Links become
+     * {@code [label](url)}; images become {@code ![alt](src){attrs}} (the image's sentinel
+     * character is not itself emitted).
+     */
+    private static String serializeInline(String text, FormattedLine line) {
+        int n = text.length();
+        List<FormattedLine.Format> formatting = line.getFormatting();
+
+        // Per-character inline formats, excluding A/IMG (those become link/image syntax).
         @SuppressWarnings("unchecked")
-        List<FormatType>[] charFormats = new List[text.length()];
-        for (int i = 0; i < text.length(); i++)
+        List<FormatType>[] charFormats = new List[n];
+        for (int i = 0; i < n; i++)
             charFormats[i] = new ArrayList<>();
-
         for (FormattedLine.Format fmt : formatting) {
-            int start = fmt.getIndex();
-            int end = Math.min(start + fmt.getLength(), text.length());
+            int start = Math.max(0, fmt.getIndex());
+            int end = Math.min(fmt.getIndex() + fmt.getLength(), n);
             for (int i = start; i < end; i++) {
                 for (FormatType ft : fmt.getFormats()) {
+                    // A/IMG become link/image syntax, not markers — but a link/image may also
+                    // carry inline formats (an emphasised link), which still style the label.
+                    if ((ft == FormatType.A) || (ft == FormatType.IMG))
+                        continue;
                     if (!charFormats[i].contains(ft))
                         charFormats[i].add(ft);
                 }
             }
         }
 
-        // Check if there are any link or image formats — if so, delegate to
-        // the link-aware path which handles [text](url) syntax directly.
-        boolean hasLinks = false;
+        // Link / image regions in start order.
+        List<FormattedLine.Format> regions = new ArrayList<>();
         for (FormattedLine.Format fmt : formatting) {
-            if (fmt.getFormats().contains(FormatType.A) || fmt.getFormats().contains(FormatType.IMG)) {
-                hasLinks = true;
-                break;
-            }
+            if (fmt.getFormats().contains(FormatType.A) || fmt.getFormats().contains(FormatType.IMG))
+                regions.add(fmt);
         }
-        if (hasLinks)
-            return postProcessLinks(text, line);
+        regions.sort((a, b) -> Integer.compare(a.getIndex(), b.getIndex()));
 
-        // Simple path: no links/images, just inline formatting.
         StringBuilder sb = new StringBuilder();
         List<FormatType> active = new ArrayList<>();
-        for (int i = 0; i < text.length(); i++) {
+        int regionIdx = 0;
+        int linkEnd = -1;
+        String linkUrl = null;
+
+        int i = 0;
+        while (i < n) {
+            // Close a pending link at its end boundary before this character's format changes,
+            // so a format that continues past the link stays open around it.
+            if (i == linkEnd) {
+                sb.append("](").append((linkUrl != null) ? linkUrl : "").append(")");
+                linkEnd = -1;
+            }
+
+            // Inline format transitions for this character (driven by the character's own
+            // non-link formats — so a format ending exactly at a link/image closes here).
             closeFormats(sb, active, charFormats[i]);
             openFormats(sb, active, charFormats[i]);
-            sb.append(text.charAt(i));
-        }
-        closeAllFormats(sb, active);
 
-        return sb.toString();
-    }
+            FormattedLine.Format region = (regionIdx < regions.size()) ? regions.get(regionIdx) : null;
 
-    /**
-     * Builds a markdown string for a line that contains link or image formatting.
-     * Links and images use {@code [text](url)} / {@code ![alt](url)} syntax while
-     * other inline formatting is applied around them.
-     */
-    private static String postProcessLinks(String text, FormattedLine line) {
-        List<FormattedLine.Format> linkFormats = new ArrayList<>();
-        for (FormattedLine.Format fmt : line.getFormatting()) {
-            if (fmt.getFormats().contains(FormatType.A) || fmt.getFormats().contains(FormatType.IMG))
-                linkFormats.add(fmt);
-        }
-        StringBuilder sb = new StringBuilder();
-        int pos = 0;
-
-        // Sort link formats by index.
-        linkFormats.sort((a, b) -> Integer.compare(a.getIndex(), b.getIndex()));
-
-        for (FormattedLine.Format fmt : linkFormats) {
-            int start = fmt.getIndex();
-            int end = Math.min(start + fmt.getLength(), text.length());
-
-            // Emit text before this link with inline formatting.
-            if (start > pos) {
-                sb.append(serializeSpan(text, pos, start, line.getFormatting()));
-            }
-
-            String linkText = text.substring(start, end);
-            boolean isImage = fmt.getFormats().contains(FormatType.IMG);
-
-            if (isImage) {
-                String src = (fmt.getMeta() != null) ? fmt.getMeta().get(FormattedLine.META_IMAGE) : null;
-                sb.append("![").append(linkText).append("](").append(src != null ? src : "").append(")");
-            } else {
-                String href = (fmt.getMeta() != null) ? fmt.getMeta().get(FormattedLine.META_LINK) : null;
-                sb.append("[").append(linkText).append("](").append(href != null ? href : "").append(")");
-            }
-
-            pos = end;
-        }
-
-        // Emit remaining text.
-        if (pos < text.length())
-            sb.append(serializeSpan(text, pos, text.length(), line.getFormatting()));
-
-        return sb.toString();
-    }
-
-    /**
-     * Serializes a span of text with applicable inline formatting (excluding
-     * links/images which are handled separately).
-     */
-    private static String serializeSpan(String text, int from, int to, List<FormattedLine.Format> allFormats) {
-        if (from >= to)
-            return "";
-
-        // Build per-character format sets for this span.
-        @SuppressWarnings("unchecked")
-        List<FormatType>[] charFormats = new List[to - from];
-        for (int i = 0; i < charFormats.length; i++)
-            charFormats[i] = new ArrayList<>();
-
-        for (FormattedLine.Format fmt : allFormats) {
-            // Skip link/image — handled externally.
-            if (fmt.getFormats().contains(FormatType.A) || fmt.getFormats().contains(FormatType.IMG))
+            // An image at this position: emit ![alt](src){attrs} and skip its sentinel char(s).
+            if ((region != null) && (region.getIndex() == i) && region.getFormats().contains(FormatType.IMG)) {
+                int end = Math.min(region.getIndex() + region.getLength(), n);
+                appendImage(sb, region, text, i, end);
+                regionIdx++;
+                i = Math.max(i + 1, end);
                 continue;
-            int fStart = Math.max(fmt.getIndex(), from) - from;
-            int fEnd = Math.min(fmt.getIndex() + fmt.getLength(), to) - from;
-            for (int i = fStart; i < fEnd; i++) {
-                for (FormatType ft : fmt.getFormats()) {
-                    if (!charFormats[i].contains(ft))
-                        charFormats[i].add(ft);
-                }
             }
+
+            // A link starting here: open '[' (after any format markers) and schedule its close.
+            if ((region != null) && (region.getIndex() == i) && region.getFormats().contains(FormatType.A)) {
+                sb.append("[");
+                linkEnd = Math.min(region.getIndex() + region.getLength(), n);
+                linkUrl = (region.getMeta() != null) ? region.getMeta().get(FormattedLine.META_LINK) : null;
+                regionIdx++;
+            }
+
+            sb.append(text.charAt(i));
+            i++;
         }
 
-        StringBuilder sb = new StringBuilder();
-        List<FormatType> active = new ArrayList<>();
-        for (int i = 0; i < charFormats.length; i++) {
-            closeFormats(sb, active, charFormats[i]);
-            openFormats(sb, active, charFormats[i]);
-            sb.append(text.charAt(from + i));
-        }
+        // A link (or an active format) that runs to the very end of the line.
+        if (linkEnd == n)
+            sb.append("](").append((linkUrl != null) ? linkUrl : "").append(")");
         closeAllFormats(sb, active);
+
+        // A trailing zero-length image region (an image on an otherwise-empty line).
+        while (regionIdx < regions.size()) {
+            FormattedLine.Format region = regions.get(regionIdx);
+            if (region.getFormats().contains(FormatType.IMG)) {
+                int start = Math.min(region.getIndex(), n);
+                int end = Math.min(region.getIndex() + region.getLength(), n);
+                appendImage(sb, region, text, start, end);
+            }
+            regionIdx++;
+        }
+
         return sb.toString();
+    }
+
+    /** Emits an image as {@code ![alt](src){attrs}} from an IMG format's span and meta. */
+    private static void appendImage(StringBuilder sb, FormattedLine.Format region, String text, int start, int end) {
+        String src = (region.getMeta() != null) ? region.getMeta().get(FormattedLine.META_IMAGE) : null;
+        // The alt text is meta; the span text is the sentinel character (never emitted).
+        // Legacy alt-as-span-text content falls back to the span (with the sentinel stripped).
+        String alt = (region.getMeta() != null) ? region.getMeta().get(FormattedLine.META_ALT) : null;
+        if (alt == null) {
+            String span = (start < end) ? text.substring(start, end) : "";
+            alt = span.replace(FormattedLine.IMAGE_SENTINEL, "");
+        }
+        sb.append("![").append(alt).append("](").append((src != null) ? src : "").append(")");
+        sb.append(imageAttributes(region));
+    }
+
+    /**
+     * Determines whether any of the formats is a link or an image.
+     */
+    private static boolean hasLinkOrImage(List<FormattedLine.Format> formatting) {
+        for (FormattedLine.Format fmt : formatting) {
+            if (fmt.getFormats().contains(FormatType.A) || fmt.getFormats().contains(FormatType.IMG))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Builds the optional image attribute suffix ({@code {width=W height=H align=A}})
+     * from an image format's meta, or an empty string when it carries none.
+     */
+    private static String imageAttributes(FormattedLine.Format fmt) {
+        if (fmt.getMeta() == null)
+            return "";
+        StringBuilder attrs = new StringBuilder();
+        appendAttribute(attrs, "width", fmt.getMeta().get(FormattedLine.META_WIDTH));
+        appendAttribute(attrs, "height", fmt.getMeta().get(FormattedLine.META_HEIGHT));
+        appendAttribute(attrs, "align", fmt.getMeta().get(FormattedLine.META_ALIGN));
+        appendAttribute(attrs, "margin", fmt.getMeta().get(FormattedLine.META_MARGIN));
+        if (attrs.length() == 0)
+            return "";
+        return "{" + attrs + "}";
+    }
+
+    /**
+     * Appends a {@code key=value} attribute (space-separated) when the value is present.
+     */
+    private static void appendAttribute(StringBuilder sb, String key, String value) {
+        if ((value == null) || value.isEmpty())
+            return;
+        if (sb.length() > 0)
+            sb.append(' ');
+        sb.append(key).append('=').append(value);
     }
 
     private static void openFormats(StringBuilder sb, List<FormatType> active, List<FormatType> current) {

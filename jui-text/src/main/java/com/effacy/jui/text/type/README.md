@@ -274,6 +274,7 @@ Each block type declares a `BlockTypeConstraint` that describes what content it 
 | `SUB` | Subscript | (programmatic only) |
 | `CODE` | Inline code | `` `text` `` |
 | `HL` | Highlight | (programmatic only) |
+| `CMT` | Comment anchor (expects `comment` metadata referencing the associated comment; may be ignored by renderers) | (programmatic only) |
 | `A` | Anchor/link | `[label](url)` |
 
 ### Block operations
@@ -330,6 +331,31 @@ Details follow:
    Represents a single line of text with inline formatting applied to specific character ranges. Formatting is stored as non-overlapping regions (`Format` objects) in increasing order by index. The `TextSegment` inner class provides a convenient way to access contiguous blocks of text with homogeneous formatting.
 4. **Format**
    Describes a contiguous region of text with applied formatting. Stores the starting index, length, array of format types, and optional metadata (e.g., `link` for anchor formatting). Zero-length formats with `variable` metadata represent variable placeholders that are resolved at render time.
+
+### Inline images (atomic sentinel segments)
+
+An inline image is an **atomic, single-character segment**: the line text carries one U+FFFC OBJECT REPLACEMENT CHARACTER (`FormattedLine.IMAGE_SENTINEL`) covered by a length-1 `FormatType.IMG` format. All image attributes are metadata on the format:
+
+| Meta key | Purpose |
+|---|---|
+| `src` (`META_IMAGE`) | the image source URL |
+| `alt` (`META_ALT`) | alt text (never stored as span text) |
+| `width` / `height` (`META_WIDTH` / `META_HEIGHT`) | size in pixels |
+| `align` (`META_ALIGN`) | block alignment: `left`, `center`, `right` |
+| `margin` (`META_MARGIN`) | margin in pixels (all sides; alignment overrides the auto side) |
+
+The sentinel exists only in the in-memory model — the markdown serializer strips it and the parser inserts it, so persisted markdown is plain `![alt](src){width=… height=… align=… margin=…}`.
+
+**Never model an image as a zero-length format.** A zero-length format at index N and a caret at offset N are the same coordinate, so "before the image" and "after the image" would be indistinguishable — insert, delete, split, and caret placement would all have to guess. Giving the image extent makes offset N unambiguously *before* and N+1 *after*, so:
+
+- deleting the sentinel character deletes the image (backspace after it / forward-delete before it), with no special-casing;
+- typed text lands on the caret's side of the image, and the IMG format is never extended by adjacent insertion (it is atomic, like variables);
+- splitting between a character and an image moves the image to the balance line by ordinary span arithmetic;
+- an image-only line has length 1, so emptiness checks need no exceptions.
+
+(Variables still use the legacy zero-length convention; the zero-length special cases in `remove`/`insert`/`split` exist for them.)
+
+When redistributing formats in structural operations (`split`, `merge`), **copy-construct** (`new Format(format)`) and adjust index/length — the `(index, length, formats)` constructor silently drops metadata, which destroys an image's `src` or a link's `href`.
 
 ### Design invariants
 

@@ -1,0 +1,10 @@
+{
+  "name": "jui-help",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Portable standalone help system — build step (see README.md).",
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch"
+  }
+}

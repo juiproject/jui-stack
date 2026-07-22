@@ -289,9 +289,71 @@ cfg.css("--jui-toolbar-bg: #1e293b;");
 }
 ```
 
+## Variants — the configuration model
+
+Components, controls and fragments are generally configured through **variants**: a variant is a
+named, reusable bundle of configuration — a style, but also CSS variable overrides, structural
+options (icon, layout direction), padding, colour scheme, etc. — that can be applied to an artefact
+**repeatably** to give it a particular look or behaviour in a particular context. Rather than
+hand-setting half a dozen options at every call site, you name a variant once and reuse it.
+
+Two concrete mechanisms implement this idea:
+
+- **Fragments** use `IFragmentVariant<T>` — a functional interface whose `configure(fragment)` applies
+  settings to the fragment. Apply with `.variant(...)`. Variants are declared as constants on a
+  `Variant` (or similarly named) interface and **compose**: a higher-level variant can apply others.
+
+  ```java
+  public interface Variant extends IFragmentVariant<BtnFragment> {
+      Variant STANDARD = fragment -> { };
+      Variant ROUNDED  = fragment -> fragment.css("--frag-btn-radius: 16px;");
+      Variant OUTLINED = fragment -> fragment.css("""
+          --frag-btn-text: var(--frag-btn-border);
+          --frag-btn-bg: var(--jui-color-aux-white);
+      """);
+      // Composition: a variant built from other variants.
+      Variant OUTLINED_ROUNDED = fragment -> fragment.variant(OUTLINED).variant(ROUNDED);
+  }
+  ```
+
+  ```java
+  Btn.$(parent, "Save").variant(Btn.Variant.OUTLINED_ROUNDED);
+  ```
+
+  A fragment may expose more than one variant axis (e.g. `Btn` separates visual `Variant` from colour
+  `Nature` — `WARNING`, `DANGER`, `SUCCESS`), each applied independently.
+
+- **Components and controls** use the **style pack** pattern below: a `Style` interface declared in
+  `Config`, with named `Style` constants chosen via `cfg.style(...)`. A `Style` carries an `ILocalCSS`
+  and may carry further structural configuration (see [Style with additional configuration](#style-with-additional-configuration)).
+
+### Project `Variants` class
+
+Variants are a project-level concern as much as a framework one. A project typically collects its own
+variants in a **dedicated `Variants` class** (e.g. `…/ui/Variants.java`) — a home for the named looks
+and configurations the application reuses across screens, layered on top of (or composed from) the
+framework's standard variants. Treat it like a small in-house design vocabulary:
+
+```java
+public final class Variants {
+    // A project look for primary actions, reused everywhere.
+    public static final Btn.Variant PRIMARY_ACTION = fragment ->
+        fragment.variant(Btn.Variant.STANDARD_EXPANDED_ROUNDED).variant(Btn.Nature.SUCCESS);
+
+    // A custom style-pack variant for a standard/custom component (see "Creating Custom Styles").
+    public static final MyCard.Config.Style HEADLINE = MyCard.Config.Style.create(HeadlineCSS.instance());
+}
+```
+
+**When working in a project, look for its `Variants` class first** and reuse the variants defined
+there for consistency, adding new ones to it rather than inlining one-off configuration at the call
+site.
+
 ## Style Packs
 
-Style packs allow a component to support multiple visual variants (e.g. a button with normal, outlined, and link styles). Each variant provides its own `ILocalCSS` implementation with different stylesheets.
+Style packs are the **variant mechanism for components and controls**: they allow a component to
+support multiple visual variants (e.g. a button with normal, outlined, and link styles). Each variant
+provides its own `ILocalCSS` implementation with different stylesheets.
 
 ### Declaring in Config
 
@@ -550,5 +612,5 @@ When styling a JUI element:
 5. **Include base CSS** -- `IComponentCSS.COMPONENT_CSS` (and `IControlCSS.CONTROL_CSS` for controls) in the `@CssResource` annotation
 6. **Add CSS variables** -- for any values that should be externally configurable
 7. **Scope child styles** -- under `.component` (e.g. `.component .header`)
-8. **(Optional) Add style packs** -- create a `Style` interface in `Config` with `create()` factory and variant constants
+8. **(Optional) Add variants** -- for fragments use `IFragmentVariant<T>` constants; for components/controls add a style pack (`Style` interface in `Config` with `create()` factory and variant constants). Reuse the project's `Variants` class where one exists, and add new shared variants there
 9. **(Optional) Create custom styles** -- implement `ILocalCSS` in an external class with its own `@CssResource` annotation and stylesheet

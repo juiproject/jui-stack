@@ -50,6 +50,126 @@ public class TransactionTest {
         return doc.getBlocks().get(blockIndex).getId();
     }
 
+    /**
+     * Typing at the end of a middle line of a multi-line block inserts there — block
+     * offsets count line breaks, so the insert must not drift into a later line.
+     */
+    @Test
+    public void testInsertText_endOfMiddleLine() {
+        FormattedText doc = new FormattedText();
+        doc.block(BlockType.PARA, b -> b.line("aa").line("bb").line("cc"));
+        // End of "bb": offset 2 ("aa") + 1 (break) + 2 ("bb") = 5.
+        EditorState state = EditorState.create(doc, Selection.cursor(0, 5));
+
+        state.apply(Commands.insertText(state, "k"));
+
+        FormattedBlock blk = doc.getBlocks().get(0);
+        Assertions.assertEquals("aa", blk.getLines().get(0).getText());
+        Assertions.assertEquals("bbk", blk.getLines().get(1).getText());
+        Assertions.assertEquals("cc", blk.getLines().get(2).getText());
+    }
+
+    /**
+     * An image occupies one sentinel character, so offset 0 is unambiguously before
+     * it: typed text lands before the image.
+     */
+    @Test
+    public void testInsertText_beforeImage() {
+        FormattedText doc = FormattedText.markdown("![](http://x/a.png)");
+        EditorState state = EditorState.create(doc, Selection.cursor(0, 0));
+
+        state.apply(Commands.insertText(state, "X"));
+
+        FormattedLine line = doc.getBlocks().get(0).getLines().get(0);
+        Assertions.assertEquals("X" + FormattedLine.IMAGE_SENTINEL, line.getText());
+        Assertions.assertEquals(1, line.getFormatting().get(0).getIndex());
+        Assertions.assertEquals(1, line.getFormatting().get(0).getLength());
+    }
+
+    /**
+     * Offset 1 (after the image's sentinel) is unambiguously after it: typed text
+     * lands after the image, and the image format does not stretch over it.
+     */
+    @Test
+    public void testInsertText_afterImage() {
+        FormattedText doc = FormattedText.markdown("![](http://x/a.png)");
+        EditorState state = EditorState.create(doc, Selection.cursor(0, 1));
+
+        state.apply(Commands.insertText(state, "X"));
+
+        FormattedLine line = doc.getBlocks().get(0).getLines().get(0);
+        Assertions.assertEquals(FormattedLine.IMAGE_SENTINEL + "X", line.getText());
+        Assertions.assertEquals(0, line.getFormatting().get(0).getIndex());
+        Assertions.assertEquals(1, line.getFormatting().get(0).getLength());
+    }
+
+    /**
+     * Backspace at the start of an image-bearing block joins it into the previous
+     * block with the image (and its meta) intact.
+     */
+    @Test
+    public void testJoinWithPrevious_preservesImageMeta() {
+        FormattedText doc = FormattedText.markdown("k\n\n![](http://x/a.png){width=10 height=20}");
+        EditorState state = EditorState.create(doc, Selection.cursor(1, 0));
+
+        state.apply(Commands.forceJoinWithPrevious(state));
+
+        Assertions.assertEquals(1, doc.getBlocks().size());
+        FormattedLine line = doc.getBlocks().get(0).getLines().get(0);
+        Assertions.assertEquals("k" + FormattedLine.IMAGE_SENTINEL, line.getText());
+        Assertions.assertEquals(1, line.getFormatting().size());
+        Assertions.assertEquals("http://x/a.png", line.getFormatting().get(0).getMeta().get(FormattedLine.META_IMAGE));
+        Assertions.assertEquals("10", line.getFormatting().get(0).getMeta().get(FormattedLine.META_WIDTH));
+    }
+
+    /**
+     * Backspace after the character preceding an image ("k|[img]") deletes the
+     * character and keeps the image; backspace after the image deletes the image.
+     */
+    @Test
+    public void testDeleteChar_aroundImage() {
+        // Backspace at offset 1 of "k[img]" deletes the k, keeps the image.
+        FormattedText doc = FormattedText.markdown("k![](http://x/a.png)");
+        EditorState state = EditorState.create(doc, Selection.cursor(0, 1));
+        state.apply(Commands.deleteCharBefore(state));
+        FormattedLine line = doc.getBlocks().get(0).getLines().get(0);
+        Assertions.assertEquals(FormattedLine.IMAGE_SENTINEL, line.getText());
+        Assertions.assertEquals(1, line.getFormatting().size());
+        Assertions.assertTrue(line.getFormatting().get(0).getFormats().contains(FormatType.IMG));
+
+        // Backspace at offset 2 of "k[img]" (after the image) deletes the image.
+        FormattedText doc2 = FormattedText.markdown("k![](http://x/a.png)");
+        EditorState state2 = EditorState.create(doc2, Selection.cursor(0, 2));
+        state2.apply(Commands.deleteCharBefore(state2));
+        FormattedLine line2 = doc2.getBlocks().get(0).getLines().get(0);
+        Assertions.assertEquals("k", line2.getText());
+        Assertions.assertEquals(0, line2.getFormatting().size());
+    }
+
+    /**
+     * Pressing Enter with the cursor between a character and a following inline image
+     * (the exact editor path: {@link Commands#splitBlock}) must move the image to the
+     * new block, not delete it.
+     */
+    @Test
+    public void testSplitBlock_cursorBetweenCharAndImage() {
+        FormattedText doc = FormattedText.markdown("k![](http://x/a.png){width=427 height=328 margin=12}");
+        EditorState state = EditorState.create(doc, Selection.cursor(0, 1));
+
+        state.apply(Commands.splitBlock(state));
+
+        Assertions.assertEquals(2, doc.getBlocks().size());
+        Assertions.assertEquals("k", doc.getBlocks().get(0).getLines().get(0).getText());
+        Assertions.assertEquals(0, doc.getBlocks().get(0).getLines().get(0).getFormatting().size());
+        FormattedLine imgLine = doc.getBlocks().get(1).getLines().get(0);
+        Assertions.assertEquals(FormattedLine.IMAGE_SENTINEL, imgLine.getText());
+        Assertions.assertEquals(1, imgLine.getFormatting().size());
+        Assertions.assertEquals(0, imgLine.getFormatting().get(0).getIndex());
+        Assertions.assertEquals(1, imgLine.getFormatting().get(0).getLength());
+        Assertions.assertTrue(imgLine.getFormatting().get(0).getFormats().contains(FormatType.IMG));
+        Assertions.assertEquals("http://x/a.png", imgLine.getFormatting().get(0).getMeta().get(FormattedLine.META_IMAGE));
+    }
+
     /************************************************************************
      * InsertBlockStep
      ************************************************************************/
@@ -2828,6 +2948,184 @@ public class TransactionTest {
     }
 
     /************************************************************************
+     * Commands: applyComment, removeComment
+     ************************************************************************/
+
+    @Test
+    public void testApplyComment() {
+        FormattedText doc = doc("Hello");
+        EditorState state = EditorState.create(doc, Selection.range(0, 0, 0, 5));
+
+        Transaction tr = Commands.applyComment(state, "c1");
+        Assertions.assertNotNull(tr);
+        state.apply(tr);
+
+        java.util.List<FormattedLine.Format> fmts = doc.getBlocks().get(0).getLines().get(0).getFormatting();
+        Assertions.assertEquals(1, fmts.size());
+        Assertions.assertTrue(fmts.get(0).getFormats().contains(FormatType.CMT));
+        Assertions.assertEquals("c1", fmts.get(0).getMeta().get(FormattedLine.META_COMMENT));
+    }
+
+    @Test
+    public void testApplyComment_cursorSelection_returnsNull() {
+        FormattedText doc = doc("Hello");
+        EditorState state = EditorState.create(doc, Selection.cursor(0, 0));
+        Assertions.assertNull(Commands.applyComment(state, "c1"));
+    }
+
+    @Test
+    public void testApplyComment_emptyReference_returnsNull() {
+        FormattedText doc = doc("Hello");
+        EditorState state = EditorState.create(doc, Selection.range(0, 0, 0, 5));
+        Assertions.assertNull(Commands.applyComment(state, ""));
+        Assertions.assertNull(Commands.applyComment(state, null));
+    }
+
+    @Test
+    public void testApplyComment_multiBlock() {
+        FormattedText doc = doc("Hello", "World");
+        EditorState state = EditorState.create(doc, Selection.range(0, 2, 1, 3));
+
+        Transaction tr = Commands.applyComment(state, "c1");
+        Assertions.assertNotNull(tr);
+        state.apply(tr);
+
+        // Block 0: comment from offset 2 to end (length 3).
+        Assertions.assertTrue(doc.getBlocks().get(0).hasFormat(2, 3, FormatType.CMT));
+        FormattedLine.Format fmt0 = doc.getBlocks().get(0).getLines().get(0).getFormatting().get(0);
+        Assertions.assertEquals("c1", fmt0.getMeta().get(FormattedLine.META_COMMENT));
+
+        // Block 1: comment from offset 0 to 3.
+        Assertions.assertTrue(doc.getBlocks().get(1).hasFormat(0, 3, FormatType.CMT));
+        FormattedLine.Format fmt1 = doc.getBlocks().get(1).getLines().get(0).getFormatting().get(0);
+        Assertions.assertEquals("c1", fmt1.getMeta().get(FormattedLine.META_COMMENT));
+    }
+
+    @Test
+    public void testApplyComment_overFormattedRegion_metaOnCommentOnly() {
+        // "Hello" with bold over [1,3); comment over the full text. The comment
+        // meta must land on the CMT-carrying regions only.
+        FormattedText doc = doc("Hello");
+        doc.getBlocks().get(0).addFormat(1, 2, FormatType.BLD);
+        EditorState state = EditorState.create(doc, Selection.range(0, 0, 0, 5));
+
+        state.apply(Commands.applyComment(state, "c1"));
+
+        for (FormattedLine.Format fmt : doc.getBlocks().get(0).getLines().get(0).getFormatting()) {
+            if (fmt.getFormats().contains(FormatType.CMT))
+                Assertions.assertEquals("c1", fmt.getMeta().get(FormattedLine.META_COMMENT));
+            else
+                Assertions.assertNull(fmt.getMeta().get(FormattedLine.META_COMMENT));
+        }
+        Assertions.assertTrue(doc.getBlocks().get(0).hasFormat(0, 5, FormatType.CMT));
+        Assertions.assertTrue(doc.getBlocks().get(0).hasFormat(1, 2, FormatType.BLD));
+    }
+
+    @Test
+    public void testApplyComment_undoRestores() {
+        FormattedText doc = doc("Hello");
+        EditorState state = EditorState.create(doc, Selection.range(0, 0, 0, 5));
+        History history = new History();
+
+        history.push(state.apply(Commands.applyComment(state, "c1")));
+        Assertions.assertTrue(doc.getBlocks().get(0).getLines().get(0).getFormatting().get(0).getFormats().contains(FormatType.CMT));
+
+        history.undo(state);
+        Assertions.assertTrue(doc.getBlocks().get(0).getLines().get(0).getFormatting().isEmpty());
+    }
+
+    @Test
+    public void testRemoveComment() {
+        // Set up a comment first.
+        FormattedText doc = doc("Hello");
+        EditorState state = EditorState.create(doc, Selection.range(0, 0, 0, 5));
+        state.apply(Commands.applyComment(state, "c1"));
+
+        // Now remove it.
+        Transaction tr = Commands.removeComment(state);
+        Assertions.assertNotNull(tr);
+        state.apply(tr);
+
+        java.util.List<FormattedLine.Format> fmts = doc.getBlocks().get(0).getLines().get(0).getFormatting();
+        // No format entries should remain (CMT was the only type, no other meta).
+        Assertions.assertTrue(fmts.isEmpty());
+    }
+
+    @Test
+    public void testRemoveComment_cursorInRun_removesRun() {
+        FormattedText doc = doc("Hello");
+        EditorState state = EditorState.create(doc, Selection.range(0, 1, 0, 4));
+        state.apply(Commands.applyComment(state, "c1"));
+
+        // A cursor within the comment run acts on the full run.
+        state.setSelection(Selection.cursor(0, 2));
+        Transaction tr = Commands.removeComment(state);
+        Assertions.assertNotNull(tr);
+        state.apply(tr);
+
+        Assertions.assertTrue(doc.getBlocks().get(0).getLines().get(0).getFormatting().isEmpty());
+    }
+
+    @Test
+    public void testRemoveComment_cursorOutsideRun_returnsNull() {
+        FormattedText doc = doc("Hello");
+        EditorState state = EditorState.create(doc, Selection.range(0, 1, 0, 3));
+        state.apply(Commands.applyComment(state, "c1"));
+
+        state.setSelection(Selection.cursor(0, 5));
+        Assertions.assertNull(Commands.removeComment(state));
+    }
+
+    @Test
+    public void testRemoveComment_byReference_removesAcrossBlocks() {
+        FormattedText doc = doc("Hello", "World");
+        EditorState state = EditorState.create(doc, Selection.range(0, 2, 1, 3));
+        state.apply(Commands.applyComment(state, "c1"));
+
+        // A second comment that must survive the removal.
+        state.setSelection(Selection.range(1, 3, 1, 5));
+        state.apply(Commands.applyComment(state, "c2"));
+
+        Transaction tr = Commands.removeComment(state, "c1");
+        Assertions.assertNotNull(tr);
+        state.apply(tr);
+
+        Assertions.assertFalse(doc.getBlocks().get(0).hasFormat(2, 3, FormatType.CMT));
+        Assertions.assertFalse(doc.getBlocks().get(1).hasFormat(0, 3, FormatType.CMT));
+        Assertions.assertTrue(doc.getBlocks().get(1).hasFormat(3, 2, FormatType.CMT));
+        FormattedLine.Format remaining = doc.getBlocks().get(1).getLines().get(0).getFormatting().get(0);
+        Assertions.assertEquals("c2", remaining.getMeta().get(FormattedLine.META_COMMENT));
+    }
+
+    @Test
+    public void testRemoveComment_byReference_unknownReference_returnsNull() {
+        FormattedText doc = doc("Hello");
+        EditorState state = EditorState.create(doc, Selection.range(0, 0, 0, 5));
+        state.apply(Commands.applyComment(state, "c1"));
+
+        Assertions.assertNull(Commands.removeComment(state, "zz"));
+        Assertions.assertNull(Commands.removeComment(state, ""));
+        Assertions.assertNull(Commands.removeComment(state, null));
+    }
+
+    @Test
+    public void testRemoveComment_undoRestores() {
+        FormattedText doc = doc("Hello");
+        EditorState state = EditorState.create(doc, Selection.range(0, 0, 0, 5));
+        state.apply(Commands.applyComment(state, "c1"));
+        History history = new History();
+
+        history.push(state.apply(Commands.removeComment(state)));
+        Assertions.assertTrue(doc.getBlocks().get(0).getLines().get(0).getFormatting().isEmpty());
+
+        history.undo(state);
+        java.util.List<FormattedLine.Format> fmts = doc.getBlocks().get(0).getLines().get(0).getFormatting();
+        Assertions.assertEquals(1, fmts.size());
+        Assertions.assertTrue(fmts.get(0).getFormats().contains(FormatType.CMT));
+        Assertions.assertEquals("c1", fmts.get(0).getMeta().get(FormattedLine.META_COMMENT));
+    }
+
+    /************************************************************************
      * SetBlockMetaStep and setBlockMeta command
      ************************************************************************/
 
@@ -4024,5 +4322,54 @@ public class TransactionTest {
         history.undo(state2);
         Assertions.assertEquals(1, doc2.getBlocks().size());
         Assertions.assertEquals("Target", textAt(doc2, 0));
+    }
+
+    /************************************************************************
+     * Link content (URL + label)
+     ************************************************************************/
+
+    /**
+     * Editing an existing link's URL and label rewrites the link run's text and its
+     * URL meta, keeping a single {@link FormatType#A} run over the new label.
+     */
+    @Test
+    public void testUpdateLinkContent_replacesLabelAndUrl() {
+        FormattedText doc = FormattedText.markdown("[hello](http://x/a.pdf)");
+        EditorState state = EditorState.create(doc, Selection.cursor(0, 2)); // inside "hello"
+
+        Transaction tr = Commands.updateLinkContent(state, "http://y/b.pdf", "world");
+        Assertions.assertNotNull(tr);
+        state.apply(tr);
+
+        FormattedLine line = doc.getBlocks().get(0).getLines().get(0);
+        Assertions.assertEquals("world", line.getText());
+        Assertions.assertEquals(1, line.getFormatting().size());
+        FormattedLine.Format fmt = line.getFormatting().get(0);
+        Assertions.assertTrue(fmt.getFormats().contains(FormatType.A));
+        Assertions.assertEquals(0, fmt.getIndex());
+        Assertions.assertEquals(5, fmt.getLength());
+        Assertions.assertEquals("http://y/b.pdf", fmt.getMeta().get(FormattedLine.META_LINK));
+    }
+
+    /**
+     * With no link under a cursor, {@code updateLinkContent} inserts a new linked label.
+     */
+    @Test
+    public void testUpdateLinkContent_insertsWhenNoLink() {
+        FormattedText doc = new FormattedText();
+        doc.block(BlockType.PARA, b -> b.line("ab"));
+        EditorState state = EditorState.create(doc, Selection.cursor(0, 2)); // after "ab", no link
+
+        Transaction tr = Commands.updateLinkContent(state, "http://x/a.pdf", "docs");
+        Assertions.assertNotNull(tr);
+        state.apply(tr);
+
+        FormattedLine line = doc.getBlocks().get(0).getLines().get(0);
+        Assertions.assertEquals("abdocs", line.getText());
+        FormattedLine.Format fmt = line.getFormatting().get(0);
+        Assertions.assertTrue(fmt.getFormats().contains(FormatType.A));
+        Assertions.assertEquals(2, fmt.getIndex());
+        Assertions.assertEquals(4, fmt.getLength());
+        Assertions.assertEquals("http://x/a.pdf", fmt.getMeta().get(FormattedLine.META_LINK));
     }
 }

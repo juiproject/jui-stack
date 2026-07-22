@@ -14,7 +14,9 @@ Every transaction triggers a full re-render (clear `innerHTML`, rebuild all bloc
 
 Rendering and event handling for each block family is delegated to a pluggable `IBlockHandler`. The editor maintains an ordered list of handlers; for every operation it iterates the list and delegates to the first handler whose `accepts(BlockType)` returns `true`. This allows new block types to be added without modifying `Editor` itself.
 
-`StandardBlockHandler` covers paragraph, heading, and list types. `TableBlockHandler` covers `TABLE` blocks. New block types are registered in `Editor`'s constructor via `handlers.add(...)`. Each handler can override only the lifecycle methods it needs: `beginRender`, `render`, `afterRender`, `beforeApplyTransaction`, `handleKeyDown`, `handleBeforeInput`, `handlePaste`, `handleFormatToggle`, and `focusBlock`.
+The handlers registered in `Editor`'s constructor, in order, are: `EquationBlockHandler` (`EQN`), `DiagramBlockHandler` (`DIA`), `FenceBlockHandler` (`FENCE`), `TableBlockHandler` (`TABLE`), and `StandardBlockHandler` (paragraph, headings, lists, and block-quote). The list is consulted in order, and `StandardBlockHandler` is last so it also serves as the fallback for any unmatched type. New block types are registered the same way — `handlers.add(...)` — without modifying `Editor`. Each handler can override only the lifecycle methods it needs: `beginRender`, `render`, `afterRender`, `beforeApplyTransaction`, `handleKeyDown`, `handleBeforeInput`, `handlePaste`, `handleFormatToggle`, and `focusBlock`.
+
+`FENCE` is special: rather than being a single fixed block type, it is a **pluggable** family driven by a registry of `IFenceRenderer`s keyed by the fence's info string (see [Fenced blocks](#fenced-blocks-pluggable)).
 
 ## Editing rules
 
@@ -23,7 +25,7 @@ Rendering and event handling for each block family is delegated to a pluggable `
 | Input | Behaviour |
 |-------|-----------|
 | Character | Inserts text at cursor. With a range selection, replaces the selection. |
-| Backspace | Deletes one character before cursor. At a line break, joins the two lines. At offset 0 of an indented block, reduces indent by one level. At offset 0 of a non-indented list item, converts to paragraph (exits the list). At offset 0 of a non-indented, non-list block, joins with the previous block (regardless of type). With a range selection, deletes the selection. |
+| Backspace | Deletes one character before cursor. At a line break, joins the two lines. At offset 0 of an indented block, reduces indent by one level. At offset 0 of a non-indented list item or quote, converts to paragraph (exits the list or quote). At offset 0 of a non-indented, non-list/quote block, joins with the previous block (regardless of type). With a range selection, deletes the selection. |
 | Delete | Deletes one character after cursor. At a line break, joins the two lines. At end of block, joins with the next block (regardless of type — e.g. list item absorbs following paragraph). With a range selection, deletes the selection. |
 | Ctrl+Backspace | Deletes the word before the cursor. At offset 0, joins with previous block. |
 | Ctrl+Delete | Deletes the word after the cursor. At end of block, joins with next block. |
@@ -42,7 +44,7 @@ Rendering and event handling for each block family is delegated to a pluggable `
 | Context | Behaviour |
 |---------|-----------|
 | End of heading (H1/H2/H3) | New block becomes a paragraph (configurable via `paragraphAfterHeading(boolean)`, default `true`). |
-| Empty list item (NLIST/OLIST) | Converts the block to a paragraph, exiting the list. |
+| Empty list item or quote line (NLIST/OLIST/QUOTE) | Converts the block to a paragraph, exiting the list or quote. |
 | All other cases | Splits the block; the new block inherits the type of the original. |
 
 ### Formatting shortcuts
@@ -68,7 +70,58 @@ These toggle the format on the selected range. With a cursor (no selection) they
 |----------|--------|
 | Ctrl+C | Copy — handled natively by the browser (DOM reflects model). |
 | Ctrl+X | Cut — browser copies selection to clipboard; editor deletes selection via transaction. |
-| Ctrl+V | Paste — plain text is read from the clipboard and inserted via `Commands.pasteText`. Multi-line text is split into separate PARA blocks. |
+| Ctrl+V | Paste — plain text is read from the clipboard and inserted via `Commands.pasteText`. Multi-line text is split into separate PARA blocks. When the clipboard carries a file and a `fileUpload` handler is configured, the file is uploaded and embedded instead (see below). |
+
+### Inline images
+
+Images are **atomic single-character segments** in the model: the line text carries one U+FFFC sentinel character covered by a length-1 `IMG` format, with `src`, `alt`, `width`, `height`, `align` and `margin` as format metadata (see the [type README](../../type/README.md)). This gives an image extent, so caret offsets fall unambiguously before or after it and no editing special-cases are needed:
+
+| Input | Behaviour |
+|-------|-----------|
+| Backspace (caret after image) | Deletes the image (its sentinel character), like any character. Undo restores it fully. |
+| Delete (caret before image) | Deletes the image. |
+| Typing adjacent to an image | Text lands on the caret's side; the image format is never extended by adjacent insertion (atomic, like variables). |
+| Enter between text and image | Ordinary split; the image moves to the new block. |
+
+The native selection helpers (`jui_text_editor.js`) count an `<img>` element as exactly one character in all offset/caret walks, mirroring the model.
+
+**Capture (upload) paths** — enabled by configuring `Config.fileUpload(IFileUploadHandler)`. The same handler covers images and other files; the editor branches on the file's MIME type:
+
+- **Image file** (`image/*`) → uploaded and inserted as an inline image at the cursor via `Commands.insertImage` (cursor lands after the image).
+- **Any other file** (a document attachment) → uploaded and inserted as a **link** labelled with the file's name via `Commands.insertLink` (cursor lands after the link).
+- **Paste**: the first file on the clipboard is embedded as above.
+- **Drag-and-drop**: dropping a file places the caret at the drop point (`caretPositionFromPoint`, falling back to the current selection) then follows the same upload/embed flow.
+
+The handler is also where upload policy lives (e.g. a size limit): reject by reporting via `onError` — optionally surfacing a message to the user — and the document is left unchanged.
+
+**Selection overlay** — clicking an image shows a floating overlay with:
+
+- four corner **drag-resize handles** (aspect-locked; live DOM preview, one `Commands.setImageAttributes` transaction committed on release);
+- **align buttons** (left / centre / right block alignment — the image sits on its own line via auto margins);
+- **margin steppers** (±4 px, clamped at 0).
+
+The overlay dismisses on re-render, scroll, or an outside pointer-down.
+
+### Links
+
+Links render as `<a>` and are edited via the toolbar link tool (`Tools.link`), whose `LinkPanel` edits both the **URL** and the display **label** (pre-filled from the link/selection text via `currentLinkLabel()`). Applying only rewrites the link's text when the label actually changed (`Commands.updateLinkContent`) — a URL-only change keeps `Commands.updateLink`, preserving any inline formatting in the run.
+
+How a click on a link behaves is configurable via `Config.linkInteraction(LinkInteraction)`:
+
+- **`EDIT`** (default) — clicking a link positions the caret inside it for inline editing. Suited to a surface with a distinct edit mode.
+- **`NAVIGATE`** — clicking a link **activates** it (via the link handler; see below), and **hovering** shows a small floating card with the URL and **Open** / **Edit** actions. Edit targets the hovered link in the model and opens the `LinkPanel` (URL + label). Suited to an always-editable surface with no separate view mode (e.g. attachment links you want clickable). In this mode links carry a **pointer cursor** (the root gets a `navigate` modifier class → `.component.navigate a { cursor: pointer }`) to signal they're clickable.
+
+The hover card mirrors the image overlay: a fixed `body` element positioned above the link (flipping below when tight), kept open while the pointer is on the link or the card, dismissed on scroll / re-render / leave. It appears after a short **hover delay** (`LINK_CARD_SHOW_DELAY`, 450ms) so a passing pointer doesn't flash it; moving directly between two links' cards switches without re-delaying.
+
+#### Link handler (shared with read-only)
+
+What a link *does* when activated is a pluggable `ILinkHandler` (in `com.effacy.jui.text.ui.type`) — the **same** hook the read-only renderer / `FText` accept, so a link behaves identically wherever the content is shown. Set it with `Config.linkHandler(ILinkHandler)`; it defaults to `LinkHandlers.standard()`:
+
+- **External** (`http(s)://`, `mailto:`, `tel:`) → opens in a new tab.
+- **In-page anchor** (`#section`) → the click is **always suppressed** (so it never reaches a single-page-app hash router) and, if a matching element exists in the content, scrolled to. Rendered headings carry a [slug](../type/LinkHandlers.java) id — in **both** the editor and the read-only renderer — so `[x](#operating-scenarios)` scrolls to the "Operating scenarios" heading whether you're viewing or editing. `scrollToAnchor` searches within the content root first, so the right copy is found even if an editor and a read view share the page.
+- **Anything else** (relative, custom schemes like `doc:`) → left to the browser, or handed to an application fallback.
+
+Compose app schemes on top with `LinkHandlers.standard(myFallback)`, where `myFallback` is an `ILinkHandler` that handles its schemes (e.g. `doc:`) and returns `false` otherwise. The read-only side wires the same handler via `LinkSupport.bind(rootElement, handler)` (a delegated click listener) — `FText` does this for you through `FText.linkHandler(...)`.
 
 ### Table cell navigation
 
@@ -98,7 +151,11 @@ Each column border (except the rightmost) has an invisible 6 px drag handle posi
 | H3 | `<h3>` | H3 button |
 | NLIST | `<p>` with bullet marker via CSS `::before` | Bullet list button (toggle) |
 | OLIST | `<p>` with numbered marker via CSS `::before` and `data-list-index` | Numbered list button (toggle) |
+| QUOTE | `<blockquote>` | Quote button (toggle) |
 | TABLE | `<div>` wrapper containing `<table>` with per-cell contenteditable inner divs | Insert table button |
+| FENCE | Atomic `<div contenteditable="false">` rendered by a pluggable `IFenceRenderer` (code-block fallback) | `Tools.fence(info, …)` — see [Fenced blocks](#fenced-blocks-pluggable) |
+
+`StandardBlockHandler` also accepts `H4`/`H5` (rendered `<h4>`/`<h5>`), though the standard toolbar only exposes H1–H3.
 
 List toolbar buttons use `toggleBlockType` — clicking when the block is already that list type converts it back to a paragraph.
 
@@ -117,6 +174,85 @@ Ordered list numbering is indent-aware. Each indent level maintains its own coun
 ```
 
 The marker style cycles by indent level: numeric (0), lowercase alpha (1), lowercase roman (2), then repeats. This is configurable via `listIndexFormatter(IListIndexFormatter)` — the formatter receives the indent level and counter value and returns the display string.
+
+## Fenced blocks (pluggable)
+
+A **fenced block** is the editor's extensibility point for rich, non-prose content carried by a Markdown fence — ` ```mermaid `, ` ```math `, ` ```note `, etc. Rather than baking each kind into the editor, the `FENCE` block type is a generic carrier and the rendering/editing of a given kind is supplied by a **plugin** registered against the fence's *info string* (the token after the opening ` ``` `).
+
+### The model
+
+A `FENCE` `FormattedBlock` holds:
+
+- the raw fenced body as the block's **lines** (unformatted), and
+- the info string as the `info` **meta** (`block.meta("info")`).
+
+It is atomic in the editor (`contenteditable="false"`) and round-trips to Markdown as ` ```<info>\n<body>\n``` ` — identical syntax to a fenced code block, so a fence is lossless whether or not a plugin is registered for it.
+
+### The registry
+
+Plugins implement `IFenceRenderer` and register with the static `Fences` registry:
+
+```java
+public interface IFenceRenderer {
+    boolean accepts(String info);                       // e.g. "mermaid".equals(info)
+    void render(Element target, String info, String content);  // may be async
+    default String label(String info)       { return info; }
+    default String placeholder(String info) { return "Enter " + label(info) + " source…"; }
+
+    // optional: supply your own editor (return false to use the built-in source editor)
+    default boolean edit(Element anchor, String info, String content,
+                         Consumer<String> apply, Runnable remove) { return false; }
+}
+
+Fences.register(myRenderer);
+IFenceRenderer r = Fences.rendererFor(info);   // first accepting renderer, or null
+boolean known   = Fences.isRegistered(info);
+```
+
+`render` populates the given (cleared) element however it likes, and may do so asynchronously (load a library, then fill in SVG). The *same* `render` drives the live preview in the source editor, so a plugin gets a preview for free.
+
+### Editor behaviour (`FenceBlockHandler`)
+
+- **Render** — an atomic `<div class="fence" contenteditable="false">` containing the renderer's output (or, when no renderer is registered for the info string, the body as a `<pre><code>` code block), with an info chip in the corner.
+- **Edit** — clicking the block opens an editor. By default this is a `FencePanel`: a source textarea plus a live preview produced by the renderer (Apply replaces the block's lines via a `ReplaceBlockStep`; Remove deletes it). A renderer may supply its **own** editor by overriding `IFenceRenderer.edit(anchor, info, content, apply, remove)` — open the editor and return `true`, calling `apply` on save and `remove` on delete; return `false` to use the built-in panel.
+- **Insert** — `IEditorCommands.insertFence(String info)` inserts an empty fence of that kind after the current block and opens its editor. The toolbar factory `Tools.fence(info, content, tooltip)` wraps this as a button.
+
+### Parsing
+
+The parser only produces `FENCE` blocks when told which info strings are "special"; otherwise every fence stays a `CODE` block (so behaviour is unchanged for callers that do not opt in):
+
+```java
+new MarkdownParser()
+    .fence(Fences::isRegistered)            // registered infos → FENCE, others → CODE
+    .parse(new FormattedTextBuilder(), markdown);
+```
+
+Passing `Fences::isRegistered` ties parsing to the registry: registering a plugin is all that is needed for its fences to parse as `FENCE` and render through it. The serializer emits `FENCE` and `CODE` identically (a ` ``` ` fence), so both round-trip.
+
+### Read-only rendering
+
+The model-driven read-only renderers (`DomBuilderFormattedTextRenderer`, the `FText` fragment) render `FENCE` as a code block — legible and round-tripping. Rich, registry-driven read-only rendering (e.g. a mermaid diagram outside the editor) is a follow-up; today the *editor* is where fences render richly.
+
+### Example plugin — Mermaid
+
+`Mermaid` is a bundled `IFenceRenderer` for the `mermaid` info string. `Mermaid.install()` registers it (idempotent); thereafter ` ```mermaid ` fences render as diagrams. It loads the Mermaid library on demand from a CDN (`ScriptInjector.injectFromUrl`, URL in `Mermaid.CDN_URL`) and renders to SVG via Mermaid's v10 Promise API, falling back to the source on error.
+
+To plug in your own Mermaid editor (keeping the diagram rendering, replacing only the editing UI):
+
+```java
+Mermaid.editor((anchor, content, apply, remove) -> {
+    // open your editor; call apply.accept(newSource) on save, remove.run() on delete
+});
+```
+
+### Adding a plugin
+
+1. Implement `IFenceRenderer` for your info string.
+2. `Fences.register(...)` it at start-up.
+3. Parse with `.fence(Fences::isRegistered)`.
+4. (Optional) add a `Tools.fence("<info>", …)` button to the toolbar.
+
+No changes to `Editor`, the parser, or the serializer are required.
 
 ## Rendering details
 
@@ -156,6 +292,69 @@ A TABLE block renders as:
 
 The outer wrapper has `contenteditable="false"` so the editor's own `beforeinput` / `selectionchange` logic ignores it. Each cell has an inner `tableCellContent` div that is the actual `contenteditable="true"` element, carrying `data-table-index`, `data-row`, and `data-col` attributes. The resize handle is a sibling of this div, outside the contenteditable scope. Column widths use `<col>` elements under a `<colgroup>` so `table-layout: fixed` respects the explicit percentages.
 
+## Styling and CSS
+
+CSS is organised into three layers with distinct responsibilities. Keep them separate — do not put content typography into the editor's structural sheet, and do not duplicate content styles per plugin.
+
+### 1. Editor structure (`Editor.LocalCSS`)
+
+The inline `@CssResource` on `Editor` (scoped to the obfuscated `.component` root) styles only the *editor's own structure and chrome*: the contenteditable surface, block spacing, list markers, placeholder, variable/inline-image affordances. Configurable values are exposed as CSS custom properties with defaults, e.g. `--jui-ftext-placeholder-color`. Content colours reuse the shared `--jui-richtext-*` tokens (below) so a single retheme covers both the editor and read-only presentation.
+
+This layer should **not** carry content typography that a consumer would want to restyle (heading sizes, quote/code appearance) — that lives in layer 3.
+
+### 1a. Floating affordances (`EditorOverlayCSS`)
+
+The image-selection overlay and the link hover card are appended to `body` (outside the component's scoped DOM), so they carry their own injected sheet, `EditorOverlayCSS`, rather than inline styles. Colours are driven by tokens with layered fallbacks (each chains to an existing jui token, then a literal), so they follow the theme by default and can be restyled app-wide by overriding these on `:root`:
+
+- `--jui-editor-popover-bg` / `--jui-editor-popover-border` / `--jui-editor-popover-fg` / `--jui-editor-popover-muted` / `--jui-editor-popover-hover` / `--jui-editor-popover-shadow` — the floating surface (also used by `LinkPanel`);
+- `--jui-editor-accent` (→ `--jui-ctl-focus`) — the interactive accent (link card Open/Edit, image align buttons, panel Apply/focus);
+- `--jui-editor-neutral` — secondary controls (image margin steppers);
+- `--jui-editor-danger` (→ `--jui-color-error`) — destructive actions (link Remove);
+- `--jui-editor-on-accent` — text/glyph on an accent fill.
+
+(An app overriding a token may use any value the browser accepts — e.g. a multi-layer `box-shadow` — since the override is parsed by the real stylesheet, not GWT's `@CssResource` parser; only the in-sheet *fallbacks* are kept simple.)
+
+### 2. Plugin CSS (owned by each plugin)
+
+Each block handler / fence renderer that needs styling declares its **own** `@CssResource` and injects it lazily on first render (see `FenceBlockHandler`, `DiagramBlockHandler`, `EquationBlockHandler`, `FencePanel`). A plugin owns the CSS for both its in-editor affordance and its rendered output; nothing plugin-specific belongs in the core sheets.
+
+### 3. Content formatting (`FormattedTextStyles`) — shared, themeable, read-only-equivalent
+
+`FormattedTextStyles` is the single source of truth for how *rendered content* looks (headings, inline formats `fmt_*`, `code_block`, `quote`, `list_bullet`/`list_number`, `indent*`). It is applied by adding the scope class `FormattedTextStyles.styles().richtext()` to a container; the read-only `DomBuilderFormattedTextRenderer`, chat bubbles and the catalogue markdown view all use it, so read-only presentation matches the editor.
+
+- **Theme via tokens.** Presentation is driven by `--jui-richtext-*` custom properties (`--jui-richtext-h2-size`, `--jui-richtext-code-bg`, `--jui-richtext-quote-border`, …), each with a default. Because custom properties inherit, a consumer retheme by setting these on any ancestor — e.g. an editor/control variant's `css()` on the root — with no specificity fight and no obfuscated class to target.
+- **Replace wholesale.** To supply an entirely different stylesheet, implement `IFormattedTextCSS` with your own `@CssResource` (or extend `StandardFormattedTextCSS`) and register it via `FormattedTextStyles.styles(myProvider)`. The content class names the renderer applies (`fmt_*`, `code_block`, `quote`, `list_bullet`, `list_number`, `indent*`, and the heading elements) are the contract to honour.
+
+The editor consumes layer 3 directly: `Editor` adds the `richtext` scope class to its content root, so headings, inline formats (`fmt_*`), quotes, code blocks and indent margins all resolve from `FormattedTextStyles` — editor and read-only render from **one** sheet. `Editor.LocalCSS` keeps only what is genuinely editor-specific: the contenteditable chrome and placeholder, the `.block` structure, the ordered/unordered **list markers** (which the editor draws differently from read-only, via `data-list-index`), paragraph spacing, and the `variable`/`inlineImage` affordances. Block elements carry the shared content classes (`quote`, `code_block`, `indentN`) so the `richtext` rules match; the quote/code rules are element-qualified (`blockquote.quote`, `pre.code_block`) so they win over the editor's structural `.block` padding.
+
+### Content style
+
+The presentation of the content is a `ContentStyle` — a standalone class in `com.effacy.jui.text.ui.type`, **not bound to the editor**. It is an open bag of `--jui-richtext-*` token overrides applied inline on the content root (so they win over the stylesheet defaults, for that subtree only). The editor takes one via `Editor.Config.contentStyle(ContentStyle)`; the same style also drives read-only presentation (see below), so a style means the same thing everywhere.
+
+`ContentStyle` is **not a fixed enum**:
+
+```java
+.contentStyle(ContentStyle.document())                      // a standard configuration
+.contentStyle(ContentStyle.document().blockSpacing("8px"))  // … tweaked
+.contentStyle(new ContentStyle().listIndent("2em").lineHeight("1.7"))  // your own
+```
+
+- **Build your own** with `new ContentStyle()` and the fluent setters (`listIndent`, `listSpacing`, `blockSpacing`, `paragraphSpacing`, `lineHeight`), or `token(name, value)` for any other content token (e.g. `--jui-richtext-h2-size`).
+- **Or use a provided standard**: `ContentStyle.compact()` (the stylesheet defaults — tight, base lists flush) and `ContentStyle.document()` (roomier spacing, base-level lists indented). These are just convenience bundles of the same overrides — copy and tweak freely.
+
+**Use anywhere.** The tokens are consumed by the shared `FormattedTextStyles` sheet, which scopes *both* the editor and the read-only renderer — so a `ContentStyle` works on either:
+
+- **Editor** — `Editor.Config.contentStyle(...)`.
+- **Read-only** — `FText.$(text).contentStyle(...)` (defaults to `document()`), or for a direct `DomBuilderFormattedTextRenderer` call `style.apply(root)` on the scope element yourself.
+
+`ContentStyle.apply(root)` sets a content root up in one call: it applies the `richtext` scope class (which also injects the shared sheet) **and** layers the style's token overrides. It's overloaded for `ElementBuilder` (the presentation path) and `HTMLElement` (the editor's live root). For a bare scope with no density overrides, `ContentStyle.compact().apply(root)`.
+
+There is **no `.document` CSS class or flag** — the "document look" is nothing more than a set of token values. The shared rules consume the knob tokens (`--jui-richtext-list-indent`, `--jui-richtext-list-spacing`, `--jui-richtext-block-spacing`, `--jui-richtext-para-spacing`, `--jui-richtext-line-height`) with the compact values as their `var()` defaults; a `ContentStyle` overrides whichever it wants. To change a look **app-wide**, set the same tokens on `:root` in your theme.
+
+The **base list indent** is folded into the list's `padding-left` and its marker `::before` offset (not a `margin-left`), so it composes additively with the `.indentN` nesting margins and keeps the bullet aligned.
+
+**List items keep their own rhythm.** A list item is a paragraph (it carries `.block` + a list class), so it would otherwise inherit the roomy prose block/paragraph spacing and drift too far from its neighbours. The gap between list items is instead driven by its own `--jui-richtext-list-spacing` token (`listSpacing(...)`, default `3px` padding top/bottom, prose margins zeroed) — so lists stay tight even when `blockSpacing`/`paragraphSpacing` are generous. This holds on both surfaces; the editor's list-item rule is `.block`-qualified so it wins over the shared block padding that also scopes the editor root.
+
 ## Toolbar and tools
 
 The toolbar is decoupled from the editor via the `ITool` interface. Each tool is a stateless descriptor that renders a button into the toolbar and optionally returns a `Handle` for tracking active state. Standard tools are available as constants on `Tools` and custom tools can be created by implementing `ITool` directly or using the factory methods on `Tools`.
@@ -180,16 +379,28 @@ Popup-based tools (link, variable) use `ToolPopupPanel` as a shared base for flo
 |----------|-------------|
 | `BOLD`, `ITALIC`, `UNDERLINE`, `STRIKETHROUGH`, `SUBSCRIPT`, `SUPERSCRIPT`, `CODE`, `HIGHLIGHT` | Inline format toggles |
 | `H1`, `H2`, `H3`, `PARAGRAPH` | Block type setters |
-| `BULLET_LIST`, `NUMBERED_LIST` | Block type toggles |
+| `BULLET_LIST`, `NUMBERED_LIST`, `QUOTE` | Block type toggles |
 | `TABLE` | Inserts a 2x3 table |
+| `EQUATION`, `DIAGRAM` | Insert an equation / diagram block |
 | `SEPARATOR` | Visual divider between tool groups |
 
-Link and variable tools require a data source and are created via factory methods rather than constants:
+Link, variable, image, fence and comment tools require a parameter (a data source, a fence info string, or a handler) and are created via factory methods rather than constants:
 
 ```java
 Tools.link(r -> Em.$(r).style(FontAwesome.link()), "Link", MyApp::filterLinks)
 Tools.variable("{}", "Variable", MyApp::filterVariables)
+Tools.fence("mermaid", r -> Em.$(r).style(FontAwesome.diagramProject()), "Mermaid diagram")
+Tools.comment(r -> Em.$(r).style(FontAwesome.comment()), "Comment", MyApp::openComposer)
 ```
+
+The comment tool anchors a comment to the selection (`FormatType.CMT` carrying the comment's
+reference as `comment` metadata). The editor owns only the anchor: the passed
+`Tools.ICommentHandler` is invoked with the selection frozen (and the reference under the
+cursor, if any) and owns the composer/comment lifecycle, applying the anchor via
+`IEditorCommands.applyComment(reference)` (or clearing it via `removeComment()`). Anchored
+segments render with the `fmt_comment` class and a `data-comment` attribute for external
+comment surfaces to wire against. The `CMT` format has no markdown representation — it is
+shed on markdown serialisation.
 
 ### Configuration
 
@@ -294,12 +505,16 @@ The `IEditorCommands` interface is how tools drive the editor. All commands oper
 |--------|-------------|
 | `toggleFormat(FormatType)` | Toggles an inline format on the selection |
 | `setBlockType(BlockType)` | Sets the block type of the current block |
-| `toggleBlockType(BlockType)` | Toggles a block type (e.g. list on/off) |
+| `toggleBlockType(BlockType)` | Toggles a block type (e.g. list/quote on/off) |
 | `insertTable(int rows, int cols)` | Inserts a table after the current block |
+| `insertEquation()` / `insertDiagram()` | Inserts an equation / diagram block after the current block |
+| `insertFence(String info)` | Inserts a fenced block of the given info string, then opens its editor |
 | `insertText(String text)` | Inserts text at the cursor, replacing any selection |
 | `syncSelection()` | Freezes the DOM selection into the editor's internal state — call before opening popups |
 | `currentLink()` | Returns the link URL at the cursor, or `null` |
+| `currentLinkLabel()` | Returns the display text of the link at the cursor (or the selected text) — pre-fills the panel's label field |
 | `applyLink(String url)` | Applies a link URL to the current range selection |
+| `applyLink(String url, String label)` | Applies the URL and, when the label changed, rewrites the link's display text (`Commands.updateLinkContent`) |
 | `removeLink()` | Removes the link from the current selection |
 | `applyVariable(String name, String label)` | Inserts a variable at the cursor |
 
@@ -309,8 +524,15 @@ The `IEditorCommands` interface is how tools drive the editor. All commands oper
 |------|---------|
 | `Editor.java` | Main component — rendering, event handling, CSS |
 | `IBlockHandler.java` | Pluggable block handler interface — render, event hooks, focus |
-| `StandardBlockHandler.java` | Handler for PARA, H1–H3, NLIST, OLIST block types |
+| `StandardBlockHandler.java` | Handler for PARA, H1–H5, NLIST, OLIST and QUOTE block types |
 | `TableBlockHandler.java` | Handler for TABLE blocks — cell editing, column resizing, CSS |
+| `EquationBlockHandler.java` / `EquationPanel.java` | Handler + editor for EQN (equation) blocks |
+| `DiagramBlockHandler.java` / `DiagramPanel.java` | Handler + editor for DIA (PlantUML diagram) blocks |
+| `FenceBlockHandler.java` | Handler for FENCE blocks — atomic render via the registry, click-to-edit |
+| `IFenceRenderer.java` | Plugin interface for a fence kind — `accepts(info)` + `render(target, info, content)` |
+| `Fences.java` | Registry of fence renderers keyed by info string |
+| `FencePanel.java` | Source editor for a fence block, with a renderer-driven live preview |
+| `Mermaid.java` | Bundled fence plugin — renders ` ```mermaid ` fences as diagrams (CDN-loaded) |
 | `IEditorContext.java` | Context passed to block handlers — editor element, state, transaction helpers |
 | `EditorSupport2.java` | JsInterop bridge for selection read/write and input event helpers |
 | `jui_text_editor2.js` | Native JS — leaf traversal, line parsing, character counting, offset resolution, selection read/set, cell helpers |
@@ -348,6 +570,21 @@ FormattedTextEditor editor = new FormattedTextEditor(new FormattedTextEditor.Con
                Tools.SEPARATOR,
                Tools.variable("{}", "Variable", MyApp::filterVariables))));
 ```
+
+### `FormattedTextEditor.Config` options
+
+Beyond `editor(...)` and `toolbar(...)`, the control exposes:
+
+| Option | Effect |
+|--------|--------|
+| `placeholder(String)` | Placeholder text shown when the document is empty (a single empty paragraph). |
+| `contentMinHeight(Length)` | A minimum height on the editable *content area* (not the whole control), so clicking anywhere in it places the cursor; the control then sizes to its content. |
+| `height(Length)` | A minimum height on the whole control (the older option; `contentMinHeight` is usually preferred). |
+| `variant(Variant)` | A reusable look. `Variant.SEAMLESS` removes all borders and the focus highlight so the editor sits flush in its container. |
+| `detachedToolbar()` | Binds the toolbar but does not render it inside the control — the host places it (e.g. a full-width strip); supply the toolbar instance via `toolbar(Supplier)`. |
+| `position(Position)` / `noFocus()` / `borderless()` | Toolbar position and individual border/focus toggles (subsumed by `SEAMLESS`). |
+
+File capture is configured on the *editor* config (via `editor(cfg -> cfg.fileUpload(handler))`): supply an `IFileUploadHandler` that uploads the pasted/dropped file and calls back with the URL to embed — images are embedded inline, other files as links — see [Inline images](#inline-images).
 
 # Appendix
 

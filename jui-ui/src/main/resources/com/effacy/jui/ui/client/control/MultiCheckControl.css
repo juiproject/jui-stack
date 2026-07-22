@@ -48,6 +48,7 @@
 .component .inner .item span {
 	user-select: none;
 	font-weight: var(--jui-multicheckctl-label-weight);
+	white-space: nowrap;
 }
 
 .component .inner .item.bold span {

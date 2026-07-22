@@ -83,6 +83,17 @@ public interface IBlockHandler {
     default void beforeApplyTransaction(IEditorContext ctx) {}
 
     /**
+     * Flushes any content that lives only in the DOM (for blocks that edit natively via
+     * {@code contenteditable}, e.g. table cells) back into the model. Called before the editor
+     * hands out its value, so a read (mode switch, autosave, {@link Editor#value()}) reflects
+     * the current DOM rather than only what was last synced on blur. Default is a no-op.
+     *
+     * @param ctx
+     *            the editor context.
+     */
+    default void syncFromDom(IEditorContext ctx) {}
+
+    /**
      * Handles a {@code keydown} event bubbled to the editor element. Return
      * {@code true} to mark the event as handled and prevent the editor's
      * built-in key processing (undo/redo, format shortcuts, indent).
@@ -146,6 +157,21 @@ public interface IBlockHandler {
      *                   the editor context.
      */
     default void focusBlock(int blockIndex, IEditorContext ctx) {}
+
+    /**
+     * As {@link #focusBlock(int, IEditorContext)} but placing the caret at the
+     * <em>end</em> of the block's content (e.g. the last table cell). Used when the
+     * block is entered from below (a backward deletion or upward traversal from the
+     * following block). Defaults to {@link #focusBlock(int, IEditorContext)}.
+     *
+     * @param blockIndex
+     *                   the index of the block to focus.
+     * @param ctx
+     *                   the editor context.
+     */
+    default void focusBlockEnd(int blockIndex, IEditorContext ctx) {
+        focusBlock(blockIndex, ctx);
+    }
 
     /**
      * Called by the editor when the DOM selection changes but

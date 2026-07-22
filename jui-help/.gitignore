@@ -1,0 +1,6 @@
+# Default build output (node build.mjs → ./dist)
+/dist/
+
+# Guards against a stray local `npm install` (there are no dependencies)
+/node_modules/
+npm-debug.log*

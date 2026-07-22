@@ -110,6 +110,11 @@ public MyComponent(String title) {
 
 ## DomBuilder Essentials
 
+> For the full DomBuilder reference — and especially the rules for **updating the DOM at runtime**
+> (when `Wrap.buildInto` is safe versus when you must use the component's own `buildInto` or
+> `rerender()`, and state-driven `StateComponent` views) — see the **jui-dombuilder** skill. A summary
+> follows.
+
 ### Element creation
 
 Each HTML element has a corresponding class with static `$()` methods:
@@ -218,12 +223,14 @@ Update the DOM without full re-render by manipulating extracted elements:
 // Direct text update
 DomSupport.innerText(titleEl, newTitle);
 
-// Rebuild a section (no event handlers)
+// Rebuild a STATIC section (no events, no child components).
 Wrap.buildInto(bodyEl, el -> {
     P.$(el).text(newContent);
 });
 
-// Rebuild a section (with event handler registration via Component)
+// Rebuild an INTERACTIVE section. Use the component's own buildInto (NOT Wrap.buildInto)
+// so event handlers are registered and child components are adopted — otherwise the
+// onclick below renders but never fires. See the jui-dombuilder skill for the full trap.
 buildInto(bodyEl, el -> {
     A.$(el).text("Click").onclick(e -> handleClick());
 });
@@ -239,6 +246,99 @@ public void updateData(Data newData) {
     rerender();
 }
 ```
+
+## State-driven Components (`StateComponent<V>`)
+
+`StateComponent<V>` is a `SimpleComponent` whose rendering is a pure function of an external **state
+variable**. Instead of calling `rerender()` yourself, you store the state in a `StateVariable`
+(`IStateVariable<V>`); the component listens to it and re-renders automatically whenever the state
+changes. Because the re-render goes through the normal renderer path, events and child components stay
+wired (the same guarantee as `rerender()`).
+
+Choose `StateComponent<V>` over plain `rerender()` when a single piece of (possibly shared) state
+determines what is on screen.
+
+```java
+public class CounterView extends StateComponent<ValueStateVariable<Integer>> {
+
+    public CounterView() {
+        super(new ValueStateVariable<Integer>(0));   // pass the state to the super constructor
+        renderer(root -> {
+            P.$(root).text("Counter: " + state().value());
+            Button.$(root).text("+").onclick(e -> state().assign(state().value() + 1));
+        });
+    }
+}
+```
+
+Access the state with `state()`. The component re-renders when the state emits a change.
+
+### One state, many views
+
+The state lives *outside* the component, so several components can wrap the **same** state instance —
+mutating it re-renders all of them. This is the idiom for "multiple parts of the screen depend on one
+piece of data".
+
+### Mutation methods on the state (model–view)
+
+Subclass `StateVariable<V>` and expose domain mutators that call `modify(...)`. The state behaves like
+a model and the `StateComponent` like its view — mutating the model anywhere re-renders every view
+bound to it.
+
+```java
+public static class Errors extends StateVariable<Errors> {
+    private List<String> items = new ArrayList<>();
+    public List<String> items()     { return items; }
+    public void clear()             { modify(v -> v.items.clear()); }
+    public void add(String message) { modify(v -> v.items.add(message)); }
+}
+
+public static class ErrorList extends StateComponent<Errors> {
+    public ErrorList(Errors state) {
+        super(state);
+        renderer(root -> {
+            if (state().items().isEmpty())
+                return;
+            Ul.$(root).$(list -> state().items().forEach(i -> Li.$(list).text(i)));
+        });
+    }
+}
+```
+
+Calling `errors.add("Bad input")` re-renders every `ErrorList` bound to that `errors`. The component
+can also mutate via `modify(Consumer<V>)` (a convenience that delegates to the state).
+
+### Loading / error lifecycle
+
+`LifecycleStateVariable<V>` adds loading and error states the renderer can interrogate, so a remote
+fetch drives a spinner → content transition through the same mechanism:
+
+```java
+public static class MenuItems extends LifecycleStateVariable<MenuItems> {
+    private List<String> items = new ArrayList<>();
+    public List<String> items() { return items; }
+    public void load() {
+        loading();                         // renders the loading branch
+        remoteLoad(result -> modify(v -> { // later: populate and re-render
+            v.items.clear();
+            v.items.addAll(result);
+        }));
+    }
+}
+
+// In the renderer: if (state().isLoading()) { /* spinner */ } else { /* list */ }
+```
+
+### Navigation-awareness
+
+If the `StateComponent` implements `INavigationAware` / `INavigationAwareChild`, state changes are
+blocked from re-rendering while the component is off-screen and replayed when navigated to — so a
+state-driven view inside a tab or card stays correct without re-asserting it in `onNavigateTo`.
+
+### Inline state component
+
+`StateComponentCreator.$(parent, state, (s, el) -> { … })` builds a state component inline, without a
+subclass.
 
 ## Configuration Pattern
 
@@ -325,7 +425,7 @@ For comprehensive styling guidance -- localised CSS, CSS variables, style packs,
 - The `.component` class is applied automatically to the root element
 - Scope child styles under `.component` (e.g. `.component .header`)
 - Reference styles via `styles().methodName()` (names are obfuscated)
-- For style variants, declare a `Style` interface in `Config` (see `jui-styles` skill for full pattern)
+- For variants, declare a `Style` interface in `Config` (the style-pack pattern). A variant is a named, reusable bundle of style/configuration applied repeatably to give the component a particular look in a particular context. See the `jui-styles` skill (the **Variants** section) for the full pattern, and prefer reusing variants from the project's dedicated `Variants` class where one exists.
 
 ## Child Components
 
@@ -464,84 +564,12 @@ Set flags on `Component` (typically in the application entry point):
 
 ## Modal Dialogs
 
-### Simple dialog
-
-```java
-public class MyComponent extends SimpleComponent {
-
-    private static IDialogOpener<Void, Void> DIALOG;
-
-    public static void open() {
-        if (DIALOG == null)
-            DIALOG = ModalDialogCreator.<Void, Void, MyComponent>dialog(
-                new MyComponent(), cfg -> {
-                    cfg.style(ModalStyle.UNIFORM)
-                        .title("My Dialog")
-                        .type(Type.CENTER)
-                        .width(Length.px(500));
-                }, b -> b.label("cancel"), b -> b.label("Confirm"));
-        DIALOG.open(null, null);
-    }
-}
-```
-
-### Processing dialog (with result)
-
-Implement `IProcessable<R>` to return a result through the dialog callback:
-
-```java
-public class MyForm extends SimpleComponent implements IProcessable<Long> {
-
-    private static IDialogOpener<Void, Long> DIALOG;
-
-    public static void open(Consumer<Optional<Long>> cb) {
-        if (DIALOG == null)
-            DIALOG = ModalDialogCreator.<Void, Long, MyForm>dialog(
-                new MyForm(), cfg -> {
-                    cfg.style(ModalStyle.UNIFORM)
-                        .title("Create")
-                        .type(Type.CENTER)
-                        .width(Length.px(500));
-                }, b -> b.label("cancel"), b -> b.label("Create"));
-        DIALOG.open(null, cb);
-    }
-
-    @Override
-    public void process(Consumer<Optional<Long>> outcome) {
-        // Empty optional = failure (dialog stays open).
-        // Non-empty optional = success (dialog closes).
-        outcome.accept(Optional.of(resultId));
-    }
-}
-```
-
-### Configurable dialog (with input data)
-
-Implement `IEditable<T>` to receive data when the dialog opens:
-
-```java
-public class MyEditor extends SimpleComponent implements IEditable<MyData> {
-
-    private static IDialogOpener<MyData, Void> DIALOG;
-
-    public static void open(MyData data) {
-        if (DIALOG == null)
-            DIALOG = ModalDialogCreator.<MyData, Void, MyEditor>dialog(
-                new MyEditor(), cfg -> {
-                    cfg.style(ModalStyle.UNIFORM)
-                        .title("Edit")
-                        .type(Type.CENTER)
-                        .width(Length.px(500));
-                }, b -> b.label("cancel"), b -> b.label("Save"));
-        DIALOG.open(data, null);
-    }
-
-    @Override
-    public void edit(MyData data) {
-        // Populate from data.
-    }
-}
-```
+A component is frequently opened **in a dialog** (create/edit forms, confirmations, custom panels) via
+a static `open(...)` method backed by a shared `IDialogOpener`, implementing `IProcessable` (apply),
+`IEditable` (seed on open) and `IResetable` (clean baseline). That is a topic in its own right —
+**use the `jui-modals` skill** for the dialog-enabling pattern, create/update form pairs,
+`ModalDialogCreator` / `ModalDialog` / `NotificationDialog`, actions, and lifecycle. Build the
+component here; wrap and drive it there.
 
 ## Behavioural Interfaces
 

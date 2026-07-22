@@ -174,7 +174,19 @@ public class FormattedTextBuilder implements IEventBuilder<FormattedText> {
 
     @Override
     public void meta(String name, String value) {
-        blockStack.peek().meta(name, value);
+        FormattedBlock block = blockStack.peek();
+        // "indent" is a first-class block property (read by the serializer, renderer and
+        // editor via getIndent()), not a free-form meta entry — bridge it onto the field so
+        // parsed nesting is preserved rather than silently flattened.
+        if ("indent".equals(name)) {
+            try {
+                block.setIndent(Integer.parseInt(value));
+            } catch (NumberFormatException e) {
+                // Ignore a malformed indent value (leave the default level 0).
+            }
+            return;
+        }
+        block.meta(name, value);
     }
 
     @Override
@@ -208,10 +220,18 @@ public class FormattedTextBuilder implements IEventBuilder<FormattedText> {
 
     @Override
     public void link(String label, String url) {
+        link(label, url, new FormatType[0]);
+    }
+
+    @Override
+    public void link(String label, String url, FormatType... formats) {
+        if (formats == null)
+            formats = new FormatType[0];
         if ((label == null) || label.isEmpty()) {
             // Empty label link — build directly since FormattedLine.link()
             // ignores empty text.
-            FormattedLine.Format fmt = new FormattedLine.Format(currentLine.length(), 0, FormatType.A);
+            FormatType[] all = withLinkFormat(formats);
+            FormattedLine.Format fmt = new FormattedLine.Format(currentLine.length(), 0, all);
             fmt.getMeta().put("link", (url != null) ? url : "");
             currentLine.getFormatting().add(fmt);
             return;
@@ -219,26 +239,54 @@ public class FormattedTextBuilder implements IEventBuilder<FormattedText> {
         if ((url == null) || url.isEmpty()) {
             // Empty URL — build directly since FormattedLine.link() drops the
             // link format when URL is empty.
-            FormattedLine.Format fmt = new FormattedLine.Format(currentLine.length(), label.length(), FormatType.A);
+            FormatType[] all = withLinkFormat(formats);
+            FormattedLine.Format fmt = new FormattedLine.Format(currentLine.length(), label.length(), all);
             fmt.getMeta().put("link", "");
             currentLine.getFormatting().add(fmt);
             currentLine.append(label);
             return;
         }
-        currentLine.link(label, url);
+        // FormattedLine.link() always includes the A (link) format and applies any extras.
+        currentLine.link(label, url, formats);
+    }
+
+    /** Prepends {@link FormatType#A} to a set of extra formats (kept distinct). */
+    private static FormatType[] withLinkFormat(FormatType[] formats) {
+        FormatType[] all = new FormatType[formats.length + 1];
+        all[0] = FormatType.A;
+        System.arraycopy(formats, 0, all, 1, formats.length);
+        return all;
     }
 
     @Override
     public void image(String alt, String src, int width, int height) {
-        FormattedLine.Format fmt = new FormattedLine.Format(currentLine.length(), (alt != null) ? alt.length() : 0, FormatType.IMG);
+        image(alt, src, width, height, null);
+    }
+
+    @Override
+    public void image(String alt, String src, int width, int height, String align) {
+        image(alt, src, width, height, align, -1);
+    }
+
+    @Override
+    public void image(String alt, String src, int width, int height, String align, int margin) {
+        // An image occupies exactly one sentinel character (see
+        // FormattedLine.IMAGE_SENTINEL) so caret positions fall unambiguously before
+        // or after it; the alt text is carried as meta, not as span text.
+        FormattedLine.Format fmt = new FormattedLine.Format(currentLine.length(), 1, FormatType.IMG);
         fmt.getMeta().put(FormattedLine.META_IMAGE, (src != null) ? src : "");
+        if ((alt != null) && !alt.isEmpty())
+            fmt.getMeta().put(FormattedLine.META_ALT, alt);
         if (width > 0)
             fmt.getMeta().put(FormattedLine.META_WIDTH, String.valueOf(width));
         if (height > 0)
             fmt.getMeta().put(FormattedLine.META_HEIGHT, String.valueOf(height));
+        if ((align != null) && !align.isEmpty())
+            fmt.getMeta().put(FormattedLine.META_ALIGN, align);
+        if (margin > 0)
+            fmt.getMeta().put(FormattedLine.META_MARGIN, String.valueOf(margin));
         currentLine.getFormatting().add(fmt);
-        if ((alt != null) && !alt.isEmpty())
-            currentLine.append(alt);
+        currentLine.setText(currentLine.getText() + FormattedLine.IMAGE_SENTINEL);
     }
 
     @Override

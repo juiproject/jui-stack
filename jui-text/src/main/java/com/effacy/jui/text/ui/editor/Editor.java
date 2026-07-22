@@ -21,13 +21,25 @@ import com.effacy.jui.text.type.edit.EditorState;
 import com.effacy.jui.text.type.edit.History;
 import com.effacy.jui.text.type.edit.Positions;
 import com.effacy.jui.text.type.edit.Selection;
+import com.effacy.jui.text.ui.type.ContentStyle;
+import com.effacy.jui.text.ui.type.ILinkHandler;
+import com.effacy.jui.text.ui.type.LinkHandlers;
+import com.effacy.jui.text.ui.type.LinkSupport;
 import com.effacy.jui.text.type.edit.Transaction;
+import com.effacy.jui.text.type.edit.step.DeleteBlockStep;
 import com.effacy.jui.text.type.edit.step.SetBlockTypeStep;
 import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.DomGlobal;
+import elemental2.dom.DOMRect;
 import elemental2.dom.Element;
+import elemental2.dom.Event;
+import elemental2.dom.EventListener;
+import elemental2.dom.HTMLElement;
 import elemental2.dom.KeyboardEvent;
+import elemental2.dom.MouseEvent;
+import elemental2.dom.Node;
+import jsinterop.base.Js;
 
 /**
  * Transaction-based rich text editor component.
@@ -166,11 +178,35 @@ public class Editor extends Component<Editor.Config> {
      * Configuration for the editor. Use fluent methods to customise, then pass
      * to the {@link Editor#Editor(Config)} constructor.
      */
+    /**
+     * How the editor treats a click on a link.
+     */
+    public enum LinkInteraction {
+
+        /**
+         * Clicking a link positions the caret inside it for inline editing (the default;
+         * suits a surface with a distinct edit mode).
+         */
+        EDIT,
+
+        /**
+         * Clicking a link opens it (via the configured {@code linkOpenHandler}, else a
+         * new browser tab); hovering reveals a small card to open or edit the link. Suits
+         * an always-editable surface with no separate view mode.
+         */
+        NAVIGATE;
+    }
+
     public static class Config extends Component.Config {
 
         boolean paragraphAfterHeading = true;
         IListIndexFormatter listIndexFormatter = Editor::defaultListIndex;
         boolean debugLog;
+        String placeholder;
+        IFileUploadHandler fileUpload;
+        LinkInteraction linkInteraction = LinkInteraction.EDIT;
+        ILinkHandler linkHandler = LinkHandlers.standard();
+        ContentStyle contentStyle = ContentStyle.compact();
 
         /**
          * Configures whether pressing Enter at the end of a heading (H1–H3)
@@ -198,6 +234,66 @@ public class Editor extends Component<Editor.Config> {
             this.debugLog = enable;
             return this;
         }
+
+        /**
+         * Sets placeholder text shown when the editor is empty (a single empty paragraph).
+         * When {@code null} (the default) no placeholder is shown.
+         */
+        public Config placeholder(String placeholder) {
+            this.placeholder = placeholder;
+            return this;
+        }
+
+        /**
+         * Configures a handler for files introduced into the editor (pasted from the
+         * clipboard or dropped in). When set, an image file is uploaded via the handler
+         * and inserted as an inline image at the cursor (using the returned URL as its
+         * {@code src}); any other file is inserted as a link labelled with its file
+         * name. When {@code null} (the default) pasted/dropped files are ignored.
+         */
+        public Config fileUpload(IFileUploadHandler handler) {
+            this.fileUpload = handler;
+            return this;
+        }
+
+        /**
+         * Configures how a click on a link is treated (default {@link LinkInteraction#EDIT}).
+         * See {@link LinkInteraction}.
+         */
+        public Config linkInteraction(LinkInteraction linkInteraction) {
+            this.linkInteraction = (linkInteraction == null) ? LinkInteraction.EDIT : linkInteraction;
+            return this;
+        }
+
+        /**
+         * Configures the link handler — what happens when a link is activated in
+         * {@link LinkInteraction#NAVIGATE} mode (a click, or the hover card's <em>Open</em>).
+         * <p>
+         * Defaults to {@link LinkHandlers#standard()} (external links open in a new tab; in-page
+         * {@code #anchor} links scroll within the content and never reach an SPA hash router;
+         * other schemes are left to the browser). Pass {@link LinkHandlers#standard(ILinkHandler)}
+         * with an application fallback to route custom schemes (e.g. an internal {@code doc:}
+         * reference). This is the same {@link ILinkHandler} the read-only renderer / {@code FText}
+         * accepts, so links behave identically in both.
+         *
+         * @param linkHandler
+         *                    the handler ({@code null} lets links follow their {@code href}).
+         * @return this configuration.
+         */
+        public Config linkHandler(ILinkHandler linkHandler) {
+            this.linkHandler = linkHandler;
+            return this;
+        }
+
+        /**
+         * Configures the content presentation (default is the compact stylesheet). See
+         * {@link ContentStyle} — pass a standard configuration ({@code ContentStyle.document()})
+         * or your own.
+         */
+        public Config contentStyle(ContentStyle contentStyle) {
+            this.contentStyle = (contentStyle == null) ? ContentStyle.compact () : contentStyle;
+            return this;
+        }
     }
 
     /************************************************************************
@@ -216,6 +312,7 @@ public class Editor extends Component<Editor.Config> {
         history = new History();
         handlers.add(new EquationBlockHandler());
         handlers.add(new DiagramBlockHandler());
+        handlers.add(new FenceBlockHandler());
         handlers.add(new TableBlockHandler());
         handlers.add(new StandardBlockHandler());
     }
@@ -224,8 +321,21 @@ public class Editor extends Component<Editor.Config> {
     protected INodeProvider buildNode(Element el, Config data) {
         return Wrap.$(el).$(root -> {
             root.attr("contenteditable", "true");
+            if (data.placeholder != null)
+                root.attr("data-placeholder", data.placeholder);
         }).build(ctx -> {
             editorEl = el;
+            // Scope the content to the shared richtext stylesheet and layer the content style's
+            // token overrides — one call does both. This is the same FormattedTextStyles sheet the
+            // read-only renderer uses (so the two present identically), and the same ContentStyle is
+            // usable on a read-only presentation (see FText), so a style means the same everywhere.
+            // No overrides == the stylesheet's compact defaults.
+            ContentStyle contentStyle = (data.contentStyle != null) ? data.contentStyle : ContentStyle.compact();
+            HTMLElement styleEl = Js.uncheckedCast(el);
+            contentStyle.apply(styleEl);
+            // In NAVIGATE mode links are clickable — mark the root so links get a pointer cursor.
+            if (data.linkInteraction == LinkInteraction.NAVIGATE)
+                el.classList.add(styles().navigate());
             render();
             attachEventListeners();
         });
@@ -242,8 +352,18 @@ public class Editor extends Component<Editor.Config> {
      *            the document to load.
      */
     public void load(FormattedText doc) {
-        if (doc == null)
+        // A null or empty document has no blocks, but editing assumes at least one block
+        // exists (e.g. the insert step indexes block 0). Seed a single empty paragraph.
+        if ((doc == null) || doc.empty())
             doc = new FormattedText().block(BlockType.PARA, b -> b.line(""));
+        // A trailing atomic block (fence/diagram/equation) or table leaves the caret
+        // nowhere to land after it — ensure an editable paragraph follows.
+        List<FormattedBlock> blocks = doc.getBlocks();
+        if (!blocks.isEmpty()) {
+            BlockType last = blocks.get(blocks.size() - 1).getType();
+            if (atomicBlock(last) || (last == BlockType.TABLE))
+                doc.block(BlockType.PARA, b -> b.line(""));
+        }
         state = EditorState.create(doc);
         history.clear();
         if (editorEl != null)
@@ -251,9 +371,23 @@ public class Editor extends Component<Editor.Config> {
     }
 
     /**
+     * Block types that render atomically ({@code contenteditable="false"}) — the caret
+     * cannot be placed inside them, so deletion treats them as a unit (see the
+     * {@code deleteContentBackward}/{@code deleteContentForward} handling). Tables are
+     * deliberately not included (they are editable within, and deleting a whole table on
+     * a single keystroke would be too destructive).
+     */
+    private static boolean atomicBlock(BlockType type) {
+        return type.is(BlockType.FENCE, BlockType.DIA, BlockType.EQN);
+    }
+
+    /**
      * Returns the current document.
      */
     public FormattedText value() {
+        // Flush any DOM-only edits (e.g. table cells edited natively via contenteditable, which
+        // otherwise sync only on blur) so the returned value reflects the current DOM.
+        handlers.forEach(h -> h.syncFromDom(ctx));
         return state.doc();
     }
 
@@ -362,6 +496,15 @@ public class Editor extends Component<Editor.Config> {
             }
 
             @Override
+            public void insertFence(String info) {
+                syncSelectionFromDom();
+                Selection preSel = state.selection();
+                int preBlock = preSel.isCursor() ? preSel.anchorBlock() : preSel.fromBlock();
+                applyTransaction(Commands.insertFence(state, info));
+                handlerFor(BlockType.FENCE).focusBlock(preBlock + 1, ctx);
+            }
+
+            @Override
             public void insertText(String text) {
                 if ((text == null) || text.isEmpty())
                     return;
@@ -375,19 +518,57 @@ public class Editor extends Component<Editor.Config> {
             }
 
             @Override
+            public boolean hasRangeSelection() {
+                syncSelectionFromDom();
+                return !state.selection().isCursor();
+            }
+
+            @Override
             public String currentLink() {
                 syncSelectionFromDom();
                 return extractLinkUrl(state.selection());
             }
 
             @Override
+            public String currentLinkLabel() {
+                syncSelectionFromDom();
+                return extractLinkLabel(state.selection());
+            }
+
+            @Override
             public void applyLink(String url) {
-                applyTransaction(Commands.updateLink(state, url));
+                doApplyLink(url, null);
+            }
+
+            @Override
+            public void applyLink(String url, String label) {
+                doApplyLink(url, label);
             }
 
             @Override
             public void removeLink() {
-                applyTransaction(Commands.removeLink(state));
+                doRemoveLink();
+            }
+
+            @Override
+            public String currentComment() {
+                syncSelectionFromDom();
+                return extractCommentReference(state.selection());
+            }
+
+            @Override
+            public void applyComment(String reference) {
+                applyTransaction(Commands.applyComment(state, reference));
+            }
+
+            @Override
+            public void removeComment() {
+                applyTransaction(Commands.removeComment(state));
+            }
+
+            @Override
+            public void removeComment(String reference) {
+                applyTransaction(Commands.removeComment(state, reference));
             }
 
             @Override
@@ -423,13 +604,18 @@ public class Editor extends Component<Editor.Config> {
      * delegated to the appropriate {@link IBlockHandler}.
      */
     private void render() {
+        // The DOM (and any selected image element) is rebuilt, so dismiss the overlay.
+        hideImageOverlay();
         rendering = true;
         try {
             editorEl.innerHTML = "";
             List<FormattedBlock> blocks = state.doc().getBlocks();
             handlers.forEach(h -> h.beginRender(ctx));
+            Map<String, Integer> headingSlugs = new HashMap<>();
             for (int i = 0; i < blocks.size(); i++) {
-                Element el = handlerFor(blocks.get(i).getType()).render(blocks.get(i), i, ctx);
+                FormattedBlock block = blocks.get(i);
+                Element el = handlerFor(block.getType()).render(block, i, ctx);
+                assignHeadingId(el, block, headingSlugs);
                 editorEl.appendChild(el);
             }
         } finally {
@@ -439,6 +625,53 @@ public class Editor extends Component<Editor.Config> {
         ensureCursorVisible();
         updateToolbarState();
         handlers.forEach(h -> h.afterRender(ctx));
+        updatePlaceholder();
+    }
+
+    /**
+     * Gives a rendered heading a slug id so an in-page {@code #anchor} click scrolls to it in the
+     * editor too (mirrors the read-only renderer). Repeated heading text is de-duplicated
+     * ({@code slug}, {@code slug-1}, …). Regenerated on each full render.
+     */
+    private void assignHeadingId(Element el, FormattedBlock block, Map<String, Integer> slugs) {
+        if (!block.getType().is(BlockType.H1, BlockType.H2, BlockType.H3, BlockType.H4, BlockType.H5))
+            return;
+        String base = LinkHandlers.slug(block.flatten());
+        if (base.isEmpty())
+            return;
+        Integer seen = slugs.get(base);
+        String id = (seen == null) ? base : (base + "-" + seen);
+        slugs.put(base, (seen == null) ? 1 : (seen + 1));
+        el.setAttribute("id", id);
+    }
+
+    /**
+     * Toggles the {@code data-empty} marker (paired with {@code data-placeholder} in CSS)
+     * so the placeholder shows only when the document is blank — a single empty paragraph.
+     */
+    private void updatePlaceholder() {
+        if ((editorEl == null) || (config().placeholder == null))
+            return;
+        if (isBlank())
+            editorEl.setAttribute("data-empty", "true");
+        else
+            editorEl.removeAttribute("data-empty");
+    }
+
+    private boolean isBlank() {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        if (blocks.size() != 1)
+            return false;
+        FormattedBlock blk = blocks.get(0);
+        if ((blk.getType() != BlockType.PARA) || (Positions.contentSize(blk) != 0))
+            return false;
+        // A zero-length format (e.g. an inline image) is content even though it adds no
+        // characters, so a block carrying one is not blank.
+        for (FormattedLine line : blk.getLines()) {
+            if (!line.getFormatting().isEmpty())
+                return false;
+        }
+        return true;
     }
 
     /**
@@ -448,7 +681,7 @@ public class Editor extends Component<Editor.Config> {
         line.sequence().forEach(segment -> {
             if (segment.variable()) {
                 Element chip = DomGlobal.document.createElement("span");
-                chip.classList.add(styles().variable());
+                chip.classList.add("variable");
                 chip.setAttribute("contenteditable", "false");
                 chip.textContent = segment.text();
                 parent.appendChild(chip);
@@ -464,11 +697,13 @@ public class Editor extends Component<Editor.Config> {
                 String src = segment.meta().get(FormattedLine.META_IMAGE);
                 if ((src != null) && !src.isEmpty())
                     img.setAttribute("src", src);
-                String alt = segment.text();
+                // Alt is meta; the segment text is the image's sentinel character
+                // (never rendered).
+                String alt = segment.meta().get(FormattedLine.META_ALT);
                 if ((alt != null) && !alt.isEmpty())
                     img.setAttribute("alt", alt);
                 img.setAttribute("contenteditable", "false");
-                img.classList.add(styles().inlineImage());
+                applyImageAttributes(img, segment.meta());
                 parent.appendChild(img);
                 parent.appendChild(DomGlobal.document.createTextNode(""));
             } else if (segment.contains(FormatType.A)) {
@@ -479,6 +714,7 @@ public class Editor extends Component<Editor.Config> {
                     if (href.startsWith("http"))
                         a.setAttribute("target", "_blank");
                 }
+                applyCommentReference(a, segment);
                 a.textContent = segment.text();
                 parent.appendChild(a);
             } else {
@@ -488,10 +724,25 @@ public class Editor extends Component<Editor.Config> {
                     if (cls != null)
                         span.classList.add(cls);
                 }
+                applyCommentReference(span, segment);
                 span.appendChild(DomGlobal.document.createTextNode(segment.text()));
                 parent.appendChild(span);
             }
         });
+    }
+
+    /**
+     * Marks the element with the segment's comment reference (as a
+     * {@code data-comment} attribute) when the segment carries a comment
+     * anchor — the hook external comment surfaces use to locate and wire up
+     * the anchored range.
+     */
+    private void applyCommentReference(Element el, FormattedLine.TextSegment segment) {
+        if (!segment.contains(FormatType.CMT) || !segment.hasMeta())
+            return;
+        String reference = segment.meta().get(FormattedLine.META_COMMENT);
+        if ((reference != null) && !reference.isEmpty())
+            el.setAttribute("data-comment", reference);
     }
 
     /************************************************************************
@@ -656,6 +907,72 @@ public class Editor extends Component<Editor.Config> {
         return null;
     }
 
+    /**
+     * Extracts the display text (label) of the link at the anchor position, or the
+     * selected text when the selection is a (single-block) range with no link. Returns
+     * {@code null} when there is nothing to label. Used to pre-fill the link panel and
+     * to decide whether an apply changed the label.
+     */
+    private String extractLinkLabel(Selection sel) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int blockIdx = sel.anchorBlock();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+        FormattedBlock blk = blocks.get(blockIdx);
+        // Cursor inside a link run: the run's text.
+        int target = sel.anchorOffset();
+        int lineStart = 0;
+        for (FormattedLine line : blk.getLines()) {
+            for (FormattedLine.Format fmt : line.getFormatting()) {
+                int absStart = lineStart + fmt.getIndex();
+                int absEnd = absStart + fmt.getLength();
+                if ((target >= absStart) && (target < absEnd) && fmt.getFormats().contains(FormatType.A)) {
+                    String t = line.getText();
+                    int s = fmt.getIndex();
+                    int e = Math.min(fmt.getIndex() + fmt.getLength(), t.length());
+                    if ((s >= 0) && (s < e))
+                        return t.substring(s, e);
+                }
+            }
+            lineStart += line.length() + 1;
+        }
+        // Range selection with no link: the selected text is the label.
+        if (!sel.isCursor() && (sel.fromBlock() == sel.toBlock())) {
+            String flat = blk.flatten();
+            int from = sel.fromOffset();
+            int to = sel.toOffset();
+            if ((from >= 0) && (to <= flat.length()) && (from < to))
+                return flat.substring(from, to);
+        }
+        return null;
+    }
+
+    /**
+     * Extracts the comment reference at the anchor position of the given
+     * selection, or {@code null} if no comment anchor exists there.
+     */
+    private String extractCommentReference(Selection sel) {
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int blockIdx = sel.anchorBlock();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+        FormattedBlock blk = blocks.get(blockIdx);
+        int target = sel.anchorOffset();
+        int lineStart = 0;
+        for (FormattedLine line : blk.getLines()) {
+            for (FormattedLine.Format fmt : line.getFormatting()) {
+                int absStart = lineStart + fmt.getIndex();
+                int absEnd = absStart + fmt.getLength();
+                if ((target >= absStart) && (target < absEnd) && fmt.getFormats().contains(FormatType.CMT)) {
+                    if (fmt.getMeta() != null)
+                        return fmt.getMeta().get(FormattedLine.META_COMMENT);
+                }
+            }
+            lineStart += line.length() + 1;
+        }
+        return null;
+    }
+
     private String extractImageSrc(Selection sel) {
         List<FormattedBlock> blocks = state.doc().getBlocks();
         int blockIdx = sel.anchorBlock();
@@ -717,7 +1034,585 @@ public class Editor extends Component<Editor.Config> {
         editorEl.addEventListener("keydown", evt -> handleKeyDown((KeyboardEvent) evt));
         editorEl.addEventListener("beforeinput", evt -> handleBeforeInput(evt));
         editorEl.addEventListener("paste", evt -> handlePaste(evt));
+        editorEl.addEventListener("dragover", evt -> handleDragOver(evt));
+        editorEl.addEventListener("drop", evt -> handleDrop(evt));
+        editorEl.addEventListener("click", evt -> handleEditorClick(evt));
+        // Link navigate / hover-card (NAVIGATE mode only).
+        editorEl.addEventListener("mouseover", evt -> handleEditorMouseOver(evt));
+        editorEl.addEventListener("mouseout", evt -> handleEditorMouseOut(evt));
+        // Dismiss the image overlay on a pointer-down outside it (and outside the image).
+        DomGlobal.document.addEventListener("mousedown", evt -> handleDocumentMouseDown(evt));
         DomGlobal.document.addEventListener("selectionchange", evt -> syncSelectionFromDom());
+        // Keep the overlay aligned to the image while scrolling would be involved; the
+        // simplest robust behaviour is to dismiss it on scroll.
+        DomGlobal.document.addEventListener("scroll", evt -> {
+            hideImageOverlay();
+            hideLinkCard();
+        }, true);
+    }
+
+    /************************************************************************
+     * Image selection overlay (drag-resize handles + block-align toolbar).
+     *
+     * When an inline image is clicked a floating overlay is shown over it with
+     * four corner handles (aspect-locked resize) and a small toolbar (left /
+     * centre / right block alignment). Resizing is a pure-DOM live preview; a
+     * single transaction ({@link Commands#setImageAttributes}) is committed on
+     * release. The overlay is dismissed on any re-render, scroll, or outside
+     * pointer-down.
+     ************************************************************************/
+
+    /** The floating overlay frame (lazily created, appended to {@code body}). */
+    private HTMLElement imageOverlay;
+
+    /** The image element the overlay currently targets, or {@code null}. */
+    private Element selectedImage;
+
+    /** The corner being dragged ({@code nw}/{@code ne}/{@code sw}/{@code se}). */
+    private String resizeCorner;
+
+    private double resizeStartX;
+    private double resizeStartW;
+    private double resizeAspect;
+
+    private EventListener resizeMoveListener;
+    private EventListener resizeUpListener;
+
+    /**
+     * Applies the width/height/(block) alignment meta of an image segment to its
+     * rendered {@code <img>}.
+     */
+    private void applyImageAttributes(Element img, Map<String, String> meta) {
+        if (meta == null)
+            return;
+        String width = meta.get(FormattedLine.META_WIDTH);
+        if ((width != null) && !width.isEmpty())
+            img.setAttribute("width", width);
+        String height = meta.get(FormattedLine.META_HEIGHT);
+        if ((height != null) && !height.isEmpty())
+            img.setAttribute("height", height);
+        String style = imageStyle(meta.get(FormattedLine.META_ALIGN), meta.get(FormattedLine.META_MARGIN));
+        if (style != null)
+            img.setAttribute("style", style);
+    }
+
+    /**
+     * Inline style for an image's margin and block alignment. Margin applies to all
+     * sides; a block alignment then overrides the horizontal margin on the auto
+     * side(s) (the image sits on its own line, aligned via auto margins).
+     */
+    private String imageStyle(String align, String margin) {
+        boolean hasAlign = (align != null) && !align.isEmpty();
+        boolean hasMargin = (margin != null) && !margin.isEmpty();
+        if (!hasAlign && !hasMargin)
+            return null;
+        StringBuilder sb = new StringBuilder();
+        if (hasMargin)
+            sb.append("margin:").append(margin).append("px;");
+        if (hasAlign) {
+            sb.append("display:block;");
+            if ("center".equals(align))
+                sb.append("margin-left:auto;margin-right:auto;");
+            else if ("right".equals(align))
+                sb.append("margin-left:auto;");
+            else
+                sb.append("margin-right:auto;");
+        }
+        return sb.toString();
+    }
+
+    private void handleEditorClick(Event evt) {
+        Element target = Js.cast(evt.target);
+        // NAVIGATE mode: a click on a link activates it (via the link handler) rather than
+        // placing the caret. LinkSupport suppresses the default nav (always for #anchors, so
+        // an SPA hash router is never triggered).
+        if (config().linkInteraction == LinkInteraction.NAVIGATE) {
+            Element anchor = anchorAncestor(target);
+            if (anchor != null) {
+                LinkSupport.handleClick(evt, editorEl, config().linkHandler);
+                return;
+            }
+        }
+        if ((target != null) && "IMG".equalsIgnoreCase(target.tagName))
+            showImageOverlay(target);
+        else
+            hideImageOverlay();
+    }
+
+    private void handleDocumentMouseDown(Event evt) {
+        if (imageOverlay == null)
+            return;
+        Node target = Js.cast(evt.target);
+        if (target == null)
+            return;
+        // Ignore pointer-downs on the image itself or within the overlay.
+        if ((selectedImage != null) && ((target == selectedImage) || selectedImage.contains(target)))
+            return;
+        if (imageOverlay.contains(target))
+            return;
+        hideImageOverlay();
+    }
+
+    private void showImageOverlay(Element img) {
+        ensureOverlay();
+        selectedImage = img;
+        imageOverlay.style.setProperty("display", "block");
+        positionOverlay();
+    }
+
+    private void hideImageOverlay() {
+        selectedImage = null;
+        endResize();
+        if (imageOverlay != null)
+            imageOverlay.style.setProperty("display", "none");
+    }
+
+    /**
+     * Lazily builds the overlay frame with its four corner handles and the
+     * alignment toolbar.
+     */
+    private void ensureOverlay() {
+        if (imageOverlay != null)
+            return;
+        imageOverlay = classed(overlayCss().imgOverlay());
+        imageOverlay.appendChild(handle("nw", "left:-5px;top:-5px;"));
+        imageOverlay.appendChild(handle("ne", "right:-5px;top:-5px;"));
+        imageOverlay.appendChild(handle("sw", "left:-5px;bottom:-5px;"));
+        imageOverlay.appendChild(handle("se", "right:-5px;bottom:-5px;"));
+        HTMLElement toolbar = classed(overlayCss().imgToolbar());
+        toolbar.appendChild(alignButton("left", "←"));
+        toolbar.appendChild(alignButton("center", "↔"));
+        toolbar.appendChild(alignButton("right", "→"));
+        toolbar.appendChild(marginButton("−", -4));
+        toolbar.appendChild(marginButton("+", 4));
+        imageOverlay.appendChild(toolbar);
+        DomGlobal.document.body.appendChild(imageOverlay);
+    }
+
+    /** Positions the (fixed) overlay frame over the selected image. */
+    private void positionOverlay() {
+        if ((imageOverlay == null) || (selectedImage == null))
+            return;
+        DOMRect r = selectedImage.getBoundingClientRect();
+        imageOverlay.style.setProperty("left", r.left + "px");
+        imageOverlay.style.setProperty("top", r.top + "px");
+        imageOverlay.style.setProperty("width", r.width + "px");
+        imageOverlay.style.setProperty("height", r.height + "px");
+    }
+
+    private HTMLElement handle(String corner, String position) {
+        HTMLElement h = classed(overlayCss().imgHandle());
+        // Dynamic per-corner bits (cursor + which corner it sits at) stay inline.
+        h.setAttribute("style", "cursor:" + corner + "-resize;" + position);
+        h.addEventListener("mousedown", evt -> startResize(corner, (MouseEvent) evt));
+        return h;
+    }
+
+    private HTMLElement alignButton(String align, String label) {
+        HTMLElement b = classed(overlayCss().imgBtn());
+        b.textContent = label;
+        b.addEventListener("mousedown", evt -> {
+            evt.preventDefault();
+            commitImageAlign(align);
+        });
+        return b;
+    }
+
+    private HTMLElement marginButton(String label, int delta) {
+        HTMLElement b = classed(overlayCss().imgBtn(), overlayCss().imgBtnMuted());
+        b.textContent = label;
+        b.addEventListener("mousedown", evt -> {
+            evt.preventDefault();
+            adjustImageMargin(delta);
+        });
+        return b;
+    }
+
+    private void startResize(String corner, MouseEvent evt) {
+        if (selectedImage == null)
+            return;
+        evt.preventDefault();
+        DOMRect r = selectedImage.getBoundingClientRect();
+        resizeCorner = corner;
+        resizeStartX = evt.clientX;
+        resizeStartW = r.width;
+        resizeAspect = (r.height > 0) ? (r.width / r.height) : 1.0;
+        resizeMoveListener = e -> onResizeMove((MouseEvent) e);
+        resizeUpListener = e -> endResize();
+        DomGlobal.document.addEventListener("mousemove", resizeMoveListener);
+        DomGlobal.document.addEventListener("mouseup", resizeUpListener);
+    }
+
+    private void onResizeMove(MouseEvent evt) {
+        if (selectedImage == null)
+            return;
+        double dx = evt.clientX - resizeStartX;
+        double sign = resizeCorner.endsWith("e") ? 1.0 : -1.0;
+        double newW = resizeStartW + (sign * dx);
+        if (newW < 20)
+            newW = 20;
+        double newH = (resizeAspect > 0) ? (newW / resizeAspect) : newW;
+        selectedImage.setAttribute("width", String.valueOf((int) newW));
+        selectedImage.setAttribute("height", String.valueOf((int) newH));
+        positionOverlay();
+    }
+
+    private void endResize() {
+        if (resizeMoveListener != null) {
+            DomGlobal.document.removeEventListener("mousemove", resizeMoveListener);
+            resizeMoveListener = null;
+        }
+        if (resizeUpListener != null) {
+            DomGlobal.document.removeEventListener("mouseup", resizeUpListener);
+            resizeUpListener = null;
+        }
+        if ((resizeCorner != null) && (selectedImage != null)) {
+            DOMRect r = selectedImage.getBoundingClientRect();
+            resizeCorner = null;
+            commitImageSize((int) r.width, (int) r.height);
+        }
+        resizeCorner = null;
+    }
+
+    private void commitImageSize(int width, int height) {
+        Element img = selectedImage;
+        if (img == null)
+            return;
+        selectImageInModel(img);
+        applyTransaction(Commands.setImageAttributes(state, width, height, null, null));
+    }
+
+    private void commitImageAlign(String align) {
+        Element img = selectedImage;
+        if (img == null)
+            return;
+        selectImageInModel(img);
+        applyTransaction(Commands.setImageAttributes(state, null, null, align, null));
+    }
+
+    /** Steps the selected image's margin by {@code delta} pixels (clamped at 0). */
+    private void adjustImageMargin(int delta) {
+        Element img = selectedImage;
+        if (img == null)
+            return;
+        selectImageInModel(img);
+        int current = 0;
+        String cur = imageMetaAtCursor(FormattedLine.META_MARGIN);
+        if (cur != null) {
+            try {
+                current = Integer.parseInt(cur);
+            } catch (NumberFormatException e) {
+                current = 0;
+            }
+        }
+        int next = Math.max(0, current + delta);
+        applyTransaction(Commands.setImageAttributes(state, null, null, null, next));
+    }
+
+    /**
+     * Reads a meta value of the image format at the current model cursor (used to read
+     * the current margin before stepping it).
+     */
+    private String imageMetaAtCursor(String key) {
+        Selection sel = state.selection();
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int blockIdx = sel.anchorBlock();
+        if ((blockIdx < 0) || (blockIdx >= blocks.size()))
+            return null;
+        int target = sel.anchorOffset();
+        int lineStart = 0;
+        for (FormattedLine line : blocks.get(blockIdx).getLines()) {
+            for (FormattedLine.Format fmt : line.getFormatting()) {
+                if (((lineStart + fmt.getIndex()) == target) && fmt.getFormats().contains(FormatType.IMG))
+                    return (fmt.getMeta() != null) ? fmt.getMeta().get(key) : null;
+            }
+            lineStart += line.length() + 1;
+        }
+        return null;
+    }
+
+    /**
+     * Places the model cursor on the given image (by positioning the DOM caret
+     * immediately before it and syncing) so a subsequent image command targets it.
+     */
+    private void selectImageInModel(Element img) {
+        Node parent = img.parentNode;
+        if (parent == null)
+            return;
+        int idx = 0;
+        Node n = parent.firstChild;
+        while ((n != null) && (n != img)) {
+            idx++;
+            n = n.nextSibling;
+        }
+        elemental2.dom.Selection sel = DomGlobal.document.getSelection();
+        if (sel != null)
+            sel.collapse(parent, idx);
+        syncSelectionFromDom();
+    }
+
+    /** A {@code <div>} carrying the given (token-driven) overlay CSS class(es). */
+    private HTMLElement classed(String... classNames) {
+        HTMLElement el = Js.cast(DomGlobal.document.createElement("div"));
+        for (String cls : classNames)
+            el.classList.add(cls);
+        return el;
+    }
+
+    private EditorOverlayCSS overlayCss() {
+        return EditorOverlayCSS.Styles.instance();
+    }
+
+    /************************************************************************
+     * Link interaction (NAVIGATE mode: click-to-open + hover card).
+     *
+     * In {@link LinkInteraction#NAVIGATE} mode a click on a link opens it (rather than
+     * placing the caret) and hovering a link shows a small floating card with the URL
+     * and Open / Edit actions. Edit targets the hovered link in the model and opens the
+     * {@link LinkPanel} (URL + label). The card mirrors the image overlay: a fixed body
+     * element positioned relative to the link, dismissed on scroll / re-render / leave.
+     ************************************************************************/
+
+    /** The floating link card (lazily created, appended to {@code body}). */
+    private HTMLElement linkCard;
+
+    /** The URL text element within {@link #linkCard}. */
+    private HTMLElement linkCardUrl;
+
+    /** The link the card currently targets (pending or shown), or {@code null}. */
+    private Element hoveredLink;
+
+    /** Whether the card is currently displayed (as opposed to a pending, delayed show). */
+    private boolean linkCardVisible;
+
+    /** Delay (ms) before a hovered link reveals its card, so a passing pointer doesn't flash it. */
+    private static final int LINK_CARD_SHOW_DELAY = 450;
+
+    /** Pending show timer (setTimeout id), {@code -1} when none. */
+    private double linkCardShowTimer = -1;
+
+    /** Pending hide timer (setTimeout id), {@code -1} when none — a small grace so the
+     *  pointer can travel from the link to the card without the card vanishing. */
+    private double linkCardHideTimer = -1;
+
+    /** Applies (or updates) a link's URL and, when it changed, its display text. */
+    private void doApplyLink(String url, String label) {
+        Transaction tr;
+        // Only rewrite the display text when a non-empty label differs from what is
+        // there now — otherwise keep updateLink, which preserves any inline formatting.
+        String current = extractLinkLabel(state.selection());
+        if ((label != null) && !label.isEmpty() && !label.equals(current))
+            tr = Commands.updateLinkContent(state, url, label);
+        else {
+            tr = Commands.updateLink(state, url);
+            // Open space (no selection, no link under the cursor): insert the label
+            // (or the URL itself) as the linked text.
+            if (tr == null)
+                tr = Commands.insertLink(state, url, label);
+        }
+        if (tr != null)
+            applyTransaction(tr);
+    }
+
+    private void doRemoveLink() {
+        applyTransaction(Commands.removeLink(state));
+    }
+
+    /** The nearest ancestor {@code <a href>} of {@code el} within the editor, else null. */
+    private Element anchorAncestor(Element el) {
+        Element cur = el;
+        while ((cur != null) && (cur != editorEl)) {
+            if ("A".equalsIgnoreCase(cur.tagName) && cur.hasAttribute("href"))
+                return cur;
+            cur = cur.parentElement;
+        }
+        return null;
+    }
+
+    /** Activates a link via the configured handler; falls back to opening in a new tab. */
+    private void openLink(Element anchor, String href) {
+        if ((href == null) || href.isEmpty())
+            return;
+        ILinkHandler handler = config().linkHandler;
+        if ((handler != null) && handler.activate(href, anchor, editorEl))
+            return;
+        DomGlobal.window.open(href, "_blank");
+    }
+
+    private void handleEditorMouseOver(Event evt) {
+        if (config().linkInteraction != LinkInteraction.NAVIGATE)
+            return;
+        Element anchor = anchorAncestor(Js.cast(evt.target));
+        if (anchor != null)
+            scheduleShowLinkCard(anchor);
+    }
+
+    private void handleEditorMouseOut(Event evt) {
+        if ((config().linkInteraction != LinkInteraction.NAVIGATE) || (hoveredLink == null))
+            return;
+        Node related = Js.uncheckedCast(((MouseEvent) evt).relatedTarget);
+        // Keep the card while the pointer is still on the link or has moved onto the card.
+        if ((related != null) && (hoveredLink.contains(related) || ((linkCard != null) && linkCard.contains(related))))
+            return;
+        // Leaving the link: drop a not-yet-shown (delayed) card outright; if it is already
+        // shown, hide it after a short grace so the pointer can reach the card.
+        cancelShowLinkCard();
+        if (linkCardVisible)
+            scheduleHideLinkCard();
+        else
+            hoveredLink = null;
+    }
+
+    /** Schedules the card for a hovered link after {@link #LINK_CARD_SHOW_DELAY}. */
+    private void scheduleShowLinkCard(Element a) {
+        cancelHideLinkCard();
+        // Same link already pending or shown — nothing to do.
+        if (a == hoveredLink)
+            return;
+        hoveredLink = a;
+        // Moving directly from one link's card to another: switch without re-delaying.
+        if (linkCardVisible) {
+            showLinkCard();
+            return;
+        }
+        cancelShowLinkCard();
+        linkCardShowTimer = DomGlobal.setTimeout(ignored -> showLinkCard(), LINK_CARD_SHOW_DELAY);
+    }
+
+    private void showLinkCard() {
+        cancelShowLinkCard();
+        cancelHideLinkCard();
+        if (hoveredLink == null)
+            return;
+        ensureLinkCard();
+        String href = hoveredLink.getAttribute("href");
+        linkCardUrl.textContent = (href == null) ? "" : href;
+        linkCard.style.setProperty("display", "flex");
+        linkCardVisible = true;
+        positionLinkCard();
+    }
+
+    private void hideLinkCard() {
+        cancelShowLinkCard();
+        cancelHideLinkCard();
+        hoveredLink = null;
+        linkCardVisible = false;
+        if (linkCard != null)
+            linkCard.style.setProperty("display", "none");
+    }
+
+    private void scheduleHideLinkCard() {
+        cancelHideLinkCard();
+        linkCardHideTimer = DomGlobal.setTimeout(ignored -> hideLinkCard(), 200);
+    }
+
+    private void cancelHideLinkCard() {
+        if (linkCardHideTimer >= 0) {
+            DomGlobal.clearTimeout(linkCardHideTimer);
+            linkCardHideTimer = -1;
+        }
+    }
+
+    private void cancelShowLinkCard() {
+        if (linkCardShowTimer >= 0) {
+            DomGlobal.clearTimeout(linkCardShowTimer);
+            linkCardShowTimer = -1;
+        }
+    }
+
+    private void ensureLinkCard() {
+        if (linkCard != null)
+            return;
+        linkCard = classed(overlayCss().linkCard());
+        linkCardUrl = classed(overlayCss().linkCardUrl());
+        linkCard.appendChild(linkCardUrl);
+        HTMLElement actions = classed(overlayCss().linkCardActions());
+        actions.appendChild(linkCardButton("Open", () -> openHoveredLink()));
+        actions.appendChild(linkCardButton("Edit", () -> editHoveredLink()));
+        linkCard.appendChild(actions);
+        // Keep the card open while the pointer is over it; hide when it leaves.
+        linkCard.addEventListener("mouseover", evt -> cancelHideLinkCard());
+        linkCard.addEventListener("mouseout", evt -> {
+            Node related = Js.uncheckedCast(((MouseEvent) evt).relatedTarget);
+            if ((related == null) || !linkCard.contains(related))
+                scheduleHideLinkCard();
+        });
+        DomGlobal.document.body.appendChild(linkCard);
+    }
+
+    private HTMLElement linkCardButton(String label, Runnable action) {
+        HTMLElement b = classed(overlayCss().linkCardBtn());
+        b.textContent = label;
+        b.addEventListener("mousedown", evt -> {
+            evt.preventDefault();
+            action.run();
+        });
+        return b;
+    }
+
+    /** Positions the (fixed) card just above the hovered link, flipping below if tight. */
+    private void positionLinkCard() {
+        if ((linkCard == null) || (hoveredLink == null))
+            return;
+        DOMRect r = hoveredLink.getBoundingClientRect();
+        double top = r.top - linkCard.offsetHeight - 6;
+        if (top < 4)
+            top = r.bottom + 6;
+        linkCard.style.setProperty("left", r.left + "px");
+        linkCard.style.setProperty("top", top + "px");
+    }
+
+    private void openHoveredLink() {
+        if (hoveredLink != null)
+            openLink(hoveredLink, hoveredLink.getAttribute("href"));
+    }
+
+    private void editHoveredLink() {
+        Element a = hoveredLink;
+        if (a == null)
+            return;
+        String url = a.getAttribute("href");
+        String label = a.textContent;
+        // Target this link in the model so a subsequent apply/remove acts on it.
+        selectLinkInModel(a);
+        Selection target = state.selection();
+        hideLinkCard();
+        LinkPanel.show(a, url, label, (LinkPanel.IAnchorSource) null, 0, new LinkPanel.ILinkPanelCallback() {
+
+            @Override
+            public void onApply(String u) {
+                onApply(u, null);
+            }
+
+            @Override
+            public void onApply(String u, String l) {
+                state.setSelection(target);
+                doApplyLink(u, l);
+            }
+
+            @Override
+            public void onRemove() {
+                state.setSelection(target);
+                doRemoveLink();
+            }
+        });
+    }
+
+    /**
+     * Places the model cursor inside the given link (by positioning the DOM caret within
+     * its text and syncing) so a subsequent link command targets it.
+     */
+    private void selectLinkInModel(Element a) {
+        Node text = a.firstChild;
+        elemental2.dom.Selection sel = DomGlobal.document.getSelection();
+        if (sel == null)
+            return;
+        if ((text != null) && (text.nodeType == Node.TEXT_NODE)) {
+            int len = (text.textContent == null) ? 0 : text.textContent.length();
+            sel.collapse(text, Math.min(1, len));
+        } else
+            sel.collapse(a, 0);
+        syncSelectionFromDom();
     }
 
     /**
@@ -817,9 +1712,10 @@ public class Editor extends Component<Editor.Config> {
                 FormattedBlock blk = state.doc().getBlocks().get(blockIdx);
                 int offset = sel.isCursor() ? sel.anchorOffset() : sel.fromOffset();
 
-                // Empty list item: convert to paragraph instead of splitting.
+                // Empty list item / quote line: convert to paragraph instead of splitting
+                // (so a trailing Enter exits the list or quote).
                 if (sel.isCursor()
-                        && blk.getType().is(BlockType.NLIST, BlockType.OLIST)
+                        && blk.getType().is(BlockType.NLIST, BlockType.OLIST, BlockType.QUOTE)
                         && (Positions.contentSize(blk) == 0)) {
                     applyTransaction(Commands.setBlockType(state, BlockType.PARA));
                     break;
@@ -848,21 +1744,37 @@ public class Editor extends Component<Editor.Config> {
                         applyTransaction(Commands.outdent(state));
                         break;
                     }
-                    // List item at indent 0: exit list (convert to paragraph).
-                    if (blk2.getType().is(BlockType.NLIST, BlockType.OLIST)) {
+                    // List item / quote at indent 0: exit (convert to paragraph).
+                    if (blk2.getType().is(BlockType.NLIST, BlockType.OLIST, BlockType.QUOTE)) {
                         applyTransaction(Commands.setBlockType(state, BlockType.PARA));
                         break;
+                    }
+                    // Atomic previous block (fence/diagram/equation): the caret cannot
+                    // enter it, so delete it as a unit rather than attempting a join.
+                    if (sel2.anchorBlock() > 0) {
+                        FormattedBlock prev = state.doc().getBlocks().get(sel2.anchorBlock() - 1);
+                        if (atomicBlock(prev.getType())) {
+                            Transaction tr2 = Transaction.create();
+                            tr2.step(new DeleteBlockStep(sel2.anchorBlock() - 1));
+                            tr2.setSelection(Selection.cursor(sel2.anchorBlock() - 1, 0));
+                            applyTransaction(tr2);
+                            break;
+                        }
+                        // Table previous block: traverse into its last cell rather than
+                        // joining (the table is deleted via its context menus).
+                        if (prev.getType() == BlockType.TABLE) {
+                            handlerFor(BlockType.TABLE).focusBlockEnd(sel2.anchorBlock() - 1, ctx);
+                            break;
+                        }
                     }
                     // Join with previous block (cross-type allowed).
                     applyTransaction(Commands.forceJoinWithPrevious(state));
                     break;
                 }
                 if (sel2.isCursor()) {
-                    // Atomic image deletion: if cursor is at an image, remove it.
-                    if (findImageAt(sel2.anchorBlock(), sel2.anchorOffset())) {
-                        applyTransaction(Commands.removeImage(state));
-                        break;
-                    }
+                    // Images occupy a single sentinel character, so deleteCharBefore
+                    // naturally removes an image when the caret sits after it (and
+                    // only then) — no image special-case is needed.
                     // Atomic variable deletion: if cursor is inside or at the
                     // end of a variable, delete the entire variable as a unit.
                     int[] varRange = findVariableContaining(sel2.anchorBlock(), sel2.anchorOffset());
@@ -878,11 +1790,9 @@ public class Editor extends Component<Editor.Config> {
             case "deleteContentForward": {
                 Selection selFwd = state.selection();
                 if (selFwd.isCursor()) {
-                    // Atomic image deletion: if cursor is at an image, remove it.
-                    if (findImageAt(selFwd.anchorBlock(), selFwd.anchorOffset())) {
-                        applyTransaction(Commands.removeImage(state));
-                        break;
-                    }
+                    // Images occupy a single sentinel character, so deleteCharAfter
+                    // naturally removes an image when the caret sits before it — no
+                    // image special-case is needed.
                     // Atomic variable deletion: if cursor is inside or at the
                     // start of a variable, delete the entire variable as a unit.
                     int[] varRange = findVariableAt(selFwd.anchorBlock(), selFwd.anchorOffset());
@@ -890,6 +1800,25 @@ public class Editor extends Component<Editor.Config> {
                         state.setSelection(Selection.range(selFwd.anchorBlock(), varRange[0], selFwd.anchorBlock(), varRange[1]));
                         applyTransaction(Commands.deleteSelection(state));
                         break;
+                    }
+                    // Atomic next block (fence/diagram/equation): deleting forward from
+                    // the end of the current block removes it as a unit. A table is
+                    // traversed into (first cell) rather than deleted.
+                    FormattedBlock curBlk = state.doc().getBlocks().get(selFwd.anchorBlock());
+                    if ((selFwd.anchorOffset() >= Positions.contentSize(curBlk))
+                            && (selFwd.anchorBlock() + 1 < state.doc().getBlocks().size())) {
+                        FormattedBlock next = state.doc().getBlocks().get(selFwd.anchorBlock() + 1);
+                        if (atomicBlock(next.getType())) {
+                            Transaction trAtomic = Transaction.create();
+                            trAtomic.step(new DeleteBlockStep(selFwd.anchorBlock() + 1));
+                            trAtomic.setSelection(Selection.cursor(selFwd.anchorBlock(), selFwd.anchorOffset()));
+                            applyTransaction(trAtomic);
+                            break;
+                        }
+                        if (next.getType() == BlockType.TABLE) {
+                            handlerFor(BlockType.TABLE).focusBlock(selFwd.anchorBlock() + 1, ctx);
+                            break;
+                        }
                     }
                 }
                 Transaction tr3 = Commands.deleteCharAfter(state);
@@ -926,6 +1855,18 @@ public class Editor extends Component<Editor.Config> {
             if (h.handlePaste(evt, ctx))
                 return;
         }
+        // Pasted files (e.g. a screenshot or a document from the clipboard) are
+        // uploaded via the configured handler and embedded at the cursor.
+        IFileUploadHandler fileUpload = config().fileUpload;
+        if (fileUpload != null) {
+            elemental2.dom.File file = firstClipboardFile(evt);
+            if (file != null) {
+                evt.preventDefault();
+                syncSelectionFromDom();
+                uploadAndEmbed(fileUpload, file);
+                return;
+            }
+        }
         evt.preventDefault();
         syncSelectionFromDom();
         String text = EditorSupport.getClipboardText(evt);
@@ -934,6 +1875,112 @@ public class Editor extends Component<Editor.Config> {
         // Normalize line endings (Windows \r\n and old Mac \r).
         text = text.replace("\r\n", "\n").replace("\r", "\n");
         applyTransaction(Commands.pasteText(state, text));
+    }
+
+    /**
+     * Extracts the first file from a paste event's clipboard, or {@code null} if
+     * the clipboard carries no file.
+     */
+    private elemental2.dom.File firstClipboardFile(elemental2.dom.Event evt) {
+        elemental2.dom.ClipboardEvent ce = Js.uncheckedCast(evt);
+        return firstFile(ce.clipboardData);
+    }
+
+    /**
+     * Extracts the first file from a data transfer (clipboard or drag), or
+     * {@code null} if it carries none.
+     */
+    private elemental2.dom.File firstFile(elemental2.dom.DataTransfer dt) {
+        if ((dt == null) || (dt.files == null))
+            return null;
+        for (elemental2.dom.File file : dt.files.asList()) {
+            if (file != null)
+                return file;
+        }
+        return null;
+    }
+
+    /**
+     * Uploads a file via the handler and embeds it at the current selection: an image
+     * file becomes an inline image (the returned URL as its {@code src}); any other
+     * file becomes a link labelled with its file name. A failed (or rejected) upload
+     * leaves the document unchanged — the handler surfaces any user-facing message.
+     */
+    private void uploadAndEmbed(IFileUploadHandler fileUpload, elemental2.dom.File file) {
+        boolean image = (file.type != null) && file.type.startsWith("image/");
+        String name = file.name;
+        fileUpload.upload(file, url -> {
+            if ((url == null) || url.isEmpty())
+                return;
+            if (image)
+                applyTransaction(Commands.insertImage(state, url));
+            else
+                applyTransaction(Commands.insertLink(state, url, name));
+        }, err -> {
+            // Best effort: a failed upload leaves the document unchanged.
+        });
+    }
+
+    /**
+     * Accepts a file drag (so the {@code drop} fires) when a file handler is
+     * configured; other drags are left to their default handling.
+     */
+    private void handleDragOver(elemental2.dom.Event evt) {
+        if ((config().fileUpload != null) && isFileDrag(evt))
+            evt.preventDefault();
+    }
+
+    /**
+     * Handles a dropped file: uploads it via the configured handler and embeds it at
+     * the drop point (an inline image for image files, a link otherwise).
+     */
+    private void handleDrop(elemental2.dom.Event evt) {
+        IFileUploadHandler fileUpload = config().fileUpload;
+        if ((fileUpload == null) || !isFileDrag(evt))
+            return;
+        // We accepted the file drag on dragover; prevent the browser from opening it.
+        evt.preventDefault();
+        elemental2.dom.DragEvent de = Js.cast(evt);
+        elemental2.dom.File file = firstFile(de.dataTransfer);
+        if (file == null)
+            return;
+        placeCaretAtPoint(de.clientX, de.clientY);
+        syncSelectionFromDom();
+        uploadAndEmbed(fileUpload, file);
+    }
+
+    /**
+     * Determines whether a drag event carries files (as opposed to text or other
+     * content).
+     */
+    private boolean isFileDrag(elemental2.dom.Event evt) {
+        elemental2.dom.DragEvent de = Js.cast(evt);
+        elemental2.dom.DataTransfer dt = de.dataTransfer;
+        if ((dt == null) || (dt.types == null))
+            return false;
+        for (int i = 0; i < dt.types.length; i++) {
+            if ("Files".equals(dt.types.getAt(i)))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Moves the caret to the given viewport point (the drop location), so a dropped
+     * image is inserted where it lands. Falls back to the current selection where the
+     * browser does not support {@code caretPositionFromPoint}.
+     */
+    private void placeCaretAtPoint(double x, double y) {
+        try {
+            elemental2.dom.CaretPosition pos = DomGlobal.document.caretPositionFromPoint((int) x, (int) y);
+            if ((pos == null) || (pos.offsetNode == null))
+                return;
+            elemental2.dom.Selection sel = DomGlobal.document.getSelection();
+            if (sel != null)
+                sel.collapse(pos.offsetNode, (int) pos.offset);
+        } catch (Throwable e) {
+            // Fall back to the current selection.
+        }
     }
 
     /************************************************************************
@@ -1004,26 +2051,6 @@ public class Editor extends Component<Editor.Config> {
             lineStart += line.length() + 1;
         }
         return null;
-    }
-
-    /**
-     * Returns {@code true} if there is a zero-length IMG format at the given
-     * offset in the block.
-     */
-    private boolean findImageAt(int blockIdx, int offset) {
-        FormattedBlock blk = state.doc().getBlocks().get(blockIdx);
-        int lineStart = 0;
-        for (FormattedLine line : blk.getLines()) {
-            for (FormattedLine.Format fmt : line.getFormatting()) {
-                if (!fmt.getFormats().contains(FormatType.IMG))
-                    continue;
-                int absStart = lineStart + fmt.getIndex();
-                if (absStart == offset)
-                    return true;
-            }
-            lineStart += line.length() + 1;
-        }
-        return false;
     }
 
     /************************************************************************
@@ -1122,6 +2149,7 @@ public class Editor extends Component<Editor.Config> {
         FORMAT_CLASSES.put(FormatType.SUB, "fmt_subscript");
         FORMAT_CLASSES.put(FormatType.CODE, "fmt_code");
         FORMAT_CLASSES.put(FormatType.HL, "fmt_highlight");
+        FORMAT_CLASSES.put(FormatType.CMT, "fmt_comment");
     }
 
     /************************************************************************
@@ -1141,9 +2169,8 @@ public class Editor extends Component<Editor.Config> {
 
         String listNumber();
 
-        String variable();
-
-        String inlineImage();
+        /** Modifier applied to the editor root in {@link LinkInteraction#NAVIGATE} mode. */
+        String navigate();
 
     }
 
@@ -1157,91 +2184,70 @@ public class Editor extends Component<Editor.Config> {
             padding: 0.5em;
             flex: 1;
             overflow: auto;
+            position: relative;
+            line-height: var(--jui-richtext-line-height, inherit);
         }
         .component:focus {
             outline: none;
         }
+        /* In NAVIGATE mode a link is clickable (opens), so show the pointer cursor over it
+           rather than the text caret inherited from .component. */
+        .component.navigate a {
+            cursor: pointer;
+        }
+        .component[data-placeholder][data-empty]::before {
+            content: attr(data-placeholder);
+            position: absolute;
+            top: calc(0.5em + 2px);
+            left: 0.5em;
+            color: var(--jui-ftext-placeholder-color, #9aa0a6);
+            pointer-events: none;
+        }
         .component .block {
-            margin: 0 0 0.15em 0;
-            padding: 2px 0;
+            padding: var(--jui-richtext-block-spacing, 2px) 0;
             min-height: 1em;
             white-space: pre-wrap;
         }
+        .component .block:first-child { margin-top: 0; }
+        /* The base list indent (0 by default; set by the document style) is folded into the
+           marker padding and the marker's own offset, so it composes with .indentN nesting
+           and the bullet stays aligned. Mirrors FormattedTextStyles' read-only list rules. */
         .component .listBullet {
             position: relative;
-            padding-left: 1.5em;
+            padding-left: calc(1.5em + var(--jui-richtext-list-indent, 0em));
         }
         .component .listBullet::before {
             position: absolute;
-            left: 0.35em;
+            left: calc(0.35em + var(--jui-richtext-list-indent, 0em));
             content: '\\2022';
         }
         .component .listNumber {
             position: relative;
-            padding-left: 1.5em;
+            padding-left: calc(1.5em + var(--jui-richtext-list-indent, 0em));
         }
         .component .listNumber::before {
             position: absolute;
-            left: 0.15em;
+            left: calc(0.15em + var(--jui-richtext-list-indent, 0em));
             content: attr(data-list-index) '.';
         }
-        .component h1 {
-            font-size: 1.8em;
-            font-weight: 500;
-            margin: 0 0 0.15em 0;
+        /* A list item is a paragraph (carries .block + .listX), so it would otherwise inherit
+           the prose block padding and paragraph margin — which the document style makes roomy,
+           pushing items too far apart. Give list items their own tight vertical rhythm via a
+           dedicated token so the gap between them stays compact regardless of prose spacing.
+           Selector qualified with .block (specificity (0,3,0)) so it reliably wins over the
+           shared sheet's .richtext > .block padding (which also scopes the editor root). */
+        .component .block.listBullet, .component .block.listNumber {
+            padding-top: var(--jui-richtext-list-spacing, 3px);
+            padding-bottom: var(--jui-richtext-list-spacing, 3px);
+            margin-top: 0;
+            margin-bottom: 0;
         }
-        .component h2 {
-            font-size: 1.5em;
-            font-weight: 500;
-            margin: 0 0 0.15em 0;
-        }
-        .component h3 {
-            font-size: 1.25em;
-            font-weight: 500;
-            margin: 0 0 0.15em 0;
-        }
+        /* Paragraph spacing is editor-specific (the read-only renderer spaces paragraphs
+           differently), so it stays here. Headings, inline formats (fmt_*), quotes, code
+           blocks and indent margins are all provided by the shared richtext stylesheet
+           (FormattedTextStyles), scoped via the richtext class on the editor root. */
         .component p {
-            margin: 0 0 0.15em 0;
-        }
-        .component .indent1 { margin-left: 1.5em; }
-        .component .indent2 { margin-left: 3em; }
-        .component .indent3 { margin-left: 4.5em; }
-        .component .indent4 { margin-left: 6em; }
-        .component .indent5 { margin-left: 7.5em; }
-        .component .fmt_bold { font-weight: 600; }
-        .component .fmt_italic { font-style: italic; }
-        .component .fmt_underline { text-decoration: underline; }
-        .component .fmt_strike { text-decoration: line-through; }
-        .component .fmt_strike.fmt_underline { text-decoration: underline line-through; }
-        .component .fmt_superscript { vertical-align: super; font-size: 0.8em; }
-        .component .fmt_subscript { vertical-align: sub; font-size: 0.8em; }
-        .component .fmt_highlight { background-color: #F5EB72; }
-        .component .fmt_code {
-            font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace;
-            line-height: normal;
-            background: rgba(135,131,120,.15);
-            color: #EB5757;
-            border-radius: 4px;
-            font-size: 85%;
-            padding: 0.2em 0.4em;
-        }
-        .component .variable {
-            background: #e0e7ff;
-            color: #3730a3;
-            padding: 1px 6px;
-            border-radius: 3px;
-            font-size: 0.85em;
-            font-weight: 500;
-            display: inline;
-            user-select: all;
-            cursor: default;
-        }
-        .component .inlineImage {
-            max-width: 100%;
-            height: auto;
-            vertical-align: middle;
-            border-radius: 4px;
-            cursor: default;
+            margin: 0 0 var(--jui-richtext-para-spacing, 0.2em) 0;
         }
     """)
     public static abstract class LocalCSS implements ILocalCSS {

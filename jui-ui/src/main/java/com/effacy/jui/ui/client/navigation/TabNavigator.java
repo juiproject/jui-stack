@@ -63,7 +63,6 @@ import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.platform.util.client.With;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.effacy.jui.ui.client.modal.Modal.IModalController;
-import com.effacy.jui.ui.client.navigation.CardNavigator.Config.CardConfiguration;
 import com.effacy.jui.ui.client.navigation.TabCollection.ITabConfig;
 import com.effacy.jui.ui.client.navigation.TabCollection.ITabGroupConfig;
 import com.effacy.jui.ui.client.navigation.TabCollection.TabConfig;
@@ -976,13 +975,28 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
      ************************************************************************/
 
     /**
-     * Activates the specified tab.
+     * Activates the specified tab, exactly as if it had been clicked: the tab's
+     * content is activated (with navigation events fired) and the tab strip
+     * updated. Safe to call prior to render (the activation is applied once
+     * rendered).
+     * <p>
+     * Contrast this with {@link #_activate(String)}, which only asserts the tab
+     * strip's visual state (it is invoked by the navigation mechanism as part of
+     * a full activation).
      *
      * @param ref
      *            the reference of the tab to activate.
      */
     public void activate(String ref) {
-        _activate (ref);
+        if (ref == null)
+            return;
+        if (!isRendered ()) {
+            activatePreRender = ref;
+            return;
+        }
+        if (config ().tabs.findTab (ref) == null)
+            return;
+        onTabClicked (ref);
     }
 
     /**
@@ -1233,7 +1247,7 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
          *              the count.
          */
         public void updateCount(int count) {
-            if (count <= 0) {
+            if (count < 0) {
                 el.classList.remove (styles ().count ());
             } else {
                 el.classList.add (styles ().count ());
@@ -1386,12 +1400,12 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         // Any counts.
         for (TabGroupConfig group : config ().tabs.getTabGroups ()) {
             for (TabConfig tab : group.getTabs ()) {
-                if (tab.count > 0)
+                if (tab.count >= 0)
                     _updateTabCount (tab.reference, tab.count);
             }
         }
     }
-   
+
     @Override
     protected INodeProvider buildNode(Element el, Config data) {
         return Wrap.$ (el).$ (root -> {
@@ -1491,9 +1505,8 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
                 tabs.put (ref, new Tab (el));
         }
 
-        // Any pre-render states.
-        if (activatePreRender != null)
-            _activate (activatePreRender);
+        // Any pre-render states (a pre-render activation is asserted through the
+        // re-navigation below, so it drives the body as well as the tab strip).
         for (String tab : disablePreRender)
             this._disable (tab);
 
@@ -1501,7 +1514,7 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         for (TabGroupConfig group : config ().tabs.getTabGroups ()) {
             for (TabConfig tab : group.getTabs ()) {
                 tabs.get (tab.reference).group = group.idx;
-                if (tab.count > 0)
+                if (tab.count >= 0)
                     _updateTabCount (tab.reference, tab.count);
             }
         }
@@ -1512,8 +1525,14 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         // Register items for each of the tabs.
         _registerTabs ();
 
-        // Invoke a re-navigation to assert state.
-        renavigate (new NavigationContext ());
+        // Invoke a re-navigation to assert state (honouring any pre-render
+        // activation over the default).
+        if (activatePreRender != null) {
+            String ref = activatePreRender;
+            activatePreRender = null;
+            navigate (new NavigationContext (), ref);
+        } else
+            renavigate (new NavigationContext ());
 
         // Collpase state.
         if (this.collpased)
@@ -1545,10 +1564,10 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
                         if (cfg.activator != null) {
                             Promise<ActivateOutcome> promise = Promise.create ();
                             cfg.activator.activate (context, outcome -> promise.fulfill (outcome));
-                            TabNavigator.this.activate (ref);
+                            TabNavigator.this._activate (ref);
                             return promise;
                         }
-                        TabNavigator.this.activate (ref);
+                        TabNavigator.this._activate (ref);
                         return Promise.create (ActivateOutcome.ACTIVATED);
                     }
 
@@ -1711,8 +1730,13 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
     }
 
     /**
-     * Disables the specified tab.
-     * 
+     * Asserts the tab strip's visual state for the given tab (and fires any
+     * {@link #handleNavigation(Consumer)} handlers on change). This is the
+     * <em>internal</em> half of an activation — it does not drive the body
+     * (content) navigation, being invoked by the navigation mechanism once a
+     * tab's content has been activated. To programmatically switch tabs use
+     * {@link #activate(String)} (or {@link #onTabClicked(String)}).
+     *
      * @param ref
      *            the tab reference.
      * @return {@code true} if was activated.

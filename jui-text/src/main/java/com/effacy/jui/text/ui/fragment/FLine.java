@@ -25,6 +25,7 @@ import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.builder.Text;
 import com.effacy.jui.text.type.FormattedLine;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
+import com.effacy.jui.text.ui.type.FormattedTextStyles;
 
 /**
  * Used to generate DOM from a {@link FormattedLine}.
@@ -85,12 +86,16 @@ public class FLine extends Fragment<FLine> {
                 }
             });
         });
-        super.parentStyleHook = CSS_STYLE;
+        // Scope the parent with the shared richtext stylesheet so the inline format classes
+        // (fmt_bold, fmt_code, …) resolve from FormattedTextStyles — the same source as the
+        // editor and read-only renderer (this also fixes the old fmt_highlight class typo).
+        super.parentStyleHook = FormattedTextStyles.styles ().richtext ();
     }
 
     public static Map<FormattedLine.FormatType,String> STYLES = new HashMap<>();
     static {
         STYLES.put (FormattedLine.FormatType.BLD, "bold");
+        STYLES.put (FormattedLine.FormatType.CMT, "comment");
         STYLES.put (FormattedLine.FormatType.CODE, "code");
         STYLES.put (FormattedLine.FormatType.HL, "highlight");
         STYLES.put (FormattedLine.FormatType.ITL, "italic");

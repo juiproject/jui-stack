@@ -34,10 +34,18 @@
 	cursor: not-allowed;
 }
 
+.component.disabled:hover .inner {
+	background: var(--jui-ctl-bg-disabled);
+}
+
 .component.read_only .inner {
 	opacity: var(--jui-ctl-opacity-readonly);
 	background: var(--jui-ctl-bg-readonly);
 	cursor: not-allowed;
+}
+
+.component.read_only:hover .inner {
+	background: var(--jui-ctl-bg-readonly);
 }
 
 .component.waiting .inner {

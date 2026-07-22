@@ -9,6 +9,7 @@ import com.effacy.jui.text.type.FormattedLine;
 import com.effacy.jui.text.type.FormattedText;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
+import com.effacy.jui.text.type.builder.FormattedTextBuilder;
 
 public class FormattedTextMarkdownParserTest {
 
@@ -626,6 +627,133 @@ public class FormattedTextMarkdownParserTest {
     }
 
     @Test
+    public void testWrappedListItemsFoldContinuationLines() {
+        // A list whose items soft-wrap across lines: each item's continuation line is
+        // folded into that item (a single space joining them), and inline formatting on
+        // the marker line is preserved.
+        FormattedText result = FormattedText.markdown(
+            "- First **item** that wraps\n  onto a second line.\n- Second item\n  also wrapping.");
+
+        assertEquals(2, result.getBlocks().size());
+
+        FormattedBlock b0 = result.getBlocks().get(0);
+        assertEquals(BlockType.NLIST, b0.getType());
+        assertEquals("First item that wraps onto a second line.", b0.getLines().get(0).getText());
+        assertEquals(1, b0.getLines().get(0).getFormatting().size());
+        assertTrue(b0.getLines().get(0).getFormatting().get(0).getFormats().contains(FormatType.BLD));
+
+        FormattedBlock b1 = result.getBlocks().get(1);
+        assertEquals(BlockType.NLIST, b1.getType());
+        assertEquals("Second item also wrapping.", b1.getLines().get(0).getText());
+    }
+
+    @Test
+    public void testListBeginningBlockIsNotSplitToParagraph() {
+        // Regression: when a list's first item wraps onto a second line, the whole block
+        // still begins with a list marker, so it must parse as a list. Previously the
+        // first item was dropped to a paragraph (rendering a literal "- ...") while only
+        // the second item became a bullet.
+        FormattedText result = FormattedText.markdown(
+            "- **Stresses.** Capture, applied at creation rather than after\n" +
+            "  the fact; the demand spine.\n" +
+            "- **Surfaces.** Confirmed in shape — endorsing the idea is the path\n" +
+            "  later. Drive back to the CSD.");
+
+        assertEquals(2, result.getBlocks().size());
+        assertEquals(BlockType.NLIST, result.getBlocks().get(0).getType());
+        assertEquals(BlockType.NLIST, result.getBlocks().get(1).getType());
+
+        String first = result.getBlocks().get(0).getLines().get(0).getText();
+        assertFalse(first.startsWith("- "), "first item must not retain the literal list marker");
+        assertTrue(first.startsWith("Stresses."));
+        assertTrue(first.endsWith("the demand spine."));
+
+        String second = result.getBlocks().get(1).getLines().get(0).getText();
+        assertTrue(second.startsWith("Surfaces."));
+        assertTrue(second.endsWith("Drive back to the CSD."));
+    }
+
+    @Test
+    public void testBlockQuote() {
+        FormattedText result = FormattedText.markdown("> **Note.** Be careful here.\n> A second line.");
+
+        assertEquals(1, result.getBlocks().size());
+        FormattedBlock b = result.getBlocks().get(0);
+        assertEquals(BlockType.QUOTE, b.getType());
+        assertEquals(2, b.getLines().size());
+        // The '>' markers are stripped; inline formatting on the quote is preserved.
+        assertEquals("Note. Be careful here.", b.getLines().get(0).getText());
+        assertTrue(b.getLines().get(0).getFormatting().get(0).getFormats().contains(FormatType.BLD));
+        assertEquals("A second line.", b.getLines().get(1).getText());
+    }
+
+    @Test
+    public void testBlockQuoteInterruptingParagraph() {
+        // A '>' line directly following a paragraph line (no blank line between)
+        // starts a quote block rather than rendering the marker literally.
+        FormattedText result = FormattedText.markdown("**Job statement.**\n> When a compliance survey is open, I want to report.\nA lazy continuation line.");
+
+        assertEquals(2, result.getBlocks().size());
+
+        FormattedBlock para = result.getBlocks().get(0);
+        assertEquals(BlockType.PARA, para.getType());
+        assertEquals(1, para.getLines().size());
+        assertEquals("Job statement.", para.getLines().get(0).getText());
+        assertTrue(para.getLines().get(0).getFormatting().get(0).getFormats().contains(FormatType.BLD));
+
+        FormattedBlock quote = result.getBlocks().get(1);
+        assertEquals(BlockType.QUOTE, quote.getType());
+        assertEquals(2, quote.getLines().size());
+        assertEquals("When a compliance survey is open, I want to report.", quote.getLines().get(0).getText());
+        assertEquals("A lazy continuation line.", quote.getLines().get(1).getText());
+    }
+
+    @Test
+    public void testBlockQuoteWithBlankLine() {
+        // A bare '>' line is a blank line inside the quote (one block, not two).
+        FormattedText result = FormattedText.markdown("> First.\n>\n> Second.");
+
+        assertEquals(1, result.getBlocks().size());
+        FormattedBlock b = result.getBlocks().get(0);
+        assertEquals(BlockType.QUOTE, b.getType());
+        assertEquals(3, b.getLines().size());
+        assertEquals("First.", b.getLines().get(0).getText());
+        assertEquals("", b.getLines().get(1).getText());
+        assertEquals("Second.", b.getLines().get(2).getText());
+    }
+
+    @Test
+    public void testFenceBlockWhenSelected() {
+        FormattedText result = new MarkdownParser()
+            .fence(info -> "mermaid".equals(info))
+            .parse(new FormattedTextBuilder(), "```mermaid\ngraph TD;\nA-->B;\n```");
+
+        assertEquals(1, result.getBlocks().size());
+        FormattedBlock b = result.getBlocks().get(0);
+        assertEquals(BlockType.FENCE, b.getType());
+        assertEquals("mermaid", b.meta("info"));
+        assertEquals(2, b.getLines().size());
+        assertEquals("graph TD;", b.getLines().get(0).getText());
+        assertEquals("A-->B;", b.getLines().get(1).getText());
+    }
+
+    @Test
+    public void testFenceDefaultsToCode() {
+        // Without a fence selector, a fenced block is a CODE block (no regression).
+        FormattedText result = FormattedText.markdown("```mermaid\ngraph TD;\n```");
+        assertEquals(1, result.getBlocks().size());
+        assertEquals(BlockType.CODE, result.getBlocks().get(0).getType());
+    }
+
+    @Test
+    public void testFenceOnlyRoutesSelectedInfo() {
+        // mermaid -> FENCE, but an unselected language stays CODE.
+        FormattedText code = new MarkdownParser().fence(info -> "mermaid".equals(info))
+            .parse(new FormattedTextBuilder(), "```java\nint x = 1;\n```");
+        assertEquals(BlockType.CODE, code.getBlocks().get(0).getType());
+    }
+
+    @Test
     public void testMixedDocument() {
         String markdown = "# Document Title\n\n" +
                          "Introduction paragraph.\n\n" +
@@ -803,37 +931,37 @@ public class FormattedTextMarkdownParserTest {
         // First ordered item — no indent meta.
         FormattedBlock olist1 = result.getBlocks().get(1);
         assertEquals(BlockType.OLIST, olist1.getType());
-        assertNull(olist1.meta("indent"));
+        assertEquals(0, olist1.getIndent());
         FormattedLine olist1Line = olist1.getLines().get(0);
         assertTrue(olist1Line.getText().contains("First item:"));
 
         // Nested unordered sub-item — indent "1".
         FormattedBlock nlist1 = result.getBlocks().get(2);
         assertEquals(BlockType.NLIST, nlist1.getType());
-        assertEquals("1", nlist1.meta("indent"));
+        assertEquals(1, nlist1.getIndent());
 
         // Second ordered item — no indent.
         FormattedBlock olist2 = result.getBlocks().get(3);
         assertEquals(BlockType.OLIST, olist2.getType());
-        assertNull(olist2.meta("indent"));
+        assertEquals(0, olist2.getIndent());
 
         // Three nested sub-items — all indent "1".
         for (int i = 4; i <= 6; i++) {
             FormattedBlock nlist = result.getBlocks().get(i);
             assertEquals(BlockType.NLIST, nlist.getType());
-            assertEquals("1", nlist.meta("indent"));
+            assertEquals(1, nlist.getIndent());
         }
 
         // Third ordered item — no indent.
         FormattedBlock olist3 = result.getBlocks().get(7);
         assertEquals(BlockType.OLIST, olist3.getType());
-        assertNull(olist3.meta("indent"));
+        assertEquals(0, olist3.getIndent());
 
         // Two nested sub-items — indent "1".
         for (int i = 8; i <= 9; i++) {
             FormattedBlock nlist = result.getBlocks().get(i);
             assertEquals(BlockType.NLIST, nlist.getType());
-            assertEquals("1", nlist.meta("indent"));
+            assertEquals(1, nlist.getIndent());
         }
     }
 
@@ -858,14 +986,14 @@ public class FormattedTextMarkdownParserTest {
         // Top-level items — no indent.
         for (int i = 1; i <= 3; i++) {
             assertEquals(BlockType.NLIST, result.getBlocks().get(i).getType());
-            assertNull(result.getBlocks().get(i).meta("indent"));
+            assertEquals(0, result.getBlocks().get(i).getIndent());
         }
 
         // Sub-items — indent "1".
         for (int i = 4; i <= 6; i++) {
             FormattedBlock sub = result.getBlocks().get(i);
             assertEquals(BlockType.NLIST, sub.getType());
-            assertEquals("1", sub.meta("indent"));
+            assertEquals(1, sub.getIndent());
         }
 
         assertEquals("sub-item 1", result.getBlocks().get(4).getLines().get(0).getText());

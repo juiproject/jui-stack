@@ -843,11 +843,10 @@ public class MarkdownEventParserTest {
             "text( Here is a sub-item)",
             "endLine()",
             "endBlock(OLIST)",
-            // Nested unordered sub-item.
+            // Nested unordered sub-item (indentation becomes the indent level, not content).
             "startBlock(NLIST)",
             "meta(indent, 1)",
             "startLine()",
-            "text(  )",
             "formatted(Subitem:, BLD)",
             "text( this is a sub-item.)",
             "endLine()",
@@ -862,19 +861,19 @@ public class MarkdownEventParserTest {
             "startBlock(NLIST)",
             "meta(indent, 1)",
             "startLine()",
-            "text(  sub-item 1.)",
+            "text(sub-item 1.)",
             "endLine()",
             "endBlock(NLIST)",
             "startBlock(NLIST)",
             "meta(indent, 1)",
             "startLine()",
-            "text(  sub-item 2.)",
+            "text(sub-item 2.)",
             "endLine()",
             "endBlock(NLIST)",
             "startBlock(NLIST)",
             "meta(indent, 1)",
             "startLine()",
-            "text(  sub-item 3.)",
+            "text(sub-item 3.)",
             "endLine()",
             "endBlock(NLIST)",
             // Third ordered item.
@@ -887,13 +886,13 @@ public class MarkdownEventParserTest {
             "startBlock(NLIST)",
             "meta(indent, 1)",
             "startLine()",
-            "text(  sub-item 1.)",
+            "text(sub-item 1.)",
             "endLine()",
             "endBlock(NLIST)",
             "startBlock(NLIST)",
             "meta(indent, 1)",
             "startLine()",
-            "text(  sub-item 2.)",
+            "text(sub-item 2.)",
             "endLine()",
             "endBlock(NLIST)"
         );
@@ -1002,6 +1001,50 @@ public class MarkdownEventParserTest {
             "meta(indent, 1)",
             "startLine()",
             "text(sub-item 2)",
+            "endLine()",
+            "endBlock(NLIST)"
+        );
+    }
+
+    /**
+     * Three levels of nesting. Depth is derived from relative indentation, so each deeper
+     * step is one level regardless of the number of spaces used (here 4 per step).
+     */
+    @Test
+    public void testNestedListThreeLevels() {
+        String markdown = "- A\n" +
+            "    - B\n" +
+            "        - C\n" +
+            "    - B2\n" +
+            "- A2";
+        RecordingHandler handler = parse(markdown);
+        handler.assertEvents(
+            "startBlock(NLIST)",
+            "startLine()",
+            "text(A)",
+            "endLine()",
+            "endBlock(NLIST)",
+            "startBlock(NLIST)",
+            "meta(indent, 1)",
+            "startLine()",
+            "text(B)",
+            "endLine()",
+            "endBlock(NLIST)",
+            "startBlock(NLIST)",
+            "meta(indent, 2)",
+            "startLine()",
+            "text(C)",
+            "endLine()",
+            "endBlock(NLIST)",
+            "startBlock(NLIST)",
+            "meta(indent, 1)",
+            "startLine()",
+            "text(B2)",
+            "endLine()",
+            "endBlock(NLIST)",
+            "startBlock(NLIST)",
+            "startLine()",
+            "text(A2)",
             "endLine()",
             "endBlock(NLIST)"
         );

@@ -73,6 +73,10 @@ EditorSupport._cefAncestor = function (scope, node) {
 EditorSupport._textLength = function (el) {
     if (el.nodeType === 3)
         return el.textContent.length;
+    // An inline image is atomic: it occupies exactly one character (the model's
+    // sentinel character).
+    if (el.tagName === 'IMG')
+        return 1;
     var len = 0;
     for (var i = 0; i < el.childNodes.length; i++)
         len += EditorSupport._textLength(el.childNodes[i]);
@@ -117,6 +121,12 @@ EditorSupport._linesWalk = function (el, stop, lines) {
         if (el.hasAttribute && el.hasAttribute('data-trailing'))
             return false;
         lines.push("");
+        return false;
+    }
+    // An inline image is atomic: it contributes exactly one character (the model's
+    // sentinel character).
+    if (el.tagName === 'IMG') {
+        lines[lines.length - 1] += '￼';
         return false;
     }
     for (var i = 0; i < el.childNodes.length; i++) {
@@ -288,6 +298,15 @@ EditorSupport._resolvePosition = function (blockEl, position) {
             if (position <= n.textContent.length)
                 return {node: n, offset: position};
             position -= n.textContent.length;
+        } else if (n.tagName === 'IMG') {
+            // Atomic inline image: occupies one character. Land before or after the
+            // element itself (never inside it).
+            var imgIdx = EditorSupport._childIndex(n.parentNode, n);
+            if (position <= 0)
+                return {node: n.parentNode, offset: imgIdx};
+            if (position === 1)
+                return {node: n.parentNode, offset: imgIdx + 1};
+            position--;
         } else if (n.tagName === 'BR') {
             if (n.hasAttribute && n.hasAttribute('data-trailing')) {
                 // Trailing BR is not a content character. Position here

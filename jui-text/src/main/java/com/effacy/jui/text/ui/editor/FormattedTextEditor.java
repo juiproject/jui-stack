@@ -3,6 +3,7 @@ package com.effacy.jui.text.ui.editor;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import com.effacy.jui.core.client.Invoker;
 import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.core.client.control.Control;
 import com.effacy.jui.core.client.dom.INodeProvider;
@@ -120,9 +121,13 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
         private Supplier<IEditorToolbar> toolbarSupplier;
         private Editor.Config editorConfig;
         private Length height;
+        private Length contentMinHeight;
         private ToolbarBehaviour toolbarBehaviour = ToolbarBehaviour.FIXED;
         private boolean nofocus;
         private boolean borderless;
+        private String placeholder;
+        private boolean detachedToolbar;
+        private Invoker onFocusLost;
 
         /**
          * Applies a standard configuration.
@@ -170,6 +175,23 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
         }
 
         /**
+         * Sets a minimum height on the editor <em>content</em> (editable) area, rather than
+         * on the whole control as {@link #height(Length)} does.
+         * <p>
+         * The editable region is made at least this tall and fills the space, so clicking
+         * anywhere within it places the cursor (activating the control). The control then
+         * sizes to its content, so a containing panel need not carry its own minimum height.
+         *
+         * @param contentMinHeight
+         *                         the minimum content height.
+         * @return this configuration instance.
+         */
+        public Config contentMinHeight(Length contentMinHeight) {
+            this.contentMinHeight = contentMinHeight;
+            return this;
+        }
+
+        /**
          * Configures the toolbar behaviour. When set to
          * {@link ToolbarBehaviour#FLOATING}, the toolbar is rendered in a
          * fixed-position wrapper that is shown above the current selection when a range
@@ -197,6 +219,85 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
          */
         public Config borderless() {
             this.borderless = true;
+            return this;
+        }
+
+        /**
+         * Sets placeholder text shown when the editor is empty (forwarded to the underlying
+         * {@link Editor}). When {@code null} (the default) no placeholder is shown.
+         *
+         * @param placeholder
+         *                    the placeholder text.
+         * @return this configuration instance.
+         */
+        public Config placeholder(String placeholder) {
+            this.placeholder = placeholder;
+            return this;
+        }
+
+        /**
+         * Detaches the toolbar from this control: the toolbar (supplied via
+         * {@link #toolbar(Supplier)}) is still bound to the editor, but it is <em>not</em>
+         * rendered inside the control — the host renders it wherever it likes (e.g. a
+         * full-width strip above the editor). The control renders only the editor area.
+         *
+         * @return this configuration instance.
+         */
+        public Config detachedToolbar() {
+            this.detachedToolbar = true;
+            return this;
+        }
+
+        /**
+         * Registers a callback invoked when focus leaves the editor entirely (a true
+         * blur — not an internal move, such as into the toolbar). Useful for
+         * flush-on-blur behaviours (for example, prompting an autosave). Routed through
+         * the editor's managed focus handling, so it is torn down with the component.
+         */
+        public Config onFocusLost(Invoker onFocusLost) {
+            this.onFocusLost = onFocusLost;
+            return this;
+        }
+
+        /**
+         * A reusable visual variant — a named bundle of configuration giving the editor a
+         * particular look. Apply with {@link Config#variant(Variant)}.
+         */
+        @FunctionalInterface
+        public interface Variant {
+
+            /**
+             * Seamless: removes every border (toolbar and editor, in all states including
+             * hover) and hides the focus highlight, so the editor sits flush inside its own
+             * container (e.g. a card or panel that provides the visual boundary).
+             */
+            public static final Variant SEAMLESS = config -> {
+                config.css("""
+                    --jui-formattededitor-border-toolbar-side: none;
+                    --jui-formattededitor-border-toolbar-top: none;
+                    --jui-formattededitor-border-toolbar-bottom: none;
+                    --jui-formattededitor-border-toolbar-radius: 0;
+                    --jui-formattededitor-border-editor-side: none;
+                    --jui-formattededitor-border-editor-top: none;
+                    --jui-formattededitor-border-editor-bottom: none;
+                    --jui-formattededitor-border-editor-radius: 0;
+                """);
+                config.noFocus();
+            };
+
+            void configure(Config config);
+        }
+
+        /**
+         * Applies a {@link Variant} (a reusable look) to this configuration.
+         *
+         * @param variant
+         *                the variant to apply (ignored if {@code null}).
+         * @return this configuration instance.
+         */
+        public Config variant(Variant variant) {
+            if (variant != null)
+                variant.configure(this);
             return this;
         }
     }
@@ -234,6 +335,8 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
     @Override
     protected INodeProvider buildNode(Element el, Config data) {
         Editor.Config editorConfig = (data.editorConfig != null) ? data.editorConfig : new Editor.Config();
+        if (data.placeholder != null)
+            editorConfig.placeholder(data.placeholder);
         IEditorToolbar toolbar = (data.toolbarSupplier != null) ? data.toolbarSupplier.get() : new EditorToolbar();
 
         
@@ -275,6 +378,9 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
             return Wrap.$(el).$(root -> {
                 if (data.height != null)
                     root.css(CSS.MIN_HEIGHT, data.height);
+                else if (data.contentMinHeight != null)
+                    // The editor is the root's flex child, so it fills this minimum.
+                    root.css(CSS.MIN_HEIGHT, data.contentMinHeight);
                 if (data.nofocus)
                     root.style(styles().nofocus());
                 if (data.borderless)
@@ -290,14 +396,22 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
         return Wrap.$(el).$(root -> {
             if (data.height != null)
                 root.css(CSS.MIN_HEIGHT, data.height);
+            else if (data.contentMinHeight != null)
+                // The content area carries the minimum height; the control sizes to it.
+                root.css(CSS.MIN_HEIGHT, Length.px(0));
             if (data.toolbarBehaviour == Config.ToolbarBehaviour.HOVER)
                 root.style(styles().hover());
             if (data.nofocus)
                 root.style(styles().nofocus());
             if (data.borderless)
                 root.style(styles().borderless());
-            Div.$(root).style(styles().toolbar()).$(toolbar);
-            Div.$(root).style(styles().editor()).$(editor);
+            // When detached, the toolbar is bound (above) but placed by the host, not here.
+            if (!data.detachedToolbar)
+                Div.$(root).style(styles().toolbar()).$(toolbar);
+            var editorArea = Div.$(root).style(styles().editor());
+            if (data.contentMinHeight != null)
+                editorArea.css(CSS.MIN_HEIGHT, data.contentMinHeight);
+            editorArea.$(editor);
         }).build(dom -> attachFocusListeners(el));
     }
 
@@ -312,7 +426,17 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
      */
     private void attachFocusListeners(Element root) {
         root.addEventListener("focusin", evt -> root.classList.add(styles().focus()));
-        root.addEventListener("focusout", evt -> root.classList.remove(styles().focus()));
+        root.addEventListener("focusout", evt -> {
+            root.classList.remove(styles().focus());
+            // Notify a configured focus-loss handler only when focus leaves the editor
+            // entirely (not on an internal move, e.g. into the toolbar).
+            if (config().onFocusLost != null) {
+                elemental2.dom.FocusEvent fe = Js.uncheckedCast(evt);
+                elemental2.dom.Node related = Js.uncheckedCast(fe.relatedTarget);
+                if ((related == null) || !root.contains(related))
+                    config().onFocusLost.invoke();
+            }
+        });
     }
 
     /************************************************************************
@@ -478,6 +602,8 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
         }
         .component .editor {
             border: 1px solid transparent;
+            display: flex;
+            flex-direction: column;
         }
         .component:not(.borderless) .editor {
             border-left: var(--jui-formattededitor-border-editor-side);

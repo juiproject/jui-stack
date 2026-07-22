@@ -892,6 +892,17 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
     }
 
     /**
+     * Construct with configuration built by the passed builder.
+     * 
+     * @param configBuilder
+     *                     the configuration builder.
+     */
+    public CardNavigator(Consumer<Config> configBuilder) {
+        this (new Config ());
+        configBuilder.accept(config());
+    }
+
+    /**
      * Assigns a custom navigator (rather than using the default card layout).
      * <p>
      * A mechanism needs to be provided to allow the passed component to invoke
@@ -1072,13 +1083,21 @@ public class CardNavigator extends Component<CardNavigator.Config> implements IN
             // can easily be changed.
             CardConfiguration card = (CardConfiguration) activeChild();
             if ((path != null) && (card != null) && (card.reference != null) && (card.reference.length > 0)) {
+                // Always expose the active card's label as breadcrumb metadata so an
+                // ancestor navigator (which renders its own breadcrumb from the flat
+                // path) can resolve a friendly label. This mirrors TabNavigator, which
+                // unconditionally writes "label.<reference>" on back-propagation; doing
+                // it only when the prefix was missing (below) leaves the label
+                // unresolved in the common case where the path already carries the
+                // reference. Only the leaf segment is stamped: the card's label
+                // describes that card, while any intermediate reference segments map to
+                // ancestor cards that carry their own labels.
+                context.metadata("label." + card.reference[card.reference.length - 1], card.label());
+                // Re-insert the reference prefix if a navigable child component consumed it.
                 if (path.isEmpty() || !card.reference[0].equals(path.get(0))) {
-                    for (int i = card.reference.length - 1; i >= 0; i--) {
+                    for (int i = card.reference.length - 1; i >= 0; i--)
                         path.add(0, card.reference[i]);
-                        context.metadata("label." + card.reference[i], card.label());
-                    }
                 }
-
             }
             super.onNavigationBackward(context, path, propagator);
             onAfterNavigate(path);

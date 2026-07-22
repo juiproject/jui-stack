@@ -534,7 +534,7 @@ public class Modal<V extends IComponent> extends Component<Modal.Config> impleme
      * @param contents
      *                 the contents.
      */
-    protected <C extends Modal.Config> Modal(C config, V contents) {
+    public <C extends Modal.Config> Modal(C config, V contents) {
         super (config);
         this.contents = contents;
         if (this.contents == null)

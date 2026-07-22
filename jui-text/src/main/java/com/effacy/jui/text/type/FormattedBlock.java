@@ -119,7 +119,21 @@ public class FormattedBlock {
          * Fenced code block.
          */
         CODE(BlockTypeConstraint.LINES),
-        
+
+        /**
+         * Block quote (markdown {@code > ...}). A prose block (lines with inline
+         * formatting), rendered as a quotation.
+         */
+        QUOTE(BlockTypeConstraint.LINES),
+
+        /**
+         * A generic fenced block (markdown ```` ```info ... ``` ````) with a pluggable
+         * renderer keyed by its info string (e.g. {@code mermaid}). The raw body is held as
+         * the block's lines (unformatted); the info string is the {@code info} meta. Atomic
+         * in the editor — rendered by a registered handler, edited via its source.
+         */
+        FENCE(BlockTypeConstraint.LINES),
+
         /**
          * Equation.
          */
@@ -583,7 +597,9 @@ public class FormattedBlock {
             int ll = line.length ();
             if (len > 0) {
                 line.remove (start, len);
-                if (line.length() <= 0)
+                // Keep a now-textless line if it still carries zero-length content (an
+                // inline image or variable); only drop truly-empty lines.
+                if ((line.length() <= 0) && line.getFormatting ().isEmpty ())
                     getLines ().remove (line);
             }
             start -= ll;
@@ -622,7 +638,9 @@ public class FormattedBlock {
                 line.insert (start, text);
                 return this;
             }
-            start -= line.length ();
+            // Block offsets count the line break between lines as one character (as
+            // length() does), so consume it along with the line.
+            start -= line.length () + 1;
         }
         return this;
     }
@@ -717,10 +735,18 @@ public class FormattedBlock {
             idx--;
             if (offset <= 0) {
                 blk.getLines ().add (line);
-            } else if (line.length () <= offset) {
-                getLines ().add (line);
             } else if (offset < line.length ()) {
                 blk.getLines ().add (line.split (offset));
+                getLines ().add (line);
+            } else if (offset == line.length ()) {
+                // Split exactly at the end of the line: peel any trailing zero-length
+                // image (which sits immediately after the cursor) onto a balance line.
+                FormattedLine balance = line.split (offset);
+                getLines ().add (line);
+                if (!balance.getFormatting ().isEmpty ())
+                    blk.getLines ().add (balance);
+            } else {
+                // The whole line lies to the left of the split point.
                 getLines ().add (line);
             }
         }
@@ -841,7 +867,7 @@ public class FormattedBlock {
         blk.type = type;
 
         // Strip out any formatting for headings, etc.
-        if (!blk.typeIs (BlockType.PARA, BlockType.NLIST, BlockType.OLIST))
+        if (!blk.typeIs (BlockType.PARA, BlockType.NLIST, BlockType.OLIST, BlockType.QUOTE))
             blk.getLines ().forEach (line -> line.stripFormatting ());
         return blk;
     }

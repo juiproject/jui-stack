@@ -15,27 +15,24 @@
  ******************************************************************************/
 package com.effacy.jui.text.ui.fragment;
 
-import java.util.List;
-
-import com.effacy.jui.core.client.dom.builder.Br;
 import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Fragment;
-import com.effacy.jui.core.client.dom.builder.H1;
-import com.effacy.jui.core.client.dom.builder.H2;
-import com.effacy.jui.core.client.dom.builder.H3;
-import com.effacy.jui.core.client.dom.builder.H4;
-import com.effacy.jui.core.client.dom.builder.H5;
-import com.effacy.jui.core.client.dom.builder.H6;
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
-import com.effacy.jui.core.client.dom.builder.P;
-import com.effacy.jui.platform.util.client.Itr;
-import com.effacy.jui.text.type.FormattedBlock.BlockType;
-import com.effacy.jui.text.type.FormattedLine;
 import com.effacy.jui.text.type.FormattedText;
+import com.effacy.jui.text.ui.type.ContentStyle;
+import com.effacy.jui.text.ui.type.DomBuilderFormattedTextRenderer;
+import com.effacy.jui.text.ui.type.ILinkHandler;
+import com.effacy.jui.text.ui.type.LinkHandlers;
+import com.effacy.jui.text.ui.type.LinkSupport;
+
+import elemental2.dom.Element;
+import jsinterop.base.Js;
 
 /**
- * Renders {@link FormattedText}.
+ * Renders {@link FormattedText} read-only, using the shared {@link DomBuilderFormattedTextRenderer}
+ * (the single model→DOM renderer) scoped by the {@code richtext} content stylesheet — so a
+ * fragment, a chat bubble and the editor all present formatted text identically.
  */
 public class FText extends Fragment<FText> {
 
@@ -63,6 +60,10 @@ public class FText extends Fragment<FText> {
     private boolean embed;
 
     private boolean skipStyle;
+
+    private ContentStyle contentStyle = ContentStyle.document ();
+
+    private ILinkHandler linkHandler = LinkHandlers.standard ();
 
     private int topHeadingLevel = 1;
 
@@ -93,6 +94,42 @@ public class FText extends Fragment<FText> {
     }
 
     /**
+     * Assigns the content style (spacing / density) applied to the rendered text.
+     * <p>
+     * Defaults to {@link ContentStyle#document()} (roomier, document-like presentation).
+     * Pass {@link ContentStyle#compact()} for a tight, field-sized rendering, or a custom
+     * style. Has no effect when {@link #skipStyle()} is set (the caller then owns styling).
+     *
+     * @param contentStyle
+     *                     the content style (a {@code null} is treated as
+     *                     {@link ContentStyle#compact()}).
+     * @return this fragment.
+     */
+    public FText contentStyle(ContentStyle contentStyle) {
+        this.contentStyle = (contentStyle == null) ? ContentStyle.compact () : contentStyle;
+        return this;
+    }
+
+    /**
+     * Assigns the link handler — what happens when a link in the rendered text is clicked.
+     * <p>
+     * Defaults to {@link LinkHandlers#standard()} (external links open in a new tab; in-page
+     * {@code #anchor} links scroll within the content and never reach an SPA hash router; other
+     * schemes are left to the browser). Pass {@link LinkHandlers#standard(ILinkHandler)} with an
+     * application fallback to handle custom schemes (e.g. {@code doc:}). Has no effect in the
+     * {@code embed} rendering mode (the caller then owns the content root and its listeners).
+     *
+     * @param linkHandler
+     *                    the link handler ({@code null} disables link interception — links follow
+     *                    their {@code href} natively).
+     * @return this fragment.
+     */
+    public FText linkHandler(ILinkHandler linkHandler) {
+        this.linkHandler = linkHandler;
+        return this;
+    }
+
+    /**
      * Assigns the top heading level.
      * <p>
      * This is the heading level that the first heading will be rendered as.
@@ -117,54 +154,24 @@ public class FText extends Fragment<FText> {
 
     @Override
     protected void buildInto(ElementBuilder root) {
+        // apply() scopes the root with the richtext class AND layers the style's overrides.
         if (!skipStyle)
-            root.style ("juiFragFText");
+            (contentStyle != null ? contentStyle : ContentStyle.compact ()).apply (root);
+        // Route link clicks through the handler (a delegated listener on the content root, so it
+        // survives content changes). In-page #anchors are intercepted so an SPA hash router is
+        // never triggered — see LinkHandlers.standard().
+        if (linkHandler != null) {
+            root.use (n -> {
+                Element el = Js.uncheckedCast (n);
+                LinkSupport.bind (el, linkHandler);
+            });
+        }
         _build (root);
     }
 
     private void _build(ContainerBuilder<?> parent) {
-        text.getBlocks ().forEach (blk -> {
-            if (blk.typeIs (BlockType.PARA, BlockType.NLIST, BlockType.OLIST)) {
-                P.$ (parent).$ (p -> {
-                    if (blk.typeIs (BlockType.NLIST))
-                        p.style ("list_bullet");
-                    if (blk.typeIs (BlockType.OLIST))
-                        p.style ("list_number");
-                    if (blk.getIndent() > 0)
-                        p.style ("indent" + blk.getIndent ());
-                    insert(p, blk.getLines ());
-                });
-            } else if (blk.typeIs (BlockType.H1)) {
-                h(parent, topHeadingLevel).$(p -> insert(p, blk.getLines()));
-            } else if (blk.typeIs (BlockType.H2)) {
-                h(parent, topHeadingLevel + 1).$(p -> insert(p, blk.getLines()));
-            } else if (blk.typeIs (BlockType.H3)) {
-                h(parent, topHeadingLevel + 2).$(p -> insert(p, blk.getLines()));
-            }
-        });
-    }
-
-    protected ContainerBuilder<?> h(ContainerBuilder<?> p, int level) {
-        if (level <= 1)
-            return H1.$ (p);
-        if (level == 2)
-            return H2.$ (p);
-        if (level == 3)
-            return H3.$ (p);
-        if (level == 4)
-            return H4.$ (p);
-        if (level == 5)
-            return H5.$ (p);
-        if (level == 6)
-            return H6.$ (p);
-        return H6.$ (p);
-    }
-
-    protected void insert(ContainerBuilder<?> p, List<FormattedLine> lines) {
-        Itr.forEach (lines, (c,line) -> {
-            if (!c.first ())
-                Br.$ (p);
-            FLine.$ (p, line);
-        });
+        new DomBuilderFormattedTextRenderer (parent)
+            .topHeadingLevel (topHeadingLevel)
+            .render (text);
     }
 }

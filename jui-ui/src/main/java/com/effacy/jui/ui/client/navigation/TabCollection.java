@@ -86,12 +86,25 @@ public class TabCollection {
 
         /**
          * Additional indicator to display.
-         * 
+         *
          * @param indicator
          *              the indicator text.
          * @return this tab configuration.
          */
         public ITabConfig indicator(String indicator);
+
+        /**
+         * A count to display in a circle alongside the label. A negative value
+         * (the default of {@code -1}) displays nothing; {@code 0} is a valid count
+         * and is displayed.
+         * <p>
+         * After rendering this also updates the displayed count live.
+         *
+         * @param count
+         *              the count to display.
+         * @return this tab configuration.
+         */
+        public ITabConfig count(int count);
 
         /**
          * This can be used to block navigate away requests (i.e. if there are unsaved
@@ -112,7 +125,7 @@ public class TabCollection {
          *                the handler.
          * @return this tab configuration.
          */
-        public ITabConfig handler(final INavigationHandler handler);
+        public ITabConfig handler(INavigationHandler handler);
 
         /**
          * See {@link #handler(INavigationHandler)} but registers a provider.
@@ -392,7 +405,7 @@ public class TabCollection {
 
         String indicator;
 
-        int count;
+        int count = -1;
 
         Invoker handler;
 
@@ -462,12 +475,11 @@ public class TabCollection {
         }
 
         /**
-         * Assigns an initial count indicator value.
-         * 
-         * @param count
-         *              the count to display (0 display nothing).
-         * @return this tab configuration.
+         * {@inheritDoc}
+         *
+         * @see com.effacy.jui.ui.client.navigation.TabCollection.ITabConfig#count(int)
          */
+        @Override
         public TabConfig count(int count) {
             this.count = count;
             return this;

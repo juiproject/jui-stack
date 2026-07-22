@@ -7,6 +7,8 @@ description: "Create JUI fragments — reusable DOM building blocks used in GWT/
 
 Create fragments — reusable DOM building blocks that contribute to a parent component's DOM tree without being full components themselves.
 
+For the DomBuilder element/event API used inside a fragment's builder lambda, see the **jui-dombuilder** skill.
+
 ## Fragment vs Component
 
 | Aspect | Fragment | Component |
@@ -270,6 +272,50 @@ Div.$(parent).style("fragMyFrag").$(inner -> {
 Use the localised CSS pattern with `ILocalCSS extends CssDeclaration` when stronger isolation is needed. See the `jui-styles` skill for the full pattern.
 
 ## Variations
+
+Fragments are the artefact where JUI's **variant** model is most visible. A variant is a named,
+reusable bundle of configuration applied repeatably to give the fragment a particular look or behaviour
+in a particular context. The framework's standard fragments (e.g. `Btn`) implement this with
+`IFragmentVariant<T>` and an instance `variant(...)` method; variants are declared as constants and
+**compose** (one variant can apply others).
+
+### Standard `IFragmentVariant<T>` mechanism (preferred for library/shared fragments)
+
+```java
+public class MyFrag extends Fragment<MyFrag> {
+
+    public interface Variant extends IFragmentVariant<MyFrag> {
+        Variant STANDARD = fragment -> { };
+        Variant ROUNDED  = fragment -> fragment.css("--frag-myfrag-radius: 16px;");
+        Variant OUTLINED = fragment -> fragment.css("--frag-myfrag-bg: transparent;");
+        // Composition.
+        Variant OUTLINED_ROUNDED = fragment -> fragment.variant(OUTLINED).variant(ROUNDED);
+    }
+
+    public static MyFrag $(IDomInsertableContainer<?> parent) {
+        MyFrag frg = new MyFrag();
+        if (parent != null)
+            parent.insert(frg);
+        return frg;
+    }
+
+    public MyFrag() {
+        super(parent -> Div.$(parent).style("fragMyFrag").$(inner -> { /* ... */ }));
+        variant(Variant.STANDARD);   // a sensible default
+    }
+}
+```
+
+```java
+MyFrag.$(parent).variant(MyFrag.Variant.OUTLINED_ROUNDED);
+```
+
+`variant(...)` is inherited from `Fragment` and simply invokes the variant's `configure(this)`.
+Projects collect their shared fragment variants in a dedicated `Variants` class — reuse those where one
+exists. See the `jui-styles` skill (the **Variants** section) for the model across all artefact kinds.
+
+The lighter enum/interface-with-`style()` styles below are alternatives where a variant only switches a
+CSS class.
 
 ### Enum-based
 

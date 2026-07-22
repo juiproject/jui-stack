@@ -1,0 +1,6 @@
+This is a sample downloadable asset.
+
+Any file you drop in content/assets/ is copied to public/assets/ by the build
+and can be linked from an article with a path like:
+
+    [Download the template](assets/template.txt)

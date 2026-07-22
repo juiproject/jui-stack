@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
@@ -101,6 +102,29 @@ public class MarkdownParser {
      * See {@link #urlResolver(BiFunction)}.
      */
     private BiFunction<String, UrlType, String> urlResolver;
+
+    /**
+     * See {@link #fence(Predicate)}.
+     */
+    private Predicate<String> fenceSelector;
+
+    /**
+     * Configures which fenced blocks (```` ```info ... ``` ````) are parsed as a generic
+     * {@link com.effacy.jui.text.type.FormattedBlock.BlockType#FENCE} — rendered pluggably
+     * by their info string (e.g. {@code mermaid}) — rather than a fenced code block
+     * ({@link com.effacy.jui.text.type.FormattedBlock.BlockType#CODE}). The predicate is
+     * tested against the fence's info string (the text after the opening ```` ``` ````).
+     * When {@code null} (the default) every fence is a code block, preserving prior
+     * behaviour; both serialize back to an identical ```` ``` ```` fence either way.
+     *
+     * @param fenceSelector
+     *                      tests an info string; {@code true} → FENCE, otherwise CODE.
+     * @return this parser for chaining.
+     */
+    public MarkdownParser fence(Predicate<String> fenceSelector) {
+        this.fenceSelector = fenceSelector;
+        return this;
+    }
 
     /**
      * Marks the content as potentially incomplete (e.g. streaming). Unclosed
@@ -205,7 +229,10 @@ public class MarkdownParser {
             boolean partialBlock = (p == lastBlockIndex);
 
             if (block.code) {
-                emitCodeBlock(handler, block, partialBlock);
+                if ((fenceSelector != null) && fenceSelector.test(block.lang))
+                    emitFence(handler, block, partialBlock);
+                else
+                    emitCodeBlock(handler, block, partialBlock);
                 continue;
             }
 
@@ -234,13 +261,37 @@ public class MarkdownParser {
                 emitHeading(handler, lines[0], partialBlock);
             } else if (isTableBlock(lines)) {
                 emitTable(handler, lines, partialBlock);
-            } else if (isListBlock(lines)) {
+            } else if (isQuoteBlock(lines)) {
+                emitQuote(handler, lines, partialBlock);
+            } else if (isListStart(lines)) {
+                // The block begins with a list item: treat the whole block as a list.
+                // emitList folds soft-wrapped continuation lines into their item, so a
+                // list whose items span multiple lines is not mis-parsed (the first item
+                // is no longer dropped to a paragraph because its wrapped line is not a
+                // marker line).
                 emitList(handler, lines, partialBlock);
             } else {
-                // Check for a list starting mid-paragraph (e.g. intro text
-                // followed by list items without a blank line separator).
+                // Check for a quote or list starting mid-paragraph (e.g. intro text
+                // followed by a '>' line or list items without a blank line
+                // separator). Whichever transition occurs first wins.
                 int listStart = findListTransition(lines);
-                if (listStart > 0) {
+                int quoteStart = findQuoteTransition(lines);
+                if ((quoteStart > 0) && ((listStart <= 0) || (quoteStart < listStart))) {
+                    handler.startBlock(BlockType.PARA);
+                    for (int l = 0; l < quoteStart; l++) {
+                        handler.startLine();
+                        if (!lines[l].isEmpty())
+                            emitLineContent(handler, lines[l], false);
+                        handler.endLine();
+                    }
+                    handler.endBlock(BlockType.PARA);
+
+                    // Emit the quote from the transition onward; emitQuote strips the
+                    // markers and folds lazy continuation lines into the quote.
+                    String[] quoteLines = new String[lines.length - quoteStart];
+                    System.arraycopy(lines, quoteStart, quoteLines, 0, quoteLines.length);
+                    emitQuote(handler, quoteLines, partialBlock);
+                } else if (listStart > 0) {
                     handler.startBlock(BlockType.PARA);
                     for (int l = 0; l < listStart; l++) {
                         handler.startLine();
@@ -250,29 +301,10 @@ public class MarkdownParser {
                     }
                     handler.endBlock(BlockType.PARA);
 
-                    // Find where the contiguous list items end.
-                    int listEnd = lines.length;
-                    for (int l = listStart; l < lines.length; l++) {
-                        if (lines[l].trim().isEmpty())
-                            continue;
-                        if (!isListItem(lines[l])) {
-                            listEnd = l;
-                            break;
-                        }
-                    }
-
-                    // Copy list lines; append any trailing non-list continuation
-                    // to the last list item (single-newline continuation).
-                    String[] listLines = new String[listEnd - listStart];
+                    // Emit the list from the transition onward; emitList folds any
+                    // soft-wrapped continuation lines into the item they belong to.
+                    String[] listLines = new String[lines.length - listStart];
                     System.arraycopy(lines, listStart, listLines, 0, listLines.length);
-                    if (listEnd < lines.length) {
-                        StringBuilder continuation = new StringBuilder(listLines[listLines.length - 1]);
-                        for (int l = listEnd; l < lines.length; l++) {
-                            if (!lines[l].trim().isEmpty())
-                                continuation.append(" ").append(lines[l].trim());
-                        }
-                        listLines[listLines.length - 1] = continuation.toString();
-                    }
                     emitList(handler, listLines, partialBlock);
                 } else {
                     handler.startBlock(BlockType.PARA);
@@ -369,6 +401,23 @@ public class MarkdownParser {
         handler.endBlock(BlockType.CODE);
     }
 
+    /**
+     * Emits a generic fenced block (see {@link #fence(Predicate)}): the info string becomes
+     * the {@code info} meta and the body is carried verbatim as the block's lines.
+     */
+    private void emitFence(IEventBuilder<?> handler, ParsedBlock block, boolean partial) {
+        handler.startBlock(BlockType.FENCE);
+        if ((block.lang != null) && !block.lang.isEmpty())
+            handler.meta("info", block.lang);
+        for (int i = 0; i < block.lines.size(); i++) {
+            handler.startLine();
+            if (!block.lines.get(i).isEmpty())
+                handler.text(block.lines.get(i));
+            handler.endLine();
+        }
+        handler.endBlock(BlockType.FENCE);
+    }
+
     private static class ParsedBlock {
         boolean code;
         String lang;
@@ -450,6 +499,49 @@ public class MarkdownParser {
         return true;
     }
 
+    /**
+     * Determines whether the block <em>starts</em> a list — i.e. its first non-empty line
+     * is a list item. Unlike {@link #isListBlock(String[])} (which requires every line to
+     * be a marker line) this admits lists whose items soft-wrap across several lines; the
+     * continuation lines are folded into their item by {@link #emitList}.
+     */
+    private static boolean isListStart(String[] lines) {
+        if (lines == null)
+            return false;
+        for (String line : lines) {
+            if (line.trim().isEmpty())
+                continue;
+            return isListItem(line);
+        }
+        return false;
+    }
+
+    /**
+     * The leading indentation of a line in columns (a space is one column, a tab four —
+     * CommonMark's tab stop). Used to derive relative nesting; the absolute value is not
+     * significant, only how it compares to the surrounding items.
+     */
+    private static int leadingWidth(String line) {
+        int w = 0;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (c == ' ')
+                w++;
+            else if (c == '\t')
+                w += 4;
+            else
+                break;
+        }
+        return w;
+    }
+
+    /** A single list item accumulated across one marker line and any continuation lines. */
+    private static class ListItem {
+        int indent;
+        boolean ordered;
+        String content = "";
+    }
+
     private static boolean isListItem(String line) {
         String trimmed = line.trim();
         if (trimmed.length() < 2)
@@ -473,48 +565,119 @@ public class MarkdownParser {
     }
 
     private void emitList(IEventBuilder<?> handler, String[] lines, boolean partial) {
-        for (int l = 0; l < lines.length; l++) {
-            if (lines[l].trim().isEmpty())
+        // Group lines into items. A line beginning with a list marker starts a new item;
+        // a subsequent non-marker line is a soft-wrapped (lazy) continuation and is folded
+        // into the current item — so an item whose text wraps across lines is kept whole
+        // (and, importantly, the first item is not split off into a paragraph). Each
+        // resulting item becomes its own list block.
+        // Nesting is derived from *relative* indentation via a stack of column widths, so
+        // documents authored elsewhere (2-, 3- or 4-space steps, tabs, or marker-relative
+        // indentation) all map to the correct depth: an item indented more than the current
+        // level opens a deeper level; less indentation pops back. The stack's base level is
+        // never popped, so a whole list indented under some outer context still starts at 0.
+        List<ListItem> items = new ArrayList<>();
+        List<Integer> indentStack = new ArrayList<>();
+        ListItem current = null;
+        for (String raw : lines) {
+            if (raw.trim().isEmpty())
                 continue;
-
-            boolean partialLine = partial && (l == lines.length - 1);
-
-            // Determine indent level from leading whitespace (2+ spaces or 1 tab = 1 level).
-            int spaces = 0;
-            for (int i = 0; i < lines[l].length(); i++) {
-                if (lines[l].charAt(i) == ' ')
-                    spaces++;
-                else if (lines[l].charAt(i) == '\t')
-                    spaces += 3;
-                else
-                    break;
-            }
-            int indent = (spaces + 1) / 3;
-
-            String trimmed = lines[l].trim();
-            String content = "";
-            boolean ordered = false;
-
-            char first = trimmed.charAt(0);
-            if ((first == '-') || (first == '*') || (first == '+')) {
-                content = trimmed.substring(trimmed.indexOf(' ') + 1);
-            } else {
-                int dotIndex = trimmed.indexOf('.');
-                if (dotIndex > 0) {
-                    content = trimmed.substring(dotIndex + 1).trim();
-                    ordered = true;
+            if (isListItem(raw)) {
+                int width = leadingWidth(raw);
+                while ((indentStack.size() > 1) && (width < indentStack.get(indentStack.size() - 1)))
+                    indentStack.remove(indentStack.size() - 1);
+                if (indentStack.isEmpty() || (width > indentStack.get(indentStack.size() - 1)))
+                    indentStack.add(width);
+                current = new ListItem();
+                current.indent = indentStack.size() - 1;
+                String trimmed = raw.trim();
+                char first = trimmed.charAt(0);
+                if ((first == '-') || (first == '*') || (first == '+')) {
+                    // Strip the marker character and any following whitespace.
+                    current.content = trimmed.substring(1).trim();
+                } else {
+                    int dotIndex = trimmed.indexOf('.');
+                    current.ordered = true;
+                    current.content = (dotIndex >= 0) ? trimmed.substring(dotIndex + 1).trim() : "";
                 }
+                items.add(current);
+            } else if (current != null) {
+                String continuation = raw.trim();
+                current.content = current.content.isEmpty() ? continuation : (current.content + " " + continuation);
             }
+        }
 
-            BlockType type = ordered ? BlockType.OLIST : BlockType.NLIST;
+        for (int idx = 0; idx < items.size(); idx++) {
+            ListItem item = items.get(idx);
+            boolean partialLine = partial && (idx == (items.size() - 1));
+            BlockType type = item.ordered ? BlockType.OLIST : BlockType.NLIST;
             handler.startBlock(type);
-            if (indent > 0)
-                handler.meta("indent", String.valueOf(indent));
+            if (item.indent > 0)
+                handler.meta("indent", String.valueOf(item.indent));
             handler.startLine();
-            emitLineContent(handler, content, partialLine);
+            emitLineContent(handler, item.content, partialLine);
             handler.endLine();
             handler.endBlock(type);
         }
+    }
+
+    /************************************************************************
+     * Block quote.
+     ************************************************************************/
+
+    /**
+     * A block is a quote when its first non-empty line begins with a {@code >}
+     * marker. Subsequent lines are folded in (lazy continuation), with their own
+     * {@code >} marker stripped where present.
+     */
+    private static boolean isQuoteBlock(String[] lines) {
+        if (lines == null)
+            return false;
+        for (String line : lines) {
+            if (line.trim().isEmpty())
+                continue;
+            return line.trim().startsWith(">");
+        }
+        return false;
+    }
+
+    /**
+     * Locates the first line after the first that begins with a {@code >} marker —
+     * a quote interrupting a paragraph without an intervening blank line. Returns
+     * -1 when no such line exists.
+     */
+    private static int findQuoteTransition(String[] lines) {
+        for (int i = 1; i < lines.length; i++) {
+            if (lines[i].trim().startsWith(">"))
+                return i;
+        }
+        return -1;
+    }
+
+    /**
+     * Strips a leading {@code >} quote marker (and a single following space) from a
+     * line. Lines without a marker (lazy continuations) are returned trimmed.
+     */
+    private static String stripQuoteMarker(String line) {
+        String trimmed = line.trim();
+        if (!trimmed.startsWith(">"))
+            return trimmed;
+        trimmed = trimmed.substring(1);
+        if (trimmed.startsWith(" "))
+            trimmed = trimmed.substring(1);
+        return trimmed;
+    }
+
+    private void emitQuote(IEventBuilder<?> handler, String[] lines, boolean partial) {
+        handler.startBlock(BlockType.QUOTE);
+        for (int l = 0; l < lines.length; l++) {
+            boolean partialLine = partial && (l == lines.length - 1);
+            String content = stripQuoteMarker(lines[l]);
+            handler.startLine();
+            if (!content.isEmpty())
+                emitLineContent(handler, content, partialLine);
+            handler.endLine();
+        }
+        handler.endBlock(BlockType.QUOTE);
     }
 
     /************************************************************************
@@ -698,7 +861,7 @@ public class MarkdownParser {
                         resolvedUrl = mapped;
                 }
                 if (link.image)
-                    handler.image(link.label, resolvedUrl, link.width, link.height);
+                    handler.image(link.label, resolvedUrl, link.width, link.height, link.align, link.margin);
                 else
                     handler.link(link.label, resolvedUrl);
 
@@ -714,10 +877,26 @@ public class MarkdownParser {
                     int contentStart = start.position + start.marker.length();
                     int contentEnd = end.position;
                     int endIndex = markers.indexOf(end);
-                    emitFormattedSpan(handler, line, contentStart, contentEnd, markers, i + 1, endIndex, start.type);
+                    // Recursively parse the span's content with the span's format applied, so
+                    // nested markers, links and variables inside it are handled by the same
+                    // logic (and inner links carry the outer format — an emphasised link). This
+                    // replaces a flat emit that re-emitted the raw link/variable markdown as
+                    // literal text and then let the outer walk double-process the links.
+                    String inner = line.substring(contentStart, contentEnd);
+                    if (inner.isEmpty())
+                        // Empty markers (e.g. "****") — preserve the zero-length format.
+                        handler.formatted("", start.type);
+                    else
+                        emitLineContent(new FormatDecorator(handler, start.type), inner, false);
 
                     textPos = end.position + end.marker.length();
                     i = endIndex + 1;
+                    // Links / variables inside the consumed span were emitted by the recursion;
+                    // skip them in this (outer) walk so they are not processed a second time.
+                    while ((linkIdx < links.size()) && (links.get(linkIdx).startPos() < textPos))
+                        linkIdx++;
+                    while ((varIdx < variables.size()) && (variables.get(varIdx).startPos() < textPos))
+                        varIdx++;
                 } else {
                     if (partial && (start.position >= textPos))
                         lastUnmatched = start;
@@ -740,58 +919,90 @@ public class MarkdownParser {
     }
 
     /**
-     * Emits a formatted span, checking for nested marker pairs inside the
-     * region and splitting into segments when found. For example, the italic
-     * span in {@code *text **bold** more*} emits three formatted events:
-     * {@code formatted("text ", ITL)}, {@code formatted("bold", ITL, BLD)},
-     * {@code formatted(" more", ITL)}.
+     * Wraps an {@link IEventBuilder} so inline content parsed within a format span carries that
+     * span's format. Text and formatted segments gain the outer format; links carry it too (a
+     * link inside an emphasised span is an emphasised link). Used to recursively parse a span's
+     * content through {@link #emitLineContent} — so nested markers, links and variables inside
+     * the span are handled by the same logic, rather than the span's raw markdown being emitted
+     * as literal text (and its links then double-processed by the outer walk).
      */
-    private void emitFormattedSpan(IEventBuilder<?> handler, String line, int start, int end, List<FormatMarker> markers, int fromIdx, int toIdx, FormatType outerType) {
-        // Look for matched pairs among markers between fromIdx and toIdx.
-        int pos = start;
-        int idx = fromIdx;
-        boolean foundNested = false;
-        while (idx < toIdx) {
-            FormatMarker innerStart = markers.get(idx);
-            if ((innerStart.position < start) || (innerStart.position >= end)) {
-                idx++;
-                continue;
-            }
-            FormatMarker innerEnd = null;
-            for (int j = idx + 1; j < toIdx; j++) {
-                FormatMarker candidate = markers.get(j);
-                if ((candidate.type == innerStart.type) && candidate.marker.equals(innerStart.marker)) {
-                    innerEnd = candidate;
-                    break;
-                }
-            }
-            if (innerEnd == null) {
-                idx++;
-                continue;
-            }
+    private static class FormatDecorator implements IEventBuilder<Void> {
 
-            foundNested = true;
+        private final IEventBuilder<?> delegate;
+        private final FormatType[] outer;
 
-            // Text before inner pair — formatted with outer type only.
-            if (innerStart.position > pos) {
-                handler.formatted(line.substring(pos, innerStart.position), outerType);
-            }
-
-            // Inner content — formatted with both types.
-            int innerContentStart = innerStart.position + innerStart.marker.length();
-            int innerContentEnd = innerEnd.position;
-            handler.formatted(line.substring(innerContentStart, innerContentEnd), outerType, innerStart.type);
-
-            pos = innerEnd.position + innerEnd.marker.length();
-            idx = markers.indexOf(innerEnd) + 1;
+        FormatDecorator(IEventBuilder<?> delegate, FormatType... outer) {
+            this.delegate = delegate;
+            this.outer = outer;
         }
 
-        if (!foundNested) {
-            // No nested markers — emit as a single formatted event.
-            handler.formatted(line.substring(start, end), outerType);
-        } else if (pos < end) {
-            // Remaining text after the last nested pair.
-            handler.formatted(line.substring(pos, end), outerType);
+        private FormatType[] combine(FormatType[] inner) {
+            // Outer format(s) first, then the inner ones — matching the emit order the flat
+            // (pre-recursion) span handling produced, e.g. formatted("and", BLD, ITL).
+            FormatType[] all = new FormatType[outer.length + inner.length];
+            System.arraycopy(outer, 0, all, 0, outer.length);
+            System.arraycopy(inner, 0, all, outer.length, inner.length);
+            return all;
+        }
+
+        @Override
+        public Void result() {
+            return null;
+        }
+
+        @Override
+        public void startBlock(BlockType type) {
+            delegate.startBlock(type);
+        }
+
+        @Override
+        public void endBlock(BlockType type) {
+            delegate.endBlock(type);
+        }
+
+        @Override
+        public void meta(String name, String value) {
+            delegate.meta(name, value);
+        }
+
+        @Override
+        public void startLine() {
+            delegate.startLine();
+        }
+
+        @Override
+        public void endLine() {
+            delegate.endLine();
+        }
+
+        @Override
+        public void text(String text) {
+            delegate.formatted(text, outer);
+        }
+
+        @Override
+        public void formatted(String text, FormatType... formats) {
+            delegate.formatted(text, combine(formats));
+        }
+
+        @Override
+        public void link(String label, String url) {
+            delegate.link(label, url, outer);
+        }
+
+        @Override
+        public void link(String label, String url, FormatType... formats) {
+            delegate.link(label, url, combine(formats));
+        }
+
+        @Override
+        public void image(String alt, String src, int width, int height, String align, int margin) {
+            delegate.image(alt, src, width, height, align, margin);
+        }
+
+        @Override
+        public void variable(String name, Map<String, String> meta) {
+            delegate.variable(name, meta);
         }
     }
 
@@ -838,8 +1049,33 @@ public class MarkdownParser {
                             }
                         }
                     }
-                    links.add(new LinkInfo(startPos, urlEnd + 1, line.substring(labelStart + 1, labelEnd), rawUrl, isImage, imgWidth, imgHeight));
-                    pos = urlEnd + 1;
+                    int endPos = urlEnd + 1;
+                    String imgAlign = null;
+                    int imgMargin = -1;
+                    // Parse an optional attribute suffix: "{width=W height=H align=A margin=M}".
+                    if (isImage && (endPos < line.length()) && (line.charAt(endPos) == '{')) {
+                        int braceEnd = line.indexOf('}', endPos + 1);
+                        if (braceEnd != -1) {
+                            for (String part : line.substring(endPos + 1, braceEnd).trim().split(" ")) {
+                                int eq = part.indexOf('=');
+                                if (eq <= 0)
+                                    continue;
+                                String key = part.substring(0, eq).trim();
+                                String val = part.substring(eq + 1).trim();
+                                if ("width".equals(key))
+                                    imgWidth = parsePixelValue(val);
+                                else if ("height".equals(key))
+                                    imgHeight = parsePixelValue(val);
+                                else if ("align".equals(key))
+                                    imgAlign = val;
+                                else if ("margin".equals(key))
+                                    imgMargin = parsePixelValue(val);
+                            }
+                            endPos = braceEnd + 1;
+                        }
+                    }
+                    links.add(new LinkInfo(startPos, endPos, line.substring(labelStart + 1, labelEnd), rawUrl, isImage, imgWidth, imgHeight, imgAlign, imgMargin));
+                    pos = endPos;
                     continue;
                 }
             }
@@ -955,7 +1191,7 @@ public class MarkdownParser {
         return null;
     }
 
-    private record LinkInfo(int startPos, int endPos, String label, String url, boolean image, int width, int height) {}
+    private record LinkInfo(int startPos, int endPos, String label, String url, boolean image, int width, int height, String align, int margin) {}
 
     private record FormatMarker(int position, String marker, FormatType type) {}
 

@@ -69,7 +69,7 @@ public abstract class ToolPopupPanel extends SimpleComponent {
         render(DomGlobal.document.body, -1);
         attach();
         getRoot().addEventListener("mousedown", evt -> evt.stopPropagation());
-        positionBelow(anchor);
+        position(anchor);
         DomGlobal.setTimeout(args -> {
             installDismiss();
             onShown();
@@ -118,11 +118,40 @@ public abstract class ToolPopupPanel extends SimpleComponent {
         public double left, top, bottom;
     }
 
-    private void positionBelow(Element anchor) {
+    /**
+     * Positions the (already-rendered, {@code position: fixed}) panel relative to the
+     * anchor. The default places it just below the anchor; subclasses may override to
+     * position elsewhere (e.g. {@link #positionCentered()} for a larger editor).
+     *
+     * @param anchor
+     *               the element the popup was opened from.
+     */
+    protected void position(Element anchor) {
+        positionBelow(anchor);
+    }
+
+    /**
+     * Positions the panel just below the anchor, left-aligned to it.
+     */
+    protected void positionBelow(Element anchor) {
         JsRect rect = Js.uncheckedCast(anchor.getBoundingClientRect());
         elemental2.dom.HTMLElement rootHtml = Js.uncheckedCast(getRoot());
         rootHtml.style.setProperty("left", rect.left + "px");
         rootHtml.style.setProperty("top", (rect.bottom + 4) + "px");
+    }
+
+    /**
+     * Centres the panel in the viewport (fixed position), bounding it to the viewport so a
+     * large panel scrolls internally rather than overflowing the screen.
+     */
+    protected void positionCentered() {
+        elemental2.dom.HTMLElement rootHtml = Js.uncheckedCast(getRoot());
+        rootHtml.style.setProperty("left", "50%");
+        rootHtml.style.setProperty("top", "50%");
+        rootHtml.style.setProperty("transform", "translate(-50%, -50%)");
+        rootHtml.style.setProperty("max-width", "90vw");
+        rootHtml.style.setProperty("max-height", "85vh");
+        rootHtml.style.setProperty("overflow", "auto");
     }
 
     private void installDismiss() {

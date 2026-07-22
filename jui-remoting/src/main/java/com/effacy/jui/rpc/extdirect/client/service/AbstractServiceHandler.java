@@ -418,7 +418,16 @@ public abstract class AbstractServiceHandler<V,Q extends AbstractServiceHandler<
         public void onTransportError(String message) {
             if (methodCallback != null)
                 methodCallback.onTransportError (message);
-            notifyError ("A problem occurred", "There was a problem communicating with the server; this could be a problem with the network.  Please try again later.", null);
+            // Route the transport failure through the same failure handling as an
+            // application error, so a registered onFailure handler can deal with it (for
+            // example an autosave that retries quietly and shows its own status) and
+            // thereby suppress the default dialog. Fall back to the dialog only when
+            // nothing handled it — preserving the behaviour for callers that register no
+            // failure handler.
+            List<ErrorMessage> errors = new ArrayList<> ();
+            errors.add (new ErrorMessage ((message != null) ? message : "There was a problem communicating with the server."));
+            if (!AbstractServiceHandler.this._failure (errors, RemoteResponseType.ERROR))
+                notifyError ("A problem occurred", "There was a problem communicating with the server; this could be a problem with the network.  Please try again later.", null);
             onComplete (false);
             AbstractServiceHandler.this.onAfterExecute (false);
         }

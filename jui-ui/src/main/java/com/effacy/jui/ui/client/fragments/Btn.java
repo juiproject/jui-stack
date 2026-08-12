@@ -132,12 +132,20 @@ public class Btn {
          * Text only (link-like).
          */
         public static final Variant TEXT = fragment -> {
+            // The hover surface is suppressed at --frag-btn-hover-bg, the token the
+            // stylesheet actually paints from, rather than at --frag-btn-bg-hover
+            // which merely feeds it. A Nature is applied after the Variant and sets
+            // --frag-btn-bg-hover to its own colour; suppressing only that one left
+            // a text button turning solid red on hover the moment it was paired with
+            // DANGER. Overriding the painted token means "text only" survives
+            // whatever colour the Nature asks for — which is the point of TEXT.
             fragment.css("""
                 --frag-btn-text: var(--frag-btn-base);
                 --frag-btn-text-hover: var(--frag-btn-base);
                 --frag-btn-border-width: 0;
                 --frag-btn-bg: transparent;
                 --frag-btn-bg-hover: transparent;
+                --frag-btn-hover-bg: transparent;
                 --frag-btn-hover-text-decoration: underline;
             """);
         };
@@ -195,6 +203,11 @@ public class Btn {
          * See {@link #icon(String)}.
          */
         private String icon;
+
+        /**
+         * See {@link #iconOnly(boolean)}.
+         */
+        private boolean iconOnly;
 
         /**
          * See {@link #size(Length)}.
@@ -273,6 +286,36 @@ public class Btn {
          */
         public BtnFragment icon(String icon) {
             this.icon = icon;
+            return this;
+        }
+
+        /**
+         * Convenience to call {@link #iconOnly(boolean)} passing {@code true}.
+         *
+         * @return the fragment instance.
+         */
+        public BtnFragment iconOnly() {
+            return iconOnly (true);
+        }
+
+        /**
+         * Shows only the {@link #icon(String)}, suppressing the visible label.
+         * <p>
+         * The label is still <em>required</em> and is not discarded: it becomes the
+         * button's accessible name and its tooltip. That is deliberate — an icon
+         * carries no name of its own, so a button built from one alone announces
+         * nothing to a screen reader and means nothing to a user who does not already
+         * know the glyph. Requiring the label makes the accessible name impossible to
+         * omit by accident, and gives the caller a tooltip for free.
+         * <p>
+         * Has no effect where no icon is set, since that would leave nothing to show.
+         *
+         * @param iconOnly
+         *                 {@code true} to suppress the visible label.
+         * @return the fragment instance.
+         */
+        public BtnFragment iconOnly(boolean iconOnly) {
+            this.iconOnly = iconOnly;
             return this;
         }
 
@@ -390,11 +433,19 @@ public class Btn {
                 Em.$ (btn).style (icon);
             if (testId != null)
                 btn.testId (testId);
+            // Icon-only still carries the label, just not visibly: it becomes the
+            // accessible name and the tooltip, neither of which the icon can supply.
+            boolean hideLabel = (iconOnly && !StringSupport.empty(icon));
+            if (hideLabel) {
+                btn.style (styles ().icononly ());
+                btn.attr ("aria-label", label);
+                btn.attr ("title", label);
+            }
             btn.$(
                 Span.$().style(styles().runningpart()).$(
                     Em.$().style(FontAwesome.spinner(FontAwesome.Option.SPIN))
                 ),
-                Span.$().style(styles().label()).text (label)
+                Span.$().style(styles().label()).iff (!hideLabel).text (label)
             );
             if (size != null)
                 btn.css (CSS.FONT_SIZE, size);
@@ -426,6 +477,8 @@ public class Btn {
         String runningpart();
 
         String label();
+
+        String icononly();
 
         String disabled();
     }

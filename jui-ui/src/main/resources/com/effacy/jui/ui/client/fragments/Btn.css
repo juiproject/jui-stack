@@ -54,6 +54,15 @@
     justify-content: left;
 }
 
+/* Icon-only: square off the padding so the glyph sits centred rather than in a
+   box still shaped around an absent label, and drop the gap that would otherwise
+   pad one side. */
+.fragment.icononly {
+    padding: var(--frag-btn-padding-tb);
+    aspect-ratio: 1;
+    gap: 0;
+}
+
 .fragment.running .label {
     visibility: hidden;
 }

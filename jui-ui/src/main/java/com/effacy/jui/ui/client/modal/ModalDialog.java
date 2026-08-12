@@ -944,6 +944,25 @@ public class ModalDialog<V extends IComponent> extends Modal<V> {
              *              the style.
              * @return this action configuration.
              */
+            /**
+             * Sets the button variant.
+             * <p>
+             * {@link #normal()}, {@link #link()}, {@link #danger()} and
+             * {@link #outlined()} each assign the whole variant, so they are
+             * alternatives rather than modifiers — combining two leaves only the
+             * last. This takes a variant directly, which is how a combination
+             * (an outlined danger action, say) is expressed.
+             *
+             * @param variant
+             *                the variant.
+             * @return this action configuration.
+             */
+            public Action variant(Button.Config.Variant variant) {
+                if (variant != null)
+                    this.buttonStyle = variant;
+                return this;
+            }
+
             public Action style(Button.Config.Style style) {
                 this.buttonStyle = style;
                 return this;

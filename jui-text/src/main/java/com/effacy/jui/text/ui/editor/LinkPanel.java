@@ -434,7 +434,14 @@ public class LinkPanel extends ToolPopupPanel {
             border-radius: 6px;
             box-shadow: var(--jui-editor-popover-shadow, 0 6px 20px rgba(0, 0, 0, 0.14));
             padding: 8px;
-            z-index: 10000;
+            /* Above the modal layer, which stacks 1000000–1000060 (Modal.css, six
+               levels for modals over modals). Every editor popup shares this token
+               and this default. At the previous 10000 they rendered *behind* any
+               dialog, so an editor hosted in one had a link button that appeared
+               to do nothing — the panel was opening, just underneath. A popup is
+               transient and anchored to an editor the user is already interacting
+               with, so sitting above the dialog that contains it is right. */
+            z-index: var(--jui-editor-popover-z, 1000100);
             display: flex;
             gap: 6px;
             align-items: center;

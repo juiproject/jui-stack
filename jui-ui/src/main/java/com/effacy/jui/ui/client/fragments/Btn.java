@@ -225,6 +225,11 @@ public class Btn {
         private boolean disabled;
 
         /**
+         * See {@link #immediate()}.
+         */
+        private boolean immediate;
+
+        /**
          * See {@link #onclick(Consumer<IButtonActionCallback>)}.
          */
         private Consumer<IButtonActionCallback> onclick;
@@ -356,6 +361,26 @@ public class Btn {
         }
 
         /**
+         * Suppresses the busy state on click: the button is not disabled and shows
+         * no spinner while the handler runs.
+         * <p>
+         * The default suits an action that goes away and does something — a save, a
+         * request — where disabling the button prevents a second submission and the
+         * spinner says why nothing has happened yet. It suits an action that merely
+         * opens something (a dialog, a menu, a panel) considerably less: there is
+         * no request to wait for, nothing to double-submit, and the busy state
+         * appears over a button the user is about to navigate away from. Where the
+         * handler is genuinely synchronous the state is set and cleared within the
+         * one event and reads as a flicker.
+         *
+         * @return the fragment instance.
+         */
+        public BtnFragment immediate() {
+            this.immediate = true;
+            return this;
+        }
+
+        /**
          * Adds an attribute to add to the root element.
          * 
          * @param name
@@ -454,14 +479,20 @@ public class Btn {
                 btn.style(styles().left());
             }
             if (onclick != null) {
-                btn.onclick ((e, n) -> {
-                    ((HTMLButtonElement)n).disabled = true;
-                    ((Element)n).classList.add(styles().running());
-                    onclick.accept(() -> {
-                        ((Element)n).classList.remove(styles().running());
-                        ((HTMLButtonElement)n).disabled = false;
+                if (immediate) {
+                    // No busy state: the completion callback is accepted so a handler
+                    // written against it still works, and does nothing.
+                    btn.onclick ((e, n) -> onclick.accept(() -> {}));
+                } else {
+                    btn.onclick ((e, n) -> {
+                        ((HTMLButtonElement)n).disabled = true;
+                        ((Element)n).classList.add(styles().running());
+                        onclick.accept(() -> {
+                            ((Element)n).classList.remove(styles().running());
+                            ((HTMLButtonElement)n).disabled = false;
+                        });
                     });
-                });
+                }
             }
             return btn;
         }

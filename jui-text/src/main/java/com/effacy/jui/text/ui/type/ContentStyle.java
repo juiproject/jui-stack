@@ -119,6 +119,27 @@ public class ContentStyle {
         return this;
     }
 
+    /**
+     * The colour of a link at rest (default: the surrounding text colour).
+     * <p>
+     * A link inside prose is marked by its underline rather than by its colour, so
+     * that a paragraph carrying three of them still reads as a paragraph. Set this
+     * where the content is somewhere links should announce themselves instead.
+     */
+    public ContentStyle linkColor(String value) {
+        return token ("--jui-richtext-link-color", value);
+    }
+
+    /** The colour of a link's underline at rest (default: currentColor at 40%). */
+    public ContentStyle linkUnderline(String value) {
+        return token ("--jui-richtext-link-underline", value);
+    }
+
+    /** The colour of a link on hover (default: the text colour, darkened). */
+    public ContentStyle linkHoverColor(String value) {
+        return token ("--jui-richtext-link-hover-color", value);
+    }
+
     /** The base-level list indent (e.g. {@code "1.5em"}; {@code "0"} keeps lists flush). */
     public ContentStyle listIndent(String value) {
         return token ("--jui-richtext-list-indent", value);

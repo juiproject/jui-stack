@@ -213,6 +213,36 @@ public class FormattedTextStyles {
     cursor: default;
 }
 
+/* Links. There was no rule here at all, so a link fell through to whatever the
+   surrounding application does to an anchor — which in a body of prose is
+   typically a saturated colour that breaks the line it sits in and makes the
+   sentence read as a list of destinations.
+
+   At rest a link is the text colour with a light dashed underline: the underline
+   marks it without taking it out of the sentence, and dashed says "this is a
+   pointer" where solid says "this is emphasis". On hover it firms up — a little
+   darker, the underline solid — so the state change is felt rather than
+   announced.
+
+   Both states are tokens, and both defaults are derived from currentColor rather
+   than fixed, so the treatment holds wherever the content is rendered: muted
+   caption, dark card, anything. */
+.richtext a {
+    color: var(--jui-richtext-link-color, inherit);
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    text-decoration-thickness: 1px;
+    text-decoration-color: var(--jui-richtext-link-underline, color-mix(in srgb, currentColor 40%, transparent));
+    text-underline-offset: 0.18em;
+    cursor: pointer;
+}
+
+.richtext a:hover {
+    color: var(--jui-richtext-link-hover-color, color-mix(in srgb, currentColor 78%, #000));
+    text-decoration-style: solid;
+    text-decoration-color: var(--jui-richtext-link-hover-underline, currentColor);
+}
+
 .richtext img {
     max-width: 100%;
     height: auto;

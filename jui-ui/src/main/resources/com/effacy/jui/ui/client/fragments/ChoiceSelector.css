@@ -11,6 +11,10 @@
     --juiChoiceSelector-text-hover: var(--juiChoiceSelector-text);
     --juiChoiceSelector-text-selected: var(--jui-color-neutral90);
     --juiChoiceSelector-text-weight: 300;
+    /* Inherits by default, so nothing changes for anything already using this;
+       a variant sets it where the control sits in denser content than the text
+       around it (a filter strip in a toolbar, say). */
+    --juiChoiceSelector-text-size: inherit;
     --juiChoiceSelector-option-lr: 1em;
     --juiChoiceSelector-option-tb: 0.5em;
     --juiChoiceSelector-option-radius: var(--juiChoiceSelector-radius);
@@ -30,6 +34,7 @@
 
 .fragment > div {
     padding: var(--juiChoiceSelector-option-tb) var(--juiChoiceSelector-option-lr);
+    font-size: var(--juiChoiceSelector-text-size);
     font-weight: var(--juiChoiceSelector-text-weight);
     color: var(--juiChoiceSelector-text);
     border-radius: var(--juiChoiceSelector-option-radius);

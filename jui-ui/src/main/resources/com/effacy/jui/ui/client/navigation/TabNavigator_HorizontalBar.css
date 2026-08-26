@@ -9,6 +9,15 @@
     --cpt-tabbedpanel-text-active: var(--jui-comp-tabset-text-active);
     --cpt-tabbedpanel-radius: var(--jui-radius-lg);
     --cpt-tabbedpanel-item-radius: var(--jui-radius-sm);
+    /* The strip's own inset and margin. Tokens because a variant can only set
+       properties, and a bar that sits directly under a page header wants neither
+       the margin that floats it nor the indent that misaligns it with the heading
+       above. Defaults are what the bar has always had. */
+    --cpt-tabbedpanel-bar-margin: var(--jui-space-4);
+    --cpt-tabbedpanel-bar-padding: 0;
+    /* The foot of the strip, separately from the box: a bar sitting under a page
+       header wants the line that closes it and not the three that box it. */
+    --cpt-tabbedpanel-bar-border-bottom: 1px solid var(--cpt-tabbedpanel-outline);
 }
 
 .component .tabs {
@@ -18,8 +27,10 @@
     padding-top: 0;
     transition: none;
     border: 1px solid var(--cpt-tabbedpanel-outline);
+    border-bottom: var(--cpt-tabbedpanel-bar-border-bottom);
     border-radius: var(--cpt-tabbedpanel-radius);
-    margin: var(--jui-space-4);
+    margin: var(--cpt-tabbedpanel-bar-margin);
+    padding: var(--cpt-tabbedpanel-bar-padding);
     background: var(--cpt-navigator-bg);
 }
 

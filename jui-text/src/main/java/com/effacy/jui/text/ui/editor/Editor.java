@@ -347,6 +347,31 @@ public class Editor extends Component<Editor.Config> {
      ************************************************************************/
 
     /**
+     * Places the caret in the editor.
+     * <p>
+     * The base implementation focuses the component's <em>managed focus
+     * element</em>, and this component registers none — its editable surface is the
+     * root itself, carrying {@code contenteditable}, which the focus manager knows
+     * nothing about. So the inherited {@code focus()} resolved to no element and
+     * moved no caret, and a caller had no supported way to put the cursor in a rich
+     * editor at all.
+     * <p>
+     * That is not a cosmetic gap. Focus not taken is focus that cannot be lost, so
+     * everything hung off losing it — the {@code focus} styling, and any
+     * {@link Config#onFocusLost} flush on the enclosing control — never ran either.
+     * <p>
+     * Focusing the element natively also re-establishes the editor's own selection
+     * state: the {@code focus} listener installed at render syncs it from the DOM.
+     */
+    @Override
+    public void focus() {
+        if (editorEl == null)
+            return;
+        HTMLElement el = Js.uncheckedCast(editorEl);
+        el.focus();
+    }
+
+    /**
      * Loads a document into the editor, replacing any current content.
      *
      * @param doc

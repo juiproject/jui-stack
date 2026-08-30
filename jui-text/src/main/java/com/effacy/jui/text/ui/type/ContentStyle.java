@@ -52,6 +52,28 @@ public class ContentStyle {
     private final LinkedHashMap<String, String> tokens = new LinkedHashMap<> ();
 
     /**
+     * The list indent token, and the value it takes when a style does not set one.
+     * <p>
+     * This one token is always written to the content root, unlike the rest, which
+     * are written only when overridden. The reason is that it is the only token
+     * consumed inside a {@code calc()}, and a zero length cannot survive the
+     * stylesheet pipeline: written as a {@code var()} fallback or as a stylesheet
+     * declaration, {@code 0em} is normalised to a unitless {@code 0}. That is
+     * valid CSS everywhere except inside {@code calc()}, where adding a
+     * {@code <number>} to a {@code <length>} is a type error that invalidates the
+     * whole declaration — leaving list items with no left padding and their
+     * markers' {@code left} resolving to {@code auto}, which drops the bullet onto
+     * the first character.
+     * <p>
+     * Written from here it is an inline style set at runtime, which the pipeline
+     * never sees, so the unit survives and the {@code calc()} stays valid. Any
+     * style that does set the token overrides this.
+     */
+    private static final String LIST_INDENT = "--jui-richtext-list-indent";
+
+    private static final String LIST_INDENT_DEFAULT = "0em";
+
+    /**
      * An empty style — the stylesheet's own (compact) defaults. Add overrides
      * with the fluent setters to build your own.
      */
@@ -97,6 +119,27 @@ public class ContentStyle {
         return this;
     }
 
+    /**
+     * The colour of a link at rest (default: the surrounding text colour).
+     * <p>
+     * A link inside prose is marked by its underline rather than by its colour, so
+     * that a paragraph carrying three of them still reads as a paragraph. Set this
+     * where the content is somewhere links should announce themselves instead.
+     */
+    public ContentStyle linkColor(String value) {
+        return token ("--jui-richtext-link-color", value);
+    }
+
+    /** The colour of a link's underline at rest (default: currentColor at 40%). */
+    public ContentStyle linkUnderline(String value) {
+        return token ("--jui-richtext-link-underline", value);
+    }
+
+    /** The colour of a link on hover (default: the text colour, darkened). */
+    public ContentStyle linkHoverColor(String value) {
+        return token ("--jui-richtext-link-hover-color", value);
+    }
+
     /** The base-level list indent (e.g. {@code "1.5em"}; {@code "0"} keeps lists flush). */
     public ContentStyle listIndent(String value) {
         return token ("--jui-richtext-list-indent", value);
@@ -139,6 +182,8 @@ public class ContentStyle {
     public ElementBuilder apply(ElementBuilder root) {
         if (root != null) {
             root.style (FormattedTextStyles.styles ().richtext ());
+            // Written first so an explicit override below replaces it.
+            root.css (LIST_INDENT, LIST_INDENT_DEFAULT);
             for (Map.Entry<String, String> token : tokens.entrySet ())
                 root.css (token.getKey (), token.getValue ());
         }
@@ -157,6 +202,8 @@ public class ContentStyle {
     public void apply(HTMLElement root) {
         if (root != null) {
             root.classList.add (FormattedTextStyles.styles ().richtext ());
+            // Written first so an explicit override below replaces it.
+            root.style.setProperty (LIST_INDENT, LIST_INDENT_DEFAULT);
             for (Map.Entry<String, String> token : tokens.entrySet ())
                 root.style.setProperty (token.getKey (), token.getValue ());
         }

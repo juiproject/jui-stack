@@ -241,6 +241,56 @@ class SerializationGeneratorTest {
         """);
     }
 
+    /**
+     * A boxed field must read through the {@code OrNull} family and a primitive
+     * through the defaulting one.
+     * <p>
+     * The distinction is the whole point: a primitive has nowhere to put "absent"
+     * so zero is the only answer, while a boxed field does, and defaulting it
+     * turns an unset value into a real zero that nothing downstream can tell apart
+     * from a deliberate one. Both kinds are declared side by side here so a future
+     * change cannot quietly collapse them back together.
+     */
+    @Test
+    public void boxedFieldsPreserveNull() throws Exception {
+        RebindResult result = build("test.Person", "test/Person.java", """
+            package test;
+            import com.effacy.jui.json.annotation.JsonSerializable;
+
+            @JsonSerializable
+            public class Person {
+                private Integer founded;
+                private int age;
+                private Long ref;
+                private Double score;
+                private Boolean active;
+                public Person() {}
+                public Integer getFounded() { return founded; }
+                public void setFounded(Integer founded) { this.founded = founded; }
+                public int getAge() { return age; }
+                public void setAge(int age) { this.age = age; }
+                public Long getRef() { return ref; }
+                public void setRef(Long ref) { this.ref = ref; }
+                public Double getScore() { return score; }
+                public void setScore(Double score) { this.score = score; }
+                public Boolean getActive() { return active; }
+                public void setActive(Boolean active) { this.active = active; }
+            }
+        """);
+
+        assertNotNull (result.generatedUnit(), "expected generated serializer source");
+        String source = result.generatedUnit().getSource ();
+
+        assertContains(source, "result.setFounded(DeserializerHelper.getIntOrNull (fieldJsonValue));");
+        assertContains(source, "result.setRef(DeserializerHelper.getLongOrNull (fieldJsonValue));");
+        assertContains(source, "result.setScore(DeserializerHelper.getDoubleOrNull (fieldJsonValue));");
+        assertContains(source, "result.setActive(DeserializerHelper.getBooleanOrNull (fieldJsonValue));");
+
+        // The primitive keeps the defaulting accessor — zero is the only value it
+        // could take, so there is nothing to preserve.
+        assertContains(source, "result.setAge(DeserializerHelper.getInt (fieldJsonValue));");
+    }
+
     /************************************************************************
      * Support methods.
      ************************************************************************/

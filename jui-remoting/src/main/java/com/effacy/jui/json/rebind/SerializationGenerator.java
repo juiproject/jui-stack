@@ -483,27 +483,31 @@ public class SerializationGenerator extends Generator {
                 }
             } else {
                 JClassType fieldClassType = (JClassType) propertyType;
+                // Boxed fields read through the OrNull family. The primitive branch above
+                // defaults an absent value to zero because a primitive has nowhere else to
+                // go; a boxed field does, and defaulting there turns "unset" into a real
+                // zero that nothing downstream can tell apart from a deliberate one.
                 if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Short")) {
                     sw.println ("fieldJsonValue = jsonObject.get (\"" + propertyName + "\");");
-                    sw.println ("result." + setter.getName () + "(DeserializerHelper.getShort (fieldJsonValue));");
+                    sw.println ("result." + setter.getName () + "(DeserializerHelper.getShortOrNull (fieldJsonValue));");
                 } else if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Byte")) {
                     sw.println ("fieldJsonValue = jsonObject.get (\"" + propertyName + "\");");
-                    sw.println ("result." + setter.getName () + "(DeserializerHelper.getByte (fieldJsonValue));");
+                    sw.println ("result." + setter.getName () + "(DeserializerHelper.getByteOrNull (fieldJsonValue));");
                 } else if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Long")) {
                     sw.println ("fieldJsonValue = jsonObject.get (\"" + propertyName + "\");");
-                    sw.println ("result." + setter.getName () + "(DeserializerHelper.getLong (fieldJsonValue));");
+                    sw.println ("result." + setter.getName () + "(DeserializerHelper.getLongOrNull (fieldJsonValue));");
                 } else if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Integer")) {
                     sw.println ("fieldJsonValue = jsonObject.get (\"" + propertyName + "\");");
-                    sw.println ("result." + setter.getName () + "(DeserializerHelper.getInt (fieldJsonValue));");
+                    sw.println ("result." + setter.getName () + "(DeserializerHelper.getIntOrNull (fieldJsonValue));");
                 } else if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Float")) {
                     sw.println ("fieldJsonValue = jsonObject.get (\"" + propertyName + "\");");
-                    sw.println ("result." + setter.getName () + "(DeserializerHelper.getFloat (fieldJsonValue));");
+                    sw.println ("result." + setter.getName () + "(DeserializerHelper.getFloatOrNull (fieldJsonValue));");
                 } else if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Double")) {
                     sw.println ("fieldJsonValue = jsonObject.get (\"" + propertyName + "\");\n");
-                    sw.println ("result." + setter.getName () + "(DeserializerHelper.getDouble (fieldJsonValue));");
+                    sw.println ("result." + setter.getName () + "(DeserializerHelper.getDoubleOrNull (fieldJsonValue));");
                 } else if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Boolean")) {
                     sw.println ("fieldJsonValue = jsonObject.get (\"" + propertyName + "\");\n");
-                    sw.println ("result." + setter.getName () + "(DeserializerHelper.getBoolean (fieldJsonValue));");
+                    sw.println ("result." + setter.getName () + "(DeserializerHelper.getBooleanOrNull (fieldJsonValue));");
                 } else if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Character")) {
                     sw.println ("fieldJsonValue = jsonObject.get (\"" + propertyName + "\");");
                     sw.println ("result." + setter.getName () + "(DeserializerHelper.getShort (fieldJsonValue));");
@@ -587,21 +591,21 @@ public class SerializationGenerator extends Generator {
         sw.indent ();
         sw.println ("fieldJsonValue = inputJsonObject.get (mapKey);");
         if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Short")) {
-            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getShort(fieldJsonValue));");
+            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getShortOrNull(fieldJsonValue));");
         } else if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Byte")) {
-            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getByte(fieldJsonValue));");
+            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getByteOrNull(fieldJsonValue));");
         } else if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Long")) {
-            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getLong(fieldJsonValue));");
+            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getLongOrNull(fieldJsonValue));");
         } else if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Integer")) {
-            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getInt(fieldJsonValue));");
+            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getIntOrNull(fieldJsonValue));");
         } else if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Float")) {
-            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getFloat(fieldJsonValue));");
+            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getFloatOrNull(fieldJsonValue));");
         } else if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Double")) {
-            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getDouble(fieldJsonValue));");
+            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getDoubleOrNull(fieldJsonValue));");
         } else if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Boolean")) {
-            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getBoolean(fieldJsonValue));");
+            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getBooleanOrNull(fieldJsonValue));");
         } else if (fieldClassType.getQualifiedSourceName ().equals ("java.lang.Character")) {
-            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getShort(fieldJsonValue));");
+            sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getShortOrNull(fieldJsonValue));");
         } else if (fieldClassType.getQualifiedSourceName ().equals ("java.util.Date")) {
             sw.println (fieldColName + ".put (mapKey, DeserializerHelper.getDate(fieldJsonValue));");
         } else if (isJsonSerializable (fieldClassType, true)) {
@@ -664,21 +668,21 @@ public class SerializationGenerator extends Generator {
         JClassType pType = parameterizedType.getTypeArgs ()[0];
         String pTypeQn = pType.getQualifiedSourceName ();
         if (pTypeQn.startsWith ("java.lang.Short")) {
-            sw.println (fieldColName + ".add (DeserializerHelper.getShort (fieldJsonValue));");
+            sw.println (fieldColName + ".add (DeserializerHelper.getShortOrNull (fieldJsonValue));");
         } else if (pTypeQn.startsWith ("java.lang.Byte")) {
-            sw.println (fieldColName + ".add (DeserializerHelper.getByte (fieldJsonValue));");
+            sw.println (fieldColName + ".add (DeserializerHelper.getByteOrNull (fieldJsonValue));");
         } else if (pTypeQn.startsWith ("java.lang.Long")) {
-            sw.println (fieldColName + ".add (DeserializerHelper.getLong (fieldJsonValue));");
+            sw.println (fieldColName + ".add (DeserializerHelper.getLongOrNull (fieldJsonValue));");
         } else if (pTypeQn.startsWith ("java.lang.Integer")) {
-            sw.println (fieldColName + ".add (DeserializerHelper.getInt (fieldJsonValue));");
+            sw.println (fieldColName + ".add (DeserializerHelper.getIntOrNull (fieldJsonValue));");
         } else if (pTypeQn.startsWith ("java.lang.Float")) {
-            sw.println (fieldColName + ".add (DeserializerHelper.getFloat (fieldJsonValue));");
+            sw.println (fieldColName + ".add (DeserializerHelper.getFloatOrNull (fieldJsonValue));");
         } else if (pTypeQn.startsWith ("java.lang.Double")) {
-            sw.println (fieldColName + ".add (DeserializerHelper.getDouble (fieldJsonValue));");
+            sw.println (fieldColName + ".add (DeserializerHelper.getDoubleOrNull (fieldJsonValue));");
         } else if (pTypeQn.startsWith ("java.lang.Boolean")) {
-            sw.println (fieldColName + ".add (DeserializerHelper.getBoolean (fieldJsonValue));");
+            sw.println (fieldColName + ".add (DeserializerHelper.getBooleanOrNull (fieldJsonValue));");
         } else if (pTypeQn.startsWith ("java.lang.Character")) {
-            sw.println (fieldColName + ".add (DeserializerHelper.getShort (fieldJsonValue));");
+            sw.println (fieldColName + ".add (DeserializerHelper.getShortOrNull (fieldJsonValue));");
         } else if (pTypeQn.startsWith ("java.util.Date")) {
             sw.println (fieldColName + ".add (DeserializerHelper.getDate (fieldJsonValue));");
         } else if (pType.isEnum () != null) {

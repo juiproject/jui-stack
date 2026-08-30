@@ -90,6 +90,10 @@ public abstract class Remote {
             sb.append (',');
         sb.append (name);
         sb.append ('=');
+        if (value == null) {
+            sb.append ("null");
+            return true;
+        }
         if (value instanceof String) {
             sb.append ('"');
             sb.append (value);

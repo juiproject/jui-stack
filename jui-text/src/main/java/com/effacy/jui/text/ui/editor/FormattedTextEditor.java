@@ -420,6 +420,20 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
      ************************************************************************/
 
     /**
+     * Places the caret in the editing surface.
+     * <p>
+     * Delegated to the {@link Editor}, whose root carries the
+     * {@code contenteditable}. This control registers no managed focus element of
+     * its own, so without this the inherited {@code focus()} would resolve to no
+     * element and move no caret — see {@link Editor#focus()}.
+     */
+    @Override
+    public void focus() {
+        if (editor != null)
+            editor.focus();
+    }
+
+    /**
      * Attaches focusin/focusout listeners to the root element so that a
      * focus CSS class is toggled when the editor (or any child such as the
      * toolbar) receives or loses focus.
@@ -430,12 +444,24 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
             root.classList.remove(styles().focus());
             // Notify a configured focus-loss handler only when focus leaves the editor
             // entirely (not on an internal move, e.g. into the toolbar).
-            if (config().onFocusLost != null) {
-                elemental2.dom.FocusEvent fe = Js.uncheckedCast(evt);
-                elemental2.dom.Node related = Js.uncheckedCast(fe.relatedTarget);
-                if ((related == null) || !root.contains(related))
-                    config().onFocusLost.invoke();
-            }
+            if (config().onFocusLost == null)
+                return;
+            elemental2.dom.FocusEvent fe = Js.uncheckedCast(evt);
+            elemental2.dom.Node related = Js.uncheckedCast(fe.relatedTarget);
+            if ((related != null) && root.contains(related))
+                return;
+            // Where focus went is decided here, from the event; WHEN to tell the
+            // handler is a separate question, and the answer is "not yet".
+            //
+            // A content change is reported on a deferred tick (see the state
+            // listener above), so an edit made in the same turn as the blur has not
+            // reached the control's modified handler when focus is lost. This hook
+            // exists almost entirely to flush that edit — and called synchronously
+            // it runs before the edit is known, so the flush finds nothing to do and
+            // the last thing typed is left waiting on a debounce. Queued behind the
+            // change, it sees it. Every consumer would otherwise have to know this
+            // and defer for itself.
+            DomGlobal.setTimeout(args -> config().onFocusLost.invoke(), 0);
         });
     }
 
@@ -626,7 +652,7 @@ public class FormattedTextEditor extends Control<FormattedText, FormattedTextEdi
             border-radius: var(--jui-formattededitor-border-radius);
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
             background: #fff;
-            z-index: 10000;
+            z-index: var(--jui-editor-popover-z, 1000100);
         }
         .component.hover .toolbar {
             position: absolute;

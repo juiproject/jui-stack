@@ -1,5 +1,6 @@
 package com.effacy.jui.text.ui.editor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -92,6 +93,8 @@ public class Tools {
     /**
      * Returns all standard tools with separators between groups, suitable
      * for use as the default tool set when none is configured.
+     * <p>
+     * <b>Not for content stored as Markdown</b> — see {@link #markdown(ITool...)}.
      */
     public static ITool[] all() {
         return new ITool[] {
@@ -103,6 +106,56 @@ public class Tools {
             SEPARATOR,
             TABLE, EQUATION, DIAGRAM
         };
+    }
+
+    /**
+     * The tools that survive a round trip through Markdown, for a surface whose
+     * content is <b>stored as Markdown</b> rather than as a {@link
+     * com.effacy.jui.text.type.FormattedText}.
+     * <p>
+     * The distinction is not stylistic. {@code MarkdownSerializer} emits inline
+     * marks for bold, italic, strikethrough, code, links and images only, and
+     * blocks for headings, code, fences, quotes, lists, tables and paragraphs only.
+     * Everything else the editor can apply — <b>underline, highlight, subscript,
+     * superscript, equations and diagrams</b> — is written by the user, discarded
+     * on serialization, and gone by the time the content is read back. A toolbar
+     * that offers them is offering formatting the store cannot keep, and it fails
+     * silently: nothing reports the loss, and the author only finds out later.
+     * <p>
+     * So this set is the answer to "which tools may I offer?" for a Markdown field,
+     * held next to the serializer that decides it. A caller wanting a
+     * <i>narrower</i> set — a short field where a heading is structure the content
+     * cannot carry — should still pick from these rather than from
+     * {@link #all()}.
+     *
+     * @param additional
+     *                   tools to append after the standard set, separated from it —
+     *                   typically a link tool with application-specific anchors, a
+     *                   {@link #fence(String, Consumer, String)} for a registered
+     *                   fence renderer, or a comment tool. A plain link tool with no
+     *                   in-application anchors is already included.
+     * @return the tool set.
+     */
+    public static ITool[] markdown(ITool... additional) {
+        List<ITool> tools = new ArrayList<> (List.of (
+            BOLD, ITALIC, STRIKETHROUGH, CODE,
+            SEPARATOR,
+            H1, H2, H3, PARAGRAPH,
+            SEPARATOR,
+            BULLET_LIST, NUMBERED_LIST, QUOTE,
+            SEPARATOR,
+            TABLE,
+            SEPARATOR,
+            link (r -> Em.$ (r).style (FontAwesome.link ()), "Link", q -> List.<LinkPanel.AnchorItem> of ())
+        ));
+        if ((additional != null) && (additional.length > 0)) {
+            tools.add (SEPARATOR);
+            for (ITool tool : additional) {
+                if (tool != null)
+                    tools.add (tool);
+            }
+        }
+        return tools.toArray (new ITool[tools.size ()]);
     }
 
     /************************************************************************

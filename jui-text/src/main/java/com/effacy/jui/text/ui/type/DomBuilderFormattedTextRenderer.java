@@ -202,9 +202,56 @@ public class DomBuilderFormattedTextRenderer {
         if ((text == null) || text.empty())
             return;
         headingSlugs.clear();
+        resetListCounters();
+        prevWasOlist = false;
+        prevOlistIndent = 0;
         for (FormattedBlock block : text.getBlocks())
             renderBlock(block);
         closeListContext();
+    }
+
+    /************************************************************************
+     * Ordered-list numbering.
+     *
+     * In semantic mode the browser numbers real <ol> items. Outside it — which
+     * is the default, and what FText uses — an ordered item is a paragraph
+     * carrying .list_number, and its marker is drawn by CSS from the
+     * data-list-index attribute set here. Without it an ordered list renders as
+     * indented text with no numbers at all.
+     *
+     * The counter semantics mirror the editor's StandardBlockHandler exactly,
+     * because the same document has to number the same way whether it is being
+     * edited or read: a run of ordered items keeps one sequence, anything else
+     * between them starts a new one, and descending a level resets the deeper
+     * counters while leaving the shallower ones alone.
+     ************************************************************************/
+
+    private final int[] listCounters = new int[6];
+
+    private boolean prevWasOlist;
+
+    private int prevOlistIndent;
+
+    private void resetListCounters() {
+        for (int i = 0; i < listCounters.length; i++)
+            listCounters[i] = 0;
+    }
+
+    /**
+     * Advances the counters for an ordered item and returns its marker.
+     */
+    private String nextListIndex(int indent) {
+        int ind = Math.max(0, Math.min(indent, listCounters.length - 1));
+        if (!prevWasOlist)
+            resetListCounters();
+        else if (ind > prevOlistIndent) {
+            for (int i = prevOlistIndent + 1; i < listCounters.length; i++)
+                listCounters[i] = 0;
+        }
+        listCounters[ind]++;
+        prevOlistIndent = ind;
+        prevWasOlist = true;
+        return ListIndex.format(ind, listCounters[ind]);
     }
 
     /************************************************************************
@@ -213,6 +260,11 @@ public class DomBuilderFormattedTextRenderer {
 
     private void renderBlock(FormattedBlock block) {
         BlockType type = block.getType();
+
+        // Anything that is not an ordered item ends the run, so the next ordered
+        // list starts from one again. Matches the editor.
+        if (type != BlockType.OLIST)
+            prevWasOlist = false;
 
         // Close any active list context when a non-list block starts, or
         // when the list type changes (unordered → ordered or vice versa).
@@ -271,6 +323,10 @@ public class DomBuilderFormattedTextRenderer {
                     el = P.$(root);
                     applyBlockStyles(el, type);
                     applyIndent(el, block.getIndent());
+                    // The marker CSS reads this; without it an ordered list is
+                    // indented text with nothing in front of it.
+                    if (type == BlockType.OLIST)
+                        el.attr("data-list-index", nextListIndex(block.getIndent()));
                     renderLines(block, el);
                 }
                 break;

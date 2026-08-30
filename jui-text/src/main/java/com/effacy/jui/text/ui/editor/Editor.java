@@ -22,6 +22,7 @@ import com.effacy.jui.text.type.edit.History;
 import com.effacy.jui.text.type.edit.Positions;
 import com.effacy.jui.text.type.edit.Selection;
 import com.effacy.jui.text.ui.type.ContentStyle;
+import com.effacy.jui.text.ui.type.ListIndex;
 import com.effacy.jui.text.ui.type.ILinkHandler;
 import com.effacy.jui.text.ui.type.LinkHandlers;
 import com.effacy.jui.text.ui.type.LinkSupport;
@@ -344,6 +345,31 @@ public class Editor extends Component<Editor.Config> {
     /************************************************************************
      * Public API.
      ************************************************************************/
+
+    /**
+     * Places the caret in the editor.
+     * <p>
+     * The base implementation focuses the component's <em>managed focus
+     * element</em>, and this component registers none — its editable surface is the
+     * root itself, carrying {@code contenteditable}, which the focus manager knows
+     * nothing about. So the inherited {@code focus()} resolved to no element and
+     * moved no caret, and a caller had no supported way to put the cursor in a rich
+     * editor at all.
+     * <p>
+     * That is not a cosmetic gap. Focus not taken is focus that cannot be lost, so
+     * everything hung off losing it — the {@code focus} styling, and any
+     * {@link Config#onFocusLost} flush on the enclosing control — never ran either.
+     * <p>
+     * Focusing the element natively also re-establishes the editor's own selection
+     * state: the {@code focus} listener installed at render syncs it from the DOM.
+     */
+    @Override
+    public void focus() {
+        if (editorEl == null)
+            return;
+        HTMLElement el = Js.uncheckedCast(editorEl);
+        el.focus();
+    }
 
     /**
      * Loads a document into the editor, replacing any current content.
@@ -787,6 +813,14 @@ public class Editor extends Component<Editor.Config> {
     private void syncSelectionFromDom() {
         if (rendering)
             return;
+        // Selection change is a document-level event, so this fires for every
+        // editor on the page whenever the cursor moves in any of them. Without
+        // this guard an editor treats a selection belonging to a sibling as its
+        // own "not in a block" case below and runs its handlers over it, so two
+        // editors on one surface drive each other's toolbars. Harmless while
+        // there is only ever one, which is why it went unnoticed.
+        if (!EditorSupport.containsSelection(editorEl))
+            return;
         int[] sel = EditorSupport.readSelection(editorEl);
         if (sel == null) {
             // Cursor is in a non-block area (e.g. a table cell) — let handlers update the toolbar.
@@ -824,6 +858,19 @@ public class Editor extends Component<Editor.Config> {
                 active.add(ft);
         }
         stateListener.onStateUpdate(blk.getType(), active, !sel.isCursor());
+    }
+
+    /**
+     * Deactivates every toolbar button.
+     * <p>
+     * A null block type matches no block tool and an empty format set matches no
+     * format tool, so each handle turns itself off — no separate "clear" path is
+     * needed on the tools themselves.
+     */
+    private void clearToolbarState() {
+        if (stateListener == null)
+            return;
+        stateListener.onStateUpdate(null, java.util.EnumSet.noneOf(FormatType.class), false);
     }
 
     /**
@@ -1043,6 +1090,13 @@ public class Editor extends Component<Editor.Config> {
         // Dismiss the image overlay on a pointer-down outside it (and outside the image).
         DomGlobal.document.addEventListener("mousedown", evt -> handleDocumentMouseDown(evt));
         DomGlobal.document.addEventListener("selectionchange", evt -> syncSelectionFromDom());
+        // The toolbar reflects the selection, and a selection the user cannot see
+        // is not something to reflect: without this the buttons keep the state
+        // they held when focus left, so an editor sitting idle on the page shows
+        // bold and bullet-list lit up as though they were about to apply to
+        // something. Re-established on focus by the next selection sync.
+        editorEl.addEventListener("blur", evt -> clearToolbarState());
+        editorEl.addEventListener("focus", evt -> syncSelectionFromDom());
         // Keep the overlay aligned to the image while scrolling would be involved; the
         // simplest robust behaviour is to dismiss it on scroll.
         DomGlobal.document.addEventListener("scroll", evt -> {
@@ -2097,42 +2151,9 @@ public class Editor extends Component<Editor.Config> {
      * lowercase roman at level 2, then cycles.
      */
     private static String defaultListIndex(int indent, int counter) {
-        switch (indent % 3) {
-            case 0:
-                return String.valueOf(counter);
-            case 1:
-                return toLetter(counter);
-            case 2:
-                return toRoman(counter);
-            default:
-                return String.valueOf(counter);
-        }
-    }
-
-    private static String toLetter(int n) {
-        StringBuilder sb = new StringBuilder();
-        while (n > 0) {
-            n--;
-            sb.insert(0, (char) ('a' + (n % 26)));
-            n /= 26;
-        }
-        return sb.toString();
-    }
-
-    private static final int[] ROMAN_VALUES = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
-    private static final String[] ROMAN_SYMBOLS = {"m", "cm", "d", "cd", "c", "xc", "l", "xl", "x", "ix", "v", "iv", "i"};
-
-    private static String toRoman(int n) {
-        if (n <= 0)
-            return String.valueOf(n);
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < ROMAN_VALUES.length; i++) {
-            while (n >= ROMAN_VALUES[i]) {
-                sb.append(ROMAN_SYMBOLS[i]);
-                n -= ROMAN_VALUES[i];
-            }
-        }
-        return sb.toString();
+        // Delegated so the editor and the read-only renderer cannot number the
+        // same list differently. See ListIndex.
+        return ListIndex.format(indent, counter);
     }
 
     /************************************************************************
@@ -2187,6 +2208,13 @@ public class Editor extends Component<Editor.Config> {
             position: relative;
             line-height: var(--jui-richtext-line-height, inherit);
         }
+        /* --jui-richtext-list-indent is deliberately not defaulted here, nor as a
+           var() fallback in the list calc()s below: a zero length does not survive
+           this stylesheet pipeline in either position ("0em" becomes a unitless
+           "0", which is a type error inside calc() and invalidates the whole
+           declaration). ContentStyle.apply() writes it as an inline style at
+           runtime instead, and buildNode always applies one — compact() when none
+           is configured — so it is always defined here. */
         .component:focus {
             outline: none;
         }
@@ -2214,20 +2242,20 @@ public class Editor extends Component<Editor.Config> {
            and the bullet stays aligned. Mirrors FormattedTextStyles' read-only list rules. */
         .component .listBullet {
             position: relative;
-            padding-left: calc(1.5em + var(--jui-richtext-list-indent, 0em));
+            padding-left: calc(1.5em + var(--jui-richtext-list-indent));
         }
         .component .listBullet::before {
             position: absolute;
-            left: calc(0.35em + var(--jui-richtext-list-indent, 0em));
+            left: calc(0.35em + var(--jui-richtext-list-indent));
             content: '\\2022';
         }
         .component .listNumber {
             position: relative;
-            padding-left: calc(1.5em + var(--jui-richtext-list-indent, 0em));
+            padding-left: calc(1.5em + var(--jui-richtext-list-indent));
         }
         .component .listNumber::before {
             position: absolute;
-            left: calc(0.15em + var(--jui-richtext-list-indent, 0em));
+            left: calc(0.15em + var(--jui-richtext-list-indent));
             content: attr(data-list-index) '.';
         }
         /* A list item is a paragraph (carries .block + .listX), so it would otherwise inherit

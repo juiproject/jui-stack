@@ -355,6 +355,22 @@ public class MarkdownParser {
                     break;
                 if (rawLines[i].trim().isEmpty())
                     break;
+                // An ATX heading is a leaf block: it closes whatever precedes it and
+                // occupies a block of its own, with no blank line required on either
+                // side. Without this, consecutive non-blank lines are swept into one
+                // multi-line block and the heading test in parseBlocks — which only
+                // fires for a single-line block — never matches, so "# Title"
+                // followed directly by a list or a paragraph renders the hash
+                // literally. Applies equally to two headings in a row.
+                if (isHeadingLine(rawLines[i])) {
+                    // Mid-block: leave the heading unconsumed so it opens the next
+                    // block, and close this one here.
+                    if (!block.lines.isEmpty())
+                        break;
+                    block.lines.add(rawLines[i]);
+                    i++;
+                    break;
+                }
                 block.lines.add(rawLines[i]);
                 i++;
             }
@@ -383,6 +399,29 @@ public class MarkdownParser {
 
     private static boolean isFenceLine(String line) {
         return (line != null) && line.trim().startsWith("```");
+    }
+
+    /**
+     * Whether a line opens an ATX heading ({@code "# "} through {@code "##### "}).
+     * <p>
+     * The trailing space is required, which matches both CommonMark and
+     * {@link #emitHeading(IEventBuilder, String, boolean)}: {@code #hashtag} is
+     * ordinary text. That matters here because this predicate decides where a
+     * block ends — treating {@code #hashtag} as a heading would split a paragraph
+     * in half around it.
+     * <p>
+     * The levels stop at five because {@code emitHeading} does; anything deeper
+     * falls through to a paragraph, and this must not disagree with it.
+     */
+    private static boolean isHeadingLine(String line) {
+        if (line == null)
+            return false;
+        String trimmed = line.trim();
+        return trimmed.startsWith("# ")
+            || trimmed.startsWith("## ")
+            || trimmed.startsWith("### ")
+            || trimmed.startsWith("#### ")
+            || trimmed.startsWith("##### ");
     }
 
     private void emitCodeBlock(IEventBuilder<?> handler, ParsedBlock block, boolean partial) {

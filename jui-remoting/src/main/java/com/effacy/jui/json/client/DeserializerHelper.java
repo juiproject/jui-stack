@@ -76,67 +76,113 @@ public final class DeserializerHelper {
 		}
 	}
 
-	public static Double getDouble(JSONValue value) throws JSONException {
+	/**
+	 * Reads a number, absent or JSON-null yielding {@code null}.
+	 * <p>
+	 * The {@code getXxx} family below defaults an absent value to zero, which is
+	 * what a <em>primitive</em> field needs — there is no other value it could
+	 * take. A <em>boxed</em> field can hold {@code null}, and for those the
+	 * defaulting is destructive: a genuinely unset value arrives indistinguishable
+	 * from a deliberate zero, and no amount of care further up can recover the
+	 * difference. So the boxed case reads through the {@code OrNull} family, and
+	 * the defaulting variants delegate to it rather than parsing separately.
+	 */
+	public static Double getDoubleOrNull(JSONValue value) throws JSONException {
 		if ((value == null) || value instanceof JSONNull)
-			return 0.0;
+			return null;
 		if (!(value instanceof JSONNumber))
 			throw new JSONException();
 		JSONNumber jsonNumber = (JSONNumber) value;
 		return jsonNumber.doubleValue();
 	}
 
+	public static Double getDouble(JSONValue value) throws JSONException {
+		Double parsed = getDoubleOrNull(value);
+		return (parsed == null) ? 0.0 : parsed;
+	}
+
+	/**
+	 * See {@link #getDoubleOrNull(JSONValue)}.
+	 */
+	public static Float getFloatOrNull(JSONValue value) throws JSONException {
+		Double parsed = getDoubleOrNull(value);
+		return (parsed == null) ? null : parsed.floatValue();
+	}
+
 	public static Float getFloat(JSONValue value) throws JSONException {
-		if ((value == null) || value instanceof JSONNull)
-			return 0.0F;
-		if (!(value instanceof JSONNumber))
-			throw new JSONException();
-		JSONNumber jsonNumber = (JSONNumber) value;
-		return ((Double) jsonNumber.doubleValue()).floatValue();
+		Float parsed = getFloatOrNull(value);
+		return (parsed == null) ? 0.0F : parsed;
+	}
+
+	/**
+	 * See {@link #getDoubleOrNull(JSONValue)}.
+	 */
+	public static Integer getIntOrNull(JSONValue value) throws JSONException {
+		Double parsed = getDoubleOrNull(value);
+		return (parsed == null) ? null : parsed.intValue();
 	}
 
 	public static Integer getInt(JSONValue value) throws JSONException {
-		if ((value == null) || value instanceof JSONNull)
-			return 0;
-		if (!(value instanceof JSONNumber))
-			throw new JSONException();
-		JSONNumber jsonNumber = (JSONNumber) value;
-		return ((Double) jsonNumber.doubleValue()).intValue();
+		Integer parsed = getIntOrNull(value);
+		return (parsed == null) ? 0 : parsed;
+	}
+
+	/**
+	 * See {@link #getDoubleOrNull(JSONValue)}.
+	 */
+	public static Long getLongOrNull(JSONValue value) throws JSONException {
+		Double parsed = getDoubleOrNull(value);
+		return (parsed == null) ? null : parsed.longValue();
 	}
 
 	public static Long getLong(JSONValue value) throws JSONException {
-		if ((value == null) || value instanceof JSONNull)
-			return 0l;
-		if (!(value instanceof JSONNumber))
-			throw new JSONException();
-		JSONNumber jsonNumber = (JSONNumber) value;
-		return ((Double) jsonNumber.doubleValue()).longValue();
+		Long parsed = getLongOrNull(value);
+		return (parsed == null) ? 0l : parsed;
+	}
+
+	/**
+	 * See {@link #getDoubleOrNull(JSONValue)}.
+	 */
+	public static Short getShortOrNull(JSONValue value) throws JSONException {
+		Double parsed = getDoubleOrNull(value);
+		return (parsed == null) ? null : parsed.shortValue();
 	}
 
 	public static Short getShort(JSONValue value) throws JSONException {
-		if ((value == null) || value instanceof JSONNull)
-			return 0;
-		if (!(value instanceof JSONNumber))
-			throw new JSONException();
-		JSONNumber jsonNumber = (JSONNumber) value;
-		return ((Double) jsonNumber.doubleValue()).shortValue();
+		Short parsed = getShortOrNull(value);
+		return (parsed == null) ? 0 : parsed;
+	}
+
+	/**
+	 * See {@link #getDoubleOrNull(JSONValue)}.
+	 */
+	public static Byte getByteOrNull(JSONValue value) throws JSONException {
+		Double parsed = getDoubleOrNull(value);
+		return (parsed == null) ? null : parsed.byteValue();
 	}
 
 	public static Byte getByte(JSONValue value) throws JSONException {
-		if ((value == null) || value instanceof JSONNull)
-			return 0;
-		if (!(value instanceof JSONNumber))
-			throw new JSONException();
-		JSONNumber jsonNumber = (JSONNumber) value;
-		return ((Double) jsonNumber.doubleValue()).byteValue();
+		Byte parsed = getByteOrNull(value);
+		return (parsed == null) ? 0 : parsed;
 	}
 
-	public static Boolean getBoolean(JSONValue value) throws JSONException {
+	/**
+	 * See {@link #getDoubleOrNull(JSONValue)}. A boxed {@code Boolean} carries
+	 * three states, and collapsing the third onto {@code false} loses "not
+	 * answered" — often the state that matters most.
+	 */
+	public static Boolean getBooleanOrNull(JSONValue value) throws JSONException {
 		if ((value == null) || value instanceof JSONNull)
-			return false;
+			return null;
 		if (!(value instanceof JSONBoolean))
 			throw new JSONException();
 		JSONBoolean jsonBoolean = (JSONBoolean) value;
 		return jsonBoolean.booleanValue();
+	}
+
+	public static Boolean getBoolean(JSONValue value) throws JSONException {
+		Boolean parsed = getBooleanOrNull(value);
+		return (parsed == null) ? false : parsed;
 	}
 
 	public static Date getDate(JSONValue value) throws JSONException {

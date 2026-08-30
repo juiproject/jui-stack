@@ -2129,4 +2129,121 @@ This is *some* supporting **guidance**:
         assertTrue(line.getFormatting().get(0).getFormats().contains(FormatType.A));
         assertEquals("http://example.com", line.getFormatting().get(0).getMeta().get("link"));
     }
+
+    /************************************************************************
+     * Headings as leaf blocks.
+     *
+     * An ATX heading terminates the block before it and occupies one of its
+     * own, with no blank line required either side (CommonMark leaf block).
+     * Blocks were previously split on blank lines alone, and the heading test
+     * only fired for a single-line block — so a heading with anything directly
+     * under it rendered its hashes literally.
+     ************************************************************************/
+
+    @Test
+    public void testHeadingFollowedDirectlyByList() {
+        FormattedText result = FormattedText.markdown("# This is it\n- item 1\n- item 2");
+
+        assertEquals(3, result.getBlocks().size());
+
+        FormattedBlock heading = result.getBlocks().get(0);
+        assertEquals(BlockType.H1, heading.getType());
+        assertEquals("This is it", heading.getLines().get(0).getText());
+
+        assertEquals(BlockType.NLIST, result.getBlocks().get(1).getType());
+        assertEquals("item 1", result.getBlocks().get(1).getLines().get(0).getText());
+        assertEquals(BlockType.NLIST, result.getBlocks().get(2).getType());
+        assertEquals("item 2", result.getBlocks().get(2).getLines().get(0).getText());
+    }
+
+    @Test
+    public void testHeadingFollowedDirectlyByParagraph() {
+        FormattedText result = FormattedText.markdown("## Overview\nSome prose here.");
+
+        assertEquals(2, result.getBlocks().size());
+        assertEquals(BlockType.H2, result.getBlocks().get(0).getType());
+        assertEquals("Overview", result.getBlocks().get(0).getLines().get(0).getText());
+        assertEquals(BlockType.PARA, result.getBlocks().get(1).getType());
+        assertEquals("Some prose here.", result.getBlocks().get(1).getLines().get(0).getText());
+    }
+
+    @Test
+    public void testHeadingDirectlyAfterParagraph() {
+        FormattedText result = FormattedText.markdown("Some prose here.\n### Details");
+
+        assertEquals(2, result.getBlocks().size());
+        assertEquals(BlockType.PARA, result.getBlocks().get(0).getType());
+        assertEquals("Some prose here.", result.getBlocks().get(0).getLines().get(0).getText());
+        assertEquals(BlockType.H3, result.getBlocks().get(1).getType());
+        assertEquals("Details", result.getBlocks().get(1).getLines().get(0).getText());
+    }
+
+    @Test
+    public void testConsecutiveHeadings() {
+        FormattedText result = FormattedText.markdown("# One\n## Two\n### Three");
+
+        assertEquals(3, result.getBlocks().size());
+        assertEquals(BlockType.H1, result.getBlocks().get(0).getType());
+        assertEquals("One", result.getBlocks().get(0).getLines().get(0).getText());
+        assertEquals(BlockType.H2, result.getBlocks().get(1).getType());
+        assertEquals("Two", result.getBlocks().get(1).getLines().get(0).getText());
+        assertEquals(BlockType.H3, result.getBlocks().get(2).getType());
+        assertEquals("Three", result.getBlocks().get(2).getLines().get(0).getText());
+    }
+
+    @Test
+    public void testHeadingBetweenListItemsDoesNotMergeTheLists() {
+        // The list-merge pass folds consecutive list-only blocks together so a
+        // blank line does not restart numbering. A heading between them is a real
+        // boundary and must survive that pass.
+        FormattedText result = FormattedText.markdown("- a\n# Middle\n- b");
+
+        assertEquals(3, result.getBlocks().size());
+        assertEquals(BlockType.NLIST, result.getBlocks().get(0).getType());
+        assertEquals("a", result.getBlocks().get(0).getLines().get(0).getText());
+        assertEquals(BlockType.H1, result.getBlocks().get(1).getType());
+        assertEquals("Middle", result.getBlocks().get(1).getLines().get(0).getText());
+        assertEquals(BlockType.NLIST, result.getBlocks().get(2).getType());
+        assertEquals("b", result.getBlocks().get(2).getLines().get(0).getText());
+    }
+
+    @Test
+    public void testHashWithoutSpaceIsNotAHeading() {
+        // The space is what makes it a heading. Without this the predicate would
+        // split a paragraph in half around an ordinary "#".
+        FormattedText result = FormattedText.markdown("Tagged #hashtag inline\n#notaheading either");
+
+        assertEquals(1, result.getBlocks().size());
+        FormattedBlock para = result.getBlocks().get(0);
+        assertEquals(BlockType.PARA, para.getType());
+        assertEquals(2, para.getLines().size());
+        assertEquals("Tagged #hashtag inline", para.getLines().get(0).getText());
+        assertEquals("#notaheading either", para.getLines().get(1).getText());
+    }
+
+    @Test
+    public void testHeadingStillWorksWithSurroundingBlankLines() {
+        // The pre-existing shape, unchanged by the leaf-block split.
+        FormattedText result = FormattedText.markdown("# Title\n\nBody text.");
+
+        assertEquals(2, result.getBlocks().size());
+        assertEquals(BlockType.H1, result.getBlocks().get(0).getType());
+        assertEquals("Title", result.getBlocks().get(0).getLines().get(0).getText());
+        assertEquals(BlockType.PARA, result.getBlocks().get(1).getType());
+        assertEquals("Body text.", result.getBlocks().get(1).getLines().get(0).getText());
+    }
+
+    @Test
+    public void testHeadingInsideFenceIsNotSplitOut() {
+        // A fence is consumed whole before block splitting reaches its contents,
+        // so a "# " line inside one stays code.
+        FormattedText result = FormattedText.markdown("```\n# not a heading\nplain\n```");
+
+        assertEquals(1, result.getBlocks().size());
+        FormattedBlock code = result.getBlocks().get(0);
+        assertEquals(BlockType.CODE, code.getType());
+        assertEquals(2, code.getLines().size());
+        assertEquals("# not a heading", code.getLines().get(0).getText());
+        assertEquals("plain", code.getLines().get(1).getText());
+    }
 }

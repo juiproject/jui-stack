@@ -237,7 +237,7 @@ public class ContextMenu {
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
             padding: 4px 0;
             min-width: 180px;
-            z-index: 10000;
+            z-index: var(--jui-editor-popover-z, 1000100);
             font-size: 0.875em;
             color: #374151;
         }

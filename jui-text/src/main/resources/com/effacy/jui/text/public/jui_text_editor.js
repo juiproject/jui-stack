@@ -228,6 +228,28 @@ EditorSupport._findBlockEl = function (editorEl, node) {
  * @param editorEl the contenteditable editor element.
  * @return array [anchorBlock, anchorOffset, headBlock, headOffset] or null.
  */
+/**
+ * Whether the current document selection sits inside the given editor.
+ *
+ * Selection change is a document-level event, so every editor on the page
+ * hears every other editor's selection. This is what lets an editor tell
+ * "the selection is somewhere else entirely" from "the selection is mine
+ * but not in a block" — readSelection answers null to both, and acting on
+ * the first drives one editor's toolbar from another editor's cursor.
+ */
+EditorSupport.containsSelection = function (editorEl) {
+    if (!editorEl)
+        return false;
+    var sel = document.getSelection();
+    if (!sel || sel.rangeCount === 0)
+        return false;
+    var anchorNode = sel.anchorNode;
+    if (!anchorNode)
+        return false;
+    // An anchor on the editor element itself counts as inside it.
+    return (anchorNode === editorEl) || editorEl.contains(anchorNode);
+}
+
 EditorSupport.readSelection = function (editorEl) {
     var sel = document.getSelection();
     if (!sel || sel.rangeCount === 0)

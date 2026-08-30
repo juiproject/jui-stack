@@ -46,6 +46,17 @@ public class ValidationException extends Exception implements Iterable<Message> 
     }
 
     /**
+     * Construct with an initial message.
+     * 
+     * @param message
+     *                 the message to add.
+     */
+    public ValidationException(Message message) {
+        if (message != null)
+            this.messages.add (message);
+    }
+
+    /**
      * Construct with initial messages.
      * 
      * @param messages

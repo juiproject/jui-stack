@@ -24,6 +24,21 @@ public class EditorSupport {
     public static native int[] readSelection(Node editorEl);
 
     /**
+     * Whether the current document selection sits inside the given editor.
+     * <p>
+     * Selection change is a document-level event, so every editor on the page
+     * hears every other editor's. This distinguishes "the selection is somewhere
+     * else entirely" from "the selection is mine but not in a block" —
+     * {@link #readSelection(Node)} answers {@code null} to both, and acting on
+     * the first drives one editor's toolbar from another editor's cursor.
+     *
+     * @param editorEl
+     *                 the contenteditable editor element.
+     * @return {@code true} if the selection anchor is within it.
+     */
+    public static native boolean containsSelection(Node editorEl);
+
+    /**
      * Sets the DOM selection to a cursor at the given block/offset.
      *
      * @param editorEl

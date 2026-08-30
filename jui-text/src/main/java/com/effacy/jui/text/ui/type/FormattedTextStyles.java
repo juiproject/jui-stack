@@ -128,6 +128,18 @@ public class FormattedTextStyles {
     line-height: var(--jui-richtext-line-height, inherit);
 }
 
+/* --jui-richtext-list-indent is deliberately NOT defaulted here, nor as a var()
+   fallback in the list calc() below. A zero length does not survive this
+   stylesheet pipeline in either position: "0em" is normalised to a unitless "0",
+   which is valid CSS everywhere except inside calc(), where adding a <number> to
+   a <length> is a type error that invalidates the whole declaration — leaving
+   list items with no left padding and their markers' "left" resolving to auto,
+   dropping the bullet onto the first character.
+   ContentStyle.apply() writes the token as an inline style instead. That is set
+   at runtime, so the pipeline never sees it and the unit survives. Every content
+   root goes through apply(), including the editor's (which defaults to
+   compact()), so the token is always defined wherever these rules can match. */
+
 /* Block (paragraph/heading/etc.) vertical rhythm — token-driven so a ContentStyle applies
    identically here and in the editor (whose root also carries .richtext). Default is compact
    (2px); the document style makes it roomier. The editor layers its own contenteditable-only
@@ -201,6 +213,36 @@ public class FormattedTextStyles {
     cursor: default;
 }
 
+/* Links. There was no rule here at all, so a link fell through to whatever the
+   surrounding application does to an anchor — which in a body of prose is
+   typically a saturated colour that breaks the line it sits in and makes the
+   sentence read as a list of destinations.
+
+   At rest a link is the text colour with a light dashed underline: the underline
+   marks it without taking it out of the sentence, and dashed says "this is a
+   pointer" where solid says "this is emphasis". On hover it firms up — a little
+   darker, the underline solid — so the state change is felt rather than
+   announced.
+
+   Both states are tokens, and both defaults are derived from currentColor rather
+   than fixed, so the treatment holds wherever the content is rendered: muted
+   caption, dark card, anything. */
+.richtext a {
+    color: var(--jui-richtext-link-color, inherit);
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    text-decoration-thickness: 1px;
+    text-decoration-color: var(--jui-richtext-link-underline, color-mix(in srgb, currentColor 40%, transparent));
+    text-underline-offset: 0.18em;
+    cursor: pointer;
+}
+
+.richtext a:hover {
+    color: var(--jui-richtext-link-hover-color, color-mix(in srgb, currentColor 78%, #000));
+    text-decoration-style: solid;
+    text-decoration-color: var(--jui-richtext-link-hover-underline, currentColor);
+}
+
 .richtext img {
     max-width: 100%;
     height: auto;
@@ -261,26 +303,37 @@ public class FormattedTextStyles {
    offset) so it composes additively with the .indentN nesting margins and keeps the
    bullet aligned to the text. Default 0 (compact / flush); a content style may set it. */
 .richtext > .list_bullet {
-    padding-left: calc(1.5em + var(--jui-richtext-list-indent, 0em));
+    padding-left: calc(1.5em + var(--jui-richtext-list-indent));
 }
 
 .richtext > .list_bullet::before {
     position: absolute;
-    left: calc(1em + var(--jui-richtext-list-indent, 0em));
+    left: calc(1em + var(--jui-richtext-list-indent));
     content: '\\2022';
 }
 
 .richtext > .list_number {
-    padding-left: calc(1.5em + var(--jui-richtext-list-indent, 0em));
+    padding-left: calc(1.5em + var(--jui-richtext-list-indent));
+}
+
+/* The number comes from the attribute the renderer sets, exactly as it does in the
+   editor. Without this rule an ordered list renders with the item padding but no
+   marker at all — indented text with nothing in front of it. Set slightly further
+   left than the bullet because a number is wider, and more so once it reaches two
+   digits or a roman numeral. */
+.richtext > .list_number::before {
+    position: absolute;
+    left: calc(0.15em + var(--jui-richtext-list-indent));
+    content: attr(data-list-index) '.';
 }
 
 .richtext > .list_tick {
-    padding-left: calc(1.5em + var(--jui-richtext-list-indent, 0em));
+    padding-left: calc(1.5em + var(--jui-richtext-list-indent));
 }
 
 .richtext > .list_tick::before {
     position: absolute;
-    left: calc(1em + var(--jui-richtext-list-indent, 0em));
+    left: calc(1em + var(--jui-richtext-list-indent));
     content: '\\2713';
 }
 
@@ -288,8 +341,16 @@ public class FormattedTextStyles {
    padding and paragraph margin — which the document style makes roomy, pushing items apart.
    Give list items their own tight vertical rhythm via a dedicated token (default 3px, prose
    margins zeroed) so the gap stays compact regardless of prose spacing. Placed after the
-   .block rule so it wins for the item's top/bottom padding. Mirrors the editor's list rules. */
+   .block rule so it wins for the item's top/bottom padding. Mirrors the editor's list rules.
+
+   position:relative makes each item the containing block for its own marker. The markers
+   below are absolutely positioned, and without this they resolve against .richtext (the only
+   positioned ancestor) rather than against the item they belong to. That happens to look
+   right only while an item's left edge coincides with the content root's — it does not for a
+   nested item, whose .indentN margin moves the item while leaving its marker behind at the
+   root's coordinate. */
 .richtext > .list_bullet, .richtext > .list_number, .richtext > .list_tick {
+    position: relative;
     padding-top: var(--jui-richtext-list-spacing, 3px);
     padding-bottom: var(--jui-richtext-list-spacing, 3px);
     margin-top: 0;

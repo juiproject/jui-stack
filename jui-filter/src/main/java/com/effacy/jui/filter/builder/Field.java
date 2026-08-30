@@ -464,9 +464,10 @@ public interface Field {
      * Date type that converts string values to {@link Date}.
      * <p>
      * Supports pluggable parsers for accepting various date formats. The default
-     * parser accepts ISO 8601 date strings ({@code yyyy-MM-dd}).
+     * parser accepts ISO 8601 date strings ({@code yyyy-MM-dd}), optionally
+     * carrying a time ({@code yyyy-MM-ddTHH:mm:ss}).
      * <p>
-     * Parsed dates have the time component set to midnight (00:00:00).
+     * A date given without a time is parsed at midnight (00:00:00).
      */
     public static class DateType extends Type {
 
@@ -493,14 +494,23 @@ public interface Field {
         }
 
         /**
-         * ISO 8601 date parser ({@code yyyy-MM-dd}). Requires zero-padded values.
+         * ISO 8601 date parser ({@code yyyy-MM-dd}), optionally carrying a time
+         * ({@code yyyy-MM-ddTHH:mm:ss}). Requires zero-padded values.
+         * <p>
+         * The time half is optional because that is exactly what
+         * {@code StringExpressionBuilder} emits: a date at midnight serialises to
+         * the date alone and anything else carries its time. Accepting only the
+         * date half would leave the two halves of the round trip disagreeing, and
+         * the failure is silent — a repository catches the build exception and
+         * returns an empty result set, so a filter taken from a stored timestamp
+         * (a currency boundary, say) matches nothing rather than erroring.
          * <p>
          * GWT-compatible: uses only {@link Date} deprecated constructors.
          */
         @SuppressWarnings("deprecation")
         public static Parser ISO = str -> {
             if ((str == null) || (str.length() != 10) || (str.charAt(4) != '-') || (str.charAt(7) != '-'))
-                throw new ExpressionBuildException("invalid date: " + str);
+                return DateType.ISO_DATE_TIME.parse(str);
             try {
                 int year = Integer.parseInt(str.substring(0, 4));
                 int month = Integer.parseInt(str.substring(5, 7));
@@ -508,6 +518,37 @@ public interface Field {
                 if ((month < 1) || (month > 12) || (day < 1) || (day > 31))
                     throw new ExpressionBuildException("invalid date: " + str);
                 return new Date(year - 1900, month - 1, day);
+            } catch (NumberFormatException e) {
+                throw new ExpressionBuildException("invalid date: " + str);
+            }
+        };
+
+        /**
+         * ISO 8601 date-time parser ({@code yyyy-MM-ddTHH:mm:ss}). Requires
+         * zero-padded values.
+         * <p>
+         * Reached through {@link #ISO}, which falls back to it; declared separately
+         * so a caller that wants to insist on a time can.
+         * <p>
+         * GWT-compatible: uses only {@link Date} deprecated constructors.
+         */
+        @SuppressWarnings("deprecation")
+        public static Parser ISO_DATE_TIME = str -> {
+            if ((str == null) || (str.length() != 19) || (str.charAt(4) != '-') || (str.charAt(7) != '-')
+                    || (str.charAt(10) != 'T') || (str.charAt(13) != ':') || (str.charAt(16) != ':'))
+                throw new ExpressionBuildException("invalid date: " + str);
+            try {
+                int year = Integer.parseInt(str.substring(0, 4));
+                int month = Integer.parseInt(str.substring(5, 7));
+                int day = Integer.parseInt(str.substring(8, 10));
+                int hour = Integer.parseInt(str.substring(11, 13));
+                int minute = Integer.parseInt(str.substring(14, 16));
+                int second = Integer.parseInt(str.substring(17, 19));
+                if ((month < 1) || (month > 12) || (day < 1) || (day > 31))
+                    throw new ExpressionBuildException("invalid date: " + str);
+                if ((hour > 23) || (minute > 59) || (second > 59))
+                    throw new ExpressionBuildException("invalid date: " + str);
+                return new Date(year - 1900, month - 1, day, hour, minute, second);
             } catch (NumberFormatException e) {
                 throw new ExpressionBuildException("invalid date: " + str);
             }

@@ -33,7 +33,9 @@ import jsinterop.base.Js;
  * <ul>
  * <li><b>Debounce</b> — {@link #change()} (re)arms a timer; the save fires only once
  *     activity has settled for {@link #delay(int)} milliseconds, so a burst of edits
- *     yields one save rather than one per keystroke.</li>
+ *     yields one save rather than one per keystroke. The wait is reported as
+ *     {@link State#PENDING}, so a presentation can say there is unsaved work rather
+ *     than going on claiming the last save through the whole settling window.</li>
  * <li><b>Flush</b> — {@link #flush()} saves immediately if there is unsaved content
  *     (for example on loss of focus). Wire it to a surface's own managed focus-loss hook
  *     where one exists (e.g. {@code FormattedTextEditor.Config.onFocusLost}); when the
@@ -63,6 +65,18 @@ public class Autosaver {
          * No unsaved content and no save in progress (the initial state).
          */
         IDLE,
+
+        /**
+         * There is unsaved content and a save has not started yet — the debounce is
+         * settling, or a save already in flight will be followed by another.
+         * <p>
+         * Reported on every {@link #change()}. It exists because the window between
+         * an edit and the save firing is real time in which the content is not
+         * saved, and a presentation with no state for it can only carry on saying
+         * whatever it last said — usually <i>Saved</i>, which is precisely wrong for
+         * exactly as long as the window lasts.
+         */
+        PENDING,
 
         /**
          * A save is in progress.
@@ -300,6 +314,11 @@ public class Autosaver {
         dirty = true;
         retryTimer.cancel ();
         debounceTimer.cancel ();
+        // Before the save, not after: with no delay the save runs synchronously
+        // below and reports SAVING, and a PENDING announced afterwards would leave
+        // the presentation claiming an edit was waiting when it was already in
+        // flight. Announced first, the two read in the order they happen.
+        setState (State.PENDING);
         if (delay <= 0)
             save ();
         else

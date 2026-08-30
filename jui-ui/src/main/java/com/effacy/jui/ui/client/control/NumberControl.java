@@ -123,6 +123,11 @@ public class NumberControl extends Control<Double, NumberControl.Config> {
         private Double max;
 
         /**
+         * See {@link #allowEmpty(boolean)}.
+         */
+        private boolean allowEmpty;
+
+        /**
          * Assigns a different style.
          * 
          * @param style
@@ -211,6 +216,40 @@ public class NumberControl extends Control<Double, NumberControl.Config> {
         }
 
         /**
+         * Convenience to call {@link #allowEmpty(boolean)} passing {@code true}.
+         *
+         * @return this configuration.
+         */
+        public Config allowEmpty() {
+            return allowEmpty (true);
+        }
+
+        /**
+         * Permits the control to be empty, which it conveys as a {@code null} value.
+         * <p>
+         * By default there is no such thing as an empty number control: an unassigned
+         * value presents as zero (or the minimum, if one is configured, since the
+         * limits are enforced on assignment) and reads back as a number the user never
+         * entered. That suits a quantity that always has a value, but not an optional
+         * one — bind a nullable field to the default behaviour and merely opening the
+         * form and saving will write a value that was never intended.
+         * <p>
+         * When enabled the empty input round-trips as {@code null}: it is not coerced
+         * on assignment, not filled in on blur, and not clamped to the minimum. Use
+         * {@code required()} on the enclosing form cell where a value must be given —
+         * that is the mechanism for demanding one, rather than the absence of a way to
+         * express its lack.
+         *
+         * @param allowEmpty
+         *                   {@code true} to treat an empty input as {@code null}.
+         * @return this configuration.
+         */
+        public Config allowEmpty(boolean allowEmpty) {
+            this.allowEmpty = allowEmpty;
+            return this;
+        }
+
+        /**
          * {@inheritDoc}
          *
          * @see com.effacy.jui.core.client.component.Component.Config#build(com.effacy.jui.core.client.component.layout.LayoutData[])
@@ -249,6 +288,11 @@ public class NumberControl extends Control<Double, NumberControl.Config> {
      */
     @Override
     protected Double prepareValueForAssignment(Double value) {
+        // An empty-permitting control passes null through rather than enforcing the
+        // limits against it; clamping "no value" to the minimum is how an unset field
+        // silently acquires one.
+        if ((value == null) && config ().allowEmpty)
+            return null;
         // Need to enforce any limits (min and max).
         return normalise ((value == null) ? 0.0 : value);
     }
@@ -260,6 +304,8 @@ public class NumberControl extends Control<Double, NumberControl.Config> {
      */
     @Override
     public Double valueFromSource() {
+        if (empty ())
+            return null;
         return normalise(inputEl.value);
     }
 
@@ -270,13 +316,36 @@ public class NumberControl extends Control<Double, NumberControl.Config> {
      */
     @Override
     public void valueToSource(Double value) {
-        if (value == null)
+        if (value == null) {
+            if (config ().allowEmpty) {
+                inputEl.value = "";
+                return;
+            }
             value = normalise(0.0);
+        }
         inputEl.value = StringSupport.safe (value.toString());
     }
 
     @Override
     protected void onBlur() {
+        renormalise ();
+    }
+
+    /**
+     * Whether the input is currently empty <em>and</em> that is a value the control
+     * is permitted to hold.
+     */
+    protected boolean empty() {
+        return (config ().allowEmpty && StringSupport.empty (inputEl.value));
+    }
+
+    /**
+     * Rewrites the input with its value brought within the configured limits,
+     * leaving a permitted empty alone.
+     */
+    protected void renormalise() {
+        if (empty ())
+            return;
         inputEl.value = normalise(inputEl.value).toString();
     }
 
@@ -358,7 +427,7 @@ public class NumberControl extends Control<Double, NumberControl.Config> {
                     Em.$().style (FontAwesome.minus())
                         .onclick(e -> {
                             inputEl.stepDown();
-                            inputEl.value = normalise(inputEl.value).toString();
+                            renormalise ();
                             TimerSupport.defer(() -> {
                                 modified();
                             });
@@ -367,7 +436,7 @@ public class NumberControl extends Control<Double, NumberControl.Config> {
                     Em.$().style (FontAwesome.plus())
                         .onclick(e -> {
                             inputEl.stepUp();
-                            inputEl.value = normalise(inputEl.value).toString();
+                            renormalise ();
                             TimerSupport.defer(() -> {
                                 modified();
                             });

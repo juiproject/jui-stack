@@ -33,6 +33,7 @@ import com.effacy.jui.core.client.dom.ActivationHandler;
 import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.UIEventType;
 import com.effacy.jui.core.client.dom.builder.Div;
+import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.builder.H5;
 import com.effacy.jui.core.client.dom.builder.Input;
@@ -256,6 +257,11 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
         private String placeholder;
 
         /**
+         * See {@link #systemPicker()}.
+         */
+        private boolean systemPicker;
+
+        /**
          * See {@link #selectorLeft(boolean)}.
          */
         private boolean selectorLeft;
@@ -416,6 +422,43 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
          *                    {@code true} to display above.
          * @return this configuration instance.
          */
+        /**
+         * Uses the platform's own date picker (a native {@code date} input) in place
+         * of the bespoke selector.
+         * <p>
+         * This control predates broad support for the native picker, and the bespoke
+         * selector remains the default because it is the one that can be styled to
+         * match the rest of a form, positioned ({@link #selectorTop()},
+         * {@link #selectorLeft()}), filtered ({@link #dateFilter(Predicate)}) and
+         * given shortcut options ({@link #option(String, CalendarDate)}).
+         * <p>
+         * The native picker is the better answer where none of that is wanted and the
+         * familiar thing is: a single date in a dense row, on touch devices where the
+         * platform offers a far better wheel than any web control, and wherever the
+         * user's own locale and keyboard conventions should win. It is also
+         * accessible for free.
+         * <p>
+         * What it costs: the format is the platform's, so {@link #formatStyle} and
+         * {@link #formatLocale} no longer apply; and the selector-side configuration
+         * above is inert, because there is no selector to configure. The value type
+         * is unchanged, so a caller can switch between the two without touching
+         * anything else.
+         */
+        public Config systemPicker() {
+            return systemPicker (true);
+        }
+
+        /**
+         * See {@link #systemPicker()}.
+         *
+         * @param systemPicker
+         *                     {@code true} to use the platform's date picker.
+         */
+        public Config systemPicker(boolean systemPicker) {
+            this.systemPicker = systemPicker;
+            return this;
+        }
+
         public Config selectorTop(boolean selectorTop) {
             this.selectorTop = selectorTop;
             return this;
@@ -673,10 +716,27 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
     @Override
     protected INodeProvider buildNode(Element el, Config data) {
         return Wrap.$ (el).$ (root -> {
-            Div.$ (root).style (styles ().inner ()).by("activator").$ (
+            ElementBuilder activator = Div.$ (root).style (styles ().inner ()).by("activator").$ (
                 Em.$ ()
                     .style (styles ().read_only (), FontAwesome.lock ()),
-                Input.$ ("text").$ (input -> {
+                // A native date input when the platform picker is asked for: the
+                // browser supplies the calendar, the formatting and the keyboard
+                // conventions, so none of the text-parsing machinery below applies.
+                Input.$ (data.systemPicker ? "date" : "text").$ (input -> {
+                    if (data.systemPicker) {
+                        input.ref ("input");
+                        input.on (e -> {
+                            this.date = fromNative (inputEl.value);
+                            refreshDate ();
+                            modified ();
+                        }, UIEventType.ONCHANGE);
+                        if (StringSupport.empty (data.getName ()))
+                            input.attr ("name", "" + getUUID ());
+                        else
+                            input.attr ("name", data.getName ());
+                        input.testId (buildTestId ("input")).testRef ("input");
+                        return;
+                    }
                     input.on (e -> modified (), UIEventType.ONKEYUP, UIEventType.ONPASTE);
                     input.ref ("input");
                     input.on (e -> {
@@ -712,17 +772,23 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
                     .testId (buildTestId ("clear")).testRef ("clear")
                     .on (e -> {
                         this.date = null;
-                        selector.close();
+                        // There is no selector under the platform picker.
+                        if (selector != null)
+                            selector.close();
                         refreshDate();
                         modified ();
                     }, UIEventType.ONCLICK),
-                Em.$ ().style (FontAwesome.calendar())
-            )
-            .onclick(e -> {
-                selector.toggle();
-                e.stopEvent();
-            });
-            Div.$ (root).$ (selector -> {
+                // The native input draws its own calendar indicator.
+                Em.$ ().iff (!data.systemPicker).style (FontAwesome.calendar())
+            );
+            // Only the bespoke selector opens on click; the native input opens the
+            // platform's picker itself, and toggling would fight it.
+            if (!data.systemPicker)
+                activator.onclick(e -> {
+                    selector.toggle();
+                    e.stopEvent();
+                });
+            Div.$ (root).iff (!data.systemPicker).$ (selector -> {
                 selector.id ("selector").by ("selector");
                 if (data.selectorTop)
                     selector.style (styles ().selector_top ());
@@ -736,6 +802,8 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
         }).build (tree -> {
             // Register the input as the focus element (we only have one).
             inputEl = (HTMLInputElement) manageFocusEl (tree.first ("input"));
+            if (data.systemPicker)
+                return;
             selector = new ActivationHandler(tree.first("activator"), el, styles().open())
                 .listen(open -> {
                     if (open) {
@@ -748,6 +816,42 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
                 });
             selector.exclude(selectorEl = tree.first("selector"));
         });
+    }
+
+    /**
+     * The ISO {@code yyyy-MM-dd} a native {@code date} input reads and writes.
+     * <p>
+     * This is the wire format of the element, not a display format — the platform
+     * shows the date however the user's locale says it should look.
+     */
+    protected static String toNative(CalendarDate date) {
+        if (date == null)
+            return "";
+        return pad (date.year (), 4) + "-" + pad (date.month (), 2) + "-" + pad (date.day (), 2);
+    }
+
+    /**
+     * Reads the ISO value out of a native {@code date} input ({@code null} when it
+     * is empty, which is what the element reports for an incomplete entry too).
+     */
+    protected static CalendarDate fromNative(String value) {
+        if ((value == null) || (value.length () != 10))
+            return null;
+        try {
+            return new CalendarDate (
+                Integer.parseInt (value.substring (0, 4)),
+                Integer.parseInt (value.substring (5, 7)),
+                Integer.parseInt (value.substring (8, 10)));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static String pad(int value, int width) {
+        String text = Integer.toString (value);
+        while (text.length () < width)
+            text = "0" + text;
+        return text;
     }
 
     /**
@@ -768,6 +872,10 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
         // Update the UI to reflect the new date value.
         if (this.date == null) {
             inputEl.value = "";
+        } else if (config ().systemPicker) {
+            // A native date input only accepts ISO; the platform renders it in the
+            // user's own format, which is the point of asking for it.
+            inputEl.value = toNative (this.date);
         } else {
             inputEl.value = CalendarSupport.formatDate(config().formatLocale.get(), this.date.year(), this.date.month(), this.date.day(), config().formatStyle.weekday,  config().formatStyle.year,  config().formatStyle.month,  config().formatStyle.day);
         }

@@ -326,6 +326,12 @@ public abstract class NodeBuilder<T extends NodeBuilder<T>> implements IDomInser
         private List<EventHandler> handlers;
 
         /**
+         * Whether {@link #handlers} is in the order {@link EventBinding#sort(List)}
+         * puts it in. See {@link #register(EventBinding, Node)}.
+         */
+        private boolean handlersSorted = true;
+
+        /**
          * Collection of additional UI handlers.
          */
         private List<IUIEventHandler> uiHandlers;
@@ -404,7 +410,13 @@ public abstract class NodeBuilder<T extends NodeBuilder<T>> implements IDomInser
             if (handlers == null)
                 handlers = new ArrayList<> ();
             handlers.add (new EventHandler (registration, node));
-            EventBinding.sort (handlers);
+            // Marked rather than sorted. Sorting here re-sorted the whole list on
+            // every registration, which is O(n^2 log n) over a build: a page
+            // registering ~1700 handlers in one pass spent seconds in
+            // Collections.sort and nothing else. The order is only ever read when
+            // an event is dispatched, so it is established there instead -- once,
+            // and only if an event actually arrives.
+            handlersSorted = false;
         }
 
         /**
@@ -458,6 +470,10 @@ public abstract class NodeBuilder<T extends NodeBuilder<T>> implements IDomInser
         @Override
         public boolean handleEvent(UIEvent event) {
             if ((handlers != null) && !handlers.isEmpty ()) {
+                if (!handlersSorted) {
+                    EventBinding.sort (handlers);
+                    handlersSorted = true;
+                }
                 for (EventHandler handler : handlers) {
                     if (handler.handle (event))
                         return true;
@@ -493,6 +509,7 @@ public abstract class NodeBuilder<T extends NodeBuilder<T>> implements IDomInser
                 handlers.forEach (e -> e.dispose ());
                 handlers.clear ();
                 handlers = null;
+                handlersSorted = true;
             }
             if (references != null)
                 references.clear ();

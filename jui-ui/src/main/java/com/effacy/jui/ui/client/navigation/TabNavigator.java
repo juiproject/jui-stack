@@ -17,8 +17,10 @@ package com.effacy.jui.ui.client.navigation;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -60,7 +62,6 @@ import com.effacy.jui.core.client.navigation.NavigationHandler;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.Promise;
 import com.effacy.jui.platform.util.client.StringSupport;
-import com.effacy.jui.platform.util.client.With;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 import com.effacy.jui.ui.client.modal.Modal.IModalController;
 import com.effacy.jui.ui.client.navigation.TabCollection.ITabConfig;
@@ -571,6 +572,35 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         }
 
         /**
+         * See {@link #presenter(INavigationPresenter)}.
+         */
+        private INavigationPresenter presenter;
+
+        /**
+         * Draws the navigation somewhere other than inside this navigator.
+         * <p>
+         * The built-in tab strip is <b>replaced</b>, not supplemented: what is drawn,
+         * where, and in what style becomes the presenter's business, while the
+         * navigation itself (the set, activation, deep linking, handler chaining)
+         * stays here. Use it to put the navigation in the page header, a toolbar or a
+         * sidebar. See {@link INavigationPresenter}, and
+         * {@link TabNavigator#addPresenter(INavigationPresenter)} to add one
+         * <i>alongside</i> whatever is already drawing.
+         *
+         * @param presenter
+         *                  the presenter to draw the navigation.
+         * @return this configuration.
+         */
+        public Config presenter(INavigationPresenter presenter) {
+            this.presenter = presenter;
+            return this;
+        }
+
+        public INavigationPresenter getPresenter() {
+            return presenter;
+        }
+
+        /**
          * {@inheritDoc}
          *
          * @see com.effacy.jui.core.client.component.Component.Config#build(com.effacy.jui.core.client.component.layout.LayoutData[])
@@ -840,10 +870,7 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
             return false;
         if (!isRendered ())
             return ref.equals (activatePreRender);
-        Tab tab = tabs.get (ref);
-        if (tab == null)
-            return false;
-        return tab.isActive ();
+        return ref.equals (activeRef);
     }
 
     /**
@@ -1180,8 +1207,144 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
      */
     public void showNavigation() {
         navigationHidden = false;
-        if (tabHolderEl != null)
+        // Only where there is a built-in strip to show. With the drawing delegated
+        // to a presenter the holder is empty, and showing it would open a band of
+        // nothing above the body.
+        if ((tabHolderEl != null) && (defaultPresenter != null))
             JQuery.$(tabHolderEl).show();
+    }
+
+    /************************************************************************
+     * Navigation presentation.
+     *
+     * The navigator owns the navigation — the set, activation, deep linking and
+     * handler chaining — and delegates the drawing of it. The built-in tab strip
+     * is one presenter among possibly several (see DefaultNavigationPresenter),
+     * which is what keeps the interface honest: anything the strip needs, the
+     * interface has to carry.
+     ************************************************************************/
+
+    /**
+     * Presenters drawing the navigation. Populated on render.
+     */
+    private List<INavigationPresenter> presenters = new ArrayList<> ();
+
+    /**
+     * Presenters added ahead of render (see {@link #addPresenter(INavigationPresenter)}).
+     */
+    private List<INavigationPresenter> presentersPreRender = new ArrayList<> ();
+
+    /**
+     * The built-in strip, where it is in use.
+     */
+    private DefaultNavigationPresenter defaultPresenter;
+
+    /**
+     * References of the tabs that are disabled. <b>The</b> record of it: the
+     * enabled state used to live in a CSS class on the tab element, which meant
+     * only a rendered tab strip could be asked, and only the built-in one.
+     */
+    private Set<String> disabled = new HashSet<> ();
+
+    /**
+     * The reference of the active tab, for the same reason as {@link #disabled}.
+     */
+    private String activeRef;
+
+    /**
+     * Adds a presenter <i>alongside</i> whatever is already drawing the navigation
+     * (contrast {@link Config#presenter(INavigationPresenter)}, which replaces the
+     * built-in strip).
+     * <p>
+     * Several is legitimate and occasionally what is wanted — chips in the header
+     * and the current facet named again in a collapsed bar — since each is told
+     * the same things and none of them holds state.
+     *
+     * @param presenter
+     *                  the presenter to add.
+     */
+    public void addPresenter(INavigationPresenter presenter) {
+        if (presenter == null)
+            return;
+        if (!isRendered ()) {
+            presentersPreRender.add (presenter);
+            return;
+        }
+        presenters.add (presenter);
+        presenter.bind (ref -> onTabClicked (ref));
+        presenter.present (_describe ());
+        if (activeRef != null)
+            presenter.activate (activeRef);
+    }
+
+    /**
+     * Removes a presenter previously added (or configured), unbinding it.
+     *
+     * @param presenter
+     *                  the presenter to remove.
+     */
+    public void removePresenter(INavigationPresenter presenter) {
+        if (presenter == null)
+            return;
+        presentersPreRender.remove (presenter);
+        if (presenters.remove (presenter))
+            presenter.unbind ();
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Presenters are told, because one may well outlive this navigator — a header
+     * that hosts the navigation of whatever is beneath it survives a change of
+     * what is beneath it — and a strip left drawn navigates nowhere.
+     *
+     * @see com.effacy.jui.core.client.component.Component#onDispose()
+     */
+    @Override
+    protected void onDispose() {
+        presenters.forEach (p -> p.unbind ());
+        presenters.clear ();
+        presentersPreRender.clear ();
+        defaultPresenter = null;
+        super.onDispose ();
+    }
+
+    /**
+     * Describes the tab set for presentation.
+     */
+    protected List<INavigationPresenter.Group> _describe() {
+        List<INavigationPresenter.Group> groups = new ArrayList<> ();
+        for (TabGroupConfig group : config ().tabs.getTabGroups ()) {
+            List<INavigationPresenter.Item> items = new ArrayList<> ();
+            for (TabConfig tab : group.getTabs ())
+                items.add (_describe (tab, group.idx));
+            groups.add (new INavigationPresenter.Group (group.idx, group.label, group.icon, group.silent, group.expand, group.first, items));
+        }
+        return groups;
+    }
+
+    /**
+     * Describes one tab for presentation.
+     */
+    protected INavigationPresenter.Item _describe(TabConfig tab, int groupIdx) {
+        return new INavigationPresenter.Item (tab.reference, tab.label, tab.icon, tab.indicator, tab.count, !disabled.contains (tab.reference), groupIdx);
+    }
+
+    /**
+     * Notifies the presenters that one tab has changed.
+     */
+    protected void _updated(String ref) {
+        if ((ref == null) || presenters.isEmpty ())
+            return;
+        for (TabGroupConfig group : config ().tabs.getTabGroups ()) {
+            for (TabConfig tab : group.getTabs ()) {
+                if (ref.equals (tab.reference)) {
+                    INavigationPresenter.Item item = _describe (tab, group.idx);
+                    presenters.forEach (p -> p.update (item));
+                    return;
+                }
+            }
+        }
     }
 
     /************************************************************************
@@ -1331,78 +1494,142 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
      */
     private String activatePreRender = null;
 
-    /**
-     * Tabs to disable post-render.
-     */
-    private List<String> disablePreRender = new ArrayList<> ();
-
     private Element tabHolderEl;
 
     /**
-     * Refreshes the tabs from configuration.
+     * Redraws the navigation from configuration, wherever it is being drawn.
+     * <p>
+     * The presenters are handed items, not state, so whatever is active has to be
+     * re-asserted afterwards.
      */
     protected void _refresh() {
-        tabs.clear();
-        buildInto(tabHolderEl, root -> {
-            for (TabGroupConfig tabGroup : config().tabs.getTabGroups ()) {
-                if (tabGroup.expand)
-                    Div.$ (root).style(styles ().expander ());
-                Div.$ (root).$ (group -> {
-                    group.style (styles ().group ());
-                    if (tabGroup.first)
-                        group.style (styles ().first ());
-                    if (tabGroup.silent) {
-                        group.style (styles ().silent ());
-                    } else {
-                        H6.$ (group).$ (header -> {
-                            header.by ("group");
-                            header.attr ("idx", "" + tabGroup.idx);
-                            header.style (styles ().header ());
-                            if (tabGroup.icon != null)
-                                Em.$ (header).style (tabGroup.icon);
-                            if (tabGroup.label != null)
-                                Span.$ (header).$ ().text (tabGroup.label);
-                        });
-                    }
-                    Ul.$ (group).$ (ul -> {
-                        for (TabConfig tab : tabGroup.getTabs ()) {
-                            Li.$ (ul).$ (li -> {
-                                li.by ("tab");
-                                li.on (e -> onTabClicked (e.getTarget ("li", 3).getAttribute ("item")), UIEventType.ONCLICK);
-                                li.attr ("item", tab.reference);
-                                Div.$ (li).$ (div -> {
-                                    if (tab.icon != null)
-                                        Em.$ (div).style (tab.icon);
-                                    Span.$ (div).text (tab.label);
-                                    I.$ (div);
-                                });
-                                li.testId(buildTestId("tab_" + tab.reference));
-                                if (!StringSupport.empty (tab.indicator))
-                                    Strong.$ (li).text (tab.indicator);
-                            });
-                        }
-                    });
-                });
-            }
-        }, dom -> {
-            groupsEl = dom.all ("group");
-            tabsEl = dom.all ("tab");
-        });
+        List<INavigationPresenter.Group> groups = _describe ();
+        presenters.forEach (p -> p.present (groups));
+        if (activeRef != null)
+            presenters.forEach (p -> p.activate (activeRef));
+    }
 
-        // Create a map of the tab references to the tab items so they may
-        // be controlled.
-        for (Element el : tabsEl) {
-            String ref = el.getAttribute ("item");
-            if (!StringSupport.empty (ref))
-                tabs.put (ref, new Tab (el));
+    /**
+     * The built-in tab strip, as a presenter.
+     * <p>
+     * <b>It is written against the same interface as any other</b>, which is the
+     * only real check that the interface carries what a presenter needs: if the
+     * strip the navigator has always drawn could not be expressed through it, it
+     * would be the wrong interface. It renders into the {@code <header>} the
+     * navigator lays out for it, and it is what {@link #hideNavigation()} hides.
+     * <p>
+     * It keeps {@link TabNavigator#tabs}, {@link TabNavigator#tabsEl} and
+     * {@link TabNavigator#groupsEl} up to date, which are that strip's DOM handles
+     * and nobody else's — the navigator itself no longer reads state from them.
+     */
+    class DefaultNavigationPresenter implements INavigationPresenter {
+
+        private IHandler handler;
+
+        @Override
+        public void bind(IHandler handler) {
+            this.handler = handler;
         }
 
-        // Any counts.
-        for (TabGroupConfig group : config ().tabs.getTabGroups ()) {
-            for (TabConfig tab : group.getTabs ()) {
-                if (tab.count >= 0)
-                    _updateTabCount (tab.reference, tab.count);
+        @Override
+        public void present(List<Group> groups) {
+            tabs.clear();
+            buildInto(tabHolderEl, root -> {
+                for (Group tabGroup : groups) {
+                    if (tabGroup.expand ())
+                        Div.$ (root).style(styles ().expander ());
+                    Div.$ (root).$ (group -> {
+                        group.style (styles ().group ());
+                        if (tabGroup.first ())
+                            group.style (styles ().first ());
+                        if (tabGroup.silent ()) {
+                            group.style (styles ().silent ());
+                        } else {
+                            H6.$ (group).$ (header -> {
+                                header.by ("group");
+                                header.attr ("idx", "" + tabGroup.index ());
+                                header.style (styles ().header ());
+                                if (tabGroup.icon () != null)
+                                    Em.$ (header).style (tabGroup.icon ());
+                                if (tabGroup.label () != null)
+                                    Span.$ (header).$ ().text (tabGroup.label ());
+                            });
+                        }
+                        Ul.$ (group).$ (ul -> {
+                            for (Item tab : tabGroup.items ()) {
+                                Li.$ (ul).$ (li -> {
+                                    li.by ("tab");
+                                    li.on (e -> {
+                                        if (handler != null)
+                                            handler.navigate (e.getTarget ("li", 3).getAttribute ("item"));
+                                    }, UIEventType.ONCLICK);
+                                    li.attr ("item", tab.reference ());
+                                    Div.$ (li).$ (div -> {
+                                        if (tab.icon () != null)
+                                            Em.$ (div).style (tab.icon ());
+                                        Span.$ (div).text (tab.label ());
+                                        I.$ (div);
+                                    });
+                                    li.testId(buildTestId("tab_" + tab.reference ()));
+                                    if (!StringSupport.empty (tab.indicator ()))
+                                        Strong.$ (li).text (tab.indicator ());
+                                });
+                            }
+                        });
+                    });
+                }
+            }, dom -> {
+                groupsEl = dom.all ("group");
+                tabsEl = dom.all ("tab");
+            });
+
+            // Create a map of the tab references to the tab items so they may
+            // be controlled.
+            for (Element el : tabsEl) {
+                String ref = el.getAttribute ("item");
+                if (!StringSupport.empty (ref))
+                    tabs.put (ref, new Tab (el));
             }
+
+            // The per-item state the build above does not carry.
+            for (Group group : groups) {
+                for (Item item : group.items ())
+                    update (item);
+            }
+        }
+
+        @Override
+        public void activate(String reference) {
+            tabs.forEach ((key, tab) -> {
+                if (key.equals (reference))
+                    tab.activate ();
+                else
+                    tab.deactivate ();
+            });
+        }
+
+        @Override
+        public void update(Item item) {
+            Tab tab = tabs.get (item.reference ());
+            if (tab == null)
+                return;
+            tab.group = item.group ();
+            tab.updateCount (item.count ());
+            tab.updateIcon (item.icon ());
+            tab.updateLabel (item.label ());
+            if (item.enabled ())
+                tab.enable ();
+            else
+                tab.disable ();
+            _refreshGroups ();
+        }
+
+        @Override
+        public void unbind() {
+            handler = null;
+            tabs.clear ();
+            if (tabHolderEl != null)
+                buildInto (tabHolderEl, root -> {});
         }
     }
 
@@ -1491,36 +1718,26 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
             });
         });
 
-        // Build out the tabs.
+        // Install whoever is drawing the navigation. A configured presenter takes
+        // the PLACE of the built-in strip rather than joining it, so the strip is
+        // never built and its holder — which would otherwise be an empty band above
+        // the body — is hidden. Presenters added through addPresenter join whatever
+        // is there.
+        if (config ().getPresenter () != null) {
+            presenters.add (config ().getPresenter ());
+            if (tabHolderEl != null)
+                JQuery.$ (tabHolderEl).hide ();
+        } else {
+            defaultPresenter = new DefaultNavigationPresenter ();
+            presenters.add (defaultPresenter);
+        }
+        presenters.addAll (presentersPreRender);
+        presentersPreRender.clear ();
+        presenters.forEach (p -> p.bind (ref -> onTabClicked (ref)));
+
+        // Build out the tabs. The disabled set and any counts are carried in the
+        // descriptors, so there is nothing to re-apply afterwards.
         _refresh();
- 
-        if (tabsEl == null)
-            return;
-
-        // Create a map of the tab references to the tab items so they may
-        // be controlled.
-        for (Element el : tabsEl) {
-            String ref = el.getAttribute ("item");
-            if (!StringSupport.empty (ref))
-                tabs.put (ref, new Tab (el));
-        }
-
-        // Any pre-render states (a pre-render activation is asserted through the
-        // re-navigation below, so it drives the body as well as the tab strip).
-        for (String tab : disablePreRender)
-            this._disable (tab);
-
-        // Any counts.
-        for (TabGroupConfig group : config ().tabs.getTabGroups ()) {
-            for (TabConfig tab : group.getTabs ()) {
-                tabs.get (tab.reference).group = group.idx;
-                if (tab.count >= 0)
-                    _updateTabCount (tab.reference, tab.count);
-            }
-        }
-
-        // Assert the groups.
-        _refreshGroups ();
 
         // Register items for each of the tabs.
         _registerTabs ();
@@ -1544,9 +1761,16 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
      */
     protected void _registerTabs() {
         handler.clearAll ();
-        _forEach ((ref, tab) -> {
-            final TabConfig cfg = config ().tabs.findTab (ref);
-            if (cfg.handler == null) {
+        // From the configuration rather than from the rendered tab strip. It used
+        // to walk the strip's element map, which tied the navigation itself to one
+        // particular way of drawing it: with the drawing delegated to a presenter
+        // that map is empty, and nothing would have been registered at all — no
+        // navigation, silently. It is also the deterministic order, which the map
+        // (a HashMap) never was.
+        for (TabGroupConfig group : config ().tabs.getTabGroups ()) {
+            for (TabConfig cfg : group.getTabs ()) {
+                final String ref = cfg.reference;
+                if (cfg.handler == null) {
                 handler.register ((INavigationAwareItem) new INavigationAwareItem () {
 
                     @Override
@@ -1615,8 +1839,9 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
                     }
 
                 });
+                }
             }
-        });
+        }
     }
 
     /**
@@ -1628,11 +1853,14 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
      *              the count.
      */
     public void _updateTabCount(String ref, int count) {
-        if ((tabs == null) || (ref == null))
+        TabConfig tab = config ().tabs.findTab (ref);
+        if (tab == null)
             return;
-        With.$ (tabs.get (ref), tab -> {
-            tab.updateCount (count);
-        });
+        // Written back to the configuration, not only to the strip: the
+        // configuration is what a presenter is described from, so a count applied
+        // only to the DOM would be lost the next time the set is redrawn.
+        tab.count = count;
+        _updated (ref);
     }
 
     /**
@@ -1644,11 +1872,11 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
      *             the icon.
      */
     public void _updateTabIcon(String ref, String icon) {
-        if ((tabs == null) || (ref == null))
+        TabConfig tab = config ().tabs.findTab (ref);
+        if (tab == null)
             return;
-        With.$ (tabs.get (ref), tab -> {
-            tab.updateIcon (icon);
-        });
+        tab.icon = icon;
+        _updated (ref);
     }
 
     /**
@@ -1660,11 +1888,11 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
      *              the label.
      */
     public void _updateTabLabel(String ref, String label) {
-        if ((tabs == null) || (ref == null))
+        TabConfig tab = config ().tabs.findTab (ref);
+        if (tab == null)
             return;
-        With.$ (tabs.get (ref), tab -> {
-            tab.updateLabel (label);
-        });
+        tab.label = label;
+        _updated (ref);
     }
 
     /**
@@ -1674,17 +1902,10 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
      *            the tab reference.
      */
     public void _disable(String ref) {
-        if (!isRendered ()) {
-            if (!disablePreRender.contains (ref))
-                disablePreRender.add (ref);
+        if (ref == null)
             return;
-        }
-        if ((tabs == null) || (ref == null))
-            return;
-        With.$ (tabs.get (ref), tab -> {
-            tab.disable ();
-        });
-        _refreshGroups ();
+        disabled.add (ref);
+        _updated (ref);
     }
 
     /**
@@ -1694,23 +1915,23 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
      *            the tab reference.
      */
     public void _enable(String ref) {
-        if (!isRendered ()) {
-            disablePreRender.remove (ref);
+        if (ref == null)
             return;
-        }
-        if ((tabs == null) || (ref == null))
-            return;
-        With.$ (tabs.get (ref), tab -> {
-            tab.enable ();
-        });
-        _refreshGroups ();
+        disabled.remove (ref);
+        _updated (ref);
     }
 
     /**
      * Refreshes the display state of the groups. This will show a group if any of
      * its tabs is enabled otherwise it will hide the group.
+     * <p>
+     * Belongs to the built-in strip — a presenter drawing the navigation elsewhere
+     * decides for itself what an all-disabled group looks like, or ignores groups
+     * altogether.
      */
     protected void _refreshGroups() {
+        if (groupsEl == null)
+            return;
         for (Element groupEl : groupsEl) {
             int idx = Integer.parseInt (groupEl.getAttribute ("idx"));
             boolean show = false;
@@ -1748,17 +1969,18 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
             activatePreRender = ref;
             return true;
         }
-        if (tabs.get (ref) == null)
+        if (config ().tabs.findTab (ref) == null)
             return false;
-        if (!tabs.get (ref).enabled)
+        if (disabled.contains (ref))
             return false;
-        boolean alreadyActive = tabs.get (ref).isActive ();
-        tabs.forEach ((key, tab) -> {
-            if (ref.equals (key))
-                tab.activate ();
-            else
-                tab.deactivate ();
-        });
+        boolean alreadyActive = ref.equals (activeRef);
+        activeRef = ref;
+        // Told, rather than asked to work it out: a presenter never marks itself
+        // active on a click, because activation is asynchronous and can be refused.
+        // This is the one place it learns what actually happened, and it is reached
+        // by every route in — a click, a deep link, a call in code, or a child
+        // handler propagating back up.
+        presenters.forEach (p -> p.activate (ref));
 
         // If running in test mode update the state.
         if (Debug.isTestMode())
@@ -1802,10 +2024,9 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
     public boolean _isTabEnabled(String ref) {
         if (ref == null)
             return false;
-        Tab tab = tabs.get (ref);
-        if (tab == null)
+        if (config ().tabs.findTab (ref) == null)
             return false;
-        return tab.enabled;
+        return !disabled.contains (ref);
     }
 
     /**

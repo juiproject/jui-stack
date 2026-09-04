@@ -60,6 +60,16 @@ public class EquationBlockHandler implements IBlockHandler {
         return type == BlockType.EQN;
     }
 
+    /**
+     * The rendering is a full KaTeX parse and layout of the source, run synchronously, so
+     * it is well worth not repeating it for an edit made elsewhere in the document. The
+     * source is the whole of what is drawn.
+     */
+    @Override
+    public String renderKey(FormattedBlock block) {
+        return "eqn:" + StringSupport.safe(block.getContent());
+    }
+
     @Override
     public Element render(FormattedBlock block, int blockIndex, IEditorContext ctx) {
         String source = block.getContent();
@@ -94,11 +104,13 @@ public class EquationBlockHandler implements IBlockHandler {
             renderLatex(wrapper, renderEl, source);
         }
 
-        // Click to edit.
+        // Click to edit. The index is read back off the element rather than captured
+        // here: this element outlives the render that built it (see renderKey), and the
+        // editor re-stamps it as the block moves.
         wrapper.addEventListener("click", evt -> {
             evt.preventDefault();
             evt.stopPropagation();
-            openEditor(wrapper, blockIndex, ctx);
+            openEditor(wrapper, IBlockHandler.blockIndexOf(wrapper), ctx);
         });
 
         return wrapper;

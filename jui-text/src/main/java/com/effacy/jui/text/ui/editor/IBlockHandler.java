@@ -63,6 +63,65 @@ public interface IBlockHandler {
     elemental2.dom.Element render(FormattedBlock block, int blockIndex, IEditorContext ctx);
 
     /**
+     * A key that <b>fully determines</b> the element {@link #render} would produce for
+     * this block, or {@code null} (the default) if the block must be re-rendered on every
+     * pass.
+     * <p>
+     * Every transaction re-renders the whole document, so without this an atomic block
+     * pays its full rendering cost on every keystroke made anywhere in the document — a
+     * PlantUML encode and image fetch, a KaTeX parse, a Mermaid parse-and-lay-out — none
+     * of which the edit had anything to do with. Where a key is given the editor keeps the
+     * element it built last time and re-appends it instead of calling {@link #render}, so
+     * that work happens when the block's own source changes and at no other time.
+     * <p>
+     * The key must cover <em>everything</em> the rendering depends on (source, info string,
+     * caption, …), because two blocks with equal keys are treated as interchangeable. An
+     * element is reused at most once per pass, so repeated identical blocks each get their
+     * own.
+     * <p>
+     * <b>Only for atomic blocks.</b> A reused element is not rebuilt, so it must hold no
+     * state the editor owns: no selection, no cursor, nothing typed into it. That is true
+     * of {@code contenteditable="false"} blocks (diagram, equation, fence) and false of
+     * text blocks and tables, which is why those return {@code null}.
+     * <p>
+     * A reused element is re-stamped with its current {@code data-block-index}, so a
+     * listener on it must read the index with {@link #blockIndexOf(elemental2.dom.Element)}
+     * rather than capture it.
+     *
+     * @param block
+     *              the model block.
+     * @return the key, or {@code null} to always re-render.
+     */
+    default String renderKey(FormattedBlock block) {
+        return null;
+    }
+
+    /**
+     * Reads the block index a rendered element carries in its {@code data-block-index}
+     * attribute.
+     * <p>
+     * Prefer this to capturing the index in a listener's closure: an element the editor
+     * reuses (see {@link #renderKey}) survives renders that a captured index would not,
+     * and would go on naming the position the block held when it was first built.
+     *
+     * @param el
+     *           the rendered block element.
+     * @return the index, or {@code -1} if it carries none.
+     */
+    static int blockIndexOf(elemental2.dom.Element el) {
+        if (el == null)
+            return -1;
+        String value = el.getAttribute("data-block-index");
+        if ((value == null) || value.isEmpty())
+            return -1;
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    /**
      * Called once after all blocks have been rendered and the selection has
      * been restored. Use this for post-render side-effects such as re-focusing
      * a cell that was active before the render.

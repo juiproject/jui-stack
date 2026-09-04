@@ -62,6 +62,29 @@ public interface IFenceRenderer {
     }
 
     /**
+     * Whether the rendering is <b>determined entirely by {@code info} and {@code content}</b>
+     * — the same pair always producing the same result. Defaults to {@code true}, which is
+     * what {@link #render} being a function of its arguments means.
+     * <p>
+     * The editor re-renders the whole document on every transaction. A cacheable fence is
+     * spared that: the editor keeps the element it built and re-appends it, so the fence
+     * renders when its own source changes and not on every keystroke elsewhere in the
+     * document. For an asynchronous renderer that also removes a flicker, since a render
+     * in flight now completes into the element that is still on screen.
+     * <p>
+     * <b>Return {@code false} if the rendering draws on anything else</b> — a remote
+     * query, ambient scope set from outside, the clock, a random seed. Such a fence must
+     * be rebuilt each time or it will freeze at whatever it first showed; and where the
+     * body is not the input (see {@link #rendersEmpty()}) two fences in genuinely
+     * different scopes would otherwise be treated as the same rendering.
+     *
+     * @return {@code true} if the rendering may be reused for an unchanged source.
+     */
+    default boolean cacheable() {
+        return true;
+    }
+
+    /**
      * Placeholder text for the source editor. Defaults to a generic prompt.
      */
     default String placeholder(String info) {

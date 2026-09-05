@@ -16,6 +16,12 @@
 package com.effacy.jui.text.ui.type;
 
 import com.effacy.jui.core.client.component.IComponentCSS;
+import com.effacy.jui.core.client.component.SimpleComponent;
+import com.effacy.jui.core.client.dom.DomSupport;
+import com.effacy.jui.core.client.dom.UIEventType;
+import com.effacy.jui.core.client.dom.builder.Custom;
+import com.effacy.jui.core.client.dom.builder.Div;
+import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.google.gwt.core.client.GWT;
 
@@ -51,13 +57,17 @@ import jsinterop.base.Js;
  * declares itself worth enlarging, and {@code DomBuilderFormattedTextRenderer}, which is
  * the only caller.
  * <p>
- * One overlay exists at a time and it is built on first use, so the cost of the feature to
- * a page with no diagrams in it is nothing.
+ * <b>Shape.</b> A static facade over a body-level singleton {@link Overlay} component,
+ * following {@code Notifier}: the entry points are static because the callers (a content
+ * renderer, a click on a diagram) are not components and have nothing to own an instance,
+ * while the overlay itself is a component and gets the renderer, the managed events and
+ * the lifecycle that go with being one. It is built on first use, so a page with no
+ * diagrams on it pays nothing.
  */
 public final class ZoomOverlay {
 
     private ZoomOverlay() {
-        // Static.
+        // Static facade.
     }
 
     /** Zoom bounds. The lower is a whole large diagram; the upper is a label on it. */
@@ -71,41 +81,11 @@ public final class ZoomOverlay {
     /** Movement (px) beyond which a press on the backdrop is a drag rather than a click. */
     private static final double DRAG_SLOP = 3;
 
-    private static HTMLElement overlayEl;
-
-    private static HTMLElement stageEl;
-
-    /** Carries the transform; holds the copy of the content. */
-    private static HTMLElement innerEl;
-
-    private static HTMLElement pctEl;
-
-    private static double scale = 1;
-
-    /** The scale at which the content last fitted the stage — where <i>Fit</i> returns to. */
-    private static double fitScale = 1;
-
-    private static double panX;
-
-    private static double panY;
-
-    private static boolean dragging;
-
-    /** The pointer moved while down, so the release is the end of a drag and not a click. */
-    private static boolean dragged;
-
-    private static double dragFromX;
-
-    private static double dragFromY;
-
-    private static EventListener keyListener;
-
-    private static EventListener moveListener;
-
-    private static EventListener upListener;
+    /** The allowance fitting leaves around the content: the surface's padding plus a margin. */
+    private static final double FIT_MARGIN = 96;
 
     /************************************************************************
-     * Opening.
+     * Facade.
      ************************************************************************/
 
     /**
@@ -114,6 +94,10 @@ public final class ZoomOverlay {
      * <p>
      * Safe to call on an element whose rendering has not finished — the copy is taken at
      * click time, so whatever the renderer has produced by then is what is shown.
+     * <p>
+     * The listener is a raw one because the element is not ours: it belongs to whatever
+     * rendered the content, which is a renderer rather than a component and offers no
+     * managed hook to attach to. It is scoped to that element and goes when it does.
      *
      * @param el
      *           the rendered element ({@code null} is ignored).
@@ -138,248 +122,336 @@ public final class ZoomOverlay {
     public static void open(Element source) {
         if (source == null)
             return;
-        build();
-        // The size the original occupies on the page. Taken from the original rather than
-        // measured off the copy because a rendered diagram's own width is typically a
-        // percentage of whatever contained it — put on a shrink-to-fit stage that resolves
-        // to nothing useful, whereas the page has already answered the question.
-        DOMRect rect = source.getBoundingClientRect();
-        innerEl.innerHTML = "";
-        innerEl.appendChild(source.cloneNode(true));
-        innerEl.style.setProperty("width", rect.width + "px");
-        overlayEl.style.setProperty("display", "flex");
-        panX = 0;
-        panY = 0;
-        fitTo(rect.width, rect.height);
-        if (keyListener == null) {
-            keyListener = evt -> {
-                KeyboardEvent ke = Js.uncheckedCast(evt);
-                if ("Escape".equals(ke.key))
-                    close();
-            };
-            DomGlobal.document.addEventListener("keydown", keyListener);
-        }
+        instance().present(source);
     }
 
     /** Closes the overlay and drops the copy it was showing. */
     public static void close() {
-        if (overlayEl == null)
-            return;
-        endDrag();
-        overlayEl.style.setProperty("display", "none");
-        innerEl.innerHTML = "";
-        if (keyListener != null) {
-            DomGlobal.document.removeEventListener("keydown", keyListener);
-            keyListener = null;
-        }
+        if (INSTANCE != null)
+            INSTANCE.dismiss();
     }
 
     /************************************************************************
-     * Zoom and pan.
+     * The singleton.
+     ************************************************************************/
+
+    /** The id of the body-level element the overlay is bound to. */
+    private static final String CONTAINER_ID = "jui-zoom-overlay";
+
+    private static Overlay INSTANCE;
+
+    /**
+     * The overlay, built and bound to a body-level element on first use.
+     *
+     * @return the singleton.
+     */
+    private static Overlay instance() {
+        if (INSTANCE == null) {
+            INSTANCE = new Overlay();
+            Element el = DomSupport.createDiv();
+            el.id = CONTAINER_ID;
+            DomGlobal.document.body.appendChild(el);
+            INSTANCE.bind(CONTAINER_ID);
+        }
+        return INSTANCE;
+    }
+
+    /************************************************************************
+     * The overlay component.
      ************************************************************************/
 
     /**
-     * Scales content of the given size to sit within the stage, and takes that as the
-     * <i>Fit</i> scale.
-     * <p>
-     * Upscaling is allowed rather than capped at 1: a diagram too small to read is exactly
-     * the case this feature exists for, and refusing to enlarge it would be refusing the
-     * point.
+     * The full-page surface: a control bar and a stage carrying the copied content under a
+     * transform.
      */
-    private static void fitTo(double width, double height) {
-        // The allowance covers the surface's own padding either side plus a margin off
-        // the edges of the stage, so a fitted diagram sits clear of them rather than
-        // flush against them.
-        double availableWidth = stageEl.clientWidth - 96;
-        double availableHeight = stageEl.clientHeight - 96;
-        if ((width <= 0) || (height <= 0) || (availableWidth <= 0) || (availableHeight <= 0))
-            fitScale = 1;
-        else
-            fitScale = clamp(Math.min(availableWidth / width, availableHeight / height));
-        scale = fitScale;
-        apply();
-    }
+    static class Overlay extends SimpleComponent {
 
-    /** Zooms by {@code factor} about the middle of the stage. */
-    private static void zoom(double factor) {
-        DOMRect rect = stageEl.getBoundingClientRect();
-        zoomAt(factor, rect.left + (stageEl.clientWidth / 2.0), rect.top + (stageEl.clientHeight / 2.0));
-    }
+        private HTMLElement stageEl;
 
-    /**
-     * Zooms by {@code factor} keeping the content under ({@code clientX}, {@code clientY})
-     * where it is — which is what makes a wheel zoom feel like magnification of the thing
-     * being pointed at rather than of the picture as a whole.
-     */
-    private static void zoomAt(double factor, double clientX, double clientY) {
-        double next = clamp(scale * factor);
-        if (next == scale)
-            return;
-        // The transform origin is the middle of the stage, so work in offsets from it.
-        DOMRect rect = stageEl.getBoundingClientRect();
-        double dx = clientX - (rect.left + (stageEl.clientWidth / 2.0));
-        double dy = clientY - (rect.top + (stageEl.clientHeight / 2.0));
-        // Hold the content coordinate under the pointer: pan' = d - (d - pan) * next/scale.
-        panX = dx - ((dx - panX) * (next / scale));
-        panY = dy - ((dy - panY) * (next / scale));
-        scale = next;
-        apply();
-    }
+        /** Carries the transform; holds the copy of the content. */
+        private HTMLElement innerEl;
 
-    private static double clamp(double value) {
-        return Math.max(MIN_SCALE, Math.min(MAX_SCALE, value));
-    }
+        private Element pctEl;
 
-    private static void apply() {
-        innerEl.style.setProperty("transform",
-            "translate(" + panX + "px, " + panY + "px) scale(" + scale + ")");
-        pctEl.textContent = Math.round(scale * 100) + "%";
-    }
+        private double scale = 1;
 
-    /************************************************************************
-     * Dragging.
-     ************************************************************************/
+        /** The scale at which the content last fitted the stage — where <i>Fit</i> returns to. */
+        private double fitScale = 1;
 
-    private static void beginDrag(MouseEvent evt) {
-        dragging = true;
-        dragged = false;
-        dragFromX = evt.clientX - panX;
-        dragFromY = evt.clientY - panY;
-        if (moveListener == null) {
-            moveListener = e -> {
-                if (!dragging)
-                    return;
-                MouseEvent me = Js.uncheckedCast(e);
-                double x = me.clientX - dragFromX;
-                double y = me.clientY - dragFromY;
-                if ((Math.abs(x - panX) > DRAG_SLOP) || (Math.abs(y - panY) > DRAG_SLOP))
-                    dragged = true;
-                panX = x;
-                panY = y;
-                apply();
-            };
-            DomGlobal.document.addEventListener("mousemove", moveListener);
+        private double panX;
+
+        private double panY;
+
+        private boolean dragging;
+
+        /** The pointer moved while down, so the release is the end of a drag and not a click. */
+        private boolean dragged;
+
+        private double dragFromX;
+
+        private double dragFromY;
+
+        /**
+         * Document-level listeners, held for removal. The drag pair lives only for the
+         * duration of a drag and the key listener only while the overlay is open — a
+         * gesture-scoped registration, which is the acceptable use of a raw document
+         * listener.
+         */
+        private EventListener keyListener;
+
+        private EventListener moveListener;
+
+        private EventListener upListener;
+
+        Overlay() {
+            renderer(root -> {
+                Div.$(root).style("zoomBar").$(bar -> {
+                    button(bar, "−", "Zoom out", () -> zoom(1 / STEP));
+                    Div.$(bar).style("zoomPct").by("pct").text("100%");
+                    button(bar, "+", "Zoom in", () -> zoom(STEP));
+                    button(bar, "Fit", "Fit to the page", this::refit);
+                    button(bar, "✕", "Close", this::dismiss);
+                });
+                Div.$(root).style("zoomStage").by("stage")
+                    .on(e -> {
+                        e.preventDefault();
+                        MouseEvent me = Js.uncheckedCast(e.getEvent());
+                        beginDrag(me);
+                    }, UIEventType.ONMOUSEDOWN)
+                    // Clicking the backdrop dismisses — the ordinary way out of a lightbox.
+                    // Two things are excluded, and both are about not fighting the pan: a
+                    // press that moved (it was a drag, not a click), and a press that landed
+                    // on the content itself (grabbing the diagram to move it is not a
+                    // request to close it).
+                    .on(e -> {
+                        if (dragged)
+                            return;
+                        Node target = e.getTarget();
+                        if ((target != null) && innerEl.contains(target))
+                            return;
+                        dismiss();
+                    }, UIEventType.ONCLICK)
+                    .$(stage -> Div.$(stage).style("zoomInner").by("inner"));
+            }, dom -> {
+                stageEl = Js.uncheckedCast(dom.first("stage"));
+                innerEl = Js.uncheckedCast(dom.first("inner"));
+                pctEl = dom.first("pct");
+                // Raw, and deliberately: UIEventType.ONMOUSEWHEEL is the legacy
+                // "mousewheel" event, which Firefox never fired and which is deprecated
+                // everywhere else. The standard event is "wheel", and it has no
+                // UIEventType, so this is the one place the managed API cannot express
+                // what is needed.
+                stageEl.addEventListener("wheel", evt -> {
+                    WheelEvent we = Js.uncheckedCast(evt);
+                    // The page behind must not scroll; this surface owns the gesture.
+                    we.preventDefault();
+                    zoomAt((we.deltaY < 0) ? STEP : (1 / STEP), we.clientX, we.clientY);
+                });
+            });
         }
-        if (upListener == null) {
-            upListener = e -> dragging = false;
-            DomGlobal.document.addEventListener("mouseup", upListener);
+
+        private void button(ElementBuilder parent, String label, String title, Runnable action) {
+            Custom.$(parent, "button").style("zoomBtn").attr("type", "button").attr("title", title)
+                .text(label)
+                .on(e -> {
+                    e.stopEvent();
+                    action.run();
+                }, UIEventType.ONCLICK);
         }
-    }
 
-    private static void endDrag() {
-        dragging = false;
-        if (moveListener != null) {
-            DomGlobal.document.removeEventListener("mousemove", moveListener);
-            moveListener = null;
+        /************************************************************************
+         * Opening and closing.
+         ************************************************************************/
+
+        void present(Element source) {
+            // The size the original occupies on the page. Taken from the original rather
+            // than measured off the copy because a rendered diagram's own width is
+            // typically a percentage of whatever contained it — put on a shrink-to-fit
+            // stage that resolves to nothing useful, whereas the page has already answered
+            // the question.
+            DOMRect rect = source.getBoundingClientRect();
+            innerEl.innerHTML = "";
+            innerEl.appendChild(source.cloneNode(true));
+            innerEl.style.setProperty("width", rect.width + "px");
+            // A class rather than show(): the root lays out as a flex column, and the
+            // framework's show() restores a display the CSS is the authority on.
+            getRoot().classList.add("open");
+            panX = 0;
+            panY = 0;
+            fitTo(rect.width, rect.height);
+            if (keyListener == null) {
+                keyListener = evt -> {
+                    KeyboardEvent ke = Js.uncheckedCast(evt);
+                    if ("Escape".equals(ke.key))
+                        dismiss();
+                };
+                DomGlobal.document.addEventListener("keydown", keyListener);
+            }
         }
-        if (upListener != null) {
-            DomGlobal.document.removeEventListener("mouseup", upListener);
-            upListener = null;
+
+        void dismiss() {
+            endDrag();
+            getRoot().classList.remove("open");
+            innerEl.innerHTML = "";
+            if (keyListener != null) {
+                DomGlobal.document.removeEventListener("keydown", keyListener);
+                keyListener = null;
+            }
         }
-    }
 
-    /************************************************************************
-     * Construction.
-     ************************************************************************/
+        /************************************************************************
+         * Zoom and pan.
+         ************************************************************************/
 
-    /** Builds the overlay on first use and appends it to {@code body}. */
-    private static void build() {
-        if (overlayEl != null)
-            return;
-        overlayEl = div(styles().zoomOverlay());
+        /**
+         * Scales content of the given size to sit within the stage, and takes that as the
+         * <i>Fit</i> scale.
+         * <p>
+         * Upscaling is allowed rather than capped at 1: a diagram too small to read is
+         * exactly the case this feature exists for, and refusing to enlarge it would be
+         * refusing the point.
+         */
+        private void fitTo(double width, double height) {
+            double availableWidth = stageEl.clientWidth - FIT_MARGIN;
+            double availableHeight = stageEl.clientHeight - FIT_MARGIN;
+            if ((width <= 0) || (height <= 0) || (availableWidth <= 0) || (availableHeight <= 0))
+                fitScale = 1;
+            else
+                fitScale = clamp(Math.min(availableWidth / width, availableHeight / height));
+            scale = fitScale;
+            apply();
+        }
 
-        HTMLElement bar = div(styles().zoomBar());
-        bar.appendChild(button("−", "Zoom out", () -> zoom(1 / STEP)));
-        pctEl = div(styles().zoomPct());
-        pctEl.textContent = "100%";
-        bar.appendChild(pctEl);
-        bar.appendChild(button("+", "Zoom in", () -> zoom(STEP)));
-        bar.appendChild(button("Fit", "Fit to the page", () -> {
+        /** Returns to the fitted scale and centres. */
+        private void refit() {
             panX = 0;
             panY = 0;
             scale = fitScale;
             apply();
-        }));
-        bar.appendChild(button("✕", "Close", ZoomOverlay::close));
-        overlayEl.appendChild(bar);
+        }
 
-        stageEl = div(styles().zoomStage());
-        innerEl = div(styles().zoomInner());
-        stageEl.appendChild(innerEl);
-        overlayEl.appendChild(stageEl);
+        /** Zooms by {@code factor} about the middle of the stage. */
+        private void zoom(double factor) {
+            DOMRect rect = stageEl.getBoundingClientRect();
+            zoomAt(factor, rect.left + (stageEl.clientWidth / 2.0), rect.top + (stageEl.clientHeight / 2.0));
+        }
 
-        stageEl.addEventListener("mousedown", evt -> {
-            evt.preventDefault();
-            MouseEvent me = Js.uncheckedCast(evt);
-            beginDrag(me);
-        });
-        // Clicking the backdrop dismisses — the ordinary way out of a lightbox. Two things
-        // are excluded from that, and both are about not fighting the pan: a press that
-        // moved (it was a drag, not a click), and a press that landed on the content
-        // itself (grabbing the diagram to move it is not a request to close it).
-        stageEl.addEventListener("click", evt -> {
-            if (dragged)
+        /**
+         * Zooms by {@code factor} keeping the content under ({@code clientX},
+         * {@code clientY}) where it is — which is what makes a wheel zoom feel like
+         * magnification of the thing being pointed at rather than of the picture as a whole.
+         */
+        private void zoomAt(double factor, double clientX, double clientY) {
+            double next = clamp(scale * factor);
+            if (next == scale)
                 return;
-            Node target = Js.uncheckedCast(evt.target);
-            if ((target != null) && innerEl.contains(target))
-                return;
-            close();
-        });
-        stageEl.addEventListener("wheel", evt -> {
-            WheelEvent we = Js.uncheckedCast(evt);
-            // The page behind must not scroll; this surface owns the gesture.
-            we.preventDefault();
-            zoomAt((we.deltaY < 0) ? STEP : (1 / STEP), we.clientX, we.clientY);
-        });
+            // The transform origin is the middle of the stage, so work in offsets from it.
+            DOMRect rect = stageEl.getBoundingClientRect();
+            double dx = clientX - (rect.left + (stageEl.clientWidth / 2.0));
+            double dy = clientY - (rect.top + (stageEl.clientHeight / 2.0));
+            // Hold the content coordinate under the pointer: pan' = d - (d - pan) * next/scale.
+            panX = dx - ((dx - panX) * (next / scale));
+            panY = dy - ((dy - panY) * (next / scale));
+            scale = next;
+            apply();
+        }
 
-        DomGlobal.document.body.appendChild(overlayEl);
-    }
+        private static double clamp(double value) {
+            return Math.max(MIN_SCALE, Math.min(MAX_SCALE, value));
+        }
 
-    private static HTMLElement div(String style) {
-        HTMLElement el = Js.uncheckedCast(DomGlobal.document.createElement("div"));
-        el.classList.add(style);
-        return el;
-    }
+        private void apply() {
+            innerEl.style.setProperty("transform",
+                "translate(" + panX + "px, " + panY + "px) scale(" + scale + ")");
+            pctEl.textContent = Math.round(scale * 100) + "%";
+        }
 
-    private static HTMLElement button(String label, String title, Runnable action) {
-        HTMLElement el = Js.uncheckedCast(DomGlobal.document.createElement("button"));
-        el.classList.add(styles().zoomBtn());
-        el.textContent = label;
-        el.setAttribute("title", title);
-        el.setAttribute("type", "button");
-        el.addEventListener("click", evt -> {
-            evt.stopPropagation();
-            action.run();
-        });
-        return el;
+        /************************************************************************
+         * Dragging.
+         ************************************************************************/
+
+        private void beginDrag(MouseEvent evt) {
+            dragging = true;
+            dragged = false;
+            dragFromX = evt.clientX - panX;
+            dragFromY = evt.clientY - panY;
+            if (moveListener == null) {
+                moveListener = e -> {
+                    if (!dragging)
+                        return;
+                    MouseEvent me = Js.uncheckedCast(e);
+                    double x = me.clientX - dragFromX;
+                    double y = me.clientY - dragFromY;
+                    if ((Math.abs(x - panX) > DRAG_SLOP) || (Math.abs(y - panY) > DRAG_SLOP))
+                        dragged = true;
+                    panX = x;
+                    panY = y;
+                    apply();
+                };
+                DomGlobal.document.addEventListener("mousemove", moveListener);
+            }
+            if (upListener == null) {
+                upListener = e -> dragging = false;
+                DomGlobal.document.addEventListener("mouseup", upListener);
+            }
+        }
+
+        private void endDrag() {
+            dragging = false;
+            if (moveListener != null) {
+                DomGlobal.document.removeEventListener("mousemove", moveListener);
+                moveListener = null;
+            }
+            if (upListener != null) {
+                DomGlobal.document.removeEventListener("mouseup", upListener);
+                upListener = null;
+            }
+        }
+
+        /**
+         * {@inheritDoc}
+         * <p>
+         * The singleton is never disposed in practice, but the document listeners it can be
+         * holding are exactly the kind that outlive a component's own DOM — so they are
+         * released here rather than left to an assumption about its lifetime.
+         *
+         * @see com.effacy.jui.core.client.component.Component#onDispose()
+         */
+        @Override
+        protected void onDispose() {
+            dismiss();
+            super.onDispose();
+        }
+
+        /**
+         * The overlay shares the facade's sheet: {@code .zoomable} is applied out in the
+         * document by {@link ZoomOverlay#enable(Element)} while everything else is this
+         * component's, and one sheet for the feature is easier to keep coherent than two.
+         */
+        @Override
+        protected ILocalCSS styles() {
+            return ZoomOverlay.styles();
+        }
     }
 
     /************************************************************************
      * CSS.
      *
-     * Appended to body, outside any component's scoped DOM, so it carries its own
-     * injected sheet — the same arrangement as the editor's floating affordances
-     * (see EditorOverlayCSS). Colours are token-driven with literal fallbacks so
-     * the surface follows a theme without needing one.
+     * The overlay is a component, so this is legitimately an IComponentCSS and the
+     * root is styled through .component — which is generated per sheet, so the
+     * names beneath it cannot collide with anything else on the page.
      *
-     * Three conventions here are not decoration:
-     *
-     *  - Class names are namespaced (zoomOverlay, not overlay). These names are
-     *    global — the sheet is not scoped by an enclosing .component — so a name
-     *    like "overlay", "bar" or "btn" is an invitation to collide with whatever
-     *    else is on the page. EditorOverlayCSS names its own imgOverlay/linkCard
-     *    for the same reason.
+     * Two conventions worth keeping:
      *
      *  - Colour fallbacks are hex-with-alpha (#0f172aeb) rather than rgba(), so no
-     *    var() fallback in this sheet contains a comma.
+     *    var() fallback in this sheet contains a comma; and no shorthand "inset".
+     *    Precautions rather than diagnoses — the backdrop did not paint on the
+     *    first cut of this and the cause was never identified, so the constructs a
+     *    CSS pipeline is most likely to mishandle were removed rather than argued
+     *    about. Not worth re-litigating while it works.
      *
-     *  - No comments inside a rule block, and no shorthand "inset" — longhand
-     *    top/right/bottom/left instead.
-     *
-     * The last two are precautions rather than diagnoses: the backdrop did not
-     * paint on the first cut of this and the cause was not identifiable from the
-     * source, so the constructs that a CSS pipeline is most likely to mishandle
-     * were removed rather than argued about.
+     *  - .zoomable is deliberately NOT scoped under .component: it is applied to the
+     *    rendered diagram out in the document, which is not part of this component.
      ************************************************************************/
 
     private static ILocalCSS styles() {
@@ -389,18 +461,6 @@ public final class ZoomOverlay {
     public static interface ILocalCSS extends IComponentCSS {
 
         String zoomable();
-
-        String zoomOverlay();
-
-        String zoomBar();
-
-        String zoomBtn();
-
-        String zoomPct();
-
-        String zoomStage();
-
-        String zoomInner();
     }
 
     @CssResource(value = {
@@ -409,7 +469,7 @@ public final class ZoomOverlay {
         .zoomable {
             cursor: zoom-in;
         }
-        .zoomOverlay {
+        .component {
             position: fixed;
             top: 0;
             right: 0;
@@ -420,7 +480,10 @@ public final class ZoomOverlay {
             flex-direction: column;
             background-color: var(--jui-zoom-backdrop, #0f172aeb);
         }
-        .zoomBar {
+        .component.open {
+            display: flex;
+        }
+        .component .zoomBar {
             flex-shrink: 0;
             display: flex;
             align-items: center;
@@ -428,7 +491,7 @@ public final class ZoomOverlay {
             gap: 6px;
             padding: 10px 14px;
         }
-        .zoomBtn {
+        .component .zoomBtn {
             border: none;
             cursor: pointer;
             min-width: 30px;
@@ -441,17 +504,17 @@ public final class ZoomOverlay {
             color: var(--jui-zoom-btn-color, #ffffff);
             background-color: var(--jui-zoom-btn-bg, #ffffff29);
         }
-        .zoomBtn:hover {
+        .component .zoomBtn:hover {
             background-color: var(--jui-zoom-btn-hover-bg, #ffffff47);
         }
-        .zoomPct {
+        .component .zoomPct {
             min-width: 52px;
             text-align: center;
             font-size: 0.8rem;
             color: var(--jui-zoom-btn-color, #ffffff);
             user-select: none;
         }
-        .zoomStage {
+        .component .zoomStage {
             flex: 1;
             min-height: 0;
             overflow: hidden;
@@ -460,17 +523,17 @@ public final class ZoomOverlay {
             justify-content: center;
             cursor: grab;
         }
-        .zoomStage:active {
+        .component .zoomStage:active {
             cursor: grabbing;
         }
-        .zoomInner {
+        .component .zoomInner {
             transform-origin: center center;
             max-width: none;
             padding: 16px;
             border-radius: 8px;
             background-color: var(--jui-zoom-surface, #ffffff);
         }
-        .zoomInner svg, .zoomInner img {
+        .component .zoomInner svg, .component .zoomInner img {
             max-width: none;
             max-height: none;
             display: block;

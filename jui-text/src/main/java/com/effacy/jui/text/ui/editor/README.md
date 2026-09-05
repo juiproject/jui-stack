@@ -38,6 +38,14 @@ Two rules for a handler that offers one:
 
 A fence's key additionally depends on its renderer: `IFenceRenderer.cacheable()` (default `true`) declares the rendering to be a function of `info` and `content` alone. A renderer drawing on a remote query or ambient scope must return `false`, or it will freeze at whatever it first showed.
 
+#### Enlarging a diagram (read-only)
+
+A diagram is sized to the column it sits in, which is the right size for reading around and often the wrong size for reading. `IFenceRenderer.zoomable()` (default `false`) declares a rendering to be a graphic worth enlarging; where it is set, `DomBuilderFormattedTextRenderer` gives the rendered element a `zoom-in` cursor and a click that opens a **copy** of it over the page with fit-to-screen, ±zoom, wheel-zoom about the pointer and drag-to-pan (`ZoomOverlay`).
+
+A copy, so the document underneath is untouched and an asynchronous renderer still working on the original is undisturbed. Opt-in, because a fence renderer is not necessarily a picture — one producing a list is already the right size.
+
+This is **read-only surfaces only**. In the editor a click on a fence opens its source, and two things cannot own the same gesture.
+
 ### Block handler registry
 
 Rendering and event handling for each block family is delegated to a pluggable `IBlockHandler`. The editor maintains an ordered list of handlers; for every operation it iterates the list and delegates to the first handler whose `accepts(BlockType)` returns `true`. This allows new block types to be added without modifying `Editor` itself.

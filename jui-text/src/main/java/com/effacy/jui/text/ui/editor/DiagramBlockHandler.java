@@ -65,6 +65,20 @@ public class DiagramBlockHandler implements IBlockHandler {
         return type == BlockType.DIA;
     }
 
+    /**
+     * The rendering is a PlantUML encode of the source plus an image fetch, so it is worth
+     * a good deal not to repeat it for an edit made elsewhere in the document. The source
+     * and the caption are the whole of what is drawn.
+     */
+    @Override
+    public String renderKey(FormattedBlock block) {
+        String source = StringSupport.safe(block.getContent());
+        String caption = StringSupport.safe(block.meta(META_CAPTION));
+        // Length-prefixed rather than delimited: a source may hold any character, so
+        // there is no separator to trust — but a length says where it ends.
+        return "dia:" + source.length() + ":" + source + caption;
+    }
+
     @Override
     public Element render(FormattedBlock block, int blockIndex, IEditorContext ctx) {
         String source = block.getContent();
@@ -104,11 +118,13 @@ public class DiagramBlockHandler implements IBlockHandler {
             renderDiagram(imageEl, source);
         }
 
-        // Click to edit.
+        // Click to edit. The index is read back off the element rather than captured
+        // here: this element outlives the render that built it (see renderKey), and the
+        // editor re-stamps it as the block moves.
         wrapper.addEventListener("click", evt -> {
             evt.preventDefault();
             evt.stopPropagation();
-            openEditor(wrapper, blockIndex, ctx);
+            openEditor(wrapper, IBlockHandler.blockIndexOf(wrapper), ctx);
         });
 
         return wrapper;

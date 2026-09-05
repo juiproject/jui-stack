@@ -98,6 +98,12 @@ public class Mermaid implements IFenceRenderer {
         return "mermaid".equals(info);
     }
 
+    /** A diagram, and a dense one as often as not — worth opening at a readable size. */
+    @Override
+    public boolean zoomable() {
+        return true;
+    }
+
     @Override
     public String label(String info) {
         return "Mermaid";

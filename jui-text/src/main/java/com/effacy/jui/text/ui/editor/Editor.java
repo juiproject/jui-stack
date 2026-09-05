@@ -8,6 +8,7 @@ import java.util.Set;
 
 import com.effacy.jui.core.client.component.Component;
 import com.effacy.jui.core.client.component.IComponentCSS;
+import com.effacy.jui.core.client.dom.EventLifecycle;
 import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.platform.css.client.CssResource;
@@ -626,21 +627,57 @@ public class Editor extends Component<Editor.Config> {
      ************************************************************************/
 
     /**
+     * The elements from the previous render that may be re-appended rather than rebuilt,
+     * keyed by their {@link IBlockHandler#renderKey(FormattedBlock)}. Only atomic blocks
+     * offer a key; see that method for why, and for what a key has to cover.
+     */
+    private Map<String, Element> reusable = new HashMap<>();
+
+    /**
      * Full re-render of the document into the editor element. Each block is
      * delegated to the appropriate {@link IBlockHandler}.
+     * <p>
+     * A block whose handler offers a {@link IBlockHandler#renderKey(FormattedBlock) render
+     * key} matching one from the previous pass keeps the element it already has: it is
+     * detached with the rest, then re-appended in place of a fresh render. Every
+     * transaction comes through here, so for an atomic block that is the difference
+     * between rendering on its own source changing and rendering on every keystroke in the
+     * document. It also settles the flicker on the asynchronous ones — a Mermaid render in
+     * flight completes into the element that is still mounted, rather than into one that
+     * was discarded a keystroke later.
      */
     private void render() {
         // The DOM (and any selected image element) is rebuilt, so dismiss the overlay.
         hideImageOverlay();
         rendering = true;
         try {
+            // The previous pass's reusable elements. Detaching them (below) leaves the
+            // subtrees intact, so a re-appended one brings its rendering — a decoded
+            // image, laid-out SVG — with it.
+            Map<String, Element> prior = reusable;
+            reusable = new HashMap<>();
             editorEl.innerHTML = "";
             List<FormattedBlock> blocks = state.doc().getBlocks();
             handlers.forEach(h -> h.beginRender(ctx));
             Map<String, Integer> headingSlugs = new HashMap<>();
             for (int i = 0; i < blocks.size(); i++) {
                 FormattedBlock block = blocks.get(i);
-                Element el = handlerFor(block.getType()).render(block, i, ctx);
+                IBlockHandler handler = handlerFor(block.getType());
+                String key = handler.renderKey(block);
+                Element el = null;
+                if (key != null) {
+                    // Removed, not read: two blocks with the same key are distinct blocks
+                    // and cannot share one element, so the second renders afresh.
+                    el = prior.remove(key);
+                    if (el != null)
+                        el.setAttribute("data-block-index", String.valueOf(i));
+                }
+                if (el == null)
+                    el = handler.render(block, i, ctx);
+                // First one wins, so a repeated block offers the same element for reuse
+                // each pass rather than the two taking turns being the rebuilt one.
+                if ((key != null) && !reusable.containsKey(key))
+                    reusable.put(key, el);
                 assignHeadingId(el, block, headingSlugs);
                 editorEl.appendChild(el);
             }
@@ -1080,6 +1117,11 @@ public class Editor extends Component<Editor.Config> {
     private void attachEventListeners() {
         editorEl.addEventListener("keydown", evt -> handleKeyDown((KeyboardEvent) evt));
         editorEl.addEventListener("beforeinput", evt -> handleBeforeInput(evt));
+        // While an IME is composing, what is on screen is the IME's working text rather
+        // than settled input, so native typing stands down and the ordinary prevented
+        // path applies throughout (see tryNativeInsert).
+        editorEl.addEventListener("compositionstart", evt -> composing = true);
+        editorEl.addEventListener("compositionend", evt -> composing = false);
         editorEl.addEventListener("paste", evt -> handlePaste(evt));
         editorEl.addEventListener("dragover", evt -> handleDragOver(evt));
         editorEl.addEventListener("drop", evt -> handleDrop(evt));
@@ -1087,9 +1129,6 @@ public class Editor extends Component<Editor.Config> {
         // Link navigate / hover-card (NAVIGATE mode only).
         editorEl.addEventListener("mouseover", evt -> handleEditorMouseOver(evt));
         editorEl.addEventListener("mouseout", evt -> handleEditorMouseOut(evt));
-        // Dismiss the image overlay on a pointer-down outside it (and outside the image).
-        DomGlobal.document.addEventListener("mousedown", evt -> handleDocumentMouseDown(evt));
-        DomGlobal.document.addEventListener("selectionchange", evt -> syncSelectionFromDom());
         // The toolbar reflects the selection, and a selection the user cannot see
         // is not something to reflect: without this the buttons keep the state
         // they held when focus left, so an editor sitting idle on the page shows
@@ -1097,12 +1136,97 @@ public class Editor extends Component<Editor.Config> {
         // something. Re-established on focus by the next selection sync.
         editorEl.addEventListener("blur", evt -> clearToolbarState());
         editorEl.addEventListener("focus", evt -> syncSelectionFromDom());
+
+        attachDocumentListeners();
+    }
+
+    /************************************************************************
+     * Document-level listeners.
+     *
+     * Everything above is on the editor's own element and goes when the element
+     * does. These three are on the document, which outlives the editor — so each
+     * is held for removal in onDispose(). Without that an editor is pinned live
+     * by the document for the rest of the page: the listeners capture `this`, so
+     * a disposed editor keeps its whole document model reachable and goes on
+     * answering selectionchange for every cursor movement anywhere on the page.
+     ************************************************************************/
+
+    /** Previews document mouse events to dismiss the image overlay; removed on dispose. */
+    private EventLifecycle.IEventPreviewHandler mouseDownPreview;
+
+    /** Raw, because there is no lifecycle equivalent; removed on dispose. */
+    private EventListener selectionChangeListener;
+
+    /** Raw and capture-phase — see below; removed on dispose. */
+    private EventListener scrollListener;
+
+    private void attachDocumentListeners() {
+        // Dismiss the image overlay on a pointer-down outside it (and outside the image).
+        // Through the lifecycle's preview rather than a listener of our own: it is what
+        // the mechanism is for, and it hands back a handle to remove. CONTINUE always —
+        // this only observes, and cancelling would swallow the event for everyone else.
+        mouseDownPreview = EventLifecycle.registerPreview(e -> {
+            if ("mousedown".equals(e.type))
+                handleDocumentMouseDown(e);
+            return EventLifecycle.IEventPreview.Outcome.CONTINUE;
+        });
+
+        selectionChangeListener = evt -> syncSelectionFromDom();
+        DomGlobal.document.addEventListener("selectionchange", selectionChangeListener);
+
         // Keep the overlay aligned to the image while scrolling would be involved; the
         // simplest robust behaviour is to dismiss it on scroll.
-        DomGlobal.document.addEventListener("scroll", evt -> {
+        //
+        // Deliberately not EventLifecycle.registerDocumentScrollEvent: that registers in
+        // the bubble phase, and scroll does not bubble — it would hear the document
+        // scrolling and never the editor's own canvas, which is the scroll that actually
+        // moves the image out from under the overlay.
+        scrollListener = evt -> {
             hideImageOverlay();
             hideLinkCard();
-        }, true);
+        };
+        DomGlobal.document.addEventListener("scroll", scrollListener, true);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @see com.effacy.jui.core.client.component.Component#onDispose()
+     */
+    @Override
+    protected void onDispose() {
+        if (mouseDownPreview != null) {
+            mouseDownPreview.remove();
+            mouseDownPreview = null;
+        }
+        if (selectionChangeListener != null) {
+            DomGlobal.document.removeEventListener("selectionchange", selectionChangeListener);
+            selectionChangeListener = null;
+        }
+        if (scrollListener != null) {
+            DomGlobal.document.removeEventListener("scroll", scrollListener, true);
+            scrollListener = null;
+        }
+        // Timers in flight would otherwise fire into a disposed editor.
+        hideLinkCard();
+        // An image resize leaves listeners on the document for the duration of the drag,
+        // and disposal mid-drag (a navigation, say) would strand them. Through
+        // hideImageOverlay rather than endResize: that clears the selected image first,
+        // so the release does not also commit the drag — a transaction applied into an
+        // editor on its way out is both pointless and a hazard.
+        hideImageOverlay();
+        handlers.forEach(h -> h.onDispose(ctx));
+        // Both of these are body-level elements of this editor's making, so they are not
+        // carried away with its own DOM and have to be taken down by hand.
+        if (imageOverlay != null) {
+            imageOverlay.remove();
+            imageOverlay = null;
+        }
+        if (linkCard != null) {
+            linkCard.remove();
+            linkCard = null;
+        }
+        super.onDispose();
     }
 
     /************************************************************************
@@ -1733,8 +1857,183 @@ public class Editor extends Component<Editor.Config> {
         }
     }
 
+    /************************************************************************
+     * Native typing.
+     *
+     * The controlled-contenteditable rule is that the browser never mutates the
+     * DOM — every input is prevented and re-performed as a transaction, after
+     * which the document is re-rendered. That is what makes the DOM provably match
+     * the model, and it is worth keeping for everything structural.
+     *
+     * It is a poor deal for ordinary typing. A character typed into a paragraph
+     * costs a rebuild of every block in the document, so the cost of a keystroke
+     * grows with the length of the piece being written — which is exactly backwards.
+     *
+     * The observation this rests on: for a caret sitting plainly inside plain text,
+     * what the browser is about to do and what the model says are the same thing.
+     * Where that can be established beforehand, the default action is allowed to
+     * stand and the model is moved to match — no prevention, no render, no cost in
+     * the size of the document. Where it cannot, nothing changes.
+     *
+     * "Where it cannot" is deliberately generous, because a wrong answer here is a
+     * DOM and a model that disagree, and the guarantee above is worth more than the
+     * keystrokes. The conditions are enumerated in tryNativeInsert; and because
+     * enumerated conditions are a thing one gets wrong, every native insertion is
+     * checked afterwards against the model and resyncs if it does not agree.
+     ************************************************************************/
+
+    /** An IME composition is in progress (see {@link #tryNativeInsert(String)}). */
+    private boolean composing;
+
     /**
-     * Handles content-mutating input events. All browser-native mutations are
+     * Lets the browser's own insertion stand for a keystroke that is provably
+     * equivalent to the transaction it would otherwise be turned into, updating the
+     * model to match without a re-render.
+     * <p>
+     * Declines — leaving the caller to prevent the event and go through the normal
+     * path — for anything where the two could differ:
+     * <ul>
+     * <li><b>A composition</b> in progress: the text on screen is the IME's, not
+     * settled input, and the model has no business tracking it a character at a time.</li>
+     * <li><b>Anything but plain characters</b>: a newline is a block operation, not
+     * a character in a line.</li>
+     * <li><b>A range selection</b>: that is a delete and an insert, and how a browser
+     * takes a selection apart across element boundaries is its own business.</li>
+     * <li><b>A non-text block</b>: atomic blocks take no caret and a table's cells are
+     * the table handler's, which has already had its chance at the event.</li>
+     * <li><b>A block holding an image or a variable</b>: those are zero-length formats
+     * over a sentinel character, with an insertion rule of their own and a
+     * {@code contenteditable="false"} span in the DOM to go with it.</li>
+     * <li><b>A caret that is not plainly within plain text</b>: see
+     * {@link #caretInPlainText()}, which is where the formatting question is settled.</li>
+     * </ul>
+     *
+     * @param data
+     *             the text the browser is about to insert.
+     * @return {@code true} if the browser's insertion was allowed to stand.
+     */
+    private boolean tryNativeInsert(String data) {
+        if (composing)
+            return false;
+        if ((data == null) || data.isEmpty())
+            return false;
+        if ((data.indexOf('\n') >= 0) || (data.indexOf('\r') >= 0))
+            return false;
+        Selection sel = state.selection();
+        if (!sel.isCursor())
+            return false;
+        List<FormattedBlock> blocks = state.doc().getBlocks();
+        int blockIndex = sel.anchorBlock();
+        if ((blockIndex < 0) || (blockIndex >= blocks.size()))
+            return false;
+        FormattedBlock block = blocks.get(blockIndex);
+        if (atomicBlock(block.getType()) || (block.getType() == BlockType.TABLE))
+            return false;
+        for (FormattedLine line : block.getLines()) {
+            for (FormattedLine.Format format : line.getFormatting()) {
+                if (format.getLength() == 0)
+                    return false;
+            }
+        }
+        if (!caretInPlainText())
+            return false;
+        Transaction tr = Commands.insertText(state, data);
+        if (tr == null)
+            return false;
+        // Silent: the DOM the browser is about to produce is the render, so producing
+        // it again would only take the caret away from where the browser put it.
+        applyTransactionSilent(tr);
+        updatePlaceholder();
+        verifyNativeInsert(blockIndex);
+        return true;
+    }
+
+    /**
+     * Whether the DOM caret sits where a native insertion must land exactly where the
+     * model puts it.
+     * <p>
+     * The question is entirely about formatting boundaries. The model's rule (see
+     * {@code FormattedLine.insert}) is that text typed at the trailing edge of a format
+     * joins it and text typed at its leading edge does not; the browser's rule is
+     * whichever node the caret happens to be in, which is not always the same answer.
+     * Rather than model the disagreement, this declines every position at which one is
+     * possible:
+     * <ul>
+     * <li>The caret must be in a <b>text node</b> that is a <b>direct child of the
+     * block</b> — never inside a span or a link, where the browser would make the
+     * character part of the formatting.</li>
+     * <li>Within that node, an <b>interior</b> position is unambiguous. An <b>edge</b>
+     * is allowed only when there is no neighbour on that side for the character to join
+     * instead — which keeps the commonest case of all, typing at the end of a
+     * paragraph, on the fast path.</li>
+     * </ul>
+     *
+     * @return {@code true} if a native insertion here is equivalent to the model's.
+     */
+    private boolean caretInPlainText() {
+        elemental2.dom.Selection sel = DomGlobal.document.getSelection();
+        if ((sel == null) || (sel.rangeCount == 0) || !sel.isCollapsed)
+            return false;
+        Node node = sel.anchorNode;
+        if ((node == null) || (node.nodeType != Node.TEXT_NODE))
+            return false;
+        // A block element is a direct child of the editor, so this says "the text is in
+        // the block itself" — and, just as importantly, not nested in anything.
+        Node parent = node.parentNode;
+        if ((parent == null) || (parent.parentNode != editorEl))
+            return false;
+        int offset = sel.anchorOffset;
+        int length = (node.textContent == null) ? 0 : node.textContent.length();
+        if (offset <= 0)
+            return parent.firstChild == node;
+        if (offset >= length)
+            return parent.lastChild == node;
+        return true;
+    }
+
+    /**
+     * Checks, once the browser has actually inserted, that the block it inserted into
+     * holds as many characters as the model says it should — and re-renders from the
+     * model if it does not.
+     * <p>
+     * {@link #tryNativeInsert(String)} decides in advance that the browser will do a
+     * particular thing. This is the standing check on that judgement: a case that was
+     * not thought of, or a browser that normalises something on the way in, shows up
+     * here as a length that does not agree and is corrected on the spot rather than
+     * being typed on top of. The model is the authority, so the correction is simply
+     * to render it.
+     * <p>
+     * Deferred to a timeout because the insertion has not happened yet — this is still
+     * inside {@code beforeinput}.
+     *
+     * @param blockIndex
+     *                   the block that was inserted into.
+     */
+    private void verifyNativeInsert(int blockIndex) {
+        DomGlobal.setTimeout(args -> {
+            if (rendering)
+                return;
+            List<FormattedBlock> blocks = state.doc().getBlocks();
+            if ((blockIndex < 0) || (blockIndex >= blocks.size()))
+                return;
+            if (blockIndex >= editorEl.childElementCount)
+                return;
+            // charCount takes a Node, so the block is used as it comes off childNodes —
+            // the same indexing ensureCursorVisible relies on.
+            Node blockEl = editorEl.childNodes.item(blockIndex);
+            if (blockEl == null)
+                return;
+            if (EditorSupport.charCount(blockEl) == Positions.contentSize(blocks.get(blockIndex)))
+                return;
+            if (config().debugLog)
+                DomGlobal.console.log("[Editor:nativeInsert] block " + blockIndex + " diverged — re-rendering");
+            render();
+        }, 0);
+    }
+
+    /**
+     * Handles content-mutating input events. Save for the plain typing that
+     * {@link #tryNativeInsert(String)} lets through, all browser-native mutations are
      * prevented; the equivalent is performed through the transaction system.
      * Handlers are consulted first and may consume the event (e.g. to allow
      * native input inside table cells).
@@ -1746,10 +2045,18 @@ public class Editor extends Component<Editor.Config> {
             if (h.handleBeforeInput(evt, ctx))
                 return;
         }
-        evt.preventDefault();
+        String inputType = EditorSupport.getInputType(evt);
+        // The model has to know where the caret is either way; reading it changes
+        // nothing, so it is as safe before the default action is decided as after.
         syncSelectionFromDom();
 
-        String inputType = EditorSupport.getInputType(evt);
+        // Plain typing into plain text is left to the browser and the model brought
+        // into step behind it (see tryNativeInsert). Everything else is prevented and
+        // performed through the transaction system.
+        if ("insertText".equals(inputType) && tryNativeInsert(EditorSupport.getInputData(evt)))
+            return;
+
+        evt.preventDefault();
         if (inputType == null)
             return;
 

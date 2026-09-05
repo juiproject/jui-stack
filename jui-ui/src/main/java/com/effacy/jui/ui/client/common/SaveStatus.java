@@ -47,6 +47,12 @@ import elemental2.dom.Element;
  * the next edit reads as <i>Save pending</i> rather than qualifying itself against
  * a save belonging to whatever was open before. Call it when the surface is opened
  * or when a different record is loaded into it.
+ * <p>
+ * <b>Retiring.</b> {@link #settle()} is the way out for a surface whose editing chrome
+ * comes and goes — a document read in one mode and edited in another. It cannot simply
+ * be a {@link #clear()}, because leaving the editing mode is itself a flush: the save a
+ * user most wants reported is the one in flight at exactly that moment. So it lets what
+ * is outstanding run its course on screen and goes quiet after.
  */
 public class SaveStatus extends SimpleComponent implements Autosaver.IStateListener {
 
@@ -85,6 +91,18 @@ public class SaveStatus extends SimpleComponent implements Autosaver.IStateListe
     /** Counts the age of the last save up; only running while that is on show. */
     private Timer ageTimer;
 
+    /**
+     * There is unsaved content, a save in flight, or a save failing — something the
+     * status has yet to report the end of. See {@link #settle()}, which waits on it.
+     */
+    private boolean outstanding;
+
+    /**
+     * Retired by the host and waiting for what it is saying to settle: the label goes
+     * quiet at the age clock's next fire rather than being redrawn. See {@link #settle()}.
+     */
+    private boolean settling;
+
     private Element labelEl;
 
     public SaveStatus() {
@@ -102,11 +120,16 @@ public class SaveStatus extends SimpleComponent implements Autosaver.IStateListe
 
     @Override
     public void onState(Autosaver.State state) {
+        // What the status still owes a report on, which is what a retirement waits for.
+        outstanding = (state == Autosaver.State.PENDING) || (state == Autosaver.State.SAVING)
+            || (state == Autosaver.State.ERROR);
         // Named for what is on screen rather than for what is happening: before the
         // first save of a session there is nothing to qualify, so it is the save
         // that is pending; after one, what is on screen IS saved and it is the
         // latest edit that is not.
         if (state == Autosaver.State.PENDING) {
+            // Editing has resumed: whatever retired the status, it is back on duty.
+            settling = false;
             set ((savedAt > 0) ? "Saved · pending" : "Save pending", false);
             return;
         }
@@ -148,6 +171,9 @@ public class SaveStatus extends SimpleComponent implements Autosaver.IStateListe
      *             the message ({@code null} shows nothing).
      */
     public void message(String text) {
+        // The host has spoken deliberately and means to be read: a retirement that
+        // would take the label away underneath it is off.
+        settling = false;
         set (text, false);
     }
 
@@ -158,6 +184,7 @@ public class SaveStatus extends SimpleComponent implements Autosaver.IStateListe
      *             the message.
      */
     public void error(String text) {
+        settling = false;
         set (text, true);
     }
 
@@ -166,8 +193,54 @@ public class SaveStatus extends SimpleComponent implements Autosaver.IStateListe
      * pending" rather than claiming a save that belongs to a previous one.
      */
     public void clear() {
+        settling = false;
+        outstanding = false;
         savedAt = 0;
         set (null, false);
+    }
+
+    /**
+     * Retires the status: it goes quiet once what it is saying has settled, and ends
+     * the session as {@link #clear()} does.
+     * <p>
+     * For a surface whose editing chrome comes and goes — a document read in one mode
+     * and edited in another — the status belongs to the editing, and should not sit in
+     * the reading view claiming a save nobody is now waiting on. But it cannot simply be
+     * cleared on the way out, because the way out is itself a flush: the save a user most
+     * wants reported is the one in flight at exactly the moment they leave.
+     * <p>
+     * So this neither blanks now nor keeps speaking:
+     * <ul>
+     * <li><b>Something outstanding</b> — unsaved content, a save in flight — runs its
+     * course on screen (<i>Saving…</i>, then <i>Saved · just now</i>) and the label
+     * retires at the point it would otherwise have begun counting the age up. That
+     * moment is the natural one: it is the end of the window in which the report reads
+     * as current, so it has either been read by then or was never going to be.</li>
+     * <li><b>A save still reading as current</b> — one made within that same window —
+     * likewise stands until the redraw that would have taken it out of it.</li>
+     * <li><b>An older save, or nothing at all</b> — blanked immediately. The moment to
+     * be read has passed.</li>
+     * <li><b>A save that is failing</b> is not retired at all. The retry is the one
+     * thing here worth a reader's attention, so it stands until it recovers — and the
+     * recovery then retires on the same window as any other save.</li>
+     * </ul>
+     * A new edit ({@link Autosaver.State#PENDING}) or a host message cancels the
+     * retirement and the status speaks normally again.
+     */
+    public void settle() {
+        // In flight, unsaved or failing: let it run its course, and retire on the
+        // window that follows (or never, while it is still failing).
+        if (outstanding) {
+            settling = true;
+            return;
+        }
+        // A save recent enough that it still reads as current: let it stand out the
+        // window in which it does. The age clock is already scheduled to end it.
+        if ((savedAt > 0) && ((System.currentTimeMillis () - savedAt) < JUST_NOW_MS)) {
+            settling = true;
+            return;
+        }
+        clear ();
     }
 
     /************************************************************************
@@ -200,6 +273,13 @@ public class SaveStatus extends SimpleComponent implements Autosaver.IStateListe
 
             @Override
             public void run() {
+                // Retired by the host (see settle()): this fire is the end of the
+                // window in which the save reads as current, and an age counting up
+                // in a view nobody is editing is not worth the line. Go quiet.
+                if (settling) {
+                    clear ();
+                    return;
+                }
                 // label(), not set(): set() stops the clock, which is right for
                 // every other route to the label and would be this one cancelling
                 // itself. Anything else that writes the label has already stopped

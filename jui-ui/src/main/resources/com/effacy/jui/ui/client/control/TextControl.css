@@ -11,6 +11,9 @@
     --cpt-textctl-height: var(--jui-textctl-height, var(--jui-comp-control-height));
     --cpt-textctl-border: var(--jui-textctl-border, var(--jui-comp-control-border));
     --cpt-textctl-border-hover: var(--jui-textctl-border-hover, var(--cpt-textctl-border));
+    --cpt-textctl-border-focus: var(--jui-textctl-border-focus, var(--jui-ctl-focus));
+    --cpt-textctl-border-style: var(--jui-textctl-border-style, solid);
+    --cpt-textctl-border-style-focus: var(--jui-textctl-border-style-focus, var(--cpt-textctl-border-style));
     --cpt-textctl-border-radius: var(--jui-textctl-border-radius, var(--jui-comp-control-radius));
     --cpt-textctl-bg: var(--jui-textctl-bg, var(--jui-comp-control-surface));
     --cpt-textctl-bg-hover: var(--jui-textctl-bg-hover, var(--cpt-textctl-bg));
@@ -24,13 +27,33 @@
     --cpt-textctl-icon: var(--jui-textctl-icon, var(--jui-comp-control-action));
     --cpt-textctl-icon-disabled: var(--jui-textctl-icon-disabled, var(--jui-comp-control-action-disabled));
     --cpt-textctl-icon-readonly: var(--jui-textctl-icon-readonly, var(--jui-comp-control-action-readonly));
-    --cpt-textctl-bg-readonly-hover: var(--cpt-textctl-bg-hover);
+    --cpt-textctl-bg-readonly: var(--jui-textctl-bg-readonly, var(--jui-ctl-bg-readonly));
+    --cpt-textctl-opacity-readonly: var(--jui-textctl-opacity-readonly, var(--jui-ctl-opacity-readonly));
+    --cpt-textctl-bg-readonly-hover: var(--jui-textctl-bg-readonly-hover, var(--cpt-textctl-bg-readonly));
     --cpt-textctl-border-readonly-hover: var(--cpt-textctl-border-hover);
 }
 
 .component:hover .inner {
     border-color: var(--cpt-textctl-border-hover);
     background: var(--cpt-textctl-bg-hover);
+}
+
+/* A read-only control keeps its own look, driven by tokens.
+
+   Control.css fills and dims a read-only control from the shared --jui-ctl-* layer, which
+   is the right default and leaves a variant no way out of it — an inline, borderless
+   treatment (see Variant.INLINE and the like) reads as a control again the moment it is
+   made read-only, which is the one thing an inline treatment must not do. Both tokens
+   default to the values Control.css was applying, so nothing changes unless a variant
+   opts out.
+
+   These rules sit after Control.css in the sheet order and match its specificity, so they
+   win. Note that the hover fill now falls back to the read-only fill rather than to the
+   live hover fill: hovering something you cannot edit should not light it up. That reaches
+   the disabled state too, through the shared rule below. */
+.component.read_only .inner {
+    background: var(--cpt-textctl-bg-readonly);
+    opacity: var(--cpt-textctl-opacity-readonly);
 }
 
 .component.read_only:hover .inner,
@@ -46,7 +69,7 @@
 
 .component .inner {
     height: var(--cpt-textctl-height);
-    border: 1px solid var(--cpt-textctl-border);
+    border: 1px var(--cpt-textctl-border-style) var(--cpt-textctl-border);
     border-radius: var(--cpt-textctl-border-radius);
     box-sizing: content-box;
     padding: var(--cpt-textctl-padding);
@@ -61,6 +84,25 @@
 
 .component.focus .inner {
     background: var(--cpt-textctl-bg-focus);
+}
+
+/* The focused border, and focus outranking hover.
+
+   Control.css declares `.component.focus .inner` BEFORE this file declares
+   `.component:hover .inner`, so at equal specificity hover wins — and a control focused
+   with the pointer still resting on it (which is every control the moment it is clicked
+   into) draws its hover border rather than its focus border. These selectors outrank
+   both. Nothing changes for a variant that leaves the tokens alone: --cpt-textctl-border-
+   focus defaults to --jui-ctl-focus, which is the colour Control.css was applying, and
+   the style defaults to the rest-state style.
+
+   Invalid is excluded rather than ordered around. Control.css gives an invalid control
+   the error border deliberately, at a specificity these rules would otherwise beat; not
+   matching it at all leaves that intact. */
+.component.focus:not(.invalid) .inner,
+.component.focus:not(.invalid):hover .inner {
+    border-style: var(--cpt-textctl-border-style-focus);
+    border-color: var(--cpt-textctl-border-focus);
 }
 
 .component.read_only em.left {

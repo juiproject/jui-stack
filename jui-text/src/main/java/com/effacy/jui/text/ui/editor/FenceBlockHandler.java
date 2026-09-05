@@ -33,6 +33,27 @@ public class FenceBlockHandler implements IBlockHandler {
         return type == BlockType.FENCE;
     }
 
+    /**
+     * A fence's rendering is whatever its registered {@link IFenceRenderer} makes of the
+     * body — for Mermaid a parse and lay-out producing SVG, asynchronously — so repeating
+     * it for an edit elsewhere in the document is both wasted work and, because the result
+     * lands after the fact, a visible flicker. The info string and the body are the whole
+     * of the input: the renderer is chosen by the one and draws the other.
+     */
+    @Override
+    public String renderKey(FormattedBlock block) {
+        String info = StringSupport.safe(block.meta("info"));
+        IFenceRenderer renderer = Fences.rendererFor(info);
+        // A renderer drawing on anything beyond its arguments — a remote query, ambient
+        // scope — has no key: the same source does not mean the same rendering, and one
+        // kept from a previous pass would be frozen at what it first showed.
+        if ((renderer != null) && !renderer.cacheable())
+            return null;
+        // Length-prefixed rather than delimited: a body may hold any character, so there
+        // is no separator to trust — but a length says where the info string ends.
+        return "fence:" + info.length() + ":" + info + StringSupport.safe(block.flatten());
+    }
+
     @Override
     public Element render(FormattedBlock block, int blockIndex, IEditorContext ctx) {
         String info = block.meta("info");
@@ -68,10 +89,13 @@ public class FenceBlockHandler implements IBlockHandler {
             wrapper.appendChild(chip);
         }
 
+        // The index is read back off the element rather than captured here: this element
+        // outlives the render that built it (see renderKey), and the editor re-stamps it
+        // as the block moves.
         wrapper.addEventListener("click", evt -> {
             evt.preventDefault();
             evt.stopPropagation();
-            openEditor(wrapper, blockIndex, ctx);
+            openEditor(wrapper, IBlockHandler.blockIndexOf(wrapper), ctx);
         });
 
         return wrapper;

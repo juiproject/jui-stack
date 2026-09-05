@@ -17,6 +17,9 @@
     --cpt-textareactl-placeholder-style: var(--jui-textareactl-placeholder-style, normal);
     --cpt-textareactl-border: var(--jui-textareactl-border, var(--jui-comp-control-border));
     --cpt-textareactl-border-hover: var(--jui-textareactl-border-hover, var(--cpt-textareactl-border));
+    --cpt-textareactl-border-focus: var(--jui-textareactl-border-focus, var(--jui-ctl-focus));
+    --cpt-textareactl-border-style: var(--jui-textareactl-border-style, solid);
+    --cpt-textareactl-border-style-focus: var(--jui-textareactl-border-style-focus, var(--cpt-textareactl-border-style));
     --cpt-textareactl-border-radius: var(--jui-textareactl-border-radius, var(--jui-comp-control-radius));
     --cpt-textareactl-icon: var(--jui-textareactl-icon, var(--jui-comp-control-action));
     --cpt-textareactl-counter-limit: var(--jui-textareactl-counter-limit, var(--jui-color-error70));
@@ -26,7 +29,7 @@
 
 .component .inner {
     padding: var(--cpt-textareactl-padding);
-    border: 1px solid var(--cpt-textareactl-border);
+    border: 1px var(--cpt-textareactl-border-style) var(--cpt-textareactl-border);
     border-radius: var(--cpt-textareactl-border-radius);
     box-sizing: content-box;
     background: var(--cpt-textareactl-bg);
@@ -47,6 +50,17 @@
 
 .component.focus .inner {
     background: var(--cpt-textareactl-bg-focus);
+}
+
+/* The focused border, and focus outranking hover. The twin of the rule in TextControl.css
+   — see the note there for why it is needed and why invalid is excluded rather than
+   ordered around. It is duplicated because the two controls carry separate token
+   namespaces, and a title and its summary cannot be given one treatment unless both
+   expose the same hooks. */
+.component.focus:not(.invalid) .inner,
+.component.focus:not(.invalid):hover .inner {
+    border-style: var(--cpt-textareactl-border-style-focus);
+    border-color: var(--cpt-textareactl-border-focus);
 }
 
 .component textarea {

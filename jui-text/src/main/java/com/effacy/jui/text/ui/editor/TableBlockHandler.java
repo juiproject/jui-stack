@@ -601,6 +601,36 @@ public class TableBlockHandler implements IBlockHandler {
         resizeColWidths  = null;
     }
 
+    /**
+     * Releases a column-resize drag left in flight — the editor was disposed mid-drag (a
+     * navigation, say) and the {@code mouseup} that would have ended it is never coming.
+     * <p>
+     * A teardown rather than an {@link #endColResize()}: that one's business is persisting
+     * the new widths, and a transaction applied into an editor on its way out is both
+     * pointless and a hazard. The document listeners and the body's suppressed text
+     * selection are what must not be left behind.
+     *
+     * @see IBlockHandler#onDispose(IEditorContext)
+     */
+    @Override
+    public void onDispose(IEditorContext ctx) {
+        if (resizeMoveListener != null) {
+            DomGlobal.document.removeEventListener("mousemove", resizeMoveListener);
+            resizeMoveListener = null;
+        }
+        if (resizeEndListener != null) {
+            DomGlobal.document.removeEventListener("mouseup", resizeEndListener);
+            resizeEndListener = null;
+        }
+        elemental2.dom.HTMLElement body = Js.uncheckedCast(DomGlobal.document.body);
+        body.style.removeProperty("user-select");
+        body.style.removeProperty("-webkit-user-select");
+        resizeTableIndex = -1;
+        resizeTableEl    = null;
+        resizeCtx        = null;
+        resizeColWidths  = null;
+    }
+
     /************************************************************************
      * Cell event helpers.
      ************************************************************************/

@@ -62,6 +62,49 @@ public interface IFenceRenderer {
     }
 
     /**
+     * Whether the rendering is <b>determined entirely by {@code info} and {@code content}</b>
+     * — the same pair always producing the same result. Defaults to {@code true}, which is
+     * what {@link #render} being a function of its arguments means.
+     * <p>
+     * The editor re-renders the whole document on every transaction. A cacheable fence is
+     * spared that: the editor keeps the element it built and re-appends it, so the fence
+     * renders when its own source changes and not on every keystroke elsewhere in the
+     * document. For an asynchronous renderer that also removes a flicker, since a render
+     * in flight now completes into the element that is still on screen.
+     * <p>
+     * <b>Return {@code false} if the rendering draws on anything else</b> — a remote
+     * query, ambient scope set from outside, the clock, a random seed. Such a fence must
+     * be rebuilt each time or it will freeze at whatever it first showed; and where the
+     * body is not the input (see {@link #rendersEmpty()}) two fences in genuinely
+     * different scopes would otherwise be treated as the same rendering.
+     *
+     * @return {@code true} if the rendering may be reused for an unchanged source.
+     */
+    default boolean cacheable() {
+        return true;
+    }
+
+    /**
+     * Whether the rendering is a <b>graphic worth enlarging</b> — a diagram, a chart —
+     * rather than something that reads at the size of the column it sits in. Defaults to
+     * {@code false}.
+     * <p>
+     * On a read-only surface a zoomable fence takes a {@code zoom-in} cursor, and a click
+     * opens a copy of it over the page with zoom and pan (see
+     * {@link com.effacy.jui.text.ui.type.ZoomOverlay}). It has no effect in an editor,
+     * where a click on a fence opens its source and the gesture is already spoken for.
+     * <p>
+     * Opt-in rather than assumed, because a fence renderer is not necessarily a picture:
+     * one producing a list or a table is already the right size, and offering to enlarge
+     * it would be offering nothing.
+     *
+     * @return {@code true} if the rendering should be openable enlarged.
+     */
+    default boolean zoomable() {
+        return false;
+    }
+
+    /**
      * Placeholder text for the source editor. Defaults to a generic prompt.
      */
     default String placeholder(String info) {

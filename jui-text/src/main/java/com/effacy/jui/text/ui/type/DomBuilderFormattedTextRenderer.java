@@ -335,6 +335,18 @@ public class DomBuilderFormattedTextRenderer {
                 applyBlockStyles(el, type);
                 renderLines(block, el);
                 break;
+            case CODE:
+                // A pre, not a span of lines: the whitespace inside a code block is the
+                // content, and only pre keeps it. The editor emits pre.code_block for the
+                // same block (StandardBlockHandler#elementFor) and the two share the
+                // stylesheet, so this is what makes the two surfaces agree.
+                //
+                // flatten() rather than renderLines(): code is plain text, and the lines
+                // come back joined by the newlines the pre then honours.
+                el = Custom.$(root, "pre");
+                applyBlockStyles(el, type);
+                Custom.$(el, "code").text(block.flatten());
+                break;
             case FENCE: {
                 // Registry-driven rendering (matching the editor's FenceBlockHandler): a
                 // registered renderer produces the rich representation; otherwise fall back
@@ -349,6 +361,13 @@ public class DomBuilderFormattedTextRenderer {
                     el.use(n -> {
                         Element target = Js.uncheckedCast(n);
                         renderer.render(target, info, content);
+                        // A diagram is sized to the column it sits in, which is the right
+                        // size for reading around and often the wrong size for reading.
+                        // A renderer that says it is a graphic gets a way to be opened
+                        // enlarged; this is read-only, so the click is free (in an editor
+                        // it belongs to opening the source).
+                        if (renderer.zoomable())
+                            ZoomOverlay.enable(target);
                     });
                 } else {
                     el = Custom.$(root, "pre");

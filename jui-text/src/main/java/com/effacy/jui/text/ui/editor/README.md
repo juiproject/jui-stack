@@ -4,11 +4,61 @@
 
 ## Architecture
 
-The editor intercepts all browser input via `beforeinput` events (calling `preventDefault()` on every one) and translates them into transactions. Keyboard shortcuts are handled via `keydown`. The DOM is never mutated by the browser — only by the editor's own `render()` method after applying a transaction. This "controlled contenteditable" approach guarantees the DOM always matches the model.
+The editor intercepts browser input via `beforeinput` events and translates them into transactions. Keyboard shortcuts are handled via `keydown`. Save for the one case below, the DOM is never mutated by the browser — only by the editor's own `render()` method after applying a transaction. This "controlled contenteditable" approach guarantees the DOM always matches the model.
+
+#### Native typing
+
+Prevent-and-re-render is a poor deal for ordinary typing: a character typed into a paragraph costs a rebuild of every block in the document, so the cost of a keystroke grows with the length of the piece being written.
+
+So for a caret sitting plainly inside plain text — where what the browser is about to do and what the model says are provably the same thing — the default action is allowed to stand and the model is moved to match, with no render (`tryNativeInsert`). The conditions are strict, because a wrong answer here is a DOM and a model that disagree:
+
+- not during an IME composition; plain characters only (a newline is a block operation);
+- a collapsed selection (a range is a delete *and* an insert, and how a browser takes a selection apart is its own business);
+- a text block with no image or variable in it (those are zero-length formats over a sentinel character, with an insertion rule of their own);
+- the caret in a **text node that is a direct child of the block** — never inside a span or link — and either interior to it, or at an edge with no neighbour on that side.
+
+That last rule is what settles formatting. The model's rule is that text typed at a format's trailing edge joins it and text at its leading edge does not; the browser's is whichever node the caret is in, which is not always the same answer. A text node directly under the block *is* an unformatted run, and the first/last-child conditions exclude the positions where an adjacent format's edge could coincide with the insertion point.
+
+Because enumerated conditions are a thing one gets wrong, every native insertion is checked afterwards (`verifyNativeInsert`): a `setTimeout(0)` compares the block's `charCount` in the DOM against `Positions.contentSize` in the model, and re-renders from the model if they disagree. A case that was not thought of shows up as a hiccup rather than as corruption.
 
 Selection is synchronised in two directions: DOM-to-state on `selectionchange` events (so the model knows where the cursor is before a command runs), and state-to-DOM after each render (so the cursor is restored to the correct position). The JS bridge (`EditorSupport2` / `jui_text_editor2.js`) handles the mapping between DOM nodes and block-level character offsets.
 
 Every transaction triggers a full re-render (clear `innerHTML`, rebuild all blocks). For typical document sizes this is fast enough since DOM operations on a handful of elements are cheap. If it becomes a performance concern with large documents, an incremental render could diff previous and current block lists and only update changed blocks.
+
+#### Render reuse
+
+Cheap DOM is not the whole cost. An *atomic* block draws itself with real work behind it — a PlantUML encode and image fetch, a KaTeX parse, a Mermaid parse-and-lay-out — and a full rebuild made every such block in the document repeat that on every keystroke, wherever the keystroke was. On the asynchronous ones it also flickered: a render in flight completed into an element that the next keystroke had already discarded.
+
+So a handler may offer a **render key** (`IBlockHandler.renderKey`) that fully determines the element it would build. Where the key matches the previous pass, `render()` re-appends the element it already has instead of calling the handler. Detaching leaves subtrees intact, so a re-appended element keeps its decoded image or laid-out SVG, and an in-flight async render lands in something still on screen.
+
+Two rules for a handler that offers one:
+
+- **Atomic blocks only.** A reused element is not rebuilt, so it must hold no state the editor owns — no selection, no cursor, nothing typed into it. Text blocks and tables therefore return `null` (the default) and are rebuilt every pass, which is also what keeps the controlled-contenteditable guarantee above intact.
+- **Read the index, don't capture it.** A reused element outlives the render that built it and is re-stamped with its current `data-block-index`, so listeners must use `IBlockHandler.blockIndexOf(el)`.
+
+A fence's key additionally depends on its renderer: `IFenceRenderer.cacheable()` (default `true`) declares the rendering to be a function of `info` and `content` alone. A renderer drawing on a remote query or ambient scope must return `false`, or it will freeze at whatever it first showed.
+
+#### Enlarging a diagram (read-only)
+
+A diagram is sized to the column it sits in, which is the right size for reading around and often the wrong size for reading. `IFenceRenderer.zoomable()` (default `false`) declares a rendering to be a graphic worth enlarging; where it is set, `DomBuilderFormattedTextRenderer` gives the rendered element a `zoom-in` cursor and a click that opens a **copy** of it over the page with fit-to-screen, ±zoom, wheel-zoom about the pointer and drag-to-pan (`ZoomOverlay`).
+
+A copy, so the document underneath is untouched and an asynchronous renderer still working on the original is undisturbed. Opt-in, because a fence renderer is not necessarily a picture — one producing a list is already the right size.
+
+This is **read-only surfaces only**. In the editor a click on a fence opens its source, and two things cannot own the same gesture.
+
+### Listeners and disposal
+
+Listeners on the editor's **own element** go when the element does, so they need no attention. Listeners on the **document** do not, and the rule is that each must be held for removal in `Editor.onDispose()` — otherwise the listener's closure over `this` pins a disposed editor, its state and its whole document model live for the rest of the page, and it goes on answering `selectionchange` for every cursor movement anywhere on it.
+
+There are three, and they are deliberately not all the same:
+
+- **mousedown** (dismiss the image overlay on an outside press) goes through `EventLifecycle.registerPreview`, which is the framework mechanism for exactly this and hands back a removal handle. It always returns `CONTINUE` — it observes, and cancelling would swallow the event for everyone else.
+- **selectionchange** has no lifecycle equivalent, so it is a raw listener held in a field.
+- **scroll** is raw *and capture-phase* by necessity. `EventLifecycle.registerDocumentScrollEvent` registers in the bubble phase and `scroll` does not bubble, so it would hear the document scrolling and never the editor's own canvas — which is the scroll that actually moves an image out from under the overlay.
+
+`onDispose` also takes down the two body-level elements the editor creates (the image overlay and the link hover card), cancels the link-card timers, and releases a resize drag left in flight — via `hideImageOverlay()` rather than `endResize()`, since the latter's job is to *commit* the drag and a transaction applied into a disposing editor is both pointless and a hazard.
+
+Handlers get the same courtesy through `IBlockHandler.onDispose(ctx)`: `TableBlockHandler` holds document listeners for the duration of a column-resize drag, and a disposal mid-drag would strand them.
 
 ### Block handler registry
 

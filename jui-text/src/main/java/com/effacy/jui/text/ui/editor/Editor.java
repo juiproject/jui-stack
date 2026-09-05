@@ -8,6 +8,7 @@ import java.util.Set;
 
 import com.effacy.jui.core.client.component.Component;
 import com.effacy.jui.core.client.component.IComponentCSS;
+import com.effacy.jui.core.client.dom.EventLifecycle;
 import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.platform.css.client.CssResource;
@@ -1128,9 +1129,6 @@ public class Editor extends Component<Editor.Config> {
         // Link navigate / hover-card (NAVIGATE mode only).
         editorEl.addEventListener("mouseover", evt -> handleEditorMouseOver(evt));
         editorEl.addEventListener("mouseout", evt -> handleEditorMouseOut(evt));
-        // Dismiss the image overlay on a pointer-down outside it (and outside the image).
-        DomGlobal.document.addEventListener("mousedown", evt -> handleDocumentMouseDown(evt));
-        DomGlobal.document.addEventListener("selectionchange", evt -> syncSelectionFromDom());
         // The toolbar reflects the selection, and a selection the user cannot see
         // is not something to reflect: without this the buttons keep the state
         // they held when focus left, so an editor sitting idle on the page shows
@@ -1138,12 +1136,97 @@ public class Editor extends Component<Editor.Config> {
         // something. Re-established on focus by the next selection sync.
         editorEl.addEventListener("blur", evt -> clearToolbarState());
         editorEl.addEventListener("focus", evt -> syncSelectionFromDom());
+
+        attachDocumentListeners();
+    }
+
+    /************************************************************************
+     * Document-level listeners.
+     *
+     * Everything above is on the editor's own element and goes when the element
+     * does. These three are on the document, which outlives the editor — so each
+     * is held for removal in onDispose(). Without that an editor is pinned live
+     * by the document for the rest of the page: the listeners capture `this`, so
+     * a disposed editor keeps its whole document model reachable and goes on
+     * answering selectionchange for every cursor movement anywhere on the page.
+     ************************************************************************/
+
+    /** Previews document mouse events to dismiss the image overlay; removed on dispose. */
+    private EventLifecycle.IEventPreviewHandler mouseDownPreview;
+
+    /** Raw, because there is no lifecycle equivalent; removed on dispose. */
+    private EventListener selectionChangeListener;
+
+    /** Raw and capture-phase — see below; removed on dispose. */
+    private EventListener scrollListener;
+
+    private void attachDocumentListeners() {
+        // Dismiss the image overlay on a pointer-down outside it (and outside the image).
+        // Through the lifecycle's preview rather than a listener of our own: it is what
+        // the mechanism is for, and it hands back a handle to remove. CONTINUE always —
+        // this only observes, and cancelling would swallow the event for everyone else.
+        mouseDownPreview = EventLifecycle.registerPreview(e -> {
+            if ("mousedown".equals(e.type))
+                handleDocumentMouseDown(e);
+            return EventLifecycle.IEventPreview.Outcome.CONTINUE;
+        });
+
+        selectionChangeListener = evt -> syncSelectionFromDom();
+        DomGlobal.document.addEventListener("selectionchange", selectionChangeListener);
+
         // Keep the overlay aligned to the image while scrolling would be involved; the
         // simplest robust behaviour is to dismiss it on scroll.
-        DomGlobal.document.addEventListener("scroll", evt -> {
+        //
+        // Deliberately not EventLifecycle.registerDocumentScrollEvent: that registers in
+        // the bubble phase, and scroll does not bubble — it would hear the document
+        // scrolling and never the editor's own canvas, which is the scroll that actually
+        // moves the image out from under the overlay.
+        scrollListener = evt -> {
             hideImageOverlay();
             hideLinkCard();
-        }, true);
+        };
+        DomGlobal.document.addEventListener("scroll", scrollListener, true);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @see com.effacy.jui.core.client.component.Component#onDispose()
+     */
+    @Override
+    protected void onDispose() {
+        if (mouseDownPreview != null) {
+            mouseDownPreview.remove();
+            mouseDownPreview = null;
+        }
+        if (selectionChangeListener != null) {
+            DomGlobal.document.removeEventListener("selectionchange", selectionChangeListener);
+            selectionChangeListener = null;
+        }
+        if (scrollListener != null) {
+            DomGlobal.document.removeEventListener("scroll", scrollListener, true);
+            scrollListener = null;
+        }
+        // Timers in flight would otherwise fire into a disposed editor.
+        hideLinkCard();
+        // An image resize leaves listeners on the document for the duration of the drag,
+        // and disposal mid-drag (a navigation, say) would strand them. Through
+        // hideImageOverlay rather than endResize: that clears the selected image first,
+        // so the release does not also commit the drag — a transaction applied into an
+        // editor on its way out is both pointless and a hazard.
+        hideImageOverlay();
+        handlers.forEach(h -> h.onDispose(ctx));
+        // Both of these are body-level elements of this editor's making, so they are not
+        // carried away with its own DOM and have to be taken down by hand.
+        if (imageOverlay != null) {
+            imageOverlay.remove();
+            imageOverlay = null;
+        }
+        if (linkCard != null) {
+            linkCard.remove();
+            linkCard = null;
+        }
+        super.onDispose();
     }
 
     /************************************************************************

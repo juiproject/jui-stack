@@ -46,6 +46,20 @@ A copy, so the document underneath is untouched and an asynchronous renderer sti
 
 This is **read-only surfaces only**. In the editor a click on a fence opens its source, and two things cannot own the same gesture.
 
+### Listeners and disposal
+
+Listeners on the editor's **own element** go when the element does, so they need no attention. Listeners on the **document** do not, and the rule is that each must be held for removal in `Editor.onDispose()` — otherwise the listener's closure over `this` pins a disposed editor, its state and its whole document model live for the rest of the page, and it goes on answering `selectionchange` for every cursor movement anywhere on it.
+
+There are three, and they are deliberately not all the same:
+
+- **mousedown** (dismiss the image overlay on an outside press) goes through `EventLifecycle.registerPreview`, which is the framework mechanism for exactly this and hands back a removal handle. It always returns `CONTINUE` — it observes, and cancelling would swallow the event for everyone else.
+- **selectionchange** has no lifecycle equivalent, so it is a raw listener held in a field.
+- **scroll** is raw *and capture-phase* by necessity. `EventLifecycle.registerDocumentScrollEvent` registers in the bubble phase and `scroll` does not bubble, so it would hear the document scrolling and never the editor's own canvas — which is the scroll that actually moves an image out from under the overlay.
+
+`onDispose` also takes down the two body-level elements the editor creates (the image overlay and the link hover card), cancels the link-card timers, and releases a resize drag left in flight — via `hideImageOverlay()` rather than `endResize()`, since the latter's job is to *commit* the drag and a transaction applied into a disposing editor is both pointless and a hazard.
+
+Handlers get the same courtesy through `IBlockHandler.onDispose(ctx)`: `TableBlockHandler` holds document listeners for the duration of a column-resize drag, and a disposal mid-drag would strand them.
+
 ### Block handler registry
 
 Rendering and event handling for each block family is delegated to a pluggable `IBlockHandler`. The editor maintains an ordered list of handlers; for every operation it iterates the list and delegates to the first handler whose `accepts(BlockType)` returns `true`. This allows new block types to be added without modifying `Editor` itself.

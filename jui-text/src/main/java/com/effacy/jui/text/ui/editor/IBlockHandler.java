@@ -132,6 +132,19 @@ public interface IBlockHandler {
     default void afterRender(IEditorContext ctx) {}
 
     /**
+     * Called when the editor is disposed. Release anything that outlives the editor's own
+     * DOM — a document-level listener held for the duration of a drag, a pending timer, a
+     * body-level element.
+     * <p>
+     * A handler's rendered elements need no attention: they go with the editor's DOM, and
+     * listeners on them with it. This is for what does not.
+     *
+     * @param ctx
+     *            the editor context.
+     */
+    default void onDispose(IEditorContext ctx) {}
+
+    /**
      * Called immediately before every {@link IEditorContext#applyTransaction}
      * invocation. Use this to flush any in-progress edits to the model before
      * the transaction is applied (e.g. syncing an active cell's typed content).

@@ -41,6 +41,8 @@ public class FormattedTextStyles {
         LINE_STYLES.put (FormattedLine.FormatType.BLD, "bold");
         LINE_STYLES.put (FormattedLine.FormatType.CODE, "code");
         LINE_STYLES.put (FormattedLine.FormatType.CMT, "comment");
+        LINE_STYLES.put (FormattedLine.FormatType.DEL, "delete");
+        LINE_STYLES.put (FormattedLine.FormatType.INS, "insert");
         LINE_STYLES.put (FormattedLine.FormatType.HL, "highlight");
         LINE_STYLES.put (FormattedLine.FormatType.ITL, "italic");
         LINE_STYLES.put (FormattedLine.FormatType.STR, "strike");
@@ -95,8 +97,9 @@ public class FormattedTextStyles {
      * instance here. Pass {@code null} to revert to the standard styles.
      * <p>
      * The content classes the renderer applies ({@code fmt_*}, {@code code_block},
-     * {@code quote}, {@code list_bullet}, {@code list_number}, {@code indent*} and the heading
-     * elements) are the contract a replacement must honour; only the presentation changes.
+     * {@code quote}, {@code list_bullet}, {@code list_number}, {@code indent*},
+     * {@code diff_added} / {@code diff_removed} and the heading elements) are the contract a
+     * replacement must honour; only the presentation changes.
      *
      * @param provider
      *                 the stylesheet, or {@code null} to reset.
@@ -390,6 +393,74 @@ public class FormattedTextStyles {
     font-weight: var(--jui-richtext-heading-weight, 500);
     line-height: 1.3;
     margin: 0.7em 0 0.2em 0;
+}
+
+/* Change marking. A diff document (see FormattedTextDiff) is the new document with the
+   old one's departed blocks put back in place, each changed block carrying the diff
+   meta-data that the renderer turns into these classes. Ordinary content carries none of
+   it, so these rules never match anything that is not a comparison.
+
+   The bar is an inset shadow rather than a border so that marking a block does not move
+   it — the marked and unmarked blocks around it have to stay on the same left edge, or
+   the document reads as ragged rather than as annotated. Removed content also carries a
+   line through it, so added and removed are told apart by something other than the
+   colour. */
+.richtext .diff_added, .richtext .diff_removed, .richtext .diff_changed {
+    padding-left: 0.5em;
+    border-radius: var(--jui-richtext-diff-radius, 3px);
+}
+
+/* A list item's padding is its marker's offset, so it is restored here rather than
+   overridden by the rule above (which would drop the bullet onto the first character). */
+.richtext > .list_bullet.diff_added, .richtext > .list_bullet.diff_removed, .richtext > .list_bullet.diff_changed,
+.richtext > .list_number.diff_added, .richtext > .list_number.diff_removed, .richtext > .list_number.diff_changed,
+.richtext > .list_tick.diff_added, .richtext > .list_tick.diff_removed, .richtext > .list_tick.diff_changed {
+    padding-left: calc(1.5em + var(--jui-richtext-list-indent));
+}
+
+.richtext .diff_added {
+    background: var(--jui-richtext-diff-added-bg, rgba(46, 125, 50, 0.10));
+    box-shadow: inset 3px 0 0 var(--jui-richtext-diff-added-bar, #2e7d32);
+}
+
+.richtext .diff_removed {
+    background: var(--jui-richtext-diff-removed-bg, rgba(198, 40, 40, 0.09));
+    box-shadow: inset 3px 0 0 var(--jui-richtext-diff-removed-bar, #c62828);
+    text-decoration: line-through;
+    text-decoration-color: var(--jui-richtext-diff-removed-strike, rgba(198, 40, 40, 0.5));
+}
+
+/* A block that was edited rather than added or removed: it holds both what went and
+   what came in, marked inline, so the block itself takes a neutral wash — a colour of
+   its own here would compete with the marks it contains. */
+.richtext .diff_changed {
+    background: var(--jui-richtext-diff-changed-bg, rgba(120, 130, 140, 0.09));
+    box-shadow: inset 3px 0 0 var(--jui-richtext-diff-changed-bar, #78828c);
+}
+
+/* The inline marks (INS / DEL). Word-level marking is only legible if the two are
+   distinguishable at a glance and inside a sentence, so removed text is struck through
+   and inserted text underlined — the colours are then confirmation rather than the whole
+   signal, which also keeps it readable printed and to a colour-blind reader. */
+.richtext .fmt_delete {
+    background: var(--jui-richtext-diff-removed-bg, rgba(198, 40, 40, 0.09));
+    color: var(--jui-richtext-diff-removed-color, #8e2020);
+    text-decoration: line-through;
+    text-decoration-color: var(--jui-richtext-diff-removed-strike, rgba(198, 40, 40, 0.5));
+}
+
+.richtext .fmt_insert {
+    background: var(--jui-richtext-diff-added-bg, rgba(46, 125, 50, 0.10));
+    color: var(--jui-richtext-diff-added-color, #1f5c23);
+    text-decoration: underline;
+    text-decoration-color: var(--jui-richtext-diff-added-underline, rgba(46, 125, 50, 0.5));
+}
+
+/* Marked content inside a block that is itself wholly added or removed would otherwise
+   be marked twice (the block's wash and the span's), which reads as a change within a
+   change. The block has already said it. */
+.richtext .diff_added .fmt_insert, .richtext .diff_removed .fmt_delete {
+    background: transparent;
 }
 
 .richtext > :first-child { margin-top: 0; }

@@ -44,6 +44,7 @@ import com.effacy.jui.core.client.dom.builder.Tr;
 import com.effacy.jui.text.type.FormattedBlock;
 import com.effacy.jui.text.type.FormattedLine;
 import com.effacy.jui.text.type.FormattedText;
+import com.effacy.jui.text.type.FormattedTextDiff;
 import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
 import com.effacy.jui.text.type.FormattedLine.TextSegment;
@@ -318,7 +319,7 @@ public class DomBuilderFormattedTextRenderer {
             case NLIST:
             case OLIST:
                 if (semanticLists) {
-                    renderSemanticListItem(block);
+                    el = renderSemanticListItem(block);
                 } else {
                     el = P.$(root);
                     applyBlockStyles(el, type);
@@ -377,20 +378,38 @@ public class DomBuilderFormattedTextRenderer {
                 break;
             }
             case TABLE:
-                renderTable(block);
+                el = renderTable(block);
                 break;
             default:
                 el = Span.$(root);
                 renderLines(block, el);
                 break;
         }
+        applyDiff(el, block);
+    }
+
+    /**
+     * Marks a block that a comparison found changed (see {@link FormattedTextDiff}), from
+     * the {@code diff} meta-data the diff document carries. Ordinary content has none of
+     * it and is untouched.
+     */
+    private void applyDiff(ElementBuilder el, FormattedBlock block) {
+        if (el == null)
+            return;
+        String state = block.meta(FormattedTextDiff.META_DIFF);
+        if (FormattedTextDiff.ADDED.equals(state))
+            el.style("diff_added");
+        else if (FormattedTextDiff.REMOVED.equals(state))
+            el.style("diff_removed");
+        else if (FormattedTextDiff.CHANGED.equals(state))
+            el.style("diff_changed");
     }
 
     /************************************************************************
      * Table rendering
      ************************************************************************/
 
-    private void renderTable(FormattedBlock tableBlock) {
+    private ElementBuilder renderTable(FormattedBlock tableBlock) {
         ElementBuilder table = Table.$(root);
 
         int headers = 0;
@@ -431,13 +450,14 @@ public class DomBuilderFormattedTextRenderer {
             }
             rowIndex++;
         }
+        return table;
     }
 
     /************************************************************************
      * Semantic list rendering
      ************************************************************************/
 
-    private void renderSemanticListItem(FormattedBlock block) {
+    private ElementBuilder renderSemanticListItem(FormattedBlock block) {
         int indent = block.getIndent();
         boolean ordered = (block.getType() == BlockType.OLIST);
         String listTag = ordered ? "ol" : "ul";
@@ -469,6 +489,7 @@ public class DomBuilderFormattedTextRenderer {
         ElementBuilder li = Custom.$(ulStack.peek(), "li");
         lastLi = li;
         renderLines(block, li);
+        return li;
     }
 
     /************************************************************************

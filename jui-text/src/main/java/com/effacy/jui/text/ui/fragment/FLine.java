@@ -97,6 +97,8 @@ public class FLine extends Fragment<FLine> {
         STYLES.put (FormattedLine.FormatType.BLD, "bold");
         STYLES.put (FormattedLine.FormatType.CMT, "comment");
         STYLES.put (FormattedLine.FormatType.CODE, "code");
+        STYLES.put (FormattedLine.FormatType.DEL, "delete");
+        STYLES.put (FormattedLine.FormatType.INS, "insert");
         STYLES.put (FormattedLine.FormatType.HL, "highlight");
         STYLES.put (FormattedLine.FormatType.ITL, "italic");
         STYLES.put (FormattedLine.FormatType.STR, "strike");

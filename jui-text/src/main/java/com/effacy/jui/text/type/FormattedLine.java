@@ -150,7 +150,22 @@ public class FormattedLine {
         /**
          * Image (expects {@code src} metadata, text is alt text).
          */
-        IMG;
+        IMG,
+
+        /**
+         * Content inserted, as marked by a comparison of two documents (see
+         * {@code FormattedTextDiff}). Like {@link #CMT} this is a decoration
+         * rather than authored formatting: it has no markdown representation and
+         * is shed by the serializer, which is what keeps a comparison from being
+         * saved back as though it were content.
+         */
+        INS,
+
+        /**
+         * Content removed, as marked by a comparison of two documents. See
+         * {@link #INS}.
+         */
+        DEL;
 
         public boolean is(FormatType... types) {
             for (FormatType type : types) {

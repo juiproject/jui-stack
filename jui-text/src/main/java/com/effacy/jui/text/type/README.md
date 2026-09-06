@@ -221,6 +221,39 @@ System.out.println(content.debug());
 
 This outputs a detailed tree showing blocks, lines, and formatting regions with their positions.
 
+### Comparing two documents
+
+`FormattedTextDiff` compares two documents block by block and returns the difference as a third document: the new document with the old one's departed blocks put back in place, each changed block carrying a `diff` meta-data value. That document renders — hand it to `FText` (or `DomBuilderFormattedTextRenderer`) and the changes are marked in the document as it reads, rather than in the markdown behind it.
+
+```java
+FormattedTextDiff.Result diff = FormattedTextDiff.diff(published, working);
+if (!diff.identical())
+    FText.$(el, diff.document()).contentStyle(ContentStyle.document());
+```
+
+| | |
+|---|---|
+| `document()` | the diff document (read-only — see below) |
+| `added()` / `removed()` | blocks present on one side only |
+| `changed()` | blocks that were edited (marked inline) |
+| `identical()` | whether the two compared equal |
+
+**Blocks** are matched on their markdown (with type and indent), which is the identity a document persists with — block ids do not survive a markdown round trip, so matching has to be by content. A consequence worth knowing is that a change of *formatting* alone (bolding a word, re-pointing a link) is a change, which is intended. The alignment is a longest-common-subsequence over those keys, so blocks separated by an insertion still match.
+
+**Within a block**, a removed block and an added block that stand together and are recognisably the same block edited — same type, no child blocks, and more than half their words in common — are merged into one block carrying `changed`, in which the words that went are marked `FormatType.DEL` and those that came `FormatType.INS`. So a reworded sentence reads as a sentence with a word struck through beside the word that replaced it, not as a paragraph replaced.
+
+The same alignment runs at three levels: blocks in a document, then lines in a merged block, then words in a merged line. Words are runs of letters and digits; whitespace and punctuation are separate tokens, so appending to a sentence marks the words appended and not the full stop that was already there. Formatting travels with the word — an inserted **bold** word is marked inserted *and* stays bold — and a link, an image or a variable is atomic: it matches or it does not, and is never split.
+
+What it does not do:
+
+- **A block with children (a `TABLE`) is compared whole.** One altered cell is the old table removed and the new one added.
+- **Two blocks below the pairing threshold are not merged.** A paragraph rewritten from scratch is a removal and an addition, which reads better than a block in which every word is marked.
+- **Moves are not detected.** A block that moved is a removal and an addition.
+
+The returned document is for reading only: it interleaves content from two versions, so serialising it back to markdown — or handing it to the editor — would produce a document that never existed. It carries no block ids for the same reason. (The inline marks have no markdown form and are shed by the serializer, as `CMT` is, so a diff document that escapes into a save loses its marking rather than persisting it.)
+
+The renderer turns the block meta into the `diff_added` / `diff_removed` / `diff_changed` content classes and the inline marks into `fmt_insert` / `fmt_delete`, all styled by the formatted-text stylesheet: a tint and a left bar on the block (neutral where it was edited, since the marks inside carry the colour), removed text struck through and inserted text underlined, so the two are told apart without relying on colour. The `--jui-richtext-diff-*` custom properties retheme it.
+
 ### Line pre-processing during markdown parsing
 
 Custom line processing can be applied during parsing:
@@ -276,6 +309,8 @@ Each block type declares a `BlockTypeConstraint` that describes what content it 
 | `HL` | Highlight | (programmatic only) |
 | `CMT` | Comment anchor (expects `comment` metadata referencing the associated comment; may be ignored by renderers) | (programmatic only) |
 | `A` | Anchor/link | `[label](url)` |
+| `INS` | Inserted, as marked by a comparison (`FormattedTextDiff`); no markdown form, shed on serialisation | (programmatic only) |
+| `DEL` | Removed, as marked by a comparison; no markdown form, shed on serialisation | (programmatic only) |
 
 ### Block operations
 

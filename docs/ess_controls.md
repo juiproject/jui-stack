@@ -2252,7 +2252,7 @@ public class TextControl extends Control<String, TextControl.Config> {
                 Input.$ (data.password ? "password" : "text").$ (input -> {
                     input.ref ("input");
                     ...
-                    input.on (e -> modified (), UIEventType.ONKEYUP, UIEventType.ONPASTE);
+                    input.on (e -> modified (), UIEventType.ONINPUT);
                     ...
                 }),
                 Em.$ ().iff (data.clearAction)
@@ -2290,7 +2290,7 @@ This is contingent on the configuration, in particaular (the actual text control
 1. If the control is configured for *password* capture then the input type will be of type `password`.
 2. If the control is configured for having a *clear action* then a cross icon will be displayed to the right of the input.
 
-The input HTML element is extracted as a member variable as well as being configured with an event handler the is invoked on `UIEventType.ONKEYUP` and `UIEventType.ONPASTE` events. These invoke the `modified()` method indicating that the control has responded to user input. The control base class code will eventually invoke `valueFromSource()` which extracts and return the value on the element (which then becomes the value of the control as returned by an invocation to the controls `value()` method).
+The input HTML element is extracted as a member variable as well as being configured with an event handler that is invoked on `UIEventType.ONINPUT` events. These invoke the `modified()` method indicating that the control has responded to user input. Listening for `input` (rather than, say, `keyup` and `paste`) ensures that changes that arrive without a key event (such as browser autofill, dictation, drag-and-drop and a mouse paste) are registered. The control base class code will eventually invoke `valueFromSource()` which extracts and return the value on the element (which then becomes the value of the control as returned by an invocation to the controls `value()` method).
 
 If the clear action is being rendered then that element is configured with an event handler that responds to an `UIEventType.ONCLICK` event. So when clicked on it will clear the value of the input element and notify the control that there has been a change.
 

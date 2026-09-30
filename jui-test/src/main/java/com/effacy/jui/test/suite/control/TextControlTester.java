@@ -54,6 +54,21 @@ public class TextControlTester extends ControlTester<TextControlTester> implemen
     }
 
     /**
+     * Assigns a value to the input without generating key events (only an
+     * {@code input} event). This mimics browser autofill, dictation,
+     * drag-and-drop or a mouse paste.
+     * 
+     * @param value
+     *              the value to assign.
+     * @return this tester.
+     */
+    public TextControlTester assignByInput(String value) {
+        if (!inputEl.assignValueByInput (value))
+            Assertions.fail ("Unable to assign value by input to text control [test-id=\"" + page.resolveTestId (testId) + "\"]");
+        return this;
+    }
+
+    /**
      * Click on the clear action of the control.
      * 
      * @return this instance.

@@ -965,11 +965,14 @@ public class TextSearchControl<S> extends Control<String, TextSearchControl.Conf
                         }, UIEventType.ONKEYPRESS)
                         .on (e -> {
                             // Filter out navigation keys.
-                            if (UIEvent.KeyCode.ENTER.is (e) || UIEvent.KeyCode.ARROW_UP.is (e) || UIEvent.KeyCode.ARROW_DOWN.is (e) || UIEvent.KeyCode.ARROW_LEFT.is (e) || UIEvent.KeyCode.ARROW_RIGHT.is (e)) {
+                            if (UIEvent.KeyCode.ENTER.is (e) || UIEvent.KeyCode.isArrowKey (e))
                                 e.stopEvent();
-                                return;
-                            }
-                            // Activate the selector.
+                        }, UIEventType.ONKEYUP)
+                        .on (e -> {
+                            // Activate the selector. This is performed on input (rather than
+                            // key up or paste) so that text arriving without a key event (i.e.
+                            // autofill, dictation, drag-and-drop or a mouse paste) is searched
+                            // on.
                             if (!StringSupport.empty(inputEl.value)) {
                                 if (!config().selectorShowOnResults) {
                                     if (showSelector())
@@ -978,7 +981,7 @@ public class TextSearchControl<S> extends Control<String, TextSearchControl.Conf
                                 selector.search(inputEl.value);
                             } else
                                 hideSelector();
-                        }, UIEventType.ONKEYUP, UIEventType.ONPASTE);
+                        }, UIEventType.ONINPUT);
                     if (StringSupport.empty (data.getName ()))
                         input.attr ("name", "" + getUUID ());
                     else

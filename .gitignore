@@ -11,3 +11,6 @@ dependency-reduced-pom.xml
 bin/
 planning/design-system-critique.md
 .codex-write-check
+
+# Claude Code local (per-user) settings
+.claude/settings.local.json

@@ -56,7 +56,7 @@ public class MyControl extends Control<String, MyControl.Config> {
         return Wrap.$(el).$(root -> {
             root.style(styles().component());
             Input.$(root, "text").by("input")
-                .on(e -> modified(), UIEventType.ONKEYUP, UIEventType.ONPASTE);
+                .on(e -> modified(), UIEventType.ONINPUT);
         }).build(dom -> {
             inputEl = (HTMLInputElement) manageFocusEl(dom.first("input"));
         });
@@ -151,10 +151,12 @@ Call `modified()` from event handlers when user interaction changes the control'
 
 ```java
 Input.$(root, "text").by("input")
-    .on(e -> modified(), UIEventType.ONKEYUP, UIEventType.ONPASTE);
+    .on(e -> modified(), UIEventType.ONINPUT);
 ```
 
 This triggers `valueFromSource()`, updates the dirty state, and fires `IModifiedListener` events.
+
+For text-style inputs listen for `ONINPUT` rather than `ONKEYUP`/`ONPASTE`: text can arrive without any key event (browser autofill, dictation, drag-and-drop, mouse paste) and a `paste` event fires before the pasted text is inserted.
 
 ## Value Lifecycle
 

@@ -489,7 +489,10 @@ public class TextControl extends Control<String, TextControl.Config> {
                         if (!filterKeyPress (e.getKeyCode (), e.getKey(), inputEl.value))
                             e.stopEvent ();
                     }, UIEventType.ONKEYPRESS);
-                    input.on (e -> modified (), UIEventType.ONKEYUP, UIEventType.ONPASTE);
+                    // Synchronise on input (rather than key up or paste) so that text
+                    // arriving without a key event (i.e. autofill, dictation, drag-and-drop
+                    // or a mouse paste) is registered.
+                    input.on (e -> modified (), UIEventType.ONINPUT);
                     if (StringSupport.empty (data.getName ()))
                         input.attr ("name", "" + getUUID ());
                     else

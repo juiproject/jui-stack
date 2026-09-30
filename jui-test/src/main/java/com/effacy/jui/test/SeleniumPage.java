@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.ElementNotInteractableException;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -58,6 +59,14 @@ public class SeleniumPage implements IPage {
         @Override
         public boolean assignValue(String value) {
             el.sendKeys (value);
+            return true;
+        }
+
+        @Override
+        public boolean assignValueByInput(String value) {
+            if (!(client instanceof JavascriptExecutor))
+                return false;
+            ((JavascriptExecutor) client).executeScript (INPUT_SCRIPT, el, value);
             return true;
         }
 
@@ -137,6 +146,12 @@ public class SeleniumPage implements IPage {
         }
         
     }
+
+    /**
+     * Script used by {@link Node#assignValueByInput(String)} to assign a value and
+     * dispatch (only) an input event.
+     */
+    private static final String INPUT_SCRIPT = "arguments[0].value = arguments[1]; arguments[0].dispatchEvent (new Event ('input', { bubbles: true }));";
 
     private WebDriver client;
 

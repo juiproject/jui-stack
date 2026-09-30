@@ -30,6 +30,7 @@ import org.htmlunit.html.DomElement;
 import org.htmlunit.html.DomNode;
 import org.htmlunit.html.HtmlElement;
 import org.htmlunit.html.HtmlPage;
+import org.htmlunit.html.HtmlTextArea;
 import org.htmlunit.html.HtmlTextInput;
 
 public class HtmlUnitPage implements IPage {
@@ -62,9 +63,23 @@ public class HtmlUnitPage implements IPage {
             return false;
         }
 
+        @Override
+        public boolean assignValueByInput(String value) {
+            if (el instanceof HtmlTextInput)
+                ((HtmlTextInput) el).setValue (value);
+            else if (el instanceof HtmlTextArea)
+                ((HtmlTextArea) el).setText (value);
+            else
+                return false;
+            el.fireEvent ("input");
+            return true;
+        }
+
         public String value() {
             if (el instanceof HtmlTextInput)
                 return ((HtmlTextInput) el).getValue();
+            if (el instanceof HtmlTextArea)
+                return ((HtmlTextArea) el).getText();
             return null; 
         }
 

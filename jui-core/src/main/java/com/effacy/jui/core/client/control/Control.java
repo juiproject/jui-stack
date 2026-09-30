@@ -870,6 +870,11 @@ public abstract class Control<V, C extends Control.Config<V,C>> extends Componen
 
     /**
      * {@inheritDoc}
+     * <p>
+     * As with {@link #value()} this synchronises from the source first so that a
+     * change not yet registered by the control (i.e. one that did not raise an
+     * event the control listens to) is still detected (and may fire a modified
+     * event).
      *
      * @see com.effacy.jui.core.client.control.IControlValue#isDirty()
      */
@@ -877,6 +882,7 @@ public abstract class Control<V, C extends Control.Config<V,C>> extends Componen
     public boolean dirty() {
         if (config ().suppressDirty)
             return false;
+        syncValueFromSource ();
         return !equals (resetValue, currentValue);
     }
 

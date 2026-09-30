@@ -19,6 +19,7 @@ import java.util.List;
 
 import com.effacy.jui.core.client.component.ComponentCreator;
 import com.effacy.jui.core.client.component.layout.VertLayoutCreator;
+import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.css.Insets;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.core.client.store.ListPaginatedStore;
@@ -33,6 +34,9 @@ import com.effacy.jui.ui.client.control.MultiSelectionControl.Config.SelectionSt
 import com.effacy.jui.ui.client.fragments.Stack;
 import com.effacy.jui.ui.client.panel.Panel;
 import com.effacy.jui.ui.client.panel.PanelCreator;
+
+import elemental2.dom.DomGlobal;
+import elemental2.dom.Element;
 
 public class ControlSuite extends Panel {
 
@@ -59,6 +63,36 @@ public class ControlSuite extends Panel {
                     cfg.placeholder("Some text");
                 }, ctl -> ctl.waiting(true))
            );
+        }));
+
+        // Controls whose modifications are reflected in an adjacent label (so that
+        // modification by input alone, i.e. without key events, can be tested).
+        add (ComponentCreator.build (root -> {
+            Stack.$(root).horizontal().$ (
+                Controls.text(cfg -> {
+                    cfg.testId ("text-input-1");
+                    cfg.width (Length.em (12));
+                    cfg.placeholder("Some text");
+                    cfg.modifiedHandler ((ctl, val, prior) -> {
+                        Element el = DomGlobal.document.getElementById ("text-input-1-modified");
+                        if (el != null)
+                            el.textContent = val;
+                    });
+                }),
+                Span.$ ().id ("text-input-1-modified").testId ("text-input-1-modified"),
+                Controls.textarea(cfg -> {
+                    cfg.testId ("textarea-input-1");
+                    cfg.width (Length.em (20));
+                    cfg.max (100);
+                    cfg.counter ();
+                    cfg.modifiedHandler ((ctl, val, prior) -> {
+                        Element el = DomGlobal.document.getElementById ("textarea-input-1-modified");
+                        if (el != null)
+                            el.textContent = val;
+                    });
+                }),
+                Span.$ ().id ("textarea-input-1-modified").testId ("textarea-input-1-modified")
+            );
         }));
 
         add (ComponentCreator.build (root -> {

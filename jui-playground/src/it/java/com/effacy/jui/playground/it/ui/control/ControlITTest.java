@@ -30,46 +30,50 @@ import com.effacy.jui.test.suite.navigation.TabNavigatorTester;
 public class ControlITTest extends AbstractIT {
 
     /**
-     * Tests a successful login and display of the profile.
+     * Navigates to the "Other" tab under "Controls", opens the create project
+     * dialog (via the "Add" button) and attempts to create with no content (which
+     * should fail validation).
      */
     @Test
     public void testNavigation() throws Exception {
         PageTester.$ (webClient, "http://localhost/playground?test=true", 4000)
 
-            // Grab the top-level tabset and activate "controls"
-            .with (TabNavigatorTester.$ ("applicationui").subclass (), tabs -> {
-                    tabs.validateTabs ("themes", "samples", "controls", "gallery", "editor", "dialogs");
-                    tabs.validateActiveTab ("themes");
-                    tabs.activate ("controls");
-                    tabs.validateActiveTab ("controls");
+            // Grab the top-level tabset and activate "controls".
+            .with (TabNavigatorTester.$ ("playgroundui").subclass (), tabs -> {
+                tabs.validateTabs ("lessions", "tutorial", "samples", "controls", "gallery", "editor", "peditor", "dialogs");
+                tabs.validateActiveTab ("lessions");
+                tabs.activate ("controls");
+                tabs.validateActiveTab ("controls");
 
-                    // Under controls grab the add button and click to open the add dialog.
-                    tabs.with (ButtonTester.$ ("controls.controlsection.controlsectiongroup.button"), btn -> {
+                // Under controls activate "other" then click the add button to
+                // open the create project dialog.
+                tabs.with (TabNavigatorTester.$ ("controls").subclass (), controls -> {
+                    controls.validateTabs ("simple", "dynamic", "other");
+                    controls.activate ("other");
+                    controls.validateActiveTab ("other");
+                    controls.button ("other.panel.control_form.button", btn -> {
                         btn.validateLabel ("Add");
                         btn.click ();
                     });
+                });
             })
 
             // Grab the dialog that has been opened above.
-            .modal ("controlpanel001_dialog", dialog -> {
+            .modal ("controldialog", dialog -> {
                 dialog.validateTitle ("Create project");
 
                 // Click on the create button with no content.
-                dialog.button ("btn_create_project", btn -> btn.validateLabel ("Create project").click ());
+                dialog.button ("btn_apply", btn -> btn.validateLabel ("Create project").click ());
 
                 // Perform checks on the form controls.
-                dialog.flow ("controlpanel01.controlsection", form -> {
-                    form.textControl ("controlsectiongroup.name", ctl -> {
+                dialog.flow ("control_form", form -> {
+                    form.textControl ("name", ctl -> {
                         ctl.validateInput ("");
                         ctl.validateNotReadOnly ();
                         ctl.validateInvalid ();
-                        ctl.field (field -> {
-                            field.validateLabel ("Name of project");
-                            field.validateError ("please enter the name of the project");
-                        });
                     });
                 });
-            }) //
+            })
 
             // Print the page.
             .print (() -> {

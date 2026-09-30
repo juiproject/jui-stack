@@ -31,3 +31,8 @@ Work is complete when the change is implemented and verified. If reviews are bei
 ### 4. PR merged: transition to Done
 
 Once the PR is merged, move the ticket to **Done**, or the most relevant "completed" status. If the PR is closed without merging, leave the ticket as it is and report back.
+
+Linear is not integrated with GitHub, so nothing moves the ticket automatically when the PR merges. The transition depends on the agent seeing the merge. If the agent stops watching before the merge (for example, the session ends while the PR is still in review):
+
+- **Picking up a ticket:** before starting, check whether its PR has already been merged. If it has, move the ticket to Done instead of redoing the work.
+- **Periodic check:** a human should occasionally look for tickets still In Progress (or In Review) whose PRs have merged, and move them to Done.

@@ -1,5 +1,7 @@
 # JUI Stack
 
+@../AGENTS.md
+
 ## Coding Standards
 
 ### `if-else` statements

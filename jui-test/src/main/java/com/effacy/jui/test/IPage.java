@@ -56,6 +56,20 @@ public interface IPage {
         public boolean assignValue(String value);
 
         /**
+         * Assigns a (generally input) value to the node without generating any key
+         * events, only an {@code input} event (as would be the case for browser
+         * autofill, dictation, drag-and-drop or a mouse paste).
+         * <p>
+         * This complements {@link #assignValue(String)} which simulates typing
+         * (and so will always generate key events).
+         * 
+         * @param value the value to assign.
+         * @return {@code true} if the assignment was successful (i.e. the node supports
+         *         assignment).
+         */
+        public boolean assignValueByInput(String value);
+
+        /**
          * Obtains the (generally input) value from the node (where this is supported).
          * 
          * @return the value (or {@code null} if not supported).

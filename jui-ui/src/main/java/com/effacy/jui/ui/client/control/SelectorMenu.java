@@ -318,8 +318,12 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
     private DelayedValueHandler<String> keywordDelay;
 
     /**
-     * Action a key press in the search section. This will activate filtering on the
+     * Action a change in the search section. This will activate filtering on the
      * item store.
+     * <p>
+     * This is invoked on input (rather than key up) so that text that arrives
+     * without a key event (i.e. autofill, dictation, drag-and-drop or a mouse
+     * paste) is searched on.
      * <p>
      * Note that the configuration has to allow search for this to activate. This
      * permits the search to be hidden and partake in the key up and down actions
@@ -698,7 +702,7 @@ public class SelectorMenu<V> extends SimpleComponent implements ISelectorMenu<V>
                 search.style (styles ().search ());
                 Div.$ (search).$ (
                     Input.$ ("text").id ("search").by ("search_input")
-                        .on (e -> onSearchKeyPress (e), UIEventType.ONKEYUP)
+                        .on (e -> onSearchKeyPress (e), UIEventType.ONINPUT)
                         .on (e -> onSearchKeyCheck (e), UIEventType.ONKEYDOWN)
                         .attr ("placeholder", "Search"),
                     Em.$ ().style (FontAwesome.search ()),

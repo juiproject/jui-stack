@@ -686,9 +686,14 @@ public class TextAreaControl extends Control<String, TextAreaControl.Config> {
                         if (!filterKeyPress (e.getKeyCode (), inputEl.value))
                             e.stopEvent ();
                     }, UIEventType.ONKEYPRESS);
-                    if (config().expandOnContent)
-                        ta.on (e -> _resize(), UIEventType.ONINPUT);
-                    ta.on (e -> modified (), UIEventType.ONKEYUP);
+                    // Synchronise on input (rather than key up) so that text arriving
+                    // without a key event (i.e. autofill, dictation, drag-and-drop or a
+                    // mouse paste) is registered.
+                    ta.on (e -> {
+                        if (config().expandOnContent)
+                            _resize();
+                        modified ();
+                    }, UIEventType.ONINPUT);
                     ta.on (e -> {
                         TimerSupport.defer(() -> {
                             if (config().pasteProcessor != null)

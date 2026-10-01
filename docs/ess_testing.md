@@ -438,6 +438,19 @@ Once submitted we should find there is an error since we have no content for the
 
 Now this needs some explanation. The name control appears in a `ControlPanel` under `ControlSection` and within a `ControlSectionGroup` (see [Controls](ess_controls.md) for details). The later provides structure to layout controls which includes placement of a label and the location for error messages. The `field` method (available on all control tester classes) is a short hand to creating a `ControlGroupFieldTester` which is given the ID of a control component. It used that ID to locate the control component and walk up the DOM hierarchy to find the various nodes that are created within the `ControlSectionGroup` instance that layout the control and its associated meta-data (so assumes the control does sit inside one of these). From the vantage we can then validate the associated label and error messages.
 
+### Input without key events
+
+Assigning a value to a `TextControlTester` with `assign(String)` simulates typing (so generates key events). Some input arrives without any key events (browser autofill, dictation, drag-and-drop and mouse paste) and only raises an `input` event. To test this path use `assignByInput(String)`:
+
+```java
+form.textControl ("name", ctl -> {
+    ctl.assignByInput ("Some value");
+    ctl.validateInput ("Some value");
+});
+```
+
+This is backed by `INode.assignValueByInput(String)` which is supported by both the HtmlUnit and Selenium page implementations (see `ControlInputITTest` in the **playground** for an example).
+
 ### Printing
 
 Now `PageTester` has a family of `print(...)` methods that allows for printing of the state of the pages at the time of printing. The default is to print to the console:

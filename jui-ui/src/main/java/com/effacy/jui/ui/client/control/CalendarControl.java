@@ -737,7 +737,6 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
                         input.testId (buildTestId ("input")).testRef ("input");
                         return;
                     }
-                    input.on (e -> modified (), UIEventType.ONKEYUP, UIEventType.ONPASTE);
                     input.ref ("input");
                     input.on (e -> {
                         if (manualEntry) {
@@ -754,9 +753,11 @@ public class CalendarControl extends Control<CalendarDate, CalendarControl.Confi
                         }
                         manualEntry = false;
                     }, UIEventType.ONBLUR);
+                    // Input covers text that arrives without a key event (i.e. autofill,
+                    // dictation, drag-and-drop or a mouse paste).
                     input.on (e -> {
                         manualEntry = true;
-                    }, UIEventType.ONKEYDOWN);
+                    }, UIEventType.ONKEYDOWN, UIEventType.ONINPUT);
                     if (StringSupport.empty (data.getName ()))
                         input.attr ("name", "" + getUUID ());
                     else

@@ -28,8 +28,6 @@ import com.effacy.jui.platform.core.client.ApplicationEntryPoint;
 import com.effacy.jui.platform.util.client.ListSupport;
 import com.effacy.jui.ui.client.Theme;
 
-import elemental2.dom.DomGlobal;
-
 /**
  * The entry point to the application. This expects to find an element with id
  * <code>pageBody</code> and will bind to that node. It will
@@ -60,14 +58,15 @@ public class PlaygroundApp implements ApplicationEntryPoint {
         APP.bind ("pageBody");
 
         // This allows for updating the navigation path on the browser. This will also
-        // update the navigation history.
+        // update the navigation history. No change event is issued as the path is
+        // already reflected in the application (this also avoids opening the URL
+        // which some headless browsers, such as HtmlUnit, treat as a page reload).
         APP.assignParent (INavigationHandlerParent.navigation ((ctx, path) -> {
-            DomGlobal.window.open ("#/" + ListSupport.contract (path, "/"), "_self", null);
+            History.newItem ("/" + ListSupport.contract (path, "/"), false);
         }));
 
-        // Listen to history changes. Note that the update above will invoke such a
-        // change but since we don't back-propagate non-changes then we can safely
-        // re-navigate.
+        // Listen to history changes. Note that the update above does not issue such a
+        // change so this only responds to browser navigation (i.e. back and forward).
         History.addValueChangeHandler (new ValueChangeHandler<String> () {
 
             @Override

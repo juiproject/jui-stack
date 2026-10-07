@@ -51,7 +51,6 @@
     <dependency>
       <groupId>com.effacy.jui</groupId>
       <artifactId>jui-platform-codeserver</artifactId>
-      <classifier>jar-with-dependencies</classifier>
       <version>${revision}</version>
     </dependency>
     <dependency>

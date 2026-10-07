@@ -80,8 +80,6 @@ Note that the code server build from the source code in your project, which mean
 
 The code server is run from the command line using the `codeserver` goal of the `jui-maven-plugin` from the project (or projects) that serve web content.
 
-!> The code server must be run using `mvn` (as described below) and not from your IDE (i.e. as a run or launch configuration). The code server is published as a regular JAR and relies on the Maven plugin to resolve its dependencies and assemble its classpath. You can, of course, run the `mvn` command from your IDE's terminal.
-
 First you need to add a profile to the (web) projects `pom.xml`. The general form looks similar to the following (for the playground see the following section):
 
 ```xml
@@ -357,7 +355,7 @@ To resolve:
 
 1. If you have developer tooling open then first try the resolution described in [Progressivley sluggish behaviour](#progressivley-sluggish-behaviour).
 2. If that does not resolve the issue try restarting the codeserver.
-3. If that stills does to resolve the issues, and you are running the codeserver from your IDE's terminal, restart your IDE (as it may be consuming resources).
+3. If that stills does to resolve the issues, restart your IDE (as it may be consuming resources).
 
 #### Failure to start after changing the JUI version
 

@@ -413,7 +413,7 @@ For a comprehensive description of the code server see [JUI Code Server](app_cod
 
 #### Add profile to the POM
 
-The codeserver is run using the `jui-maven-plugin`'s `codeserver` goal (it must be run using `mvn` and not from your IDE). This can be configured as a profile in the `pom.xml`:
+The codeserver is run using the `jui-maven-plugin`'s `codeserver` goal. This can be configured as a profile in the `pom.xml`:
 
 ```xml
 <profiles>

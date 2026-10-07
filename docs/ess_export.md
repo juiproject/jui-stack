@@ -8,7 +8,7 @@ Interoperability refers (in this context) to the two-way interaction between JUI
 
 The mechanism relies on annotations to guide the compiler to correctly treat those classes that are being shared ([GWT JsInterop](https://www.gwtproject.org/doc/latest/DevGuideCodingBasicsJsInterop.html) provides a brief but informative discussion). In the following we provide some explicit guidance and supporting examples for its use in JUI. Concrete examples are available **Playground** > **Samples** > **Interoperability**.
 
-One specific note is that when using the GWT compiler or code server you need to explicitly direct it to expose classes for export. The code server (which is run using `mvn` via the `codeserver` goal of the Maven plugin) always passes the option `-generateJsInteropExports` so nothing further is needed there. As for compilation with the Maven plugin you need to add the configuration option `<generateJsInteropExports>true</generateJsInteropExports>`.
+One specific note is that when using the GWT compiler or code server you need to explicitly direct it to expose classes for export. The code server (run via the `codeserver` goal of the Maven plugin) always passes the option `-generateJsInteropExports` so nothing further is needed there. As for compilation with the Maven plugin you need to add the configuration option `<generateJsInteropExports>true</generateJsInteropExports>`.
 
 ## JUI calling JS
 

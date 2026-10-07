@@ -30,6 +30,7 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyRequest;
 
@@ -269,6 +270,12 @@ public class CompileMojo extends AbstractMojo {
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
     private RepositorySystemSession repoSession;
 
+    /**
+     * The project's remote repositories (used to resolve dependencies).
+     */
+    @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
+    private List<RemoteRepository> remoteRepositories;
+
     @Override
     public void execute() throws MojoExecutionException {
         // If skipping, then quit.
@@ -469,8 +476,7 @@ public class CompileMojo extends AbstractMojo {
             DefaultArtifact artifactToResolve = new DefaultArtifact(gwtGroup + ":" + gwtArtefact + ":" + gwtVersion);
             CollectRequest collectRequest = new CollectRequest();
             collectRequest.setRoot(new Dependency(artifactToResolve, ""));
-            // Assume maven central is accessible.
-            // collectRequest.setRepositories(remoteRepos);
+            collectRequest.setRepositories(remoteRepositories);
             DependencyRequest dependencyRequest = new DependencyRequest();
             dependencyRequest.setCollectRequest(collectRequest);
             List<ArtifactResult> resolvedArtifacts = repoSystem.resolveDependencies(repoSession, dependencyRequest).getArtifactResults();

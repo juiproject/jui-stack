@@ -10,24 +10,24 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyRequest;
 
 public class ArtifactsAsResourcesHelper {
 
-    public static List<String> resolve(Log log, RepositorySystem repoSystem, RepositorySystemSession repoSession, String groupId, String artifactId, String version) throws MojoExecutionException {
-        return resolve(log, repoSystem, repoSession, groupId, artifactId, version, null);
+    public static List<String> resolve(Log log, RepositorySystem repoSystem, RepositorySystemSession repoSession, List<RemoteRepository> remoteRepositories, String groupId, String artifactId, String version) throws MojoExecutionException {
+        return resolve(log, repoSystem, repoSession, remoteRepositories, groupId, artifactId, version, null);
     }
 
-    public static List<String> resolve(Log log, RepositorySystem repoSystem, RepositorySystemSession repoSession, String groupId, String artifactId, String version, String classifier) throws MojoExecutionException {
+    public static List<String> resolve(Log log, RepositorySystem repoSystem, RepositorySystemSession repoSession, List<RemoteRepository> remoteRepositories, String groupId, String artifactId, String version, String classifier) throws MojoExecutionException {
         try {
             List<String> cp = new ArrayList<>();
             DefaultArtifact artifactToResolve = (classifier == null) ? new DefaultArtifact(groupId + ":" + artifactId + ":" + version) : new DefaultArtifact(groupId, artifactId, classifier, "jar", version);
             CollectRequest collectRequest = new CollectRequest();
             collectRequest.setRoot(new Dependency(artifactToResolve, ""));
-            // Assume maven central is accessible.
-            // collectRequest.setRepositories(remoteRepos);
+            collectRequest.setRepositories(remoteRepositories);
             DependencyRequest dependencyRequest = new DependencyRequest();
             dependencyRequest.setCollectRequest(collectRequest);
             List<ArtifactResult> resolvedArtifacts = repoSystem.resolveDependencies(repoSession, dependencyRequest).getArtifactResults();
@@ -46,12 +46,13 @@ public class ArtifactsAsResourcesHelper {
         }
     }
 
-    public static List<String> retrieve(Log log, RepositorySystem repoSystem, RepositorySystemSession repoSession, String groupId, String artifactId, String version, String classifier) throws MojoExecutionException {
+    public static List<String> retrieve(Log log, RepositorySystem repoSystem, RepositorySystemSession repoSession, List<RemoteRepository> remoteRepositories, String groupId, String artifactId, String version, String classifier) throws MojoExecutionException {
         try {
             List<String> cp = new ArrayList<>();
             DefaultArtifact artifactToResolve = (classifier == null) ? new DefaultArtifact(groupId + ":" + artifactId + ":" + version) : new DefaultArtifact(groupId, artifactId, classifier, "jar", version);
             ArtifactRequest request = new ArtifactRequest();
             request.setArtifact(artifactToResolve);
+            request.setRepositories(remoteRepositories);
             List<ArtifactRequest> requests = new ArrayList<>();
             requests.add (request);
             List<ArtifactResult> resolvedArtifacts = repoSystem.resolveArtifacts(repoSession, requests);

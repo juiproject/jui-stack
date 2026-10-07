@@ -234,12 +234,11 @@ public class CodeServerMojo extends AbstractMojo {
         // boot application).
         cp.removeIf(t -> t.contains("target/classes"));
 
-        // Add in the codeserver jar (no need to resolve dependencies as they are
-        // included).
+        // Add in the codeserver jar along with its dependencies (resolved
+        // transitively as the codeserver is published as a regular JAR).
         String groupId = pluginDescriptor.getGroupId();
         String artefactId = "jui-platform-codeserver";
-        //cp.addAll(0, ArtifactsAsResourcesHelper.resolve(getLog(), repoSystem, repoSession, remotePluginRepositories, groupId, artefactId, pluginDescriptor.getVersion(), "jar-with-dependencies"));
-        cp.addAll(0, ArtifactsAsResourcesHelper.retrieve(getLog(), repoSystem, repoSession, remotePluginRepositories, groupId, artefactId, pluginDescriptor.getVersion(), "jar-with-dependencies"));
+        cp.addAll(0, ArtifactsAsResourcesHelper.resolve(getLog(), repoSystem, repoSession, remotePluginRepositories, groupId, artefactId, pluginDescriptor.getVersion()));
 
         // Display classpath if in diagnose mode.
         if (diagnose) {

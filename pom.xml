@@ -573,6 +573,10 @@
               <publishingServerId>central</publishingServerId>
               <tokenAuth>true</tokenAuth>
               <autoPublish>${release.auto}</autoPublish>
+              <!-- The playground is a demo application (and a fat JAR) so is not published -->
+              <excludeArtifacts>
+                <artifact>jui-playground</artifact>
+              </excludeArtifacts>
             </configuration>
           </plugin>
         </plugins>

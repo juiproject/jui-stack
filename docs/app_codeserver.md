@@ -140,7 +140,7 @@ The code server can then be run with (the specification of the defaul goal runs 
 ```bash
 mvn -Pcodeserver
 ```
-?> It is possible to run the code server via a run configuration (see the [Appendix](#run-configuration) for details) however that can be a littly tricky. These are generally run from a project and passes through the classpath relevant to that project. This will include dependencies and sometimes source code but generally you need to manually reference source code in sibling projects (this very much depends on how your IDE setups run configurations). In all cases you need to manually add in the code server JAR file itself. In the most part this is fine but if your project includes Spring Boot then autoconfiguration can interfere with the code server (which also uses Spring Boot). The Maven plugin does exhibit this problem but the use of filters reduces the burden of the problem significantly and the associated classpath tends to be quite minmalistic (only including JUI compilable code).
+?> The code server is run through the Maven plugin, which assembles a minimal classpath (only JUI compilable code, subject to the inclusion and exclusion filters described in [Maven configuration](#maven-configuration)). This keeps the code server (which is Spring Boot based) isolated from any Spring Boot autoconfiguration present in your project.
 
 #### Example: Playground
 
@@ -413,71 +413,3 @@ Note that *list-of* can be expressed either by comma separation or nesting:
 ```
 
 Finally recall that the specification of sources and dependencies need only consider those that are included in the JUI compilation and that sources can reference other projects relatively (i.e. for multi-module parents).
-
-## Run configuration
-
-The code server is bundled, along with all its dependencies, into a single executable JAR:
-
-```xml
-<dependency>
-    <groupId>com.effacy.jui<groupId>
-    <artifactId>jui-platform-codeserver<artifactId>
-    <version>${jui-version}</version>
-    <type>jar</type>
-    <classifier>jar-with-dependencies</classifier>
-<dependency>
-```
-
-The JUI Maven plugin resolves this automatically but if you want to run from a run configuration you need to resolve this manually (it should *never* be included as a dependency outside or `provided` scope otherwise it could interfere with other dependencies).
-
-The code server is launched from the main class `com.effacy.jui.codeserver.CodeServer` and expects to find all JUI sources on the classpath (*in the future we may allow for the provisioning of an alternative classpath for compilation purposes*).
-
-The general outline to running the code server in your IDE is as follows:
-
-1. Run as a *run configuration* (as suitable for your IDE) using the project that you are wanting serve module(s) for (i.e the web project the code server is supporting).
-2. Ensure that the classpath of the run configuration includes the aforementioned JAR file (which should appear at the front of the classpath).
-3. Ensure that the classpath includes all relevant JUI source locations (including from sibling module projects if applicable) where you want changes to source code to be detected and recompiled.
-4. If possible, exclude unnecessary JAR files (may not be feasible for your IDE), otherwise take care to ensure that there are no conflicting JARs. 
-
-The most common problem is that your project include Spring Boot and that interferes with the code server (also being Spring Boot based). Normally this is a result of the code server picking up autoconfiguration from JAR in your project. To avoid this problem you may need to run the code server from a separate project that is more isolated (and then references the sources directly).
-
-### Example: VS Code and the playground
-
-The simplest approach to running the code server in VS Code using using a launch configuration from the **Run and Debug** section. The following setup creates a code server launch for the **playground** (see [Prerequisites](#example-playground)) but applies to any project. It assumes you have VS Code setup for Java development.
-
-First navigate to the **Run and Debug** section then select to **Add Config (jui-stack)**. This should open the `launch.json` file for the `jui-stack` project. Add the following:
-
-```json
-{
-    "type": "java",
-    "name": "JUI Playground CodeServer",
-    "request": "launch",
-    "mainClass": "com.effacy.jui.codeserver.CodeServer",
-    "args": "-generateJsInteropExports -port 9876 com.effacy.jui.playground.PlaygroundApp",
-    "vmArgs": "-Xmx3g",
-    "projectName": "jui-playground",
-    "classPaths": [
-        "${userHome}/.m2/repository/com/effacy/jui/jui-platform-codeserver/LOCAL-SNAPSHOT/jui-platform-codeserver-LOCAL-SNAPSHOT-jar-with-dependencies.jar",
-        "${workspaceFolder}/jui-platform/src/main/java",
-        "${workspaceFolder}/jui-platform/src/main/resources",
-        "${workspaceFolder}/jui-core/src/main/java",
-        "${workspaceFolder}/jui-core/src/main/resources",
-        "${workspaceFolder}/jui-ui/src/main/java",
-        "${workspaceFolder}/jui-ui/src/main/resources",
-        "${workspaceFolder}/jui-remoting/src/main/java",
-        "${workspaceFolder}/jui-remoting/src/main/resources",
-        "${workspaceFolder}/jui-validation/src/main/java",
-        "${workspaceFolder}/jui-validation/src/main/resources",
-        "${workspaceFolder}/jui-playground/src/jui/java",
-        "${workspaceFolder}/jui-playground/src/jui/resources",
-        "$Auto",
-    ]
-}
-```
-
-Note that `LOCAL-SNAPSHOT` is fine for the `jui-playground`, othewise replace this by the version of JUI you are using.
-
-Note that the built JAR files for each of the JUI projects also includes the sources, this is needed for JUI compilation. The IDE however does not place source files on the classpath for project dependencies, this means that you need to include them explicitly. Hence the entries for `${workspaceFolder}/jui-platform/src/main/java`, etc.
-
-We draw attention to the `args` property which includes `com.effacy.jui.playground.PlaygroundApp`, this is the module reference to the playground application.
-

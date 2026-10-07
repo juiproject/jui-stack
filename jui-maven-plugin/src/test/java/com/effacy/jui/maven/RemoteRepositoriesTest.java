@@ -54,7 +54,7 @@ public class RemoteRepositoriesTest {
     }
 
     @Test
-    public void codeServer_retrievesCodeServerAgainstRepositories() throws Exception {
+    public void codeServer_resolvesCodeServerAgainstRepositories() throws Exception {
         RecordingRepositorySystem repoSystem = new RecordingRepositorySystem();
         PluginDescriptor descriptor = new PluginDescriptor();
         descriptor.setGroupId("com.effacy.jui");
@@ -64,12 +64,12 @@ public class RemoteRepositoriesTest {
         set(mojo, "remotePluginRepositories", REPOSITORIES);
         set(mojo, "pluginDescriptor", descriptor);
 
-        mojo.retrieveCodeServer();
+        mojo.resolveCodeServer();
 
-        assertEquals(1, repoSystem.artifactRequests.size());
-        assertEquals("jui-platform-codeserver", repoSystem.artifactRequests.get(0).getArtifact().getArtifactId());
-        assertEquals("9.9.9", repoSystem.artifactRequests.get(0).getArtifact().getVersion());
-        assertEquals(REPOSITORIES, repoSystem.artifactRequests.get(0).getRepositories());
+        assertEquals(1, repoSystem.dependencyRequests.size());
+        assertEquals("jui-platform-codeserver", repoSystem.dependencyRequests.get(0).getCollectRequest().getRoot().getArtifact().getArtifactId());
+        assertEquals("9.9.9", repoSystem.dependencyRequests.get(0).getCollectRequest().getRoot().getArtifact().getVersion());
+        assertEquals(REPOSITORIES, repoSystem.dependencyRequests.get(0).getCollectRequest().getRepositories());
     }
 
     @Test

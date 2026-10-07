@@ -413,7 +413,7 @@ For a comprehensive description of the code server see [JUI Code Server](app_cod
 
 #### Add profile to the POM
 
-The easiest way to run the codeserver is by using the `jui-maven-plugin`'s `codeserver` goal. This can be configured as a profile in the `pom.xml`:
+The codeserver is run using the `jui-maven-plugin`'s `codeserver` goal (it must be run using `mvn` and not from your IDE). This can be configured as a profile in the `pom.xml`:
 
 ```xml
 <profiles>
@@ -487,7 +487,7 @@ Navigate back to http://localhost:8080/playground then click on the **Dev Mode O
 
 ![](images/getting_started_002.png)
 
-Click on **Compile** and a recompilation will start. You should see log messages arising from the code server run configuration that describe the progress of compilation (and should there be any errors these will appear here).
+Click on **Compile** and a recompilation will start. You should see log messages in the terminal running `mvn -Pcodeserver` that describe the progress of compilation (and should there be any errors these will appear here).
 
 Once it finishes the page will refresh.
 

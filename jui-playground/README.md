@@ -49,7 +49,7 @@ You should be able to run this and if successful the console should show the ini
 
 ## Codeserver
 
-The codeserver is needed during development to compile and serve JUI code on-demand (rather than having to perform a full compilation each time a change is made). The simplest approach is to run it via Maven from the root directory of this module:
+The codeserver is needed during development to compile and serve JUI code on-demand (rather than having to perform a full compilation each time a change is made). It must be run via Maven (not from your IDE) from the root directory of this module:
 
 ```bash
 mvn -Pcodeserver

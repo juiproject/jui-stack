@@ -249,10 +249,10 @@ An additional advantage of the code server is that it also makes available sourc
 
 To run the code server:
 
-1. Configure the code server in your IDE (this information is contained in the README.md file of this project which guides you through setting up your IDE for working with the **playground**, noting that the same principles will apply to your own projects).
+1. Add a `codeserver` profile to your (web) project's `pom.xml` (see [Starting the code server](app_codeserver.md#starting-the-code-server)). The code server must be run using `mvn` and not from your IDE.
 2. Ensure you have performed at least one Maven build (see note above).
 3. Start your application server (i.e. run your application as you would normally).
-4. Start the code server. For the first time open `http://localhost:9876` and follow the instructions (this will ask you drag two bookmarks to your bookmarks bar, these are used to enages and disengage the code server).
+4. Start the code server with `mvn -Pcodeserver` from your project (this can be done from your IDE's terminal). For the first time open `http://localhost:9876` and follow the instructions (this will ask you drag two bookmarks to your bookmarks bar, these are used to enages and disengage the code server).
 5. Navigate to your application entry point HTML page. The code server will likely start automatically, if it does not simply select the `Dev Mode On` bookmark to start it up.
 
 The first build will take a bit of time but subsequent builds are a lot faster. A couple of points to note:

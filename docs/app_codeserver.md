@@ -78,7 +78,7 @@ Note that the code server build from the source code in your project, which mean
 
 ### Starting the code server
 
-The simplest way to run the code server is using the `codeserver` goal of the `jui-maven-plugin` from the project (or projects) that server web content.
+The code server is run from the command line using the `codeserver` goal of the `jui-maven-plugin` from the project (or projects) that serve web content.
 
 First you need to add a profile to the (web) projects `pom.xml`. The general form looks similar to the following (for the playground see the following section):
 
@@ -140,7 +140,7 @@ The code server can then be run with (the specification of the defaul goal runs 
 ```bash
 mvn -Pcodeserver
 ```
-?> The code server is run through the Maven plugin, which assembles a minimal classpath (only JUI compilable code, subject to the inclusion and exclusion filters described in [Maven configuration](#maven-configuration)). This keeps the code server (which is Spring Boot based) isolated from any Spring Boot autoconfiguration present in your project.
+?> The Maven plugin assembles a minimal classpath (only JUI compilable code, subject to the inclusion and exclusion filters described in [Maven configuration](#maven-configuration)). This keeps the code server (which is Spring Boot based) isolated from any Spring Boot autoconfiguration present in your project.
 
 #### Example: Playground
 
@@ -241,7 +241,7 @@ All modules declared on the page you are accessing (recall that an application c
 
 ![Compiling](images/app_codeserver_003.png)
 
-The code server has started compiling (if your IDE display logging from any run configuration then you will see the compilation in progress) and the browser will poll the code server until it is done. If successful you the browser will refresh with the updated code.
+The code server has started compiling (the terminal running `mvn -Pcodeserver` will display the compilation in progress) and the browser will poll the code server until it is done. If successful you the browser will refresh with the updated code.
 
 ### Operating the code server
 
@@ -355,7 +355,7 @@ To resolve:
 
 1. If you have developer tooling open then first try the resolution described in [Progressivley sluggish behaviour](#progressivley-sluggish-behaviour).
 2. If that does not resolve the issue try restarting the codeserver.
-3. If that stills does to resolve the issues, and you are running the codeserver from within your IDE (either directly or via terminal), restart your IDE (as it may be consuming resources).
+3. If that stills does to resolve the issues, restart your IDE (as it may be consuming resources).
 
 #### Failure to start after changing the JUI version
 

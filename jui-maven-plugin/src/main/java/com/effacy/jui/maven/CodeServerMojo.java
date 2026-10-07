@@ -194,6 +194,18 @@ public class CodeServerMojo extends AbstractMojo {
     @Parameter(defaultValue = "${plugin}", readonly = true, required = true)
     private PluginDescriptor pluginDescriptor;
 
+    /**
+     * Resolves the code server jar (published alongside this plugin) and its
+     * dependencies from the build's plugin repositories.
+     * 
+     * @return the paths to add to the classpath.
+     */
+    protected List<String> resolveCodeServer() throws MojoExecutionException {
+        String groupId = pluginDescriptor.getGroupId();
+        String artefactId = "jui-platform-codeserver";
+        return ArtifactsAsResourcesHelper.resolve(getLog(), repoSystem, repoSession, remotePluginRepositories, groupId, artefactId, pluginDescriptor.getVersion());
+    }
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         List<String> cp = new ArrayList<>();
@@ -236,9 +248,7 @@ public class CodeServerMojo extends AbstractMojo {
 
         // Add in the codeserver jar along with its dependencies (resolved
         // transitively as the codeserver is published as a regular JAR).
-        String groupId = pluginDescriptor.getGroupId();
-        String artefactId = "jui-platform-codeserver";
-        cp.addAll(0, ArtifactsAsResourcesHelper.resolve(getLog(), repoSystem, repoSession, remotePluginRepositories, groupId, artefactId, pluginDescriptor.getVersion()));
+        cp.addAll(0, resolveCodeServer());
 
         // Display classpath if in diagnose mode.
         if (diagnose) {

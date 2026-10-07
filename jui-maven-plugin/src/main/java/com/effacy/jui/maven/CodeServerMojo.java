@@ -206,6 +206,21 @@ public class CodeServerMojo extends AbstractMojo {
         return ArtifactsAsResourcesHelper.resolve(getLog(), repoSystem, repoSession, remotePluginRepositories, groupId, artefactId, pluginDescriptor.getVersion());
     }
 
+    /**
+     * Removes the project's own build output directory from the classpath. For a
+     * web project this holds the application classes and configuration, which
+     * would otherwise be picked up by the code server (a Spring Boot
+     * application). The build output of other projects (i.e. sibling modules
+     * referenced by {@link #sources} for their rebind classes) is retained.
+     *
+     * @param cp
+     *           the classpath to filter.
+     */
+    protected void removeProjectOutput(List<String> cp) {
+        File output = Paths.get(project.getBuild().getOutputDirectory()).normalize().toFile();
+        cp.removeIf(t -> Paths.get(t).normalize().toFile().getAbsoluteFile().equals(output.getAbsoluteFile()));
+    }
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         List<String> cp = new ArrayList<>();
@@ -242,9 +257,9 @@ public class CodeServerMojo extends AbstractMojo {
             throw new MojoExecutionException(e.getMessage(), e);
         }
 
-        // Explictly remove anything under target/classes (which may pollute the spring
+        // Explictly remove the project's own build output (which may pollute the spring
         // boot application).
-        cp.removeIf(t -> t.contains("target/classes"));
+        removeProjectOutput(cp);
 
         // Add in the codeserver jar along with its dependencies (resolved
         // transitively as the codeserver is published as a regular JAR).

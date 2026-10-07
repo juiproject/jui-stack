@@ -24,6 +24,7 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.toolchain.ToolchainManager;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.repository.RemoteRepository;
 
 /**
  * Spins up the codeserver on the command line.
@@ -181,6 +182,13 @@ public class CodeServerMojo extends AbstractMojo {
     private RepositorySystemSession repoSession;
 
     /**
+     * The plugin repositories (used to resolve the code server, which is a
+     * dependency of this plugin).
+     */
+    @Parameter(defaultValue = "${project.remotePluginRepositories}", readonly = true, required = true)
+    private List<RemoteRepository> remotePluginRepositories;
+
+    /**
      * Descriptor for the plugin itself.
      */
     @Parameter(defaultValue = "${plugin}", readonly = true, required = true)
@@ -230,8 +238,8 @@ public class CodeServerMojo extends AbstractMojo {
         // included).
         String groupId = pluginDescriptor.getGroupId();
         String artefactId = "jui-platform-codeserver";
-        //cp.addAll(0, ArtifactsAsResourcesHelper.resolve(getLog(), repoSystem, repoSession, groupId, artefactId, pluginDescriptor.getVersion(), "jar-with-dependencies"));
-        cp.addAll(0, ArtifactsAsResourcesHelper.retrieve(getLog(), repoSystem, repoSession, groupId, artefactId, pluginDescriptor.getVersion(), "jar-with-dependencies"));
+        //cp.addAll(0, ArtifactsAsResourcesHelper.resolve(getLog(), repoSystem, repoSession, remotePluginRepositories, groupId, artefactId, pluginDescriptor.getVersion(), "jar-with-dependencies"));
+        cp.addAll(0, ArtifactsAsResourcesHelper.retrieve(getLog(), repoSystem, repoSession, remotePluginRepositories, groupId, artefactId, pluginDescriptor.getVersion(), "jar-with-dependencies"));
 
         // Display classpath if in diagnose mode.
         if (diagnose) {

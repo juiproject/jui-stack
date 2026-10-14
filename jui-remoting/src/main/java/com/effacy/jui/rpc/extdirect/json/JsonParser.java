@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.apache.commons.lang3.ClassUtils;
+
 import com.effacy.jui.json.parser.IJsonSerializableParser;
 import com.effacy.jui.json.parser.JsonSerializableParser;
 import com.effacy.jui.rpc.client.ErrorMessage;
@@ -219,7 +221,14 @@ public class JsonParser implements IJsonParser {
             for (int i = 0, len = dataNode.size (); i < len; i++) {
                 IParameterMetadata parameterMetadata = methodSignature.get (i);
                 try {
-                    request.getData ().add (mapper.treeToValue (dataNode.get (i), parameterMetadata.getParameterType ()));
+                    Object value = mapper.treeToValue (dataNode.get (i), parameterMetadata.getParameterType ());
+                    request.getData ().add (value);
+
+                    // A polymorphic value whose type can't be resolved is read
+                    // as a map (rather than failing), so check that what was
+                    // read can be passed.
+                    if ((value != null) && !ClassUtils.isAssignable (value.getClass (), parameterMetadata.getParameterType (), true))
+                        request.reject (new ErrorMessage (null, ERROR_TYPE, -1, "The value could not be read."));
                 } catch (JacksonException | IllegalArgumentException e) {
                     request.getData ().add (null);
                     request.reject (new ErrorMessage (toPath (e), ERROR_TYPE, -1, "The value could not be read."));

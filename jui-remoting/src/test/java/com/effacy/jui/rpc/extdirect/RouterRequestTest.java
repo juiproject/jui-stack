@@ -15,20 +15,22 @@
  ******************************************************************************/
 package com.effacy.jui.rpc.extdirect;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.StringReader;
-import java.lang.reflect.Proxy;
-import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockMultipartHttpServletRequest;
+import org.springframework.web.servlet.ModelAndView;
 
-import com.effacy.jui.rpc.extdirect.annotation.AnnotatedRouter;
 import com.effacy.jui.rpc.extdirect.annotation.RemoteAction;
 import com.effacy.jui.rpc.extdirect.annotation.RemoteMethod;
+import com.effacy.jui.rpc.extdirect.csrf.ICRFHandler;
+import com.effacy.jui.rpc.extdirect.dto.TestItemQuery;
+import com.effacy.jui.rpc.extdirect.dto.TestQuery;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -36,8 +38,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Tests how the router reads JSON requests, in particular requests that can't
- * be read (JUI-4, JUI-5 and JUI-6).
+ * Tests how the router reads requests, in particular requests that can't be
+ * read (JUI-4, JUI-5 and JUI-6). Requests are passed through
+ * {@link ControllerRouter#handleRequest(HttpServletRequest, HttpServletResponse)}
+ * and the resulting view rendered, as they would be by a host application.
  */
 public class RouterRequestTest {
 
@@ -67,32 +71,38 @@ public class RouterRequestTest {
         public String paged(Paged paged, String suffix) {
             return "page:" + ((paged == null) ? "null" : paged.page) + ":" + suffix;
         }
+
+        @RemoteMethod
+        public String query(TestQuery query) {
+            if (query instanceof TestItemQuery item)
+                return "query:" + item.page + ":" + ((item.lookups == null) ? 0 : item.lookups.size ());
+            return "query:" + ((query == null) ? "null" : query.getClass ().getSimpleName ());
+        }
     }
 
-    public static class TestRouter extends AnnotatedRouter {
+    /**
+     * Router as a host application would configure it (scanning for the
+     * polymorphic test DTOs).
+     */
+    public static class TestRouter extends ControllerRouter {
 
         public TestRouter() {
             setUseCsrfTokens (false);
-            scanPackages ();
+            scanPackages ("com.effacy.jui.rpc.extdirect.dto");
             addAction (new TestService ());
-        }
-
-        public String process(String body, int[] status) throws IOException {
-            return processRequestToString (request (body), response (status));
         }
     }
 
     private static final ObjectMapper MAPPER = new ObjectMapper ();
 
-    private TestRouter router;
+    private ControllerRouter router = new TestRouter ();
 
-    @BeforeEach
-    public void setup() {
-        router = new TestRouter ();
-    }
+    /************************************************************************
+     * Transaction IDs (JUI-4).
+     ************************************************************************/
 
     /**
-     * JUI-4: each response carries the tid of the call it answers.
+     * Each response carries the tid of the call it answers.
      */
     @Test
     public void tidIsEchoed() throws Exception {
@@ -115,9 +125,13 @@ public class RouterRequestTest {
         Assertions.assertEquals ("echo:a", result (responses.get (0)).asText ());
     }
 
+    /************************************************************************
+     * Arguments that can't be read (JUI-5).
+     ************************************************************************/
+
     /**
-     * JUI-5: an argument that can't be read is rejected with a validation error
-     * (with the path to the field) and the other calls in the batch are still
+     * An argument that can't be read is rejected with a validation error (with
+     * the path to the field) and the other calls in the batch are still
      * processed.
      */
     @Test
@@ -131,7 +145,7 @@ public class RouterRequestTest {
     }
 
     /**
-     * JUI-5: the path is that within the argument (including list indices).
+     * The path is that within the argument (including list indices).
      */
     @Test
     public void unreadableArgumentNested() throws Exception {
@@ -140,7 +154,7 @@ public class RouterRequestTest {
     }
 
     /**
-     * JUI-5: a value of the wrong type for a top-level argument.
+     * A value of the wrong type for a top-level argument.
      */
     @Test
     public void unreadableArgumentTopLevel() throws Exception {
@@ -149,8 +163,54 @@ public class RouterRequestTest {
     }
 
     /**
-     * JUI-6: too few or too many arguments are rejected with a validation error
-     * and the other calls in the batch are still processed.
+     * A polymorphic argument (resolved by {@code _type}) is read as its
+     * concrete type.
+     */
+    @Test
+    public void polymorphicArgument() throws Exception {
+        JsonNode responses = process (call ("query", 1, "[{\"_type\":\"TestItemQuery\",\"page\":3,\"lookup\":{\"_type\":\"TestIdLookup\",\"id\":7},\"lookups\":[{\"_type\":\"TestIdLookup\",\"id\":1}]}]"));
+        Assertions.assertEquals ("query:3:1", result (responses.get (0)).asText ());
+    }
+
+    /**
+     * Fields that can't be read in a polymorphic argument, including within
+     * nested polymorphic values and lists of them.
+     */
+    @Test
+    public void polymorphicArgumentUnreadable() throws Exception {
+        JsonNode responses = process (call ("query", 1, "[{\"_type\":\"TestItemQuery\",\"page\":2147483648}]"));
+        assertRejected (responses.get (0), "query", 1, "page");
+
+        responses = process (call ("query", 2, "[{\"_type\":\"TestItemQuery\",\"lookup\":{\"_type\":\"TestIdLookup\",\"id\":\"abc\"}}]"));
+        assertRejected (responses.get (0), "query", 2, "lookup.id");
+
+        responses = process (call ("query", 3, "[{\"_type\":\"TestItemQuery\",\"lookups\":[{\"_type\":\"TestIdLookup\",\"id\":1},{\"_type\":\"TestIdLookup\",\"id\":\"abc\"}]}]"));
+        assertRejected (responses.get (0), "query", 3, "lookups.1.id");
+    }
+
+    /**
+     * A polymorphic argument whose {@code _type} is unknown (or missing) can't
+     * be read as the parameter type.
+     */
+    @Test
+    public void polymorphicArgumentUnknownType() throws Exception {
+        JsonNode responses = process (call ("query", 1, "[{\"_type\":\"Bogus\",\"page\":1}]"));
+        assertRejected (responses.get (0), "query", 1, null);
+
+        responses = process (call ("query", 2, "[{\"page\":1}]"));
+        assertRejected (responses.get (0), "query", 2, null);
+
+        responses = process (call ("query", 3, "[{\"_type\":\"TestItemQuery\",\"lookup\":{\"_type\":\"Bogus\",\"id\":1}}]"));
+        assertRejected (responses.get (0), "query", 3, "lookup");
+    }
+
+    /************************************************************************
+     * Argument count (JUI-6).
+     ************************************************************************/
+
+    /**
+     * Too few or too many arguments are rejected with a validation error and
+     * the other calls in the batch are still processed.
      */
     @Test
     public void wrongArgumentCount() throws Exception {
@@ -165,10 +225,14 @@ public class RouterRequestTest {
         // No data at all.
         JsonNode responses = process ("[{\"action\":\"TestService\",\"method\":\"paged\",\"type\":\"rpc\",\"tid\":6}]");
         assertRejected (responses.get (0), "paged", 6, null);
+
+        // Data that isn't an array.
+        responses = process (call ("paged", 6, "{\"page\":1}"));
+        assertRejected (responses.get (0), "paged", 6, null);
     }
 
     /**
-     * JUI-6: an explicit null has the right number of arguments and reaches the
+     * An explicit null has the right number of arguments and reaches the
      * method; as does a method without parameters passed no data.
      */
     @Test
@@ -178,19 +242,98 @@ public class RouterRequestTest {
 
         responses = process ("[{\"action\":\"TestService\",\"method\":\"none\",\"type\":\"rpc\",\"tid\":1,\"data\":null}]");
         Assertions.assertEquals ("none", result (responses.get (0)).asText ());
+
+        responses = process ("[{\"action\":\"TestService\",\"method\":\"none\",\"type\":\"rpc\",\"tid\":1}]");
+        Assertions.assertEquals ("none", result (responses.get (0)).asText ());
     }
 
     /**
-     * JUI-5: a body that isn't a call or array of calls answers a 400.
+     * A call to an unknown method is not a rejection (it is answered as before).
+     */
+    @Test
+    public void unknownMethod() throws Exception {
+        JsonNode responses = process (call ("bogus", 2, "[1,2,3]"));
+        Assertions.assertEquals ("exception", responses.get (0).get ("type").asText (), responses.toString ());
+        Assertions.assertEquals (2, responses.get (0).get ("tid").asInt ());
+    }
+
+    /************************************************************************
+     * Bodies that can't be read (JUI-5).
+     ************************************************************************/
+
+    /**
+     * A body that isn't a call or array of calls answers a 400.
      */
     @Test
     public void invalidBody() throws Exception {
-        for (String body : new String[] { "not json", "[1,2]", "[]", "1", "[" + call ("echo", 1, "[\"a\"]") + ",1]" }) {
-            int[] status = new int[] { 200 };
-            String result = router.process (body, status);
-            Assertions.assertEquals (400, status[0], body);
-            Assertions.assertEquals ("", result, body);
+        for (String body : new String[] { "not json", "", "[1,2]", "[]", "1", "\"x\"", "[" + call ("echo", 1, "[\"a\"]") + ",1]" }) {
+            MockHttpServletResponse response = handle (jsonRequest (body));
+            Assertions.assertEquals (400, response.getStatus (), body);
+            Assertions.assertEquals ("", response.getContentAsString (), body);
         }
+    }
+
+    /************************************************************************
+     * CSRF.
+     ************************************************************************/
+
+    /**
+     * A call that fails CSRF validation is denied, whether or not its arguments
+     * can be read; one that passes is answered as normal (including being
+     * rejected).
+     */
+    @Test
+    public void csrf() throws Exception {
+        router = new TestRouter ();
+        router.setUseCsrfTokens (true);
+        router.setCsrfEncoder (new ICRFHandler () {
+
+            @Override
+            public Optional<String> generate(HttpServletRequest request, HttpServletResponse response) {
+                return Optional.of ("good");
+            }
+
+            @Override
+            public Optional<String> token(HttpServletRequest request) {
+                return Optional.of ("good");
+            }
+
+            @Override
+            public boolean validate(String passedToken, String token) {
+                return token.equals (passedToken);
+            }
+        });
+
+        JsonNode responses = process ("[" + call ("paged", 1, "[{\"page\":\"abc\"},\"x\"]", "bad") + "," + call ("echo", 2, "[\"a\"]", "bad") + "]");
+        Assertions.assertEquals ("denied", responses.get (0).get ("type").asText (), responses.toString ());
+        Assertions.assertEquals (1, responses.get (0).get ("tid").asInt ());
+        Assertions.assertEquals ("denied", responses.get (1).get ("type").asText (), responses.toString ());
+        Assertions.assertEquals (2, responses.get (1).get ("tid").asInt ());
+
+        responses = process ("[" + call ("paged", 1, "[{\"page\":\"abc\"},\"x\"]", "good") + "," + call ("echo", 2, "[\"a\"]", "good") + "]");
+        assertRejected (responses.get (0), "paged", 1, "page");
+        Assertions.assertEquals ("echo:a", result (responses.get (1)).asText ());
+    }
+
+    /************************************************************************
+     * Multipart requests.
+     ************************************************************************/
+
+    /**
+     * Multipart calls are read the same way (and a rejected one isn't bound to
+     * the uploaded files).
+     */
+    @Test
+    public void multipart() throws Exception {
+        JsonNode responses = parse (handle (multipartRequest ("paged", 5, "{\"page\":2},\"x\"")));
+        Assertions.assertEquals (5, responses.get (0).get ("tid").asInt ());
+        Assertions.assertEquals ("page:2:x", result (responses.get (0)).asText ());
+
+        responses = parse (handle (multipartRequest ("paged", 6, "{\"page\":\"abc\"},\"x\"")));
+        assertRejected (responses.get (0), "paged", 6, "page");
+
+        responses = parse (handle (multipartRequest ("paged", 7, "{\"page\":2}")));
+        assertRejected (responses.get (0), "paged", 7, null);
     }
 
     /************************************************************************
@@ -198,12 +341,26 @@ public class RouterRequestTest {
      ************************************************************************/
 
     private JsonNode process(String body) throws Exception {
-        int[] status = new int[] { 200 };
-        String result = router.process (body, status);
-        Assertions.assertEquals (200, status[0]);
-        JsonNode node = MAPPER.readTree (result);
-        Assertions.assertTrue (node.isArray (), result);
+        return parse (handle (jsonRequest (body)));
+    }
+
+    private JsonNode parse(MockHttpServletResponse response) throws Exception {
+        Assertions.assertEquals (200, response.getStatus ());
+        String content = response.getContentAsString ();
+        JsonNode node = MAPPER.readTree (content);
+        Assertions.assertTrue (node.isArray (), content);
         return node;
+    }
+
+    /**
+     * Handles the request as a host application would (rendering the returned
+     * view to the response).
+     */
+    private MockHttpServletResponse handle(MockHttpServletRequest request) throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse ();
+        ModelAndView mv = router.handleRequest (request, response);
+        mv.getView ().render (null, request, response);
+        return response;
     }
 
     private JsonNode result(JsonNode response) {
@@ -235,33 +392,25 @@ public class RouterRequestTest {
         return "{\"action\":\"TestService\",\"method\":\"" + method + "\",\"type\":\"rpc\",\"tid\":" + tid + ",\"data\":" + data + "}";
     }
 
-    private static HttpServletRequest request(String body) {
-        return (HttpServletRequest) Proxy.newProxyInstance (RouterRequestTest.class.getClassLoader (), new Class<?>[] { HttpServletRequest.class }, (proxy, method, args) -> {
-            switch (method.getName ()) {
-                case "getMethod":
-                    return "POST";
-                case "getContentType":
-                    return "application/json";
-                case "getReader":
-                    return new BufferedReader (new StringReader (body));
-                case "getAttributeNames":
-                case "getHeaderNames":
-                case "getParameterNames":
-                    return java.util.Collections.emptyEnumeration ();
-                default:
-                    return null;
-            }
-        });
+    private static String call(String method, int tid, String data, String csrfToken) {
+        return "{\"action\":\"TestService\",\"method\":\"" + method + "\",\"type\":\"rpc\",\"tid\":" + tid + ",\"csrfToken\":\"" + csrfToken + "\",\"data\":" + data + "}";
     }
 
-    private static HttpServletResponse response(int[] status) {
-        List<Integer> statuses = new ArrayList<> ();
-        return (HttpServletResponse) Proxy.newProxyInstance (RouterRequestTest.class.getClassLoader (), new Class<?>[] { HttpServletResponse.class }, (proxy, method, args) -> {
-            if ("setStatus".equals (method.getName ())) {
-                statuses.add ((Integer) args[0]);
-                status[0] = (Integer) args[0];
-            }
-            return null;
-        });
+    private static MockHttpServletRequest jsonRequest(String body) {
+        MockHttpServletRequest request = new MockHttpServletRequest ("POST", "/rpc.json");
+        request.setContentType ("application/json");
+        request.setContent (body.getBytes (StandardCharsets.UTF_8));
+        return request;
+    }
+
+    private static MockMultipartHttpServletRequest multipartRequest(String method, int tid, String data) {
+        MockMultipartHttpServletRequest request = new MockMultipartHttpServletRequest ();
+        request.setRequestURI ("/rpc.json");
+        request.addParameter (Router.FIELD_ACTION, "TestService");
+        request.addParameter (Router.FIELD_METHOD, method);
+        request.addParameter (Router.FIELD_TYPE, "rpc");
+        request.addParameter (Router.FIELD_TID, Integer.toString (tid));
+        request.addParameter (Router.FIELD_JSON_DATA, data);
+        return request;
     }
 }

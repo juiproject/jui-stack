@@ -1315,6 +1315,17 @@ The override to `modification(...)` is responsible for creating and configuring 
 
 TBD
 
+#### Requests that can't be read
+
+Each call in a request is read on its own and its response carries the `tid` of the call it answers. A call that is well-formed but whose arguments don't match the remote method is answered as the client's error, without the method being invoked: the response for that call has the outcome `ERROR_VALIDATION` with messages of type `VALIDATION`. This covers:
+
+1. An argument that can't be read as its parameter type (for example, `"page":2147483648` for an `int` field). The message path is the location of the offending field within the argument (for example, `page` or `items.1.id`). This includes a polymorphic value whose `_type` is missing or unknown.
+2. The wrong number of arguments (including a missing or `null` `data` for a method that takes arguments). The message is general and states how many arguments the method takes and how many were passed. An explicit `null` counts as an argument.
+
+The other calls in the batch are processed as normal and rejections are logged only at debug level. The response can be customised by overriding `Router.processRejectionToJson(...)`.
+
+A body that is not a call or a (non-empty) array of calls at all (not JSON, `[]`, `[1,2]`) is answered with HTTP 400 (Bad Request).
+
 #### Router logging
 
 Logging in the RPC Transport is performed by static methods on `RouterLogger`. These are called from within the `Executor` to facilitate tracing through to processing. 

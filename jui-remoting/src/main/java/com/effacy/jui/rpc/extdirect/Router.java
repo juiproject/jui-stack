@@ -41,6 +41,7 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import com.effacy.jui.rpc.client.ErrorMessage;
 import com.effacy.jui.rpc.client.ErrorRemoteResponse;
+import com.effacy.jui.rpc.client.RemoteResponseType;
 import com.effacy.jui.rpc.extdirect.csrf.ICRFHandler;
 import com.effacy.jui.rpc.extdirect.csrf.StandardCSRFHandler;
 import com.effacy.jui.rpc.extdirect.json.IJsonParser;
@@ -642,6 +643,11 @@ public class Router implements IRouterMetadata {
                 throw new InvalidCallRequestException (request, "Unknown action \"" + request.getAction () + "\"");
             IMethodMetadata methodMetadata = action.lookupMethodMetadata (request);
 
+            // The call could not be read (i.e. its arguments do not match the
+            // method), which is the client's error.
+            if (request.isRejected ())
+                return processRejectionToJson (request);
+
             // Performance logging.
             long logPerformanceStart = System.currentTimeMillis ();
 
@@ -848,6 +854,29 @@ public class Router implements IRouterMetadata {
     }
 
     /**
+     * Generates the response to a call that has been rejected as the client's
+     * error (see {@link RemoteCallRequest#reject(ErrorMessage)}), such as when
+     * its arguments could not be read or there are the wrong number of them. By
+     * default this answers a validation error carrying the rejection messages.
+     * <p>
+     * The rejection is logged at debug only as it is not a server problem.
+     * 
+     * @param request
+     *                the rejected request.
+     * @return A JSON string to return to the client.
+     */
+    protected String processRejectionToJson(ExtendedRemoteCallRequest request) {
+        if (LOG.isDebugEnabled ())
+            LOG.debug ("Rejected call [" + request + "]: " + request.getRejections ().stream ().map (m -> (m.isGeneral () ? "" : m.getPath () + ": ") + m.getMessage ()).toList ());
+        try {
+            return jsonParser.remoteCallResponseToJson (new RemoteCallResponse (request, new ErrorRemoteResponse (RemoteResponseType.ERROR_VALIDATION, request.getRejections ())));
+        } catch (JsonParserException e) {
+            // This is not good.
+            throw new RuntimeException (e);
+        }
+    }
+
+    /**
      * Creates a suitable remote call response from a collection of response
      * messages (errors).
      * 
@@ -930,8 +959,18 @@ public class Router implements IRouterMetadata {
         // the case where the formHandler variable of the method meta-data
         // is false).
         String contentType = request.getContentType ();
-        if ((contentType != null) && contentType.contains (CONTENT_TYPE_JSON))
-            return processJSONRequest (request);
+        if ((contentType != null) && contentType.contains (CONTENT_TYPE_JSON)) {
+            try {
+                return processJSONRequest (request);
+            } catch (InvalidRequestBodyException e) {
+                // Not a remote call (or calls) at all, so there is nothing to
+                // answer other than with a bad request.
+                if (response == null)
+                    throw e;
+                response.setStatus (HttpServletResponse.SC_BAD_REQUEST);
+                return "";
+            }
+        }
         if (request instanceof MultipartHttpServletRequest)
             return processMultipartFormRequest ((MultipartHttpServletRequest) request);
 
@@ -946,9 +985,11 @@ public class Router implements IRouterMetadata {
      * @param request
      *                the request to process.
      * @return The JSON (or similar) response.
+     * @throws InvalidRequestBodyException
+     *                                      If the body is not a remote call (or
+     *                                      an array of remote calls).
      * @throws IOException
-     *                     On error processing stream (including parsing JSON
-     *                     requests).
+     *                                      On error processing stream.
      */
     protected String processJSONRequest(HttpServletRequest request) throws IOException {
         String jsonQuery = readerToString (request.getReader ());
@@ -967,7 +1008,7 @@ public class Router implements IRouterMetadata {
             // debug rather than an error.
             if (LOG.isDebugEnabled ())
                 LOG.debug ("Problem parsing the following JSON: \"" + jsonQuery + "\"", e);
-            throw new IOException ("Problem parsing JSON request.", e);
+            throw new InvalidRequestBodyException ("Problem parsing JSON request.", e);
         } catch (Throwable e) {
             // This should not happen.
             if (LOG.isErrorEnabled ())
@@ -1064,9 +1105,12 @@ public class Router implements IRouterMetadata {
             List<RemoteCallRequest> requests = jsonParser.jsonToRemoteCallRequests (jsonQuery);
             List<ExtendedRemoteCallRequest> extendedRequests = new ArrayList<ExtendedRemoteCallRequest> ();
             for (RemoteCallRequest call : requests) {
-                // Attempt to bind uploaded files to data beans.
-                for (Object data : call.getData ()) {
-                    BeanUtils.populate (data, request.getFileMap ());
+                // Attempt to bind uploaded files to data beans (a rejected call
+                // won't be processed so there is no need).
+                if (!call.isRejected ()) {
+                    for (Object data : call.getData ()) {
+                        BeanUtils.populate (data, request.getFileMap ());
+                    }
                 }
                 extendedRequests.add (new ExtendedRemoteCallRequest (call, request));
             }

@@ -19,6 +19,8 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.effacy.jui.rpc.client.ErrorMessage;
+
 /**
  * This captures an incoming request.
  * 
@@ -35,6 +37,11 @@ public class RemoteCallRequest extends RemoteCall {
      * Failed message.
      */
     private String failMessage = null;
+
+    /**
+     * See {@link #reject(ErrorMessage)}.
+     */
+    private List<ErrorMessage> rejections;
 
 
     /**
@@ -54,6 +61,8 @@ public class RemoteCallRequest extends RemoteCall {
     public RemoteCallRequest(RemoteCallRequest copy) {
         super (copy);
         this.failMessage = copy.failMessage;
+        if (copy.rejections != null)
+            this.rejections = new ArrayList<ErrorMessage> (copy.rejections);
         getData ().addAll (copy.getData ());
     }
 
@@ -128,6 +137,46 @@ public class RemoteCallRequest extends RemoteCall {
      */
     public void fail(String failMessage) {
         this.failMessage = failMessage;
+    }
+
+
+    /**
+     * Rejects the call as the client's error (for example, when an argument
+     * could not be read as its parameter type or the number of arguments does
+     * not match the method). A rejected call is not passed to its method; it is
+     * answered with a validation error carrying the rejection messages.
+     * 
+     * @param message
+     *            the message describing the rejection.
+     */
+    public void reject(ErrorMessage message) {
+        if (rejections == null)
+            rejections = new ArrayList<ErrorMessage> ();
+        rejections.add (message);
+    }
+
+
+    /**
+     * Determines if the call has been rejected (see
+     * {@link #reject(ErrorMessage)}).
+     * 
+     * @return {@code true} if it has.
+     */
+    public boolean isRejected() {
+        return (rejections != null) && !rejections.isEmpty ();
+    }
+
+
+    /**
+     * Gets the messages the call was rejected with (see
+     * {@link #reject(ErrorMessage)}).
+     * 
+     * @return The messages (never {@code null}).
+     */
+    public List<ErrorMessage> getRejections() {
+        if (rejections == null)
+            return new ArrayList<ErrorMessage> ();
+        return rejections;
     }
 
 

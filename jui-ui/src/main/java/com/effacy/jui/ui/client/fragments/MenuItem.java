@@ -221,7 +221,6 @@ public class MenuItem {
             if ((conditional != null) && !conditional.get())
                 return;
             Div.$ (parent).$ (item -> {
-                // Apply the adornments (style, css and use) assigned to the fragment.
                 adorn (item);
                 if (testId != null)
                     item.testId (testId);

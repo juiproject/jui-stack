@@ -100,7 +100,9 @@ The previous example of header configuration uses this handler class as describe
 
 ## Row clicks
 
-A handler for clicks on a row is assigned with `Table.Config.onclick(Consumer<R>)`. A click is first offered to the cell it falls in (the cell's `ITableCellHandler`, and any component rendered in the cell, which receives the click before the table does). The row handler is only invoked when the cell does not handle (or stop) the click and the click is not on the row's selection checkbox. Without a row handler clicks are only offered to the cells.
+A handler for clicks on a row is assigned with `Table.Config.onclick(Consumer<R>)`. A click is first offered to the cell it falls in, that is to the cell's `ITableCellHandler` (for `BuilderTableCellRenderer` this carries the `onclick` handlers of the cell's DOM, such as those of `Btn`, `MenuItem` and `MenuActivator`, the last claiming any click within a row menu). The row handler is only invoked when the cell does not handle (or stop) the click and the click is not on the row's selection checkbox. Without a row handler clicks are only offered to the cells.
+
+Components inserted into a cell's DOM (for example with `Cpt.$(...)`) are not adopted by the table so do not receive events; use fragments with `onclick` handlers (or an `ITableCellHandler`) for interactive cell content.
 
 ## Sorting
 

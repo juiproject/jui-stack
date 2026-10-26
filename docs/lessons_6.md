@@ -167,6 +167,10 @@ cfg.header ("Name", header -> {
 }); 
 ```
 
+#### Clicking on rows
+
+A whole row can be made clickable by assigning a handler with `cfg.onclick(r -> {...})` (the handler is passed the row's record). This works alongside interactive cells: a click is first offered to the cell that was clicked on, that is to its `ITableCellHandler` (such as the one returned by `BuilderTableCellRenderer` that carries the `onclick` handlers of the cell's DOM, including those of `Btn`, `MenuItem` and similar fragments) and to any component within the cell. Only a click that the cell did not handle (or stop) reaches the row's `onclick`, so in the example above clicking the name shows the dialog while clicking elsewhere on the row invokes the row handler. Clicks on the selection checkbox (for selectable tables) never reach the row handler.
+
 ### Exercises
 
 Using the tools and techniques that you have been exposed to in this part try to enhance your lesson code as follows:

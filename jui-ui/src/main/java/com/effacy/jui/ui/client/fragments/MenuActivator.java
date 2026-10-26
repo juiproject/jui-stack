@@ -138,13 +138,16 @@ public class MenuActivator {
                     else
                         handler = new ActivationHandler ((Element) n, (Element) n, "open");
                 });
-            }
-            // Claims the clicks within that no item handles, so they do not reach what
-            // contains the activator (such as a clickable table row).
-            root.onclick (e -> {
-                if (handler != null)
+                root.onclick (e -> {
                     handler.toggle ();
-            });
+                });
+            } else {
+                // Clicks within that no item handles are kept from what contains the
+                // activator (such as a clickable table row). They are not claimed (which
+                // would prevent their default action) so links and inputs placed in the
+                // menu keep working.
+                root.apply (n -> ((Element) n).addEventListener ("click", e -> e.stopPropagation ()));
+            }
             Em.$ (root).style ("activator", FontAwesome.ellipsisV ());
             Div.$ (root).$ (container -> {
                 if (!clickToActivate)

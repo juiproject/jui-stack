@@ -25,14 +25,18 @@ import com.effacy.jui.core.client.state.ValueStateVariable;
 import com.effacy.jui.playground.ui.lessons.SampleRecord;
 import com.effacy.jui.playground.ui.lessons.SampleRecordStore;
 import com.effacy.jui.ui.client.fragments.Btn;
+import com.effacy.jui.ui.client.fragments.Menu;
+import com.effacy.jui.ui.client.fragments.Menu.MenuFragment;
+import com.effacy.jui.ui.client.fragments.MenuActivator;
+import com.effacy.jui.ui.client.fragments.MenuItem;
 import com.effacy.jui.ui.client.panel.SplitPanel;
 import com.effacy.jui.ui.client.table.Table;
 import com.effacy.jui.ui.client.table.TableCreator;
 import com.effacy.jui.ui.client.table.renderer.BuilderTableCellRenderer;
 
 /**
- * A selectable table with a row click handler and a button in each row, which
- * reports the last click (and the selection) so the order of cell and row
+ * A selectable table with a row click handler, and a button and a
+ * (hover-activated) row menu in each row, which reports the last click (and the selection) so the order of cell and row
  * clicks can be observed (see the playground IT {@code TableClicksITTest}).
  */
 public class GalleryExamples_TableClicks extends SplitPanel {
@@ -70,6 +74,14 @@ public class GalleryExamples_TableClicks extends SplitPanel {
                 header.renderer (BuilderTableCellRenderer.create ((cell, r) -> {
                     Btn.$ (cell, "Open").testId ("tableclicks.open").onclick (() -> lastClick.assign ("button:" + r.getName ()));
                 }));
+            });
+            cfg.header ("Menu", header -> {
+                header.renderer (BuilderTableCellRenderer.create ((cell, r) -> {
+                    MenuFragment menu = Menu.$ (MenuActivator.$ (cell));
+                    MenuItem.$ (menu).testId ("tableclicks.edit").label ("Edit").onclick (() -> lastClick.assign ("menu:" + r.getName ()));
+                    MenuItem.$ (menu).testId ("tableclicks.archive").label ("Archive").disabled (true).onclick (() -> lastClick.assign ("archive:" + r.getName ()));
+                }));
+                header.width (Length.em (5));
             });
         }, store);
         add (table);

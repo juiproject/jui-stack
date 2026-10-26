@@ -138,10 +138,13 @@ public class MenuActivator {
                     else
                         handler = new ActivationHandler ((Element) n, (Element) n, "open");
                 });
-                root.onclick(e -> {
-                    handler.toggle ();
-                });
             }
+            // Claims the clicks within that no item handles, so they do not reach what
+            // contains the activator (such as a clickable table row).
+            root.onclick (e -> {
+                if (handler != null)
+                    handler.toggle ();
+            });
             Em.$ (root).style ("activator", FontAwesome.ellipsisV ());
             Div.$ (root).$ (container -> {
                 if (!clickToActivate)
@@ -153,8 +156,10 @@ public class MenuActivator {
         @Override
         protected void onInsertChild(IDomInsertable child) {
             if (child instanceof MenuFragment) {
+                // A hover menu has no handler (it closes when the pointer leaves).
                 ((MenuFragment)child).menuItemClicked = (() -> {
-                    handler.close ();
+                    if (handler != null)
+                        handler.close ();
                 });
             }
         }

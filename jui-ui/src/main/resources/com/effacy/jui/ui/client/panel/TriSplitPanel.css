@@ -37,11 +37,12 @@
     background-color: var(--cpt-trisplitpanel-bottom-bg);
 }
 
-.component.separator > .outer > .contents {
-	border-top: 1px solid var(--cpt-trisplitpanel-separator);
+/* The top and bottom regions are always rendered, so only draw their lines when they have content. */
+.component.separator > .outer > .top:not(:empty) {
+	border-bottom: 1px solid var(--cpt-trisplitpanel-separator);
 }
 
-.component.separator > .outer > .contents {
-	border-bottom: 1px solid var(--cpt-trisplitpanel-separator);
+.component.separator > .outer > .bottom:not(:empty) {
+	border-top: 1px solid var(--cpt-trisplitpanel-separator);
 }
 

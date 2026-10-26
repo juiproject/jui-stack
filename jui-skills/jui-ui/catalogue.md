@@ -152,7 +152,7 @@ They are the lightest-weight building block. To author your own, use the **jui-f
 | `Box` | A generic box / flex container. |
 | `Paper` | An elevated surface (shadow). |
 | `Menu` | A dropdown menu container holding `MenuItem`s. |
-| `MenuItem` | An item within a `Menu` — icon, label, variant, `onclick`. |
+| `MenuItem` | An item within a `Menu` — icon, label, variant, `onclick`, `testId`. |
 | `MenuActivator` | Wraps a trigger element that activates a menu / popup on click. |
 | `Accordion` | A collapsible panel — header row (caret, optional icon, title, summary slot) plus a body of inserted children. |
 | `Expander` | A disclosure expander. |

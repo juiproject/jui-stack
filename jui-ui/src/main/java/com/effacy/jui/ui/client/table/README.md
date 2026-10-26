@@ -98,6 +98,12 @@ The previous example of header configuration uses this handler class as describe
   ...
 ```
 
+## Row clicks
+
+A handler for clicks on a row is assigned with `Table.Config.onclick(Consumer<R>)`. A click is first offered to the cell it falls in, that is to the cell's `ITableCellHandler` (for `BuilderTableCellRenderer` this carries the `onclick` handlers of the cell's DOM, such as those of `Btn` and `MenuItem`). The row handler is only invoked when the cell does not handle (or stop) the click and the click is not on the row's selection checkbox. Clicks within a row menu never reach it: a click-activated `MenuActivator` claims them, and a hover-activated one stops them propagating without preventing their default action (so links and checkboxes in the menu still work). Without a row handler clicks are only offered to the cells.
+
+Components inserted into a cell's DOM (for example with `Cpt.$(...)`) are not adopted by the table so do not receive events; use fragments with `onclick` handlers (or an `ITableCellHandler`) for interactive cell content.
+
 ## Sorting
 
 Sorting for a header is configured via the `sortable` method on `Table.Config`. This is passed a default sort direction and a handler for implementing the sort. If not invoked the header is assumed not not be sortable. In addition the `sorted()` method configures that header as being the default header to sort when the table is first rendered or is fully refreshed.

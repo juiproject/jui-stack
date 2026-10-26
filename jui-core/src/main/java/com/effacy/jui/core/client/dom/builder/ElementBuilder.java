@@ -564,7 +564,7 @@ public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
                     if ("true".equalsIgnoreCase (attribute.getValue ()))
                         ((HTMLInputElement) element).disabled = true;
                 } else
-                    element.setAttribute (attribute.getKey (), attribute.getValue ());
+                    DomNodes.setAttribute (element, attribute.getKey (), attribute.getValue ());
             }
         }
         if (css != null) {

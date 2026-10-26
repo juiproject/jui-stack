@@ -99,6 +99,24 @@ public final class DomNodes {
     }
 
     /**
+     * Sets an attribute on the given element.
+     * 
+     * @param element
+     *                the element.
+     * @param name
+     *                the attribute name.
+     * @param value
+     *                the attribute value.
+     */
+    public static void setAttribute(Element element, String name, String value) {
+        if (factory != null) {
+            factory.setAttribute(element, name, value);
+            return;
+        }
+        element.setAttribute(name, value);
+    }
+
+    /**
      * Used to provide an alternative DOM node factory for builder infrastructure.
      */
     public interface IDomNodeFactory {
@@ -131,5 +149,19 @@ public final class DomNodes {
          * @return the created text node.
          */
         Text createTextNode(String text);
+
+        /**
+         * Sets an attribute on an element created by this factory.
+         * 
+         * @param element
+         *                the element.
+         * @param name
+         *                the attribute name.
+         * @param value
+         *                the attribute value.
+         */
+        default void setAttribute(Element element, String name, String value) {
+            element.setAttribute(name, value);
+        }
     }
 }

@@ -69,6 +69,18 @@ public class DomTestNodeFactory implements DomNodes.IDomNodeFactory {
         return new FakeText(text);
     }
 
+    @Override
+    public void setAttribute(Element element, String name, String value) {
+        if (element instanceof FakeElement)
+            ((FakeElement) element).attributes().put(name, value);
+        else if (element instanceof FakeAnchor)
+            ((FakeAnchor) element).attributes().put(name, value);
+        else if (element instanceof FakeInput)
+            ((FakeInput) element).attributes().put(name, value);
+        else
+            element.setAttribute(name, value);
+    }
+
     /**
      * Simple fake token list that captures classes.
      */

@@ -592,7 +592,13 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
          * If this is set then the cursor will appear as a pointer over each row and the
          * active row will have a background applied via
          * <code>--cpt-tbl-hover-clickable-bg</code>.
-         * 
+         * <p>
+         * A click is first offered to the cell that was clicked on (its
+         * {@link ITableCellHandler} and any handlers on the DOM within it, such as
+         * those of buttons, menus and links). The handler is only invoked when the
+         * click is not handled (or stopped) by the cell and is not on the row
+         * selector.
+         *
          * @param onclick
          *                the handler.
          * @return this configuration instance.
@@ -778,16 +784,26 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
                 // Extract the row element (which is mapped to by an wrapper).
                 for (RecordWrapper wrapper : currentRecords) {
                     if (wrapper.getElement () == el) {
-                        if (config.onclick != null) {
-                            config.onclick.accept(wrapper.record);
-                            event.stopEvent ();
-                            return true;
-                        }
+                        // The cell gets the first go (its handler and any handlers on the
+                        // DOM within it) so that buttons, menus and links in the cell
+                        // retain their clicks.
                         if (wrapper.handleUIEvent (event, (Element) cellEl)) {
                             event.stopEvent ();
                             return true;
                         }
-                        return false;
+                        // A click the cell stopped (without claiming it) is left as is.
+                        if ((config.onclick == null) || event.isStopped ())
+                            return false;
+                        // The selector has been processed by the wrapper but is not stopped
+                        // (so the checkbox can change state); we only cancel bubbling so the
+                        // click is not dispatched again from the body.
+                        if ((wrapper.selectorEl != null) && (event.getTarget () == wrapper.selectorEl)) {
+                            event.cancelBubble ();
+                            return false;
+                        }
+                        config.onclick.accept (wrapper.record);
+                        event.stopEvent ();
+                        return true;
                     }
                 }
                 return false;

@@ -33,5 +33,6 @@ public class GalleryExamples extends TabNavigator {
         tab ("panel", "Panel gallery", new GalleryExamples_Panel ());
         tab ("table", "Table view", new GalleryExamples_Table ());
         tab ("table2", "Table view 2", new GalleryExamples_Table2 ());
+        tab ("tableclicks", "Table clicks", new GalleryExamples_TableClicks ());
     }
 }

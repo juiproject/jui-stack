@@ -1,0 +1,84 @@
+{
+ "schema": 1,
+ "kheel": "1.4.1",
+ "project": "juiproject/jui-stack",
+ "run": "b8549b8ec481",
+ "unit": "JUI-19",
+ "tickets": [
+  "JUI-19",
+  "JUI-20",
+  "JUI-21"
+ ],
+ "strategy": "orchestrate",
+ "budget": null,
+ "start": "2026-10-26T22:49:10.362+00:00",
+ "end": "2026-10-26T23:12:56.726+00:00",
+ "branch": "claude/nice-sagan-ql6wb8",
+ "base": "c22c6711ed03",
+ "head": "a388bdd4ec52",
+ "commits": 26,
+ "change": {
+  "files": 54,
+  "added": 2153,
+  "removed": 193,
+  "areas": {
+   ".": [
+    4,
+    0
+   ],
+   "docs": [
+    24,
+    77
+   ],
+   "jui-core": [
+    45,
+    3
+   ],
+   "jui-maven-plugin": [
+    265,
+    9
+   ],
+   "jui-platform": [
+    3,
+    0
+   ],
+   "jui-platform-codeserver": [
+    1,
+    41
+   ],
+   "jui-playground": [
+    481,
+    1
+   ],
+   "jui-remoting": [
+    961,
+    29
+   ],
+   "jui-skills": [
+    1,
+    1
+   ],
+   "jui-text": [
+    4,
+    0
+   ],
+   "jui-ui": [
+    364,
+    32
+   ]
+  }
+ },
+ "pr": null,
+ "analysis": null,
+ "steps": [
+  {"seq":1,"kind":"run","unit":"JUI-19","agent":"main","model":null,"parent":null,"start":"2026-10-26T22:49:10.362+00:00","end":"2026-10-26T23:12:56.726+00:00","attrs":{"open":true},"tools_s":0,"segments":[]},
+  {"seq":2,"kind":"plan","unit":"JUI-19","agent":"main","model":null,"parent":1,"start":"2026-10-26T22:49:10.410+00:00","end":"2026-10-26T23:02:56.958+00:00","attrs":{"questions":4,"answered":true,"budget":"2h30m"},"tools_s":0,"segments":[]},
+  {"seq":3,"kind":"wait","unit":"JUI-19","agent":"main","model":null,"parent":2,"start":"2026-10-26T22:51:24.311+00:00","end":"2026-10-26T23:02:08.944+00:00","attrs":{"for":"user"},"tools_s":0,"segments":[]},
+  {"seq":4,"kind":"implement","unit":"JUI-20","agent":"wt-jui-20-ta","model":null,"parent":1,"start":"2026-10-26T23:03:46.993+00:00","end":"2026-10-26T23:03:46.993+00:00","attrs":{"open":true},"tools_s":0,"segments":[]},
+  {"seq":5,"kind":"implement","unit":"JUI-21","agent":"wt-jui-21-cl","model":null,"parent":1,"start":"2026-10-26T23:03:53.492+00:00","end":"2026-10-26T23:03:53.492+00:00","attrs":{"open":true},"tools_s":0,"segments":[]},
+  {"seq":6,"kind":"implement","unit":"JUI-19","agent":"wt-jui-19-fr","model":null,"parent":1,"start":"2026-10-26T23:04:00.526+00:00","end":"2026-10-26T23:07:58.454+00:00","attrs":{"status":"done","commits":1},"tools_s":0,"segments":[]},
+  {"seq":7,"kind":"light-review","unit":"JUI-19","agent":"agent-a1f96a","model":null,"parent":1,"start":"2026-10-26T23:08:35.404+00:00","end":"2026-10-26T23:10:11.672+00:00","attrs":{"verdict":"ready","blocking":0,"should":0,"minor":1,"adjacent":0,"comment":"https://linear.app/effacy/issue/JUI-19/fragments-that-override-build-drop-their-adornments-expander-box-para#comment-891947a2"},"tools_s":0,"segments":[]},
+  {"seq":8,"kind":"fix","unit":"JUI-19","agent":"wt-jui-19-fr","model":null,"parent":1,"start":"2026-10-26T23:10:33.496+00:00","end":"2026-10-26T23:12:02.379+00:00","attrs":{"round":1,"fixed":1,"commits":1},"tools_s":0,"segments":[]},
+  {"seq":9,"kind":"merge","unit":"JUI-19","agent":"main","model":null,"parent":1,"start":"2026-10-26T23:12:22.501+00:00","end":"2026-10-26T23:12:56.726+00:00","attrs":{"ticket":"JUI-19","result":"clean"},"tools_s":0,"segments":[]}
+ ]
+}

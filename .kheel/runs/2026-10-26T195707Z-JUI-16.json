@@ -12,10 +12,10 @@
  "strategy": "orchestrate",
  "budget": null,
  "start": "2026-10-26T19:57:07.622+00:00",
- "end": "2026-10-26T21:56:42.951+00:00",
+ "end": "2026-10-26T21:58:40.685+00:00",
  "branch": "claude/fervent-hawking-hktsam",
  "base": "c22c6711ed03",
- "head": "2535a8a5dbb3",
+ "head": "8d61f2d8bd11",
  "commits": 24,
  "change": {
   "files": 44,
@@ -64,7 +64,7 @@
    ]
   }
  },
- "pr": null,
+ "pr": "https://github.com/juiproject/jui-stack/pull/126",
  "analysis": {
   "efficiency": "medium",
   "quality": "high",
@@ -72,7 +72,7 @@
   "improve": "Configure Kheel Dev (AGENTS.kheel.md with CLAUDE.md as a guide, playground IT command, browser checks) so light reviews and implementers check UI behaviour in a browser from the start."
  },
  "steps": [
-  {"seq":1,"kind":"run","unit":"JUI-16","agent":"main","model":null,"parent":null,"start":"2026-10-26T19:57:07.622+00:00","end":"2026-10-26T21:56:42.951+00:00","attrs":{"open":true},"tools_s":0,"segments":[]},
+  {"seq":1,"kind":"run","unit":"JUI-16","agent":"main","model":null,"parent":null,"start":"2026-10-26T19:57:07.622+00:00","end":"2026-10-26T21:58:40.685+00:00","attrs":{"open":true},"tools_s":0,"segments":[]},
   {"seq":2,"kind":"plan","unit":"JUI-16","agent":"main","model":null,"parent":1,"start":"2026-10-26T19:57:07.673+00:00","end":"2026-10-26T19:59:17.356+00:00","attrs":{"questions":0,"answered":true,"budget":"2h"},"tools_s":0,"segments":[]},
   {"seq":3,"kind":"implement","unit":"JUI-16","agent":"agent-a7524e","model":null,"parent":1,"start":"2026-10-26T20:00:07.194+00:00","end":"2026-10-26T20:06:40.788+00:00","attrs":{"status":"done","commits":2},"tools_s":0,"segments":[]},
   {"seq":4,"kind":"implement","unit":"JUI-17","agent":"agent-a3919e","model":null,"parent":1,"start":"2026-10-26T20:00:14.453+00:00","end":"2026-10-26T20:07:37.129+00:00","attrs":{"status":"concerns","commits":1},"tools_s":0,"segments":[]},
@@ -94,6 +94,7 @@
   {"seq":20,"kind":"fix","unit":"JUI-17","agent":"agent-a79ffe","model":null,"parent":1,"start":"2026-10-26T21:19:46.259+00:00","end":"2026-10-26T21:41:12.609+00:00","attrs":{"round":2,"fixed":2,"commits":1},"tools_s":0,"segments":[]},
   {"seq":21,"kind":"merge","unit":"JUI-17","agent":"main","model":null,"parent":1,"start":"2026-10-26T21:41:49.412+00:00","end":"2026-10-26T21:45:48.837+00:00","attrs":{"ticket":"JUI-17","result":"clean"},"tools_s":0,"segments":[]},
   {"seq":22,"kind":"re-review","unit":"JUI-16","agent":"agent-a8cb03","model":null,"parent":1,"start":"2026-10-26T21:46:26.007+00:00","end":"2026-10-26T21:55:57.897+00:00","attrs":{"verdict":"resolved","blocking":0,"should":0,"minor":0,"adjacent":1,"rereview":false,"tests":"fail-without-fix","comment":"https://linear.app/effacy/issue/JUI-16/trisplitpanel-separator-draws-a-line-both-above-and-below-the-contents#comment-cbce9dcd"},"tools_s":0,"segments":[]},
-  {"seq":23,"kind":"retro","unit":"JUI-16","agent":"main","model":null,"parent":1,"start":"2026-10-26T21:56:42.905+00:00","end":"2026-10-26T21:56:42.951+00:00","attrs":{"efficiency":"medium","quality":"high","notes":"Light reviews missed the menu and top-line gaps; the adversarial review found them in Chromium, and fix A introduced a hover-menu regression that cost a second fix round and re-review.","improve":"Configure Kheel Dev (AGENTS.kheel.md with CLAUDE.md as a guide, playground IT command, browser checks) so light reviews and implementers check UI behaviour in a browser from the start."},"tools_s":0,"segments":[]}
+  {"seq":23,"kind":"retro","unit":"JUI-16","agent":"main","model":null,"parent":1,"start":"2026-10-26T21:56:42.905+00:00","end":"2026-10-26T21:56:42.951+00:00","attrs":{"efficiency":"medium","quality":"high","notes":"Light reviews missed the menu and top-line gaps; the adversarial review found them in Chromium, and fix A introduced a hover-menu regression that cost a second fix round and re-review.","improve":"Configure Kheel Dev (AGENTS.kheel.md with CLAUDE.md as a guide, playground IT command, browser checks) so light reviews and implementers check UI behaviour in a browser from the start."},"tools_s":0,"segments":[]},
+  {"seq":24,"kind":"pr","unit":"JUI-16","agent":"main","model":null,"parent":1,"start":"2026-10-26T21:56:55.566+00:00","end":"2026-10-26T21:58:40.685+00:00","attrs":{"url":"https://github.com/juiproject/jui-stack/pull/126"},"tools_s":0,"segments":[]}
  ]
 }

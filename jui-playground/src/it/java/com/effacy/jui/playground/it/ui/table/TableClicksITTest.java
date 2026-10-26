@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.htmlunit.html.DomElement;
 import org.htmlunit.html.HtmlCheckBoxInput;
+import org.htmlunit.html.HtmlElement;
 import org.htmlunit.html.HtmlPage;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -39,18 +40,8 @@ public class TableClicksITTest extends AbstractIT {
 
     @Test
     public void cellHandlersRunBeforeRowClick() throws Exception {
-        HtmlPage page = webClient.getPage ("http://localhost/playground?test=true");
-        synchronized (page) {
-            page.wait (4000);
-        }
-        PageTester tester = PageTester.$ (page)
-            .with (TabNavigatorTester.$ ("playgroundui").subclass (), tabs -> {
-                tabs.activate ("gallery");
-                tabs.validateActiveTab ("gallery");
-            })
-            // The galleries tab navigator carries no test-id of its own, so its tab is
-            // clicked directly.
-            .click ("playgroundui.gallery-tab_tableclicks", 1000);
+        HtmlPage page = openTableClicks ();
+        PageTester tester = PageTester.$ (page);
         String name = text (page, "tableclicks.name");
         Assertions.assertEquals ("none", text (page, "tableclicks.lastclick"));
 
@@ -75,6 +66,62 @@ public class TableClicksITTest extends AbstractIT {
         Assertions.assertTrue (selector.isChecked ());
         Assertions.assertEquals ("1 selected", text (page, "tableclicks.selected"));
         Assertions.assertEquals ("button:" + name, text (page, "tableclicks.lastclick"));
+    }
+
+    @Test
+    public void rowMenuClicksDoNotReachRowClick() throws Exception {
+        HtmlPage page = openTableClicks ();
+        PageTester tester = PageTester.$ (page);
+        String name = text (page, "tableclicks.name");
+        String row = "(//*[@test-id='tableclicks.name'])[1]/ancestor::tr[1]";
+
+        // (1) An enabled item in the (hover-activated) row menu runs its own handler,
+        // not the row handler. The menu is hidden until hovered, so its parts are
+        // clicked regardless of visibility (as PageTester does).
+        tester.click ("tableclicks.edit", 300);
+        Assertions.assertEquals ("menu:" + name, text (page, "tableclicks.lastclick"));
+
+        // (2) A disabled item, the activator icon and the menu's surface do not run
+        // the row handler (the last click is unchanged).
+        tester.click ("tableclicks.open", 300);
+        Assertions.assertEquals ("button:" + name, text (page, "tableclicks.lastclick"));
+        tester.click ("tableclicks.archive", 300);
+        Assertions.assertEquals ("button:" + name, text (page, "tableclicks.lastclick"));
+        click (page, row + "//div[contains(@class,'juiMenuActivator')]/em");
+        Assertions.assertEquals ("button:" + name, text (page, "tableclicks.lastclick"));
+        click (page, row + "//ul[contains(@class,'juiMenu')]");
+        Assertions.assertEquals ("button:" + name, text (page, "tableclicks.lastclick"));
+    }
+
+    /**
+     * Opens the "Table clicks" example under Galleries.
+     */
+    private HtmlPage openTableClicks() throws Exception {
+        HtmlPage page = webClient.getPage ("http://localhost/playground?test=true");
+        synchronized (page) {
+            page.wait (4000);
+        }
+        PageTester.$ (page)
+            .with (TabNavigatorTester.$ ("playgroundui").subclass (), tabs -> {
+                tabs.activate ("gallery");
+                tabs.validateActiveTab ("gallery");
+            })
+            // The galleries tab navigator carries no test-id of its own, so its tab is
+            // clicked directly.
+            .click ("playgroundui.gallery-tab_tableclicks", 1000);
+        return page;
+    }
+
+    /**
+     * Clicks the first element matching the XPath (regardless of its visibility).
+     */
+    private void click(HtmlPage page, String xpath) throws Exception {
+        HtmlElement el = page.getFirstByXPath (xpath);
+        Assertions.assertNotNull (el, "Unable to find element " + xpath);
+        el.click (false, false, false, true, true, true, false);
+        synchronized (page) {
+            page.wait (300);
+        }
     }
 
     /**

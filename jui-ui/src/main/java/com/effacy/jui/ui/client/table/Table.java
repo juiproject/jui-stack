@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.effacy.jui.core.client.component.Component;
+import com.effacy.jui.core.client.component.IComponent;
 import com.effacy.jui.core.client.component.IComponentCSS;
 import com.effacy.jui.core.client.dom.DomSupport;
 import com.effacy.jui.core.client.dom.INodeProvider;
@@ -1519,6 +1520,11 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
         private boolean rendered;
 
         /**
+         * The components rendered into the cells (and adopted by the table).
+         */
+        private List<IComponent> components;
+
+        /**
          * Updates the display state for being (or not being) selected.
          * 
          * @param selected
@@ -1560,7 +1566,22 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
             return true;
         }
 
+        /**
+         * Invoked when the row is removed from the table.
+         */
         public void discard() {
+            releaseComponents ();
+        }
+
+        /**
+         * Disposes of the components adopted from the cells (on removal or before a
+         * re-render).
+         */
+        private void releaseComponents() {
+            if (components == null)
+                return;
+            components.forEach (cpt -> cpt.dispose ());
+            components = null;
         }
 
         public Element getElement() {
@@ -1574,13 +1595,26 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
         @SuppressWarnings("unchecked")
         public void render() {
             build ();
+            releaseComponents ();
             int i = 0;
             handlers = new ITableCellHandler<?>[headerEl.length];
             for (Config<R>.Header header : config ().headers) {
-                if (header.renderer == null)
+                if (header.renderer == null) {
                     DomSupport.innerText (headerEl[i], "No renderer");
-                else
+                } else {
                     handlers[i] = header.renderer.render (headerEl[i], record);
+                    // Components rendered into the cell are adopted (so they attach and get
+                    // their own events) and disposed of when the row is next rendered or is
+                    // removed.
+                    if (handlers[i] != null) {
+                        handlers[i].forEachComponent (cpt -> {
+                            if (components == null)
+                                components = new ArrayList<> ();
+                            components.add (cpt);
+                            adopt (cpt);
+                        });
+                    }
+                }
                 i++;
             }
             if ((selectorEl != null) && ((store instanceof IStoreSelection) && ((IStoreSelection<R>) store).isSelected(record)))

@@ -33,6 +33,10 @@ import jsinterop.base.Js;
  * Renders {@link FormattedText} read-only, using the shared {@link DomBuilderFormattedTextRenderer}
  * (the single model→DOM renderer) scoped by the {@code richtext} content stylesheet — so a
  * fragment, a chat bubble and the editor all present formatted text identically.
+ * <p>
+ * In {@code embed} mode the content is rendered directly into the parent with no root
+ * element, so there is nothing to adorn: any adornments ({@code style()}, {@code css()},
+ * {@code use()}) are not applied.
  */
 public class FText extends Fragment<FText> {
 

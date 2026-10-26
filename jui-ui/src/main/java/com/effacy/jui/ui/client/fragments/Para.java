@@ -30,8 +30,10 @@ import com.effacy.jui.platform.util.client.StringSupport;
  * or more consecutive line feeds create a new {@code <p>} element.
  * <p>
  * Since this fragment may produce multiple top-level {@code <p>} elements,
- * there is no single root and adornments ({@code .css()}, {@code .style()}) are
- * not supported.
+ * there is no single root. Instead any adornments ({@code .css()},
+ * {@code .style()}, {@code .use()}) are applied to each {@code <p>} element
+ * that is rendered (so a style or {@code use} callback is applied once per
+ * paragraph).
  */
 public class Para {
 
@@ -102,6 +104,7 @@ public class Para {
                 if (StringSupport.empty(paragraph))
                     continue;
                 P.$(parent).$(p -> {
+                    adorn(p);
                     String[] lines = paragraph.split("\n");
                     for (int i = 0; i < lines.length; i++) {
                         if (i > 0)

@@ -80,6 +80,11 @@ public class MenuItem {
         private boolean disabledButClickable;
 
         /**
+         * See {@link #testId(String)}.
+         */
+        private String testId;
+
+        /**
          * Various on-click event handlers.
          */
         private List<Consumer<Node>> onclicks;
@@ -165,6 +170,19 @@ public class MenuItem {
         }
 
         /**
+         * Assigns a test ID to the item (rendered as the {@code test-id} attribute on
+         * the clickable item element).
+         * 
+         * @param testId
+         *               test ID.
+         * @return this fragment.
+         */
+        public MenuItemFragment testId(String testId) {
+            this.testId = testId;
+            return this;
+        }
+
+        /**
          * Applies an on-click handler. Multiple assignments are allowed (and these are
          * additive).
          * 
@@ -203,6 +221,10 @@ public class MenuItem {
             if ((conditional != null) && !conditional.get())
                 return;
             Div.$ (parent).$ (item -> {
+                // Apply the adornments (style, css and use) assigned to the fragment.
+                adorn (item);
+                if (testId != null)
+                    item.testId (testId);
                 item.style ("juiMenuItem", "juiMenuItem-" + variant.name ().toLowerCase ());
                 if (disabled)
                     item.style ("disabled");

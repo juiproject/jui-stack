@@ -15,6 +15,7 @@
  ******************************************************************************/
 package com.effacy.jui.playground.it.ui.table;
 
+import java.net.URL;
 import java.util.List;
 
 import org.htmlunit.html.DomElement;
@@ -93,23 +94,81 @@ public class TableClicksITTest extends AbstractIT {
         Assertions.assertEquals ("button:" + name, text (page, "tableclicks.lastclick"));
     }
 
+    @Test
+    public void rowMenuNativeContentKeepsDefaultAction() throws Exception {
+        HtmlPage page = openTableClicks ();
+        String row = "(//*[@test-id='tableclicks.name'])[1]/ancestor::tr[1]";
+
+        // (1) A checkbox in the (hover-activated) row menu toggles and does not run
+        // the row handler.
+        HtmlCheckBoxInput check = page.getFirstByXPath (row + "//*[@test-id='tableclicks.check']");
+        Assertions.assertNotNull (check, "Unable to find the row menu checkbox");
+        Assertions.assertFalse (check.isChecked ());
+        click (page, row + "//*[@test-id='tableclicks.check']");
+        Assertions.assertTrue (check.isChecked ());
+        Assertions.assertEquals ("none", text (page, "tableclicks.lastclick"));
+
+        // (2) A link in the row menu navigates and does not run the row handler.
+        click (page, row + "//*[@test-id='tableclicks.link']");
+        Assertions.assertEquals ("row-link", currentUrl ().getRef ());
+        Assertions.assertEquals ("none", text (page, "tableclicks.lastclick"));
+    }
+
+    @Test
+    public void hoverMenuNativeContentKeepsDefaultAction() throws Exception {
+        HtmlPage page = openTableClicks ();
+
+        // (1) A checkbox in a hover menu (outside the table) toggles.
+        HtmlCheckBoxInput check = page.getFirstByXPath ("//*[@test-id='tableclicks.outside.check']");
+        Assertions.assertNotNull (check, "Unable to find the menu checkbox");
+        Assertions.assertFalse (check.isChecked ());
+        click (page, "//*[@test-id='tableclicks.outside.check']");
+        Assertions.assertTrue (check.isChecked ());
+
+        // (2) A link in the menu navigates.
+        click (page, "//*[@test-id='tableclicks.outside.link']");
+        Assertions.assertEquals ("outside-link", currentUrl ().getRef ());
+    }
+
     /**
-     * Opens the "Table clicks" example under Galleries.
+     * Opens the "Table clicks" example under Galleries (waiting for each part to
+     * render rather than for a fixed time).
      */
     private HtmlPage openTableClicks() throws Exception {
         HtmlPage page = webClient.getPage ("http://localhost/playground?test=true");
-        synchronized (page) {
-            page.wait (4000);
-        }
+        waitFor (page, "playgroundui");
         PageTester.$ (page)
             .with (TabNavigatorTester.$ ("playgroundui").subclass (), tabs -> {
                 tabs.activate ("gallery");
                 tabs.validateActiveTab ("gallery");
-            })
-            // The galleries tab navigator carries no test-id of its own, so its tab is
-            // clicked directly.
-            .click ("playgroundui.gallery-tab_tableclicks", 1000);
+            });
+        // The galleries tab navigator carries no test-id of its own, so its tab is
+        // clicked directly.
+        waitFor (page, "playgroundui.gallery-tab_tableclicks");
+        PageTester.$ (page).click ("playgroundui.gallery-tab_tableclicks", 0);
+        waitFor (page, "tableclicks.name");
         return page;
+    }
+
+    /**
+     * Waits (for up to 20s) for an element with the given test ID to appear.
+     */
+    private void waitFor(HtmlPage page, String testId) throws Exception {
+        for (int i = 0; i < 200; i++) {
+            if (page.getFirstByXPath ("//*[@test-id='" + testId + "']") != null)
+                return;
+            synchronized (page) {
+                page.wait (100);
+            }
+        }
+        Assertions.fail ("Timed out waiting for element with test-id=\"" + testId + "\"");
+    }
+
+    /**
+     * The URL of the page currently in the browser window.
+     */
+    private URL currentUrl() {
+        return webClient.getCurrentWindow ().getEnclosedPage ().getUrl ();
     }
 
     /**

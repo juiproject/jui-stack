@@ -12,15 +12,15 @@
  "strategy": "orchestrate",
  "budget": null,
  "start": "2026-10-26T19:57:07.622+00:00",
- "end": "2026-10-26T21:03:39.872+00:00",
+ "end": "2026-10-26T21:45:48.837+00:00",
  "branch": "claude/fervent-hawking-hktsam",
  "base": "c22c6711ed03",
- "head": "baf82c11b403",
- "commits": 23,
+ "head": "8d774dec8178",
+ "commits": 24,
  "change": {
   "files": 44,
-  "added": 1857,
-  "removed": 176,
+  "added": 1931,
+  "removed": 174,
   "areas": {
    ".": [
     4,
@@ -47,7 +47,7 @@
     41
    ],
    "jui-playground": [
-    408,
+    481,
     1
    ],
    "jui-remoting": [
@@ -59,15 +59,15 @@
     1
    ],
    "jui-ui": [
-    147,
-    17
+    148,
+    15
    ]
   }
  },
  "pr": null,
  "analysis": null,
  "steps": [
-  {"seq":1,"kind":"run","unit":"JUI-16","agent":"main","model":null,"parent":null,"start":"2026-10-26T19:57:07.622+00:00","end":"2026-10-26T21:03:39.872+00:00","attrs":{"open":true},"tools_s":0,"segments":[]},
+  {"seq":1,"kind":"run","unit":"JUI-16","agent":"main","model":null,"parent":null,"start":"2026-10-26T19:57:07.622+00:00","end":"2026-10-26T21:45:48.837+00:00","attrs":{"open":true},"tools_s":0,"segments":[]},
   {"seq":2,"kind":"plan","unit":"JUI-16","agent":"main","model":null,"parent":1,"start":"2026-10-26T19:57:07.673+00:00","end":"2026-10-26T19:59:17.356+00:00","attrs":{"questions":0,"answered":true,"budget":"2h"},"tools_s":0,"segments":[]},
   {"seq":3,"kind":"implement","unit":"JUI-16","agent":"agent-a7524e","model":null,"parent":1,"start":"2026-10-26T20:00:07.194+00:00","end":"2026-10-26T20:06:40.788+00:00","attrs":{"status":"done","commits":2},"tools_s":0,"segments":[]},
   {"seq":4,"kind":"implement","unit":"JUI-17","agent":"agent-a3919e","model":null,"parent":1,"start":"2026-10-26T20:00:14.453+00:00","end":"2026-10-26T20:07:37.129+00:00","attrs":{"status":"concerns","commits":1},"tools_s":0,"segments":[]},
@@ -82,6 +82,11 @@
   {"seq":13,"kind":"fix","unit":"JUI-17","agent":"agent-ae5283","model":null,"parent":1,"start":"2026-10-26T20:45:30.168+00:00","end":"2026-10-26T21:02:36.636+00:00","attrs":{"round":1,"fixed":5,"commits":2},"tools_s":0,"segments":[]},
   {"seq":14,"kind":"fix","unit":"JUI-16","agent":"agent-a0a582","model":null,"parent":1,"start":"2026-10-26T20:45:45.445+00:00","end":"2026-10-26T20:47:28.963+00:00","attrs":{"round":1,"fixed":2,"commits":2},"tools_s":0,"segments":[]},
   {"seq":15,"kind":"merge","unit":"JUI-16","agent":"main","model":null,"parent":1,"start":"2026-10-26T20:47:45.691+00:00","end":"2026-10-26T20:48:02.844+00:00","attrs":{"ticket":"JUI-16","result":"clean"},"tools_s":0,"segments":[]},
-  {"seq":16,"kind":"merge","unit":"JUI-17","agent":"main","model":null,"parent":1,"start":"2026-10-26T21:03:25.976+00:00","end":"2026-10-26T21:03:39.872+00:00","attrs":{"ticket":"JUI-17","result":"clean"},"tools_s":0,"segments":[]}
+  {"seq":16,"kind":"merge","unit":"JUI-17","agent":"main","model":null,"parent":1,"start":"2026-10-26T21:03:25.976+00:00","end":"2026-10-26T21:03:39.872+00:00","attrs":{"ticket":"JUI-17","result":"clean"},"tools_s":0,"segments":[]},
+  {"seq":17,"kind":"test","unit":"JUI-16","agent":"main","model":null,"parent":1,"start":"2026-10-26T21:03:55.821+00:00","end":"2026-10-26T21:04:56.445+00:00","attrs":{"label":"full-test","exit":0},"tools_s":0,"segments":[]},
+  {"seq":18,"kind":"re-review","unit":"JUI-16","agent":"agent-a1759e","model":null,"parent":1,"start":"2026-10-26T21:04:53.001+00:00","end":"2026-10-26T21:18:48.405+00:00","attrs":{"verdict":"resolved-with-issues","blocking":0,"should":1,"minor":1,"adjacent":0,"rereview":true,"tests":"fail-without-fix","comment":"https://linear.app/effacy/issue/JUI-16/trisplitpanel-separator-draws-a-line-both-above-and-below-the-contents#comment-17477133"},"tools_s":0,"segments":[]},
+  {"seq":19,"kind":"test","unit":"JUI-16","agent":"main","model":null,"parent":1,"start":"2026-10-26T21:05:26.087+00:00","end":"2026-10-26T21:07:54.387+00:00","attrs":{"label":"full-test-it","exit":0},"tools_s":0,"segments":[]},
+  {"seq":20,"kind":"fix","unit":"JUI-17","agent":"agent-a79ffe","model":null,"parent":1,"start":"2026-10-26T21:19:46.259+00:00","end":"2026-10-26T21:41:12.609+00:00","attrs":{"round":2,"fixed":2,"commits":1},"tools_s":0,"segments":[]},
+  {"seq":21,"kind":"merge","unit":"JUI-17","agent":"main","model":null,"parent":1,"start":"2026-10-26T21:41:49.412+00:00","end":"2026-10-26T21:45:48.837+00:00","attrs":{"ticket":"JUI-17","result":"clean"},"tools_s":0,"segments":[]}
  ]
 }

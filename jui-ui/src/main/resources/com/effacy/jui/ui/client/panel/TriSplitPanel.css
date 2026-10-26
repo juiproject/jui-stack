@@ -41,7 +41,8 @@
 	border-top: 1px solid var(--cpt-trisplitpanel-separator);
 }
 
-.component.separator > .outer > .contents {
-	border-bottom: 1px solid var(--cpt-trisplitpanel-separator);
+/* The bottom region is always rendered, so only draw its line when it has content. */
+.component.separator > .outer > .bottom:not(:empty) {
+	border-top: 1px solid var(--cpt-trisplitpanel-separator);
 }
 

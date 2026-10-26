@@ -29,4 +29,19 @@ public class BoxTest extends AbstractJUITest {
                 c1.count (0);
             });
     }
+
+    @Test
+    public void use_runs_once() {
+        int[] count = { 0 };
+        build(Box.$ ().use (n -> count[0]++));
+        org.junit.jupiter.api.Assertions.assertEquals (1, count[0]);
+    }
+
+    @Test
+    public void nothing_rendered_when_conditional_is_false() {
+        build(Box.$ ().iff (false).insert (Expander.$ ()))
+            .select ("div > div", c1 -> {
+                c1.count (0);
+            });
+    }
 }

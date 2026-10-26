@@ -29,4 +29,39 @@ public class StackTest extends AbstractJUITest {
                 c1.count (0);
             });
     }
+
+    @Test
+    public void use_runs_once() {
+        int[] count = { 0 };
+        build(Stack.$ ().use (n -> count[0]++));
+        org.junit.jupiter.api.Assertions.assertEquals (1, count[0]);
+    }
+
+    @Test
+    public void nothing_rendered_when_conditional_is_false() {
+        build(Stack.$ ().iff (false).insert (Expander.$ ()))
+            .select ("div > div", c1 -> {
+                c1.count (0);
+            });
+    }
+
+    @Test
+    public void rendered_when_conditional_is_true() {
+        build(Stack.$ ().iff (true).insert (Expander.$ ()))
+            .child ("div.juiStack", c1 -> {
+                c1.exists ();
+            });
+    }
+
+    @Test
+    public void hide_if_empty_still_applies_with_conditional_true() {
+        build(Stack.$ ().iff (true).hideIfEmpty ())
+            .select ("div > div", c1 -> {
+                c1.count (0);
+            });
+        build(Stack.$ ().iff (true).hideIfEmpty ().insert (Expander.$ ()))
+            .child ("div.juiStack", c1 -> {
+                c1.exists ();
+            });
+    }
 }

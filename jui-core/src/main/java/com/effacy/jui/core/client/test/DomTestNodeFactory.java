@@ -77,8 +77,6 @@ public class DomTestNodeFactory implements DomNodes.IDomNodeFactory {
             ((FakeAnchor) element).attributes().put(name, value);
         else if (element instanceof FakeInput)
             ((FakeInput) element).attributes().put(name, value);
-        else
-            element.setAttribute(name, value);
     }
 
     /**

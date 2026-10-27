@@ -802,6 +802,13 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
                             event.cancelBubble ();
                             return false;
                         }
+                        // A click within a component adopted from a cell is the component's (such
+                        // as a control's input) so it keeps its default action and, as for the
+                        // selector, we only cancel bubbling.
+                        if (wrapper.isInComponent (event.getTarget ())) {
+                            event.cancelBubble ();
+                            return false;
+                        }
                         config.onclick.accept (wrapper.record);
                         event.stopEvent ();
                         return true;
@@ -1571,6 +1578,24 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
          */
         public void discard() {
             releaseComponents ();
+        }
+
+        /**
+         * Determines if the passed node lies within the root of one of the components
+         * adopted from the cells.
+         * 
+         * @param node
+         *             the node to test.
+         * @return {@code true} if it does.
+         */
+        public boolean isInComponent(Node node) {
+            if ((components == null) || (node == null))
+                return false;
+            for (IComponent cpt : components) {
+                if ((cpt.getRoot () != null) && cpt.getRoot ().contains (node))
+                    return true;
+            }
+            return false;
         }
 
         /**

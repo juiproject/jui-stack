@@ -18,6 +18,7 @@ package com.effacy.jui.playground.it.ui.table;
 import java.util.List;
 
 import org.htmlunit.html.DomElement;
+import org.htmlunit.html.HtmlCheckBoxInput;
 import org.htmlunit.html.HtmlElement;
 import org.htmlunit.html.HtmlPage;
 import org.junit.jupiter.api.Assertions;
@@ -76,7 +77,18 @@ public class TableComponentsITTest extends AbstractIT {
         clickButton (page, "tablecpts.open");
         Assertions.assertEquals ("button:" + name, text (page, "tablecpts.lastclick"));
 
-        // (2) Reloading with fewer rows releases the components of the rows removed.
+        // (2) Reversing the rows (which re-inserts those out of order) releases the
+        // components of the rows replaced, and the buttons get their clicks.
+        String last = textAt (page, "tablecpts.name", 9);
+        click (page, "tablecpts.reverse");
+        Assertions.assertEquals (last, text (page, "tablecpts.name"));
+        click (page, "tablecpts.count");
+        Assertions.assertEquals ("10 live", text (page, "tablecpts.live"));
+        Assertions.assertEquals (10, count (page, "tablecpts.open"));
+        clickButton (page, "tablecpts.open");
+        Assertions.assertEquals ("button:" + last, text (page, "tablecpts.lastclick"));
+
+        // (3) Reloading with fewer rows releases the components of the rows removed.
         click (page, "tablecpts.reload");
         click (page, "tablecpts.count");
         Assertions.assertEquals ("5 live", text (page, "tablecpts.live"));
@@ -85,6 +97,34 @@ public class TableComponentsITTest extends AbstractIT {
         Assertions.assertEquals ("row:" + name, text (page, "tablecpts.lastclick"));
         clickButton (page, "tablecpts.open");
         Assertions.assertEquals ("button:" + name, text (page, "tablecpts.lastclick"));
+    }
+
+    @Test
+    public void controlClicksDoNotReachRowClick() throws Exception {
+        HtmlPage page = openTableComponents ();
+        String row = "(" + byTestId ("tablecpts.name") + ")[1]/ancestor::tr[1]";
+
+        // (1) The checkbox of a check control in a cell toggles and does not run the
+        // row handler.
+        HtmlCheckBoxInput check = page.getFirstByXPath (row + "//input[@type='checkbox']");
+        Assertions.assertNotNull (check, "Unable to find the check control's checkbox");
+        Assertions.assertFalse (check.isChecked ());
+        check.click (false, false, false, true, true, true, false);
+        synchronized (page) {
+            page.wait (300);
+        }
+        Assertions.assertTrue (check.isChecked ());
+        Assertions.assertEquals ("none", text (page, "tablecpts.lastclick"));
+
+        // (2) A click in the input of a text control in a cell does not run the row
+        // handler.
+        HtmlElement input = page.getFirstByXPath ("(" + byTestId ("tablecpts.note") + ")[1]//input");
+        Assertions.assertNotNull (input, "Unable to find the text control's input");
+        input.click (false, false, false, true, true, true, false);
+        synchronized (page) {
+            page.wait (300);
+        }
+        Assertions.assertEquals ("none", text (page, "tablecpts.lastclick"));
     }
 
     /**
@@ -161,6 +201,16 @@ public class TableComponentsITTest extends AbstractIT {
      */
     private int count(HtmlPage page, String testId) {
         return page.getByXPath (byTestId (testId)).size ();
+    }
+
+    /**
+     * The text of the element with the given test ID at the given (zero-based)
+     * position.
+     */
+    private String textAt(HtmlPage page, String testId, int index) {
+        List<Object> matches = page.getByXPath (byTestId (testId));
+        Assertions.assertTrue (matches.size () > index, "Unable to find element " + index + " with test-id=\"" + testId + "\"");
+        return ((DomElement) matches.get (index)).getTextContent ().trim ();
     }
 
     /**

@@ -16,6 +16,7 @@
 package com.effacy.jui.playground.ui.gallery;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -35,6 +36,8 @@ import com.effacy.jui.core.client.store.ListPaginatedStore;
 import com.effacy.jui.playground.ui.lessons.SampleRecord;
 import com.effacy.jui.ui.client.button.Button;
 import com.effacy.jui.ui.client.button.ButtonCreator;
+import com.effacy.jui.ui.client.control.CheckControlCreator;
+import com.effacy.jui.ui.client.control.TextControlCreator;
 import com.effacy.jui.ui.client.fragments.Btn;
 import com.effacy.jui.ui.client.panel.SplitPanel;
 import com.effacy.jui.ui.client.table.Table;
@@ -42,11 +45,12 @@ import com.effacy.jui.ui.client.table.TableCreator;
 import com.effacy.jui.ui.client.table.renderer.BuilderTableCellRenderer;
 
 /**
- * Components (a {@link Button}) placed in table cells with {@code Cpt.$}, in a
- * table with a row click handler and in one without. It reports the last click
- * and (on demand) the number of cell components in the first table that are
- * still live (created and not yet disposed), and has actions to re-render its rows in
- * place and to reload it with fewer rows (see the playground IT
+ * Components placed in table cells with {@code Cpt.$}: a {@link Button} in a
+ * table with a row click handler (which also has a check and a text control
+ * per row) and in one without. It reports the last click and (on demand) the
+ * number of buttons in the first table that are still live (created and not
+ * yet disposed), and has actions to re-render its rows in place, to reverse
+ * their order and to reload it with fewer rows (see the playground IT
  * {@code TableComponentsITTest}).
  */
 public class GalleryExamples_TableComponents extends SplitPanel {
@@ -65,14 +69,7 @@ public class GalleryExamples_TableComponents extends SplitPanel {
         List<SampleRecord> records = new ArrayList<> ();
         for (int i = 0; i < 10; i++)
             records.add (new SampleRecord (MockData.NAMES[i], MockData.EMAILS[i], 10, new Date (), 1));
-        ListPaginatedStore<SampleRecord> store = new ListPaginatedStore<SampleRecord> () {
-
-            @Override
-            protected void populate(List<SampleRecord> list) {
-                list.addAll (records);
-            }
-
-        };
+        RecordStore store = new RecordStore (records);
         ListPaginatedStore<SampleRecord> plainStore = new ListPaginatedStore<SampleRecord> () {
 
             @Override
@@ -100,6 +97,7 @@ public class GalleryExamples_TableComponents extends SplitPanel {
         addOther (ComponentCreator.build (el -> {
             Btn.$ (el, "Count").testId ("tablecpts.count").onclick (() -> live.assign (counts[0] - counts[1]));
             Btn.$ (el, "Refresh").testId ("tablecpts.refresh").onclick (() -> store.refresh ());
+            Btn.$ (el, "Reverse").testId ("tablecpts.reverse").onclick (() -> store.reverse ());
             Btn.$ (el, "Reload 5").testId ("tablecpts.reload").onclick (() -> store.refresh (records.subList (0, 5)));
         }), new ActionBarLayout.Data (0));
 
@@ -123,6 +121,21 @@ public class GalleryExamples_TableComponents extends SplitPanel {
                     counts[0]++;
                     btn.addListener (IDisposeListener.create (c -> counts[1]++));
                     Cpt.$ (cell, btn);
+                }));
+            });
+            cfg.header ("Check", header -> {
+                header.renderer (BuilderTableCellRenderer.create ((cell, r) -> {
+                    Cpt.$ (cell, CheckControlCreator.build (c -> {
+                        c.testId ("tablecpts.check");
+                        c.label ("Flag");
+                    }));
+                }));
+            });
+            cfg.header ("Note", header -> {
+                header.renderer (BuilderTableCellRenderer.create ((cell, r) -> {
+                    Cpt.$ (cell, TextControlCreator.build (c -> {
+                        c.testId ("tablecpts.note");
+                    }));
                 }));
             });
         }, store);
@@ -150,5 +163,25 @@ public class GalleryExamples_TableComponents extends SplitPanel {
 
         store.load (20);
         plainStore.load (20);
+    }
+
+    /**
+     * A store of a fixed list of records (so the table does not page in more as it
+     * is scrolled to the end) that can be reversed in place.
+     */
+    static class RecordStore extends ListPaginatedStore<SampleRecord> {
+
+        RecordStore(List<SampleRecord> initial) {
+            records ().addAll (initial);
+        }
+
+        /**
+         * Reverses the order of the records and refreshes in place (the records are
+         * retained so the table re-inserts the rows that are out of order).
+         */
+        void reverse() {
+            Collections.reverse (records ());
+            refresh ();
+        }
     }
 }

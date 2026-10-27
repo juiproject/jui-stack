@@ -40,7 +40,9 @@ import elemental2.dom.Element;
  * with {@code Cpt.$}) are adopted by the table: they attach and get their own
  * events (also before the row handler), and are disposed of when their row is
  * re-rendered or removed (so they should be created anew each time the cell is
- * rendered). Controls among them are registered as controls of the table.
+ * rendered). Controls among them are registered as controls of the table. A
+ * click within such a component that it does not handle itself (such as on a
+ * control's input) keeps its default action and does not reach the row handler.
  */
 public class BuilderTableCellRenderer<D> extends TableCellRenderer<D> {
 

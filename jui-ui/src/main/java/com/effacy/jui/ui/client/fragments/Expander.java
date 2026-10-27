@@ -15,8 +15,7 @@
  ******************************************************************************/
 package com.effacy.jui.ui.client.fragments;
 
-import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
-import com.effacy.jui.core.client.dom.builder.Div;
+import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
 
 public class Expander {
@@ -35,8 +34,8 @@ public class Expander {
     public static class ExpanderFragment extends BaseFragment<ExpanderFragment> {
 
         @Override
-        public void build(ContainerBuilder<?> parent) {
-            Div.$ (parent).css ("flexGrow", "1");
+        protected void buildInto(ElementBuilder root) {
+            root.css ("flexGrow", "1");
         }
     }
 }

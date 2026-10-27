@@ -15,7 +15,7 @@
  ******************************************************************************/
 package com.effacy.jui.ui.client.fragments;
 
-import com.effacy.jui.core.client.dom.builder.ContainerBuilder;
+import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.IDomInsertableContainer;
 import com.effacy.jui.core.client.dom.css.Length;
 
@@ -57,15 +57,13 @@ public class Box {
         }
 
         @Override
-        public void build(ContainerBuilder<?> parent) {
-            parent.div (stack -> {
-                stack.style("juiStack");
-                if (row)
-                    stack.css ("flexDirection", "row");
-                if (gap != null)
-                    stack.css ("gap", gap.value ());
-                super.build (stack);
-            });
+        protected void buildInto(ElementBuilder root) {
+            root.style ("juiStack");
+            if (row)
+                root.css ("flexDirection", "row");
+            if (gap != null)
+                root.css ("gap", gap.value ());
+            super.buildInto (root);
         }
     }
     

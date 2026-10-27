@@ -16,6 +16,7 @@
 package com.effacy.jui.playground.it.ui.table;
 
 import java.net.URL;
+import java.util.Arrays;
 import java.util.List;
 
 import org.htmlunit.html.DomElement;
@@ -130,6 +131,91 @@ public class TableClicksITTest extends AbstractIT {
         Assertions.assertEquals ("outside-link", currentUrl ().getRef ());
     }
 
+    @Test
+    public void clickRowMenuTogglesAndClicksDoNotReachRowClick() throws Exception {
+        HtmlPage page = openTableClicks ();
+        String name = text (page, "tableclicks.name");
+        String row = "(//*[@test-id='tableclicks.name'])[1]/ancestor::tr[1]";
+        String activator = row + "//*[@test-id='tableclicks.click.check']/ancestor::div[contains(@class,'juiMenuActivator')][1]";
+
+        // (1) The activator icon opens and closes the (click-activated) row menu and
+        // does not run the row handler.
+        Assertions.assertFalse (isOpen (page, activator));
+        click (page, activator + "/em");
+        Assertions.assertTrue (isOpen (page, activator));
+        Assertions.assertEquals ("none", text (page, "tableclicks.lastclick"));
+        click (page, activator + "/em");
+        Assertions.assertFalse (isOpen (page, activator));
+        Assertions.assertEquals ("none", text (page, "tableclicks.lastclick"));
+
+        // (2) An enabled item runs its own handler (not the row handler) and closes
+        // the menu.
+        click (page, activator + "/em");
+        click (page, row + "//*[@test-id='tableclicks.click.edit']");
+        Assertions.assertEquals ("clickmenu:" + name, text (page, "tableclicks.lastclick"));
+        Assertions.assertFalse (isOpen (page, activator));
+
+        // (3) A disabled item and the menu's surface do not run the row handler (the
+        // last click is unchanged).
+        click (page, activator + "/em");
+        click (page, row + "//*[@test-id='tableclicks.click.archive']");
+        Assertions.assertEquals ("clickmenu:" + name, text (page, "tableclicks.lastclick"));
+        click (page, activator + "//ul[contains(@class,'juiMenu')]");
+        Assertions.assertEquals ("clickmenu:" + name, text (page, "tableclicks.lastclick"));
+    }
+
+    @Test
+    public void clickRowMenuNativeContentKeepsDefaultAction() throws Exception {
+        HtmlPage page = openTableClicks ();
+        String row = "(//*[@test-id='tableclicks.name'])[1]/ancestor::tr[1]";
+        String activator = row + "//*[@test-id='tableclicks.click.check']/ancestor::div[contains(@class,'juiMenuActivator')][1]";
+
+        // (1) A checkbox in the (click-activated) row menu toggles and does not run
+        // the row handler. As with any click in the menu, the menu toggles (closes).
+        HtmlCheckBoxInput check = page.getFirstByXPath (row + "//*[@test-id='tableclicks.click.check']");
+        Assertions.assertNotNull (check, "Unable to find the row menu checkbox");
+        click (page, activator + "/em");
+        Assertions.assertTrue (isOpen (page, activator));
+        Assertions.assertFalse (check.isChecked ());
+        click (page, row + "//*[@test-id='tableclicks.click.check']");
+        Assertions.assertTrue (check.isChecked ());
+        Assertions.assertFalse (isOpen (page, activator));
+        Assertions.assertEquals ("none", text (page, "tableclicks.lastclick"));
+
+        // (2) A link in the row menu navigates and does not run the row handler.
+        click (page, activator + "/em");
+        click (page, row + "//*[@test-id='tableclicks.click.link']");
+        Assertions.assertEquals ("row-click-link", currentUrl ().getRef ());
+        Assertions.assertEquals ("none", text (page, "tableclicks.lastclick"));
+    }
+
+    @Test
+    public void clickMenuNativeContentKeepsDefaultAction() throws Exception {
+        HtmlPage page = openTableClicks ();
+        String activator = "//*[@test-id='tableclicks.outside.clickcheck']/ancestor::div[contains(@class,'juiMenuActivator')][1]";
+
+        // (1) The activator icon opens and closes a click-activated menu (outside the
+        // table).
+        Assertions.assertFalse (isOpen (page, activator));
+        click (page, activator + "/em");
+        Assertions.assertTrue (isOpen (page, activator));
+        click (page, activator + "/em");
+        Assertions.assertFalse (isOpen (page, activator));
+
+        // (2) A checkbox in the menu toggles.
+        HtmlCheckBoxInput check = page.getFirstByXPath ("//*[@test-id='tableclicks.outside.clickcheck']");
+        Assertions.assertNotNull (check, "Unable to find the menu checkbox");
+        Assertions.assertFalse (check.isChecked ());
+        click (page, activator + "/em");
+        click (page, "//*[@test-id='tableclicks.outside.clickcheck']");
+        Assertions.assertTrue (check.isChecked ());
+
+        // (3) A link in the menu navigates.
+        click (page, activator + "/em");
+        click (page, "//*[@test-id='tableclicks.outside.clicklink']");
+        Assertions.assertEquals ("outside-click-link", currentUrl ().getRef ());
+    }
+
     /**
      * Opens the "Table clicks" example under Galleries (waiting for each part to
      * render rather than for a fixed time).
@@ -181,6 +267,15 @@ public class TableClicksITTest extends AbstractIT {
         synchronized (page) {
             page.wait (300);
         }
+    }
+
+    /**
+     * Whether the menu activator matching the XPath is open.
+     */
+    private boolean isOpen(HtmlPage page, String xpath) {
+        DomElement el = page.getFirstByXPath (xpath);
+        Assertions.assertNotNull (el, "Unable to find element " + xpath);
+        return Arrays.asList (el.getAttribute ("class").split ("\\s+")).contains ("open");
     }
 
     /**

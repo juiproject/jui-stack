@@ -16,8 +16,10 @@
 package com.effacy.jui.ui.client.table;
 
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.effacy.jui.core.client.component.IComponent;
 import com.effacy.jui.core.client.dom.IUIEventHandler;
 import com.effacy.jui.core.client.dom.UIEvent;
 import com.effacy.jui.core.client.dom.renderer.IDataRenderer;
@@ -51,6 +53,22 @@ public interface ITableCellRenderer<D> {
          *         properly targeted to the cell).
          */
         public boolean handleUIEvent(UIEvent e, D data);
+
+        /**
+         * Visits the components that were rendered into the cell (for example with
+         * {@code Cpt.$} in a
+         * {@link com.effacy.jui.ui.client.table.renderer.BuilderTableCellRenderer}).
+         * The table adopts these (so they attach and receive their own events) and
+         * disposes of them when the row is re-rendered or removed.
+         * <p>
+         * The default visits none.
+         * 
+         * @param visitor
+         *                to visit each component.
+         */
+        default void forEachComponent(Consumer<IComponent> visitor) {
+            // Nothing.
+        }
     }
 
     /**
@@ -146,6 +164,12 @@ public interface ITableCellRenderer<D> {
                         if (handler == null)
                             return false;
                         return handler.handleUIEvent (e, converter.apply (data));
+                    }
+
+                    @Override
+                    public void forEachComponent(Consumer<IComponent> visitor) {
+                        if (handler != null)
+                            handler.forEachComponent (visitor);
                     }
 
                 };

@@ -16,13 +16,18 @@
 package com.effacy.jui.ui.client.table;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.effacy.jui.core.client.component.Component;
+import com.effacy.jui.core.client.component.IComponent;
 import com.effacy.jui.core.client.component.IComponentCSS;
+import com.effacy.jui.core.client.control.IControl;
 import com.effacy.jui.core.client.dom.DomSupport;
 import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.IUIEventHandler;
@@ -64,6 +69,7 @@ import com.effacy.jui.ui.client.table.Table.Config.SortDirection;
 import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.Element;
+import elemental2.dom.HTMLElement;
 import elemental2.dom.HTMLInputElement;
 import elemental2.dom.Node;
 import jsinterop.base.Js;
@@ -75,6 +81,12 @@ import jsinterop.base.Js;
  * @author Jeremy Buckley
  */
 public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
+
+    /**
+     * Tags of native interactive content within a cell component that keeps its
+     * clicks from the row handler (see {@link RecordWrapper#isComponentClick(Node)}).
+     */
+    private static final Set<String> INTERACTIVE_TAGS = new HashSet<> (Arrays.asList ("input", "label", "select", "textarea", "a"));
     /**
      * Configuration for a gallery.
      */
@@ -801,6 +813,14 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
                             event.cancelBubble ();
                             return false;
                         }
+                        // A click within a control adopted from a cell, or on native interactive
+                        // content within any component adopted from a cell, is the component's so
+                        // it keeps its default action and, as for the selector, we only cancel
+                        // bubbling.
+                        if (wrapper.isComponentClick (event.getTarget ())) {
+                            event.cancelBubble ();
+                            return false;
+                        }
                         config.onclick.accept (wrapper.record);
                         event.stopEvent ();
                         return true;
@@ -1519,6 +1539,11 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
         private boolean rendered;
 
         /**
+         * The components rendered into the cells (and adopted by the table).
+         */
+        private List<IComponent> components;
+
+        /**
          * Updates the display state for being (or not being) selected.
          * 
          * @param selected
@@ -1560,7 +1585,70 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
             return true;
         }
 
+        /**
+         * Invoked when the row is removed from the table.
+         */
         public void discard() {
+            releaseComponents ();
+        }
+
+        /**
+         * Determines if a click on the passed node belongs to one of the components
+         * adopted from the cells (rather than to the row). That is the case when the
+         * node lies within a control, or within native interactive content (see
+         * {@link #isInteractive(Node)}) inside any adopted component.
+         * 
+         * @param node
+         *             the node that was clicked on.
+         * @return {@code true} if it does.
+         */
+        public boolean isComponentClick(Node node) {
+            if ((components == null) || (node == null))
+                return false;
+            for (IComponent cpt : components) {
+                Element root = cpt.getRoot ();
+                if ((root == null) || !root.contains (node))
+                    continue;
+                if (cpt instanceof IControl)
+                    return true;
+                Node n = node;
+                while (n != null) {
+                    if (isInteractive (n))
+                        return true;
+                    if (n == root)
+                        break;
+                    n = n.parentNode;
+                }
+            }
+            return false;
+        }
+
+        /**
+         * Determines if the passed node is native interactive content: an input,
+         * label, select, textarea or link, or content that is editable.
+         * 
+         * @param node
+         *             the node to test.
+         * @return {@code true} if it is.
+         */
+        private boolean isInteractive(Node node) {
+            if (node.nodeType != Node.ELEMENT_NODE)
+                return false;
+            HTMLElement el = Js.uncheckedCast (node);
+            if (INTERACTIVE_TAGS.contains (el.tagName.toLowerCase ()))
+                return true;
+            return Js.isTruthy (Js.asPropertyMap (el).get ("isContentEditable"));
+        }
+
+        /**
+         * Disposes of the components adopted from the cells (on removal or before a
+         * re-render).
+         */
+        private void releaseComponents() {
+            if (components == null)
+                return;
+            components.forEach (cpt -> cpt.dispose ());
+            components = null;
         }
 
         public Element getElement() {
@@ -1574,13 +1662,26 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
         @SuppressWarnings("unchecked")
         public void render() {
             build ();
+            releaseComponents ();
             int i = 0;
             handlers = new ITableCellHandler<?>[headerEl.length];
             for (Config<R>.Header header : config ().headers) {
-                if (header.renderer == null)
+                if (header.renderer == null) {
                     DomSupport.innerText (headerEl[i], "No renderer");
-                else
+                } else {
                     handlers[i] = header.renderer.render (headerEl[i], record);
+                    // Components rendered into the cell are adopted (so they attach and get
+                    // their own events) and disposed of when the row is next rendered or is
+                    // removed.
+                    if (handlers[i] != null) {
+                        handlers[i].forEachComponent (cpt -> {
+                            if (components == null)
+                                components = new ArrayList<> ();
+                            components.add (cpt);
+                            adopt (cpt);
+                        });
+                    }
+                }
                 i++;
             }
             if ((selectorEl != null) && ((store instanceof IStoreSelection) && ((IStoreSelection<R>) store).isSelected(record)))

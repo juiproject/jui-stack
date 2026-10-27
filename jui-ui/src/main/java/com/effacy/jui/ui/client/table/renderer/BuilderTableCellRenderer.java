@@ -15,8 +15,12 @@
  ******************************************************************************/
 package com.effacy.jui.ui.client.table.renderer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
+import com.effacy.jui.core.client.component.IComponent;
 import com.effacy.jui.core.client.dom.UIEvent;
 import com.effacy.jui.core.client.dom.builder.ElementBuilder;
 import com.effacy.jui.core.client.dom.builder.Wrap;
@@ -28,6 +32,19 @@ import elemental2.dom.Element;
 /**
  * Builds a table cell renderer from a {@link ElementBuilder} (including the
  * support for event handling).
+ * <p>
+ * The cell is cleared each time it is rendered. Event handlers on the DOM built
+ * into the cell (such as those of {@code Btn} and {@code MenuItem}) get the
+ * clicks in the cell before the table's row handler (see
+ * {@code Table.Config.onclick}). Components inserted into the cell (for example
+ * with {@code Cpt.$}) are adopted by the table: they attach and get their own
+ * events (also before the row handler), and are disposed of when their row is
+ * re-rendered or removed (so they should be created anew each time the cell is
+ * rendered). Controls among them are registered as controls of the table. A
+ * click within a control, or on native interactive content (input, label,
+ * select, textarea, link or editable content) within any such component, keeps
+ * its default action and does not reach the row handler; any other click the
+ * component does not handle reaches the row handler, as for fragments.
  */
 public class BuilderTableCellRenderer<D> extends TableCellRenderer<D> {
 
@@ -58,16 +75,26 @@ public class BuilderTableCellRenderer<D> extends TableCellRenderer<D> {
      */
     @Override
     public ITableCellHandler<D> render(Element el, D data) {
-        ElementBuilder builder = Wrap.$ (el);
+        ElementBuilder builder = Wrap.$ (el).clear ();
         renderer.accept (builder, data);
         NodeContext ctx = builder.build ();
-        if (!ctx.doesHandleEvent ())
+        List<IComponent> components = new ArrayList<> ();
+        ctx.forEachLodgement (object -> {
+            if (object instanceof IComponent)
+                components.add ((IComponent) object);
+        });
+        if ((!ctx.doesHandleEvent ()) && components.isEmpty ())
             return null;
         return new ITableCellHandler<D> () {
 
             @Override
             public boolean handleUIEvent(UIEvent e, D data) {
                 return ctx.handleEvent (e);
+            }
+
+            @Override
+            public void forEachComponent(Consumer<IComponent> visitor) {
+                components.forEach (visitor);
             }
             
         };

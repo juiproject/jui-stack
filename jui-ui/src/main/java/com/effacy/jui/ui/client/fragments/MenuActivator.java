@@ -70,6 +70,10 @@ public class MenuActivator {
         /**
          * The default is that the menu opens on mouse-over. However, it can be
          * configured to open on a click.
+         * <p>
+         * When click-activated any click within the activator that no menu item
+         * handles toggles the menu. This includes clicks on native content placed in
+         * the menu (such as links and inputs), which keep their default action.
          * 
          * @return this fragment instance.
          */
@@ -126,8 +130,6 @@ public class MenuActivator {
 
         @Override
         protected void buildInto(ElementBuilder root) {
-            if ((conditional != null) && !conditional.get())
-                return;
             root.style ("juiMenuActivator");
             if (aboveForced)
                 root.style ("above");
@@ -138,16 +140,16 @@ public class MenuActivator {
                     else
                         handler = new ActivationHandler ((Element) n, (Element) n, "open");
                 });
-                root.onclick (e -> {
-                    handler.toggle ();
-                });
-            } else {
-                // Clicks within that no item handles are kept from what contains the
-                // activator (such as a clickable table row). They are not claimed (which
-                // would prevent their default action) so links and inputs placed in the
-                // menu keep working.
-                root.apply (n -> ((Element) n).addEventListener ("click", e -> e.stopPropagation ()));
             }
+            // Clicks within that no item handles toggle a click-activated menu and are
+            // kept from what contains the activator (such as a clickable table row).
+            // They are not claimed (which would prevent their default action) so links
+            // and inputs placed in the menu keep working.
+            root.apply (n -> ((Element) n).addEventListener ("click", e -> {
+                if (clickToActivate)
+                    handler.toggle ();
+                e.stopPropagation ();
+            }));
             Em.$ (root).style ("activator", FontAwesome.ellipsisV ());
             Div.$ (root).$ (container -> {
                 if (!clickToActivate)

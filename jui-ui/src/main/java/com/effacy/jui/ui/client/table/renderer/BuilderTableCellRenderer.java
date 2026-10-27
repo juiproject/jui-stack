@@ -41,8 +41,10 @@ import elemental2.dom.Element;
  * events (also before the row handler), and are disposed of when their row is
  * re-rendered or removed (so they should be created anew each time the cell is
  * rendered). Controls among them are registered as controls of the table. A
- * click within such a component that it does not handle itself (such as on a
- * control's input) keeps its default action and does not reach the row handler.
+ * click within a control, or on native interactive content (input, label,
+ * select, textarea, link or editable content) within any such component, keeps
+ * its default action and does not reach the row handler; any other click the
+ * component does not handle reaches the row handler, as for fragments.
  */
 public class BuilderTableCellRenderer<D> extends TableCellRenderer<D> {
 

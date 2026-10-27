@@ -16,7 +16,10 @@
 package com.effacy.jui.ui.client.table;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -24,6 +27,7 @@ import java.util.function.Function;
 import com.effacy.jui.core.client.component.Component;
 import com.effacy.jui.core.client.component.IComponent;
 import com.effacy.jui.core.client.component.IComponentCSS;
+import com.effacy.jui.core.client.control.IControl;
 import com.effacy.jui.core.client.dom.DomSupport;
 import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.IUIEventHandler;
@@ -65,6 +69,7 @@ import com.effacy.jui.ui.client.table.Table.Config.SortDirection;
 import com.google.gwt.core.client.GWT;
 
 import elemental2.dom.Element;
+import elemental2.dom.HTMLElement;
 import elemental2.dom.HTMLInputElement;
 import elemental2.dom.Node;
 import jsinterop.base.Js;
@@ -76,6 +81,12 @@ import jsinterop.base.Js;
  * @author Jeremy Buckley
  */
 public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
+
+    /**
+     * Tags of native interactive content within a cell component that keeps its
+     * clicks from the row handler (see {@link RecordWrapper#isComponentClick(Node)}).
+     */
+    private static final Set<String> INTERACTIVE_TAGS = new HashSet<> (Arrays.asList ("input", "label", "select", "textarea", "a"));
     /**
      * Configuration for a gallery.
      */
@@ -802,10 +813,11 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
                             event.cancelBubble ();
                             return false;
                         }
-                        // A click within a component adopted from a cell is the component's (such
-                        // as a control's input) so it keeps its default action and, as for the
-                        // selector, we only cancel bubbling.
-                        if (wrapper.isInComponent (event.getTarget ())) {
+                        // A click within a control adopted from a cell, or on native interactive
+                        // content within any component adopted from a cell, is the component's so
+                        // it keeps its default action and, as for the selector, we only cancel
+                        // bubbling.
+                        if (wrapper.isComponentClick (event.getTarget ())) {
                             event.cancelBubble ();
                             return false;
                         }
@@ -1581,21 +1593,51 @@ public class Table<R> extends Component<Table.Config<R>> implements ITable<R> {
         }
 
         /**
-         * Determines if the passed node lies within the root of one of the components
-         * adopted from the cells.
+         * Determines if a click on the passed node belongs to one of the components
+         * adopted from the cells (rather than to the row). That is the case when the
+         * node lies within a control, or within native interactive content (see
+         * {@link #isInteractive(Node)}) inside any adopted component.
          * 
          * @param node
-         *             the node to test.
+         *             the node that was clicked on.
          * @return {@code true} if it does.
          */
-        public boolean isInComponent(Node node) {
+        public boolean isComponentClick(Node node) {
             if ((components == null) || (node == null))
                 return false;
             for (IComponent cpt : components) {
-                if ((cpt.getRoot () != null) && cpt.getRoot ().contains (node))
+                Element root = cpt.getRoot ();
+                if ((root == null) || !root.contains (node))
+                    continue;
+                if (cpt instanceof IControl)
                     return true;
+                Node n = node;
+                while (n != null) {
+                    if (isInteractive (n))
+                        return true;
+                    if (n == root)
+                        break;
+                    n = n.parentNode;
+                }
             }
             return false;
+        }
+
+        /**
+         * Determines if the passed node is native interactive content: an input,
+         * label, select, textarea or link, or content that is editable.
+         * 
+         * @param node
+         *             the node to test.
+         * @return {@code true} if it is.
+         */
+        private boolean isInteractive(Node node) {
+            if (node.nodeType != Node.ELEMENT_NODE)
+                return false;
+            HTMLElement el = Js.uncheckedCast (node);
+            if (INTERACTIVE_TAGS.contains (el.tagName.toLowerCase ()))
+                return true;
+            return Js.isTruthy (Js.asPropertyMap (el).get ("isContentEditable"));
         }
 
         /**

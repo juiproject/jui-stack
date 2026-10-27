@@ -29,6 +29,7 @@ import com.effacy.jui.core.client.component.layout.ActionBarLayout.HAlignment;
 import com.effacy.jui.core.client.component.layout.VertLayout;
 import com.effacy.jui.core.client.dom.builder.Cpt;
 import com.effacy.jui.core.client.dom.builder.Div;
+import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.css.Insets;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.core.client.state.ValueStateVariable;
@@ -46,8 +47,8 @@ import com.effacy.jui.ui.client.table.renderer.BuilderTableCellRenderer;
 
 /**
  * Components placed in table cells with {@code Cpt.$}: a {@link Button} in a
- * table with a row click handler (which also has a check and a text control
- * per row) and in one without. It reports the last click and (on demand) the
+ * table with a row click handler (which also has a check control, a text
+ * control and a display-only component per row) and in one without. It reports the last click and (on demand) the
  * number of buttons in the first table that are still live (created and not
  * yet disposed), and has actions to re-render its rows in place, to reverse
  * their order and to reload it with fewer rows (see the playground IT
@@ -135,6 +136,13 @@ public class GalleryExamples_TableComponents extends SplitPanel {
                 header.renderer (BuilderTableCellRenderer.create ((cell, r) -> {
                     Cpt.$ (cell, TextControlCreator.build (c -> {
                         c.testId ("tablecpts.note");
+                    }));
+                }));
+            });
+            cfg.header ("Status", header -> {
+                header.renderer (BuilderTableCellRenderer.create ((cell, r) -> {
+                    Cpt.$ (cell, ComponentCreator.build (el -> {
+                        Span.$ (el).testId ("tablecpts.status").text ("Active");
                     }));
                 }));
             });

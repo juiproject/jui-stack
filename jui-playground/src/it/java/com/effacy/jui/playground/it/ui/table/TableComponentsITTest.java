@@ -100,6 +100,23 @@ public class TableComponentsITTest extends AbstractIT {
     }
 
     @Test
+    public void displayComponentClicksReachRowClick() throws Exception {
+        HtmlPage page = openTableComponents ();
+        String name = text (page, "tablecpts.name");
+
+        // (1) A click on a display-only component in a cell runs the row handler.
+        click (page, "tablecpts.status");
+        Assertions.assertEquals ("row:" + name, text (page, "tablecpts.lastclick"));
+
+        // (2) A click on a button's root, outside the anchor it handles clicks on,
+        // runs the row handler (after a click on the anchor ran the button's).
+        clickButton (page, "tablecpts.open");
+        Assertions.assertEquals ("button:" + name, text (page, "tablecpts.lastclick"));
+        click (page, "tablecpts.open");
+        Assertions.assertEquals ("row:" + name, text (page, "tablecpts.lastclick"));
+    }
+
+    @Test
     public void controlClicksDoNotReachRowClick() throws Exception {
         HtmlPage page = openTableComponents ();
         String row = "(" + byTestId ("tablecpts.name") + ")[1]/ancestor::tr[1]";

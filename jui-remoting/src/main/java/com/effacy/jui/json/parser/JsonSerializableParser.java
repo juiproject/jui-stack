@@ -189,7 +189,9 @@ public class JsonSerializableParser implements IJsonSerializableParser {
             for (String pkg : p.split (","))
                 classes.addAll (scanner.getJsonSerializableClasses (pkg));
         }
-        if (classes.isEmpty ())
+        // Nothing to register (additions are always applied as they may not
+        // relate to the scanned classes, i.e. the remote call deserialiser).
+        if (classes.isEmpty () && (additions == null))
             return this;
 
         // Obtain the base types.

@@ -14,9 +14,4 @@ The bulk of the technical documentation for the code server resides in each of t
 
 ## Project structure and build
 
-This is a standard Maven project with separate main and test source trees. However, rather than generating a single artefact it generates two:
-
-1. `com.effacy.jui:jui-platform-codeserver:jar` this is an executable JAR that runs the code server (a Spring Boot application). It includes all dependencies required to run, however the JUI build sources (and for rebind, class files) need to be available on the classpath. Configuration options are passed as normal.
-2. `com.effacy.jui:jui-platform-codeserver:jar-with-dependencies` this is a standard JAR file however includes all the dependencies fully expanded. This can be included standalone to run the code server from the IDE as a run configuration (as supported by the IDE).
-
-Note that both of these files are quite large as they repackage the dependencies.
+This is a standard Maven project with separate main and test source trees that generates a regular (thin) JAR. The code server is launched via the `codeserver` goal of the JUI Maven plugin (`jui-maven-plugin`), which resolves this JAR and its dependencies and runs `com.effacy.jui.codeserver.CodeServer` in a forked JVM (see [Code server](../docs/app_codeserver.md)).

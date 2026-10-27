@@ -14,6 +14,9 @@
 
   <properties>
     <version.ph-css>7.0.1</version.ph-css>
+
+    <!-- Javadoc only JUI packages, not the bundled GWT (keeps the release size down) -->
+    <excludePackageNames>com.google.gwt.*:javaemul.*</excludePackageNames>
   </properties>
 
   <dependencies>

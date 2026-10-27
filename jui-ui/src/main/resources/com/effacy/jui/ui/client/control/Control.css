@@ -14,12 +14,21 @@
     font-size: 1em;
 }
 
-.component.focus .inner {
+/* Focus and invalid outranking hover.
+
+   A control's own sheet comes after this one and may declare `.component:hover .inner`
+   (TextControl, TextAreaControl, SelectionControl and CalendarControl do). At equal
+   specificity that hover rule wins, so a hovered control would draw its hover border in
+   place of its focus or error border. The :hover selectors here outrank it wherever it
+   sits in the sheet order. Invalid follows focus so that it still wins when both apply. */
+.component.focus .inner,
+.component.focus:hover .inner {
 	border-color: var(--jui-ctl-focus);
 	box-shadow: 0 0 0 2px var(--jui-ctl-focus-offset);
 }
 
-.component.invalid .inner {
+.component.invalid .inner,
+.component.invalid:hover .inner {
 	border-color: var(--jui-ctl-err-focus);
 	box-shadow: 0 0 0 1px var(--jui-ctl-err-focus-offset);
 }

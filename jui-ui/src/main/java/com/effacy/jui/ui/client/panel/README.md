@@ -74,6 +74,8 @@ public class MyThingTable extends SplitPanel {
 
 Similar to `SplitPanel` but admits three content areas (*main*, *top* and *bottom*). This is often used for tables and galleries (as with `SplitPanel`) but where a footer is needed.
 
+The `separator()` option draws a line under the top region and above the bottom region (each only when that region has content).
+
 ```java
 public class MyThingTable extends TruSplitPanel {
 

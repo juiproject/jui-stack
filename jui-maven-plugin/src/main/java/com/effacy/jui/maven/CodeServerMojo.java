@@ -194,6 +194,33 @@ public class CodeServerMojo extends AbstractMojo {
     @Parameter(defaultValue = "${plugin}", readonly = true, required = true)
     private PluginDescriptor pluginDescriptor;
 
+    /**
+     * Resolves the code server jar (published alongside this plugin) and its
+     * dependencies from the build's plugin repositories.
+     * 
+     * @return the paths to add to the classpath.
+     */
+    protected List<String> resolveCodeServer() throws MojoExecutionException {
+        String groupId = pluginDescriptor.getGroupId();
+        String artefactId = "jui-platform-codeserver";
+        return ArtifactsAsResourcesHelper.resolve(getLog(), repoSystem, repoSession, remotePluginRepositories, groupId, artefactId, pluginDescriptor.getVersion());
+    }
+
+    /**
+     * Removes the project's own build output directory from the classpath. For a
+     * web project this holds the application classes and configuration, which
+     * would otherwise be picked up by the code server (a Spring Boot
+     * application). The build output of other projects (i.e. sibling modules
+     * referenced by {@link #sources} for their rebind classes) is retained.
+     *
+     * @param cp
+     *           the classpath to filter.
+     */
+    protected void removeProjectOutput(List<String> cp) {
+        File output = Paths.get(project.getBuild().getOutputDirectory()).normalize().toFile();
+        cp.removeIf(t -> Paths.get(t).normalize().toFile().getAbsoluteFile().equals(output.getAbsoluteFile()));
+    }
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         List<String> cp = new ArrayList<>();
@@ -230,16 +257,13 @@ public class CodeServerMojo extends AbstractMojo {
             throw new MojoExecutionException(e.getMessage(), e);
         }
 
-        // Explictly remove anything under target/classes (which may pollute the spring
+        // Explictly remove the project's own build output (which may pollute the spring
         // boot application).
-        cp.removeIf(t -> t.contains("target/classes"));
+        removeProjectOutput(cp);
 
-        // Add in the codeserver jar (no need to resolve dependencies as they are
-        // included).
-        String groupId = pluginDescriptor.getGroupId();
-        String artefactId = "jui-platform-codeserver";
-        //cp.addAll(0, ArtifactsAsResourcesHelper.resolve(getLog(), repoSystem, repoSession, remotePluginRepositories, groupId, artefactId, pluginDescriptor.getVersion(), "jar-with-dependencies"));
-        cp.addAll(0, ArtifactsAsResourcesHelper.retrieve(getLog(), repoSystem, repoSession, remotePluginRepositories, groupId, artefactId, pluginDescriptor.getVersion(), "jar-with-dependencies"));
+        // Add in the codeserver jar along with its dependencies (resolved
+        // transitively as the codeserver is published as a regular JAR).
+        cp.addAll(0, resolveCodeServer());
 
         // Display classpath if in diagnose mode.
         if (diagnose) {

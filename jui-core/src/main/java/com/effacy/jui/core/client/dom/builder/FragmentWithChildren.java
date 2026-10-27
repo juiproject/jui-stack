@@ -74,12 +74,12 @@ public class FragmentWithChildren<T extends FragmentWithChildren<T>> extends Fra
      */
     @Override
     public void build(ContainerBuilder<?> parent) {
+        if ((conditional != null) && !conditional.get())
+            return;
         if (builder != null) {
             builder.accept (parent, children);
         } else {
             ElementBuilder el = createRoot (parent);
-            if (use != null)
-                el.use (use);
             if (el != null) {
                 el.$ (root -> {
                     buildInto (root);

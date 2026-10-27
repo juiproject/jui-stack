@@ -167,6 +167,10 @@ cfg.header ("Name", header -> {
 }); 
 ```
 
+#### Clicking on rows
+
+A whole row can be made clickable by assigning a handler with `cfg.onclick(r -> {...})` (the handler is passed the row's record). Clicks that a cell handles itself (such as on a `Btn` or a row menu) do not reach the row handler; see "Row clicks" in `jui-ui/src/main/java/com/effacy/jui/ui/client/table/README.md`.
+
 ### Exercises
 
 Using the tools and techniques that you have been exposed to in this part try to enhance your lesson code as follows:

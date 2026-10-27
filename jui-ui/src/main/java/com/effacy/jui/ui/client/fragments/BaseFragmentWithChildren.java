@@ -15,11 +15,13 @@
  ******************************************************************************/
 package com.effacy.jui.ui.client.fragments;
 
+import com.effacy.jui.core.client.Debug;
 import com.effacy.jui.core.client.dom.builder.FragmentWithChildren;
 
 public abstract class BaseFragmentWithChildren<T extends BaseFragmentWithChildren<T>> extends FragmentWithChildren<T> {
 
     static {
-        IFragmentStyles.FragmentStyles.instance ();
+        if (!Debug.isUnitTestMode())
+            IFragmentStyles.FragmentStyles.instance ();
     }
 }

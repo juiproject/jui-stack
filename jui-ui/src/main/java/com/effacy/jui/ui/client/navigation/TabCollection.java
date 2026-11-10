@@ -68,6 +68,30 @@ public class TabCollection {
          * @return this tab configuration.
          */
         public ITabGroupConfig expand();
+
+        /**
+         * Convenience to invoke {@link #hidden(boolean)} passing {@code true}.
+         */
+        default public ITabGroupConfig hidden() {
+            return hidden (true);
+        }
+
+        /**
+         * Hides the group. Its tabs remain real tabs of the navigator: they are
+         * registered and navigable (by reference, by a deep link, through
+         * {@code activate(...)}, and passed through the navigation handlers) but they
+         * are not drawn. Presenters, the built-in strip included, are not told of
+         * the group at all.
+         * <p>
+         * This suits a page reached from something other than a tab, such as a menu
+         * placed in the strip's tools (see {@link TabNavigator.Config#tools(IComponent...)}).
+         *
+         * @param hidden
+         *               {@code true} if the group should not be drawn (the default
+         *               is for it to be drawn).
+         * @return this tab configuration.
+         */
+        public ITabGroupConfig hidden(boolean hidden);
     }
 
     /**
@@ -263,7 +287,7 @@ public class TabCollection {
         boolean first = true;
         for (TabGroupConfig grp : groups) {
             grp.first = false;
-            if (first && !grp.silent) {
+            if (first && !grp.silent && !grp.hidden) {
                 grp.first = true;
                 first = false;
             }
@@ -314,6 +338,11 @@ public class TabCollection {
          * See {@link #expand()}.
          */
         boolean expand;
+
+        /**
+         * See {@link #hidden(boolean)}.
+         */
+        boolean hidden;
 
         /**
          * If the group is silient (i.e. not to display any headers).
@@ -378,6 +407,17 @@ public class TabCollection {
         @Override
         public ITabGroupConfig expand() {
             this.expand = true;
+            return this;
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * @see com.effacy.jui.ui.client.navigation.TabCollection.ITabGroupConfig#hidden(boolean)
+         */
+        @Override
+        public ITabGroupConfig hidden(boolean hidden) {
+            this.hidden = hidden;
             return this;
         }
 

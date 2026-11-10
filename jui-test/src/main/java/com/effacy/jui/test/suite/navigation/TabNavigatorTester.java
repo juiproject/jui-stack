@@ -62,6 +62,40 @@ public class TabNavigatorTester extends ComponentTester<TabNavigatorTester> {
         return this;
     }
 
+    /**
+     * Validates that the given tabs are not drawn (for example, tabs of a hidden
+     * group, which are navigable but not drawn).
+     *
+     * @param tabs
+     *             the tab references.
+     * @return this tester instance.
+     */
+    public TabNavigatorTester validateTabsNotDrawn(String...tabs) {
+        validate(()-> {
+            for (String tab : tabs)
+                Assertions.assertFalse (TabNavigatorTester.this.tabs.containsKey (tab), "TabNavigatorTester[test-id=\"" + testId + "\"].validateTabsNotDrawn::Found \"" + tab + "\"");
+        });
+        return this;
+    }
+
+    /**
+     * Validates that the navigator draws tools at the end of its strip, or that it
+     * draws none.
+     *
+     * @param expected
+     *                 {@code true} if tools are expected.
+     * @return this tester instance.
+     */
+    public TabNavigatorTester validateTools(boolean expected) {
+        validate(()-> {
+            // The cell sits beside the strip, in the wrap (and not in the body, where
+            // a navigator of a tab may have tools of its own).
+            boolean present = !el.selectByXPath ("./div/div/*[@test-ref='tools']").isEmpty ();
+            Assertions.assertEquals (expected, present, "TabNavigatorTester[test-id=\"" + testId + "\"].validateTools");
+        });
+        return this;
+    }
+
     public TabNavigatorTester validateActiveTab(String tab) {
         validate (()-> {
             Assertions.assertEquals(tab, el.attribute("test-state"), "TabNavigatorTester[test-id=\"" + testId + "\"].validateActiveTab");

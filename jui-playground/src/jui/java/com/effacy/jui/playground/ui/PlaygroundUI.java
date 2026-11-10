@@ -32,6 +32,7 @@ import com.effacy.jui.playground.ui.lessons.Lessons;
 import com.effacy.jui.playground.ui.samples.Samples;
 import com.effacy.jui.playground.ui.shared.TextComponent;
 import com.effacy.jui.playground.ui.testing.ControlSuite;
+import com.effacy.jui.playground.ui.testing.TabNavigatorTools;
 import com.effacy.jui.playground.ui.tutorial.reference.Tutorial;
 import com.effacy.jui.ui.client.NotificationDialog;
 import com.effacy.jui.ui.client.NotificationDialog.OutcomeType;
@@ -130,6 +131,7 @@ public class PlaygroundUI extends TabNavigator {
                 cfg.tab ("tab2", "Sub-tab 2", new TextComponent ("Sub-tab 2")).icon (FontAwesome.groupArrowsRotate ());
             })).icon (FontAwesome.airFreshener ());
             tab1.tab ("blocking", "Blocking",  new NavigationAwareComponent ()).icon (FontAwesome.notEqual ());
+            tab1.tab ("tools", "Tools & hidden", new TabNavigatorTools ()).icon (FontAwesome.toolbox ());
         }));
         tab ("testing-controls", "Controls", new ControlSuite ());
     }

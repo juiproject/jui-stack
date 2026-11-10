@@ -37,4 +37,34 @@ public class BtnTest extends AbstractJUITest {
                 });
             });
     }
+
+    @Test
+    public void disabled_button_cannot_be_clicked() {
+        // The disabled property is set on the button itself (not just styled).
+        build(Btn.$("Save").disable(true))
+            .child("button.fragment", c -> {
+                c.exists().tagEquals("button").hasClass("disabled").propertyEquals("disabled", true);
+            });
+    }
+
+    @Test
+    public void disabled_through_attr() {
+        // Any present value of the attribute disables the button.
+        build(Btn.$("Save").attr("disabled", "disabled"))
+            .child("button.fragment", c -> {
+                c.exists().propertyEquals("disabled", true);
+            });
+        build(Btn.$("Save").attr("disabled", "true"))
+            .child("button.fragment", c -> {
+                c.exists().propertyEquals("disabled", true);
+            });
+    }
+
+    @Test
+    public void enabled_button() {
+        build(Btn.$("Save").disable(false))
+            .child("button.fragment", c -> {
+                c.exists().propertyEquals("disabled", null);
+            });
+    }
 }

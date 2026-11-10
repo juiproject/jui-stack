@@ -126,6 +126,18 @@ public class DomTest {
         return this;
     }
 
+    /**
+     * Asserts the value of a (DOM) property set on the selected element (see
+     * {@link FakeElement#properties()}). An expected value of {@code null} asserts
+     * the property has not been set.
+     */
+    public DomTest propertyEquals(String name, Object expected) {
+        Object actual = single().properties().get(name);
+        if ((expected == null) ? (actual != null) : !expected.equals(actual))
+            throw new AssertionError("Unexpected property [" + name + "] for [" + path + "]: expected [" + expected + "] but was [" + actual + "]");
+        return this;
+    }
+
     public DomTest htmlEquals(String expectedHtml) {
         String actualHtml = toPrettyHtml();
         List<String> normalizedExpected = normalizeHtml(expectedHtml);

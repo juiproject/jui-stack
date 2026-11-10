@@ -43,6 +43,7 @@ import com.helger.css.decl.CSSStyleRule;
 import com.helger.css.decl.CascadingStyleSheet;
 import com.helger.css.decl.ICSSSelectorMember;
 import com.helger.css.reader.CSSReader;
+import com.helger.css.reader.errorhandler.CollectingCSSParseErrorHandler;
 import com.helger.css.writer.CSSWriter;
 import com.helger.css.writer.CSSWriterSettings;
 
@@ -56,11 +57,35 @@ public class CssProcessor {
 
     private Map<String,String> substitutions = new HashMap<>();
 
+    /**
+     * Placeholders for dimensions with units the parser does not know (see
+     * {@link CssUnits}), mapped to the dimension each stands for.
+     */
+    private Map<String,String> units = new HashMap<>();
+
+    /**
+     * Problems found parsing the loaded stylesheets (see {@link #warnings()}).
+     */
+    private List<String> warnings = new ArrayList<>();
+
     public CssProcessor clear() {
         css = null;
         cache.clear ();
         substitutions.clear ();
+        units.clear ();
+        warnings.clear ();
         return this;
+    }
+
+    /**
+     * Problems found parsing the loaded stylesheets. Each is a part of a stylesheet
+     * (typically a declaration or a rule) the parser could not read and so is not
+     * in the output.
+     *
+     * @return the problems (in the order found).
+     */
+    public List<String> warnings() {
+        return warnings;
     }
 
     public void substitutions(BiConsumer<String,String> visitor) {
@@ -192,10 +217,21 @@ public class CssProcessor {
             content = sb.toString ();
         }
 
+        // Carry dimensions with units the parser does not know (such as 18lh) through
+        // parsing (see CssUnits); they are restored on export.
+        content = CssUnits.protect (content, units);
+
         // Parse the CSS itself now that the definitions have been removed. If there are
-        // substitutions we need to update the CSS accordingly.
-		CascadingStyleSheet css = CSSReader.readFromString (content, StandardCharsets.UTF_8, ECSSVersion.CSS30);
-        if (!localSubstitutions.isEmpty ()) {
+        // substitutions we need to update the CSS accordingly. Anything the parser
+        // can't read (and so drops) is recorded as a warning.
+        CollectingCSSParseErrorHandler errors = new CollectingCSSParseErrorHandler ();
+        List<String> failures = new ArrayList<>();
+		CascadingStyleSheet css = CSSReader.readFromString (content, StandardCharsets.UTF_8, ECSSVersion.CSS30, errors, ex -> failures.add (ex.getMessage ()));
+        errors.getAllParseErrors ().forEach (error -> warnings.add (CssUnits.restore (error.getErrorMessage (), units)));
+        failures.forEach (failure -> warnings.add ("Unable to parse the stylesheet (it is dropped): " + CssUnits.restore (failure, units)));
+        if ((css == null) && failures.isEmpty ())
+            warnings.add ("Unable to parse the stylesheet (it is dropped)");
+        if ((css != null) && !localSubstitutions.isEmpty ()) {
             Set<String> substitutionsFound = new HashSet<>();
             css.getAllStyleRules ().forEach (rule -> {
                 rule.getAllDeclarations().forEach (decl -> {
@@ -372,7 +408,7 @@ public class CssProcessor {
             .setOptimizedOutput (true)
             .setRemoveUnnecessaryCode (true));
         writer.setHeaderText ("");
-        return writer.getCSSAsString (css);
+        return CssUnits.restore (writer.getCSSAsString (css), units);
     }
 
     /**
@@ -388,7 +424,7 @@ public class CssProcessor {
                     Map<String,String> declarations = new HashMap<>();
                     results.put (member.getAsCSSString(), declarations);
                     rule.getAllDeclarations().forEach(decl -> {
-                        declarations.put(decl.getProperty(), decl.getExpressionAsCSSString());
+                        declarations.put(decl.getProperty(), CssUnits.restore (decl.getExpressionAsCSSString(), units));
                     });
                 });
             });

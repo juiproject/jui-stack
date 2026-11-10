@@ -24,14 +24,18 @@ import elemental2.dom.Element;
  * {@link #standard()} handles the three common cases so an application is safe out of the box,
  * especially in a single-page app that uses the URL hash for routing:
  * <ul>
- * <li><b>External</b> ({@code http(s)://}, {@code mailto:}, {@code tel:}) — opened in a new tab.</li>
+ * <li><b>Refused</b> (a scheme {@link SafeLinks} refuses, such as {@code javascript:}) — never
+ * opened: the click is suppressed and the application fallback is not consulted.</li>
+ * <li><b>External</b> ({@code http(s):}, {@code mailto:}, {@code tel:}) — opened in a new tab
+ * (with {@code noopener}).</li>
  * <li><b>In-page anchor</b> ({@code #section}) — the click is always suppressed (so it never
  * reaches an SPA hash router) and, if a matching element exists in the content, scrolled to.
  * A rendered heading carries a {@link #slug(String) slug} id, so {@code [x](#operating-scenarios)}
  * finds the "Operating scenarios" heading. If nothing matches, an optional application fallback
  * is consulted; failing that it is a safe no-op.</li>
- * <li><b>Anything else</b> (relative links, custom schemes such as {@code doc:}) — delegated to
- * the application fallback, else left to the browser.</li>
+ * <li><b>Anything else</b> (relative links, and custom schemes such as {@code doc:} that the
+ * application has allowed with {@link SafeLinks#allow(String...)}) — delegated to the
+ * application fallback, else left to the browser.</li>
  * </ul>
  */
 public final class LinkHandlers {
@@ -63,6 +67,10 @@ public final class LinkHandlers {
         return (url, anchor, root) -> {
             if ((url == null) || url.isEmpty())
                 return false;
+            if (!SafeLinks.isSafe (url)) {
+                // Refused (e.g. javascript:): handled, so the browser does not follow it.
+                return true;
+            }
             if (isInPageAnchor (url)) {
                 // Scroll to the in-content target if there is one; else let the application try;
                 // either way return true so an in-page anchor never reaches an SPA hash router.
@@ -73,7 +81,7 @@ public final class LinkHandlers {
                 return true;
             }
             if (isExternal (url)) {
-                DomGlobal.window.open (url, "_blank");
+                DomGlobal.window.open (url, "_blank", "noopener");
                 return true;
             }
             return (fallback != null) && fallback.activate (url, anchor, root);
@@ -85,11 +93,13 @@ public final class LinkHandlers {
         return (url != null) && url.startsWith ("#");
     }
 
-    /** Whether a URL is external (has an absolute scheme — {@code ://}, {@code mailto:} or {@code tel:}). */
+    /**
+     * Whether a URL is external: its scheme is {@code http}, {@code https}, {@code mailto} or
+     * {@code tel}, read as a browser reads it (see {@link SafeLinks#isExternal(String)}). Any
+     * other scheme (such as {@code javascript://...}) is not.
+     */
     public static boolean isExternal(String url) {
-        if (url == null)
-            return false;
-        return url.contains ("://") || url.startsWith ("mailto:") || url.startsWith ("tel:");
+        return SafeLinks.isExternal (url);
     }
 
     /**

@@ -25,6 +25,7 @@ import com.effacy.jui.text.ui.type.DomBuilderFormattedTextRenderer;
 import com.effacy.jui.text.ui.type.ILinkHandler;
 import com.effacy.jui.text.ui.type.LinkHandlers;
 import com.effacy.jui.text.ui.type.LinkSupport;
+import com.effacy.jui.text.ui.type.SafeLinks;
 
 import elemental2.dom.Element;
 import jsinterop.base.Js;
@@ -119,8 +120,10 @@ public class FText extends Fragment<FText> {
      * <p>
      * Defaults to {@link LinkHandlers#standard()} (external links open in a new tab; in-page
      * {@code #anchor} links scroll within the content and never reach an SPA hash router; other
-     * schemes are left to the browser). Pass {@link LinkHandlers#standard(ILinkHandler)} with an
-     * application fallback to handle custom schemes (e.g. {@code doc:}). Has no effect in the
+     * links are left to the browser). Pass {@link LinkHandlers#standard(ILinkHandler)} with an
+     * application fallback to handle custom schemes (e.g. {@code doc:}, which must also be
+     * allowed with {@link SafeLinks#allow(String...)}). An address whose scheme
+     * {@link SafeLinks} refuses (such as {@code javascript:}) is drawn without a link. Has no effect in the
      * {@code embed} rendering mode (the caller then owns the content root and its listeners).
      *
      * @param linkHandler

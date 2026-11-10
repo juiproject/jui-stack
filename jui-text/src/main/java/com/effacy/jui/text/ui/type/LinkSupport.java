@@ -53,7 +53,8 @@ public final class LinkSupport {
     /**
      * Handles a click event within a content root: if it falls on (or within) a link, the handler
      * is consulted and the browser's default navigation is suppressed when the handler acts — and
-     * always for an in-page {@code #anchor} (SPA safety).
+     * always for an in-page {@code #anchor} (SPA safety) and for an address {@link SafeLinks}
+     * refuses (which the handler is not consulted on).
      *
      * @param evt
      *              the click event.
@@ -68,8 +69,10 @@ public final class LinkSupport {
         if (anchor == null)
             return;
         String url = anchor.getAttribute ("href");
-        boolean handled = (handler != null) && handler.activate (url, anchor, root);
-        if (handled || LinkHandlers.isInPageAnchor (url)) {
+        // An address SafeLinks refuses is never followed, whatever the handler does.
+        boolean refused = (url != null) && !SafeLinks.isSafe (url);
+        boolean handled = !refused && (handler != null) && handler.activate (url, anchor, root);
+        if (handled || refused || LinkHandlers.isInPageAnchor (url)) {
             // Suppress the browser's default navigation, and stop the click bubbling to any
             // surrounding handler (e.g. a click-to-edit surface) — activating a link should not
             // also do whatever a bare click on the content would.

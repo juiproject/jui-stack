@@ -167,11 +167,12 @@ The hover card mirrors the image overlay: a fixed `body` element positioned abov
 
 What a link *does* when activated is a pluggable `ILinkHandler` (in `com.effacy.jui.text.ui.type`) — the **same** hook the read-only renderer / `FText` accept, so a link behaves identically wherever the content is shown. Set it with `Config.linkHandler(ILinkHandler)`; it defaults to `LinkHandlers.standard()`:
 
-- **External** (`http(s)://`, `mailto:`, `tel:`) → opens in a new tab.
+- **Refused** (a scheme `SafeLinks` refuses, such as `javascript:`, `vbscript:` or `data:`) → never opened: the click is suppressed and the fallback is not consulted. The editor draws such a link without an `href` (so the hover card does not offer it), and its own *Open* refuses it too.
+- **External** (`http(s):`, `mailto:`, `tel:`) → opens in a new tab (with `noopener`).
 - **In-page anchor** (`#section`) → the click is **always suppressed** (so it never reaches a single-page-app hash router) and, if a matching element exists in the content, scrolled to. Rendered headings carry a [slug](../type/LinkHandlers.java) id — in **both** the editor and the read-only renderer — so `[x](#operating-scenarios)` scrolls to the "Operating scenarios" heading whether you're viewing or editing. `scrollToAnchor` searches within the content root first, so the right copy is found even if an editor and a read view share the page.
-- **Anything else** (relative, custom schemes like `doc:`) → left to the browser, or handed to an application fallback.
+- **Anything else** (relative, and custom schemes like `doc:` that the application has allowed with `SafeLinks.allow(...)`) → left to the browser, or handed to an application fallback.
 
-Compose app schemes on top with `LinkHandlers.standard(myFallback)`, where `myFallback` is an `ILinkHandler` that handles its schemes (e.g. `doc:`) and returns `false` otherwise. The read-only side wires the same handler via `LinkSupport.bind(rootElement, handler)` (a delegated click listener) — `FText` does this for you through `FText.linkHandler(...)`.
+Compose app schemes on top with `LinkHandlers.standard(myFallback)`, where `myFallback` is an `ILinkHandler` that handles its schemes (e.g. `doc:`) and returns `false` otherwise. Allow the scheme with `SafeLinks.allow("doc")` too, or the renderers draw such links without an `href` (see *Safe link addresses* in the [type README](../../type/README.md)). The read-only side wires the same handler via `LinkSupport.bind(rootElement, handler)` (a delegated click listener) — `FText` does this for you through `FText.linkHandler(...)`.
 
 ### Table cell navigation
 

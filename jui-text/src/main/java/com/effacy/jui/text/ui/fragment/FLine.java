@@ -26,6 +26,7 @@ import com.effacy.jui.core.client.dom.builder.Text;
 import com.effacy.jui.text.type.FormattedLine;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
 import com.effacy.jui.text.ui.type.FormattedTextStyles;
+import com.effacy.jui.text.ui.type.SafeLinks;
 
 /**
  * Used to generate DOM from a {@link FormattedLine}.
@@ -67,6 +68,9 @@ public class FLine extends Fragment<FLine> {
                         String href = segment.link();
                         if (href == null)
                             A.$ (parent).text (segment.text ());
+                        else if (!SafeLinks.isSafe (href))
+                            // A refused address (see SafeLinks): the text without a link.
+                            Text.$ (parent, segment.text ());
                         else if (href.startsWith("http"))
                             A.$ (parent, href).text (segment.text ()).attr("target", "_blank");
                         else

@@ -27,6 +27,7 @@ import com.effacy.jui.text.ui.type.ListIndex;
 import com.effacy.jui.text.ui.type.ILinkHandler;
 import com.effacy.jui.text.ui.type.LinkHandlers;
 import com.effacy.jui.text.ui.type.LinkSupport;
+import com.effacy.jui.text.ui.type.SafeLinks;
 import com.effacy.jui.text.type.edit.Transaction;
 import com.effacy.jui.text.type.edit.step.DeleteBlockStep;
 import com.effacy.jui.text.type.edit.step.SetBlockTypeStep;
@@ -273,9 +274,10 @@ public class Editor extends Component<Editor.Config> {
          * <p>
          * Defaults to {@link LinkHandlers#standard()} (external links open in a new tab; in-page
          * {@code #anchor} links scroll within the content and never reach an SPA hash router;
-         * other schemes are left to the browser). Pass {@link LinkHandlers#standard(ILinkHandler)}
+         * other links are left to the browser; schemes refused by {@link SafeLinks}, such as
+         * {@code javascript:}, are never opened). Pass {@link LinkHandlers#standard(ILinkHandler)}
          * with an application fallback to route custom schemes (e.g. an internal {@code doc:}
-         * reference). This is the same {@link ILinkHandler} the read-only renderer / {@code FText}
+         * reference, which must also be allowed with {@link SafeLinks#allow(String...)}). This is the same {@link ILinkHandler} the read-only renderer / {@code FText}
          * accepts, so links behave identically in both.
          *
          * @param linkHandler
@@ -772,7 +774,9 @@ public class Editor extends Component<Editor.Config> {
             } else if (segment.contains(FormatType.A)) {
                 Element a = DomGlobal.document.createElement("a");
                 String href = segment.link();
-                if (href != null) {
+                // A refused address (see SafeLinks) keeps the anchor (so the link
+                // can still be edited or removed) but has no href to follow.
+                if ((href != null) && SafeLinks.isSafe(href)) {
                     a.setAttribute("href", href);
                     if (href.startsWith("http"))
                         a.setAttribute("target", "_blank");
@@ -1607,14 +1611,17 @@ public class Editor extends Component<Editor.Config> {
         return null;
     }
 
-    /** Activates a link via the configured handler; falls back to opening in a new tab. */
+    /**
+     * Activates a link via the configured handler; falls back to opening in a new
+     * tab. An address refused by {@link SafeLinks} is not activated.
+     */
     private void openLink(Element anchor, String href) {
-        if ((href == null) || href.isEmpty())
+        if ((href == null) || href.isEmpty() || !SafeLinks.isSafe(href))
             return;
         ILinkHandler handler = config().linkHandler;
         if ((handler != null) && handler.activate(href, anchor, editorEl))
             return;
-        DomGlobal.window.open(href, "_blank");
+        DomGlobal.window.open(href, "_blank", "noopener");
     }
 
     private void handleEditorMouseOver(Event evt) {

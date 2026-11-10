@@ -1,0 +1,178 @@
+/* Options of a Button (see Button.IOptionsCSS). These are a stylesheet of
+   their own, so a configuration's own styles keep them, and they sit on the
+   button's --cpt-btn-* tokens, so they take its variants. */
+
+.opens .holder {
+    display: contents;
+}
+
+/*************************************************
+* Menu button: a chevron after the label.
+*/
+
+.opens .chevron {
+    font-size: 0.75em;
+    transition: transform 0.15s;
+}
+
+.opens.open .chevron {
+    transform: rotate(180deg);
+}
+
+/*************************************************
+* Split button: the action and the chevron are two parts, divided by a
+* hairline. The block padding moves from the outer to the parts, so that each
+* part's hover surface fills the button and the button keeps its height.
+*/
+
+.opens.split {
+    --cpt-btnopt-hover-bg: var(--cpt-btn-bg-hover);
+    --cpt-btnopt-hover-text: var(--cpt-btn-text-hover);
+}
+
+.opens.split .parts {
+    /* The outer no longer hovers as a whole (each part does). */
+    --cpt-btn-bg-hover: var(--cpt-btn-bg);
+    --cpt-btn-text-hover: var(--cpt-btn-text);
+    padding: 0;
+    align-items: stretch;
+}
+
+.opens.split .parts > .part {
+    padding-top: var(--cpt-btn-padding-block);
+    padding-bottom: var(--cpt-btn-padding-block);
+}
+
+.opens.split .parts > .part:first-child {
+    flex: 1 1 auto;
+    padding-left: calc(var(--cpt-btn-padding-inline) + 2px);
+}
+
+.opens.split .parts > .toggle {
+    flex: 0 0 auto;
+    padding-left: calc(var(--cpt-btn-padding-inline) * 0.6);
+    padding-right: calc(var(--cpt-btn-padding-inline) * 0.6 + 2px);
+}
+
+.opens.split .parts > .toggle::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--cpt-btn-text);
+    opacity: 0.35;
+}
+
+.opens.split.inactive .parts > .toggle::before {
+    background: var(--cpt-btn-disabled-text);
+}
+
+.opens.split .parts > .toggle em {
+    font-size: 0.75em;
+}
+
+/* The chevron takes focus on its own (the button's focus ring is the
+   action's). */
+.opens.split .parts > .toggle:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--cpt-btn-focus-border);
+}
+
+.opens.split:not(.inactive) .parts > .part:hover {
+    background: var(--cpt-btnopt-hover-bg);
+}
+
+.opens.split:not(.inactive) .parts > .part:hover * {
+    color: var(--cpt-btnopt-hover-text);
+}
+
+/*************************************************
+* The menu: placed against the window (position and size are set when it
+* opens) over a backdrop that closes it.
+*/
+
+.opens .backdrop {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    background: transparent;
+    cursor: default;
+}
+
+.opens .menu {
+    position: fixed;
+    z-index: 1001;
+    box-sizing: border-box;
+    min-width: 12em;
+    max-width: 24em;
+    padding: 0.25em;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: var(--jui-role-surface-overlay);
+    border: 1px solid var(--jui-role-border-subtle);
+    border-radius: var(--cpt-btn-border-radius);
+    box-shadow: var(--jui-elevation-2);
+    text-align: left;
+    white-space: normal;
+}
+
+.opens .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6em;
+    padding: 0.45em 0.6em;
+    border-radius: var(--cpt-btn-border-radius);
+    color: var(--jui-role-text-default);
+    cursor: pointer;
+    outline: none;
+}
+
+.opens .option.active {
+    background: var(--jui-role-surface-muted);
+}
+
+.opens .code {
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    min-width: 3.2em;
+    margin-top: 0.15em;
+    padding: 0.1em 0.45em;
+    border: 1px solid var(--cpt-btn-border);
+    border-radius: var(--cpt-btn-border-radius);
+    background: var(--cpt-btn-bg);
+    color: var(--cpt-btn-text);
+    font-size: 0.7em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.opens .icon {
+    flex: 0 0 auto;
+    width: 1.25em;
+    margin-top: 0.2em;
+    text-align: center;
+    color: var(--jui-role-text-muted);
+}
+
+.opens .body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1em;
+    min-width: 0;
+}
+
+.opens .label {
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.opens .text {
+    font-size: 0.85em;
+    line-height: 1.35;
+    color: var(--jui-role-text-muted);
+}

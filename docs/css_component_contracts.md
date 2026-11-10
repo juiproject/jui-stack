@@ -37,6 +37,8 @@ Use this order when theming JUI applications:
 - `--cpt-btn-focus-border`: focus border colour.
 - `--cpt-btn-focus-shadow`: focus ring shadow colour.
 
+A button with options (a split or menu button) draws its chevron, the hairline of a split button and its menu from a stylesheet of its own (`Button.OptionsCSS`, `ButtonOptions.css` with `ButtonOptions_Override.css`), so a configuration's own `styles(...)` keeps them. It adds no tokens of its own: the chevron and hairline use `--cpt-btn-text`, each part of a split button hovers with `--cpt-btn-bg-hover` and `--cpt-btn-text-hover`, the menu takes `--cpt-btn-border-radius`, and an option's code is drawn as a small button (`--cpt-btn-bg`, `--cpt-btn-text`, `--cpt-btn-border`), so all of these follow the variant (`OUTLINED`, `DANGER`, ...). The menu card itself uses `--jui-role-surface-overlay`, `--jui-role-border-subtle` and `--jui-elevation-2`.
+
 ## Text Control
 
 - `--cpt-textctl-size`: input font size.

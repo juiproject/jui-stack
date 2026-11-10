@@ -31,6 +31,7 @@ import com.effacy.jui.playground.ui.gallery.GalleryExamples;
 import com.effacy.jui.playground.ui.lessons.Lessons;
 import com.effacy.jui.playground.ui.samples.Samples;
 import com.effacy.jui.playground.ui.shared.TextComponent;
+import com.effacy.jui.playground.ui.testing.ButtonSuite;
 import com.effacy.jui.playground.ui.testing.ControlSuite;
 import com.effacy.jui.playground.ui.tutorial.reference.Tutorial;
 import com.effacy.jui.ui.client.NotificationDialog;
@@ -132,6 +133,7 @@ public class PlaygroundUI extends TabNavigator {
             tab1.tab ("blocking", "Blocking",  new NavigationAwareComponent ()).icon (FontAwesome.notEqual ());
         }));
         tab ("testing-controls", "Controls", new ControlSuite ());
+        tab ("testing-buttons", "Buttons", new ButtonSuite ());
     }
 
     public static class NavigationAwareComponent extends Component<Component.Config> implements INavigationAware {

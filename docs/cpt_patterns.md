@@ -2341,6 +2341,34 @@ public class MyComponent extends SimpleComponent {
 
 These are the standard components that come with JUI. Most are fairly straight forward but others (such as tables) require more complex configuration.
 
+### Button
+
+#### Options (split and menu buttons)
+
+A button can carry a list of options, for a main action that has variants (such as *Add requirement* that can also add a rule or a constraint). The options show in a menu beneath the button, in the order they are added. Each has a label, a line saying what it is and either a short code shown before the label (such as `REQ`) or an icon; the line, code and icon can each be `null`.
+
+With `split()` the button keeps its own handler as its action, and a chevron beside it (divided by a hairline) opens the options:
+
+```java
+ButtonCreator.$ (bar, cfg -> {
+    cfg.label ("Add requirement");
+    cfg.icon (FontAwesome.plus ());
+    cfg.split ();
+    cfg.handler (() -> addRequirement ());
+    cfg.option ("Rule", "A rule that governs the requirements", "RULE", () -> addRule ());
+    cfg.option ("Constraint", null, "CON", () -> addConstraint ());
+    cfg.iconOption ("Non-functional requirement", "How well the system must do it", FontAwesome.gauge (), () -> addNfr ());
+});
+```
+
+Without `split()` the whole button opens the options (with a chevron after its label) and the button's own handler is not used; nor does the button show a waiting state.
+
+The menu sits beneath the button with its right edge on the button's. It is placed against the window (`position: fixed`, corrected for a transformed ancestor) over a backdrop, so a container that clips its overflow does not clip it. Down and Up move through the options and Enter chooses one; Escape, Tab or a click outside closes the menu. Choosing an option closes the menu and then runs the option's handler. Disabling (or detaching) the button closes the menu.
+
+For testing, the chevron of a split button carries the test ID `<testId>-toggle`, the menu `<testId>-menu` and each option `<testId>-option-<code or label>`. The chevron (or, for a menu button, the button's action) carries `aria-haspopup="menu"` and `aria-expanded`; the menu and its rows have the roles `menu` and `menuitem`.
+
+The options' styles are a stylesheet of their own (see [CSS component contracts](css_component_contracts.md)), so they apply whatever `styles(...)` the button is configured with, and they sit on the button's `--cpt-btn-*` tokens so they follow its variant.
+
 ### Table
 
 #### Prototyping store

@@ -42,11 +42,19 @@ public class DomBuilderDataRenderer<D> implements IDataRenderer<D> {
         this.generator = generator;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Renders what {@link #generate(Object)} returns (by default the generator
+     * passed during construction) or, when that is {@code null} (as for a
+     * subclass that passes no generator), builds into the element with
+     * {@link #generate(ElementBuilder, Object)}.
+     */
     @Override
     public IUIEventHandler render(Element el, D data) {
-        NodeContext ctx = generator.apply (data);
+        NodeContext ctx = generate (data);
         if (ctx != null) {
-            el.append (ctx.node ());
+            el.appendChild (ctx.node ());
             return ctx;
         }
         return DomBuilder.el (el, root -> generate (root, data)).build ();

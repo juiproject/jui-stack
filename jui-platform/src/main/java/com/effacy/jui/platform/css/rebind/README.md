@@ -49,6 +49,16 @@ CSS stylesheet parsing is performed by `CssProcessor` making use of the [ph-css]
 
 Testing of the processor is performed by `CSSTest`.
 
+### Units the parser does not know
+
+ph-css (7.0.1) does not know a number of valid CSS units: `lh`, `rlh`, `cap`, `ic`, `rex`, `rch`, `rcap`, `ric`, `vi`, `vb`, the small, large and dynamic viewport units (`svh`, `lvw`, `dvh`, `svi`, ... `dvmax`), the container query units (`cqw`, `cqh`, `cqi`, `cqb`, `cqmin`, `cqmax`) and the resolution unit `x`. Left to itself it writes `18lh` as `18 lh` (which a browser drops, so the declaration has no effect) and can't read one inside `calc(...)` at all (losing the whole rule).
+
+`CssUnits` takes care of this: before parsing, each such dimension in a declaration value is replaced with a placeholder the parser carries anywhere (`var(--jui-unit-N)`), and the placeholders are put back in `export()` and `declarations()`. So `max-height: 18lh` and `calc(18lh + 2px)` come through as written. Selectors, at-rule preludes (media queries), strings, comments and `url(...)` are left alone, so a unit in a media query (`@media (min-height: 10lh)`) is still written as `10 lh`. The list of units is `CssUnits.UNITS`.
+
+### Reporting what is dropped
+
+Anything the parser can't read (a declaration, a rule or, at worst, the whole stylesheet) is not in its output. Rather than drop it silently, the processor records each problem, available from `CssProcessor#warnings()`, and `CssDeclarationGenerator` logs them as warnings against the type being generated.
+
 ## Parsing substitutions
 
 This is described in the [README.md](./parser/README.md) of the `parser` package and is employed by `CssProcessor` to generate a collection of substitutions. These are made available via `CssProcessor#substitutions(BiConsumer<String,String>)` so can be used to generate substiution code. The exported CSS (via `CssProcessor#export()` and `CssProcessor#exportAsString()`) will have been modified so that the substitution references can be safely replaced using string replacement. The details are described in the aforementioned readme.

@@ -1,0 +1,64 @@
+/*************************************
+* The strip with tools (see TabNavigator.Config.tools(...)).
+*
+* Used only where there are tools, so no variant changes. The strip and the tools
+* share one grid cell, which stands in the wrap where the strip would, and the
+* tools are laid over the strip's far end. They are not placed in the strip: the
+* variants style every list in it as its tabs, and some clip it.
+*/
+
+/* Stacks above the body, so a menu the tools open drops down over it. */
+.strip {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+}
+
+/* The strip itself, with what the wrap gave it: position and the navigator's
+   background (on the strip, not the cell, so a variant with a margin round the
+   strip keeps it clear). It gets a stacking context of its own, so a tab's
+   z-index (an active tab has one) stays beneath the tools. */
+.strip > header {
+    grid-row: 1;
+    grid-column: 1;
+    position: relative;
+    z-index: 0;
+    background-color: var(--cpt-navigator-bg);
+}
+
+/* At the right of a horizontal strip, its contents centred in the strip's height.
+   The cell takes the strip's height without adding to it (height 0, at least the
+   full height), so tools taller than the strip never change its size. */
+.tools {
+    grid-row: 1;
+    grid-column: 1;
+    justify-self: end;
+    align-self: start;
+    box-sizing: border-box;
+    height: 0;
+    min-height: 100%;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--jui-space-3);
+    padding-right: var(--cpt-tabnavigator-tools-inset, var(--jui-space-5));
+}
+
+/* At the foot of a vertical strip. Likewise the cell takes the strip's width
+   without adding to it, so tools wider than a narrow strip (an icon-only variant)
+   never widen it. */
+.tools.bottom {
+    justify-self: start;
+    align-self: end;
+    width: 0;
+    min-width: 100%;
+    height: auto;
+    min-height: 0;
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--cpt-tabnavigator-tools-inset, var(--jui-space-5));
+}

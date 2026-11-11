@@ -133,6 +133,12 @@ public class CssDeclarationGenerator extends Generator {
                     processor.load (resource.getResourceAsString ());
                 if ((stylesheet != null) && !stylesheet.isBlank())
                     processor.load (stylesheet);
+                if (!processor.warnings ().isEmpty ()) {
+                    // Report what the parser could not read (and so is not in the output)
+                    // rather than drop it silently.
+                    TreeLogger sub = logger.branch (TreeLogger.WARN, "CSS for '" + typeName + "' contains content that can't be read and is dropped");
+                    processor.warnings ().forEach (warning -> sub.log (TreeLogger.WARN, warning));
+                }
                 Map<String,Map<String,String>> declarations = generateCssDecarations ? processor.declarations () : null;
 
                 // Here we loop over each method and determine if it matches the profile for a

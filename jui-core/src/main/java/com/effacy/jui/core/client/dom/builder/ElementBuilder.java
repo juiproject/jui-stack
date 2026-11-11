@@ -32,7 +32,6 @@ import com.effacy.jui.platform.util.client.StringSupport;
 
 import elemental2.dom.Element;
 import elemental2.dom.HTMLElement;
-import elemental2.dom.HTMLInputElement;
 import elemental2.dom.Node;
 
 public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
@@ -218,6 +217,12 @@ public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
      * The passed value will be appropriately handled if it is a {@link String},
      * {@link SafeHtmlBuilder} or {@link SafeHtml}; otherwise it will be converted
      * to a string via a call to {@link Object#toString()}.
+     * <p>
+     * The {@code disabled} and {@code checked} attributes are boolean attributes
+     * and are applied as properties of the built element (on any element type).
+     * Any value means set (so {@code "disabled"}, {@code "checked"},
+     * {@code "true"} and the empty string all work) except {@code "false"} (case
+     * insensitive), which means not set.
      * 
      * @param attr
      *              the name of the attribute being set.
@@ -316,6 +321,11 @@ public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
     
     /**
      * Convenience attribute setter.
+     * <p>
+     * The {@code disabled} state is set as a property on the built element (of any
+     * type, not only an input). When passed {@code false} the element is left
+     * not disabled (see {@link #attr(String, Object)}: any value of the attribute
+     * other than {@code "false"} means set, as with HTML boolean attributes).
      * 
      * @param value
      *              the value for the attribute.
@@ -327,6 +337,11 @@ public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
     
     /**
      * Convenience attribute setter.
+     * <p>
+     * The {@code checked} state is set as a property on the built element (of any
+     * type, not only an input). When passed {@code false} the element is left
+     * not checked (see {@link #attr(String, Object)}: any value of the attribute
+     * other than {@code "false"} means set, as with HTML boolean attributes).
      * 
      * @param value
      *              the value for the attribute.
@@ -544,6 +559,26 @@ public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
     }
 
     /**
+     * Determines if the value of a boolean attribute (i.e. {@code disabled} or
+     * {@code checked}) means the attribute is set.
+     * <p>
+     * As with HTML boolean attributes, the presence of the attribute is what
+     * counts, so any value (including the empty string, {@code "disabled"} and
+     * {@code "true"}) means set. The one exception is {@code "false"} (case
+     * insensitive), which means not set: {@link #disabled(boolean)} and
+     * {@link #checked(boolean)} write {@code "false"} when passed {@code false}.
+     * 
+     * @param value
+     *              the attribute value.
+     * @return {@code true} if the attribute is set.
+     */
+    static boolean booleanAttribute(String value) {
+        if (value == null)
+            return false;
+        return !"false".equalsIgnoreCase (value.trim ());
+    }
+
+    /**
      * Invoked by {@link #_nodeImpl(BuildContext)} to adorn the element.
      */
     protected void __nodeImpl(Element element) {
@@ -555,14 +590,12 @@ public class ElementBuilder extends ContainerBuilder<ElementBuilder> {
             for (Map.Entry<String, String> attribute : attributes.entrySet ()) {
                 if (attribute.getKey () == null)
                     continue;
-                if ("checked".equalsIgnoreCase (attribute.getKey())) {
-                    // The checked attribute is a property which requires setting differently.
-                    if ("true".equalsIgnoreCase (attribute.getValue ()))
-                        ((HTMLInputElement) element).checked = true;
-                } else if ("disabled".equalsIgnoreCase (attribute.getKey())) {
-                    // The disabled attribute is a property which requires setting differently.
-                    if ("true".equalsIgnoreCase (attribute.getValue ()))
-                        ((HTMLInputElement) element).disabled = true;
+                if (("checked".equalsIgnoreCase (attribute.getKey ())) || ("disabled".equalsIgnoreCase (attribute.getKey ()))) {
+                    // These are properties which require setting differently (the
+                    // attribute does not reliably carry the state). They are set on
+                    // any element without casting to a specific element type.
+                    if (booleanAttribute (attribute.getValue ()))
+                        DomNodes.setProperty (element, attribute.getKey ().toLowerCase (), true);
                 } else
                     DomNodes.setAttribute (element, attribute.getKey (), attribute.getValue ());
             }

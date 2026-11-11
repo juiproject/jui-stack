@@ -24,6 +24,7 @@ import com.effacy.jui.text.type.FormattedBlock.BlockType;
 import com.effacy.jui.text.type.FormattedLine.FormatType;
 import com.effacy.jui.text.type.builder.IEventBuilder;
 import com.effacy.jui.text.ui.type.FormattedTextStyles;
+import com.effacy.jui.text.ui.type.SafeLinks;
 
 import elemental2.dom.DomGlobal;
 import elemental2.dom.Element;
@@ -465,10 +466,16 @@ public class Elemental2Builder implements IEventBuilder<Element> {
 
     @Override
     public void link(String label, String url) {
+        if ((url != null) && !url.isEmpty() && (urlMapper != null))
+            url = urlMapper.apply(url);
+        if ((url != null) && !url.isEmpty() && !SafeLinks.isSafe(url)) {
+            // A refused address (see SafeLinks): the text without a link.
+            if ((label != null) && !label.isEmpty())
+                text(label);
+            return;
+        }
         HTMLAnchorElement a = (HTMLAnchorElement) createElement("a");
         if ((url != null) && !url.isEmpty()) {
-            if (urlMapper != null)
-                url = urlMapper.apply(url);
             a.href = url;
             if (!url.startsWith("#"))
                 a.target = "_blank";

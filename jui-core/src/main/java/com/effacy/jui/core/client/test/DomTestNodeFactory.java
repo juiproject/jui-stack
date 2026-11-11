@@ -80,6 +80,25 @@ public class DomTestNodeFactory implements DomNodes.IDomNodeFactory {
     }
 
     /**
+     * Records the property on a {@link FakeElement} (see
+     * {@link FakeElement#properties()}). On a {@link FakeInput} the
+     * {@code checked} and {@code disabled} properties are assigned to its fields.
+     */
+    @Override
+    public void setProperty(Element element, String name, Object value) {
+        if (element instanceof FakeElement) {
+            ((FakeElement) element).properties().put(name, value);
+            return;
+        }
+        if (element instanceof FakeInput) {
+            if ("checked".equals(name))
+                ((FakeInput) element).checked = Boolean.TRUE.equals(value);
+            else if ("disabled".equals(name))
+                ((FakeInput) element).disabled = Boolean.TRUE.equals(value);
+        }
+    }
+
+    /**
      * Simple fake token list that captures classes.
      */
     public static class FakeTokenList extends DOMTokenList {
@@ -142,6 +161,7 @@ public class DomTestNodeFactory implements DomNodes.IDomNodeFactory {
         private final String namespace;
         private final List<Node> children = new ArrayList<>();
         private final Map<String, String> attributes = new LinkedHashMap<>();
+        private final Map<String, Object> properties = new LinkedHashMap<>();
 
         public FakeElement(String tag) {
             this(null, tag);
@@ -170,6 +190,14 @@ public class DomTestNodeFactory implements DomNodes.IDomNodeFactory {
 
         public Map<String, String> attributes() {
             return attributes;
+        }
+
+        /**
+         * The (DOM) properties set on the element through
+         * {@link DomNodes#setProperty(Element, String, Object)}.
+         */
+        public Map<String, Object> properties() {
+            return properties;
         }
 
         public boolean hasClass(String name) {

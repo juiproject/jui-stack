@@ -100,6 +100,32 @@ public class TableComponentsITTest extends AbstractIT {
     }
 
     @Test
+    public void dataRendererComponentsAdoptedAndReleased() throws Exception {
+        HtmlPage page = openTableComponents ();
+        String name = text (page, "tablecpts.name");
+
+        // (1) A button component from a data renderer cell gets its own click (and
+        // the row handler is not run).
+        clickButton (page, "tablecpts.dr.open");
+        Assertions.assertEquals ("dr:" + name, text (page, "tablecpts.lastclick"));
+
+        // (2) Re-rendering the rows releases the earlier components: as many are live
+        // as there are rows, with one button per row that still gets its clicks.
+        click (page, "tablecpts.refresh");
+        click (page, "tablecpts.count");
+        Assertions.assertEquals ("10 data renderer live", text (page, "tablecpts.drlive"));
+        Assertions.assertEquals (10, count (page, "tablecpts.dr.open"));
+        clickButton (page, "tablecpts.dr.open");
+        Assertions.assertEquals ("dr:" + name, text (page, "tablecpts.lastclick"));
+
+        // (3) Reloading with fewer rows releases those of the rows removed.
+        click (page, "tablecpts.reload");
+        click (page, "tablecpts.count");
+        Assertions.assertEquals ("5 data renderer live", text (page, "tablecpts.drlive"));
+        Assertions.assertEquals (5, count (page, "tablecpts.dr.open"));
+    }
+
+    @Test
     public void displayComponentClicksReachRowClick() throws Exception {
         HtmlPage page = openTableComponents ();
         String name = text (page, "tablecpts.name");

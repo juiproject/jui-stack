@@ -18,6 +18,7 @@ package com.effacy.jui.core.client.dom.builder;
 import elemental2.dom.DomGlobal;
 import elemental2.dom.Element;
 import elemental2.dom.Text;
+import jsinterop.base.Js;
 
 /**
  * Delegates DOM node creation for builder infrastructure.
@@ -117,6 +118,29 @@ public final class DomNodes {
     }
 
     /**
+     * Sets a (DOM) property on the given element.
+     * <p>
+     * This is used for properties (such as {@code disabled} and {@code checked})
+     * that are not reliably set through their attribute. The property is set
+     * without regard to the element's type, so no cast to a specific element type
+     * (such as an input) is made.
+     * 
+     * @param element
+     *                the element.
+     * @param name
+     *                the property name.
+     * @param value
+     *                the property value.
+     */
+    public static void setProperty(Element element, String name, Object value) {
+        if (factory != null) {
+            factory.setProperty(element, name, value);
+            return;
+        }
+        Js.asPropertyMap(element).set(name, value);
+    }
+
+    /**
      * Used to provide an alternative DOM node factory for builder infrastructure.
      */
     public interface IDomNodeFactory {
@@ -162,6 +186,20 @@ public final class DomNodes {
          */
         default void setAttribute(Element element, String name, String value) {
             element.setAttribute(name, value);
+        }
+
+        /**
+         * Sets a (DOM) property on an element created by this factory.
+         * 
+         * @param element
+         *                the element.
+         * @param name
+         *                the property name.
+         * @param value
+         *                the property value.
+         */
+        default void setProperty(Element element, String name, Object value) {
+            Js.asPropertyMap(element).set(name, value);
         }
     }
 }

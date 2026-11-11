@@ -118,6 +118,17 @@ for (TextSegment segment : line.sequence()) {
 }
 ```
 
+#### Safe link addresses
+
+A link's address is whatever the content holds, so content written by one user and shown to another could carry a `javascript:` address. The renderers (`FText` / `DomBuilderFormattedTextRenderer`, `FLine`, `DomBuilderBuilder`, `Elemental2Builder`) and the editor therefore check every address with `com.effacy.jui.text.ui.type.SafeLinks` before writing it as an `href`, and the link handlers (`LinkHandlers.standard()`, `LinkSupport`, the editor's *Open*) check it before opening it:
+
+- **Safe**: no scheme (a relative path, `//host/...`, `?query` or an in-page `#anchor`), or the scheme `http`, `https`, `mailto` or `tel`.
+- **Refused**: any other scheme, notably `javascript:`, `vbscript:` and `data:`. A renderer draws the link's text (with any other formatting) and no link; a link handler swallows the click and opens nothing. In the editor the link keeps its `<a>` (so it can still be edited or removed) but has no `href`.
+
+The address is read as a browser reads it: leading and trailing spaces and control characters are ignored, as are tabs and newlines anywhere, and the scheme is case insensitive (so `" JaVa\tScript:alert(1)"` is refused). The model is not changed: the link and its address stay in the content, they are only not drawn as a link.
+
+An application that routes its own scheme through a link handler (for example `doc:` via `LinkHandlers.standard(fallback)`) allows it, once, with `SafeLinks.allow("doc")`. `javascript`, `vbscript` and `data` can't be allowed.
+
 ### Tables
 
 Tables are parsed from markdown and represented as a hierarchy of blocks: TABLE → TROW → TCELL. The TABLE block carries metadata for column count, header row count, and per-column alignment.

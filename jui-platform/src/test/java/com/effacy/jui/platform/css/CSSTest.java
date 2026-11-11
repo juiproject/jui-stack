@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import com.effacy.jui.platform.css.client.CssResource.Combine;
 import com.effacy.jui.platform.css.rebind.CssProcessor;
+import com.effacy.jui.platform.css.rebind.CssUnits;
 import com.effacy.jui.platform.css.rebind.parser.ExpressionParser.ExpressionParserException;
 
 public class CSSTest {
@@ -173,7 +174,79 @@ public class CSSTest {
         Assertions.assertEquals ("prefix-cpt_survey", processor.mappedSelector ("cpt_survey"));
         Assertions.assertEquals ("prefix-outer", processor.mappedSelector ("outer"));
     }
-    
+
+    /**
+     * Units the parser does not know (such as {@code lh}) pass through unchanged
+     * (the parser would otherwise write {@code 18 lh}, which a browser drops).
+     */
+    @Test
+    public void testCssUnitsPassThrough() throws Exception {
+        for (String unit : CssUnits.UNITS) {
+            CssProcessor processor = new CssProcessor ().load (".a{max-height:18" + unit + ";color:red}");
+            Assertions.assertEquals (".a{max-height:18" + unit + ";color:red}", processor.export (), unit);
+            Assertions.assertTrue (processor.warnings ().isEmpty (), unit);
+        }
+        // Units the parser knows are unaffected.
+        for (String unit : new String[] { "px", "em", "rem", "ex", "ch", "vw", "vh", "vmin", "vmax", "cm", "mm", "q", "in", "pt", "pc", "deg", "rad", "grad", "turn", "s", "ms", "hz", "khz", "dpi", "dpcm", "dppx", "fr", "%" }) {
+            CssProcessor processor = new CssProcessor ().load (".a{max-height:18" + unit + "}");
+            Assertions.assertEquals (".a{max-height:18" + unit + "}", processor.export (), unit);
+        }
+    }
+
+    @Test
+    public void testCssUnitsLh() throws Exception {
+        Assertions.assertEquals (".a{max-height:18lh}", new CssProcessor ().load (".a { max-height: 18lh; }").export ());
+        Assertions.assertEquals (".a{max-height:18LH}", new CssProcessor ().load (".a { max-height: 18LH; }").export ());
+        Assertions.assertEquals (".a{margin:-1.5lh .5lh 2px 1e1lh}", new CssProcessor ().load (".a { margin: -1.5lh .5lh 2px 1e1lh; }").export ());
+        Assertions.assertEquals (".a{--gap:2lh}", new CssProcessor ().load (".a { --gap: 2lh; }").export ());
+        Assertions.assertEquals (".a{max-height:100svh;height:100dvh;width:50cqi}", new CssProcessor ().load (".a { max-height: 100svh; height: 100dvh; width: 50cqi }").export ());
+        // Inside functions, including calc() (which the parser can't read with an
+        // unknown unit, losing the rule).
+        Assertions.assertEquals (".a{max-height:calc(18lh + 2px)}", new CssProcessor ().load (".a { max-height: calc(18lh + 2px); }").export ());
+        Assertions.assertEquals (".a{max-height:calc((18lh - 1px)/2)}", new CssProcessor ().load (".a { max-height: calc((18lh - 1px) / 2); }").export ());
+        Assertions.assertEquals (".a{max-height:min(18lh,50vh)}", new CssProcessor ().load (".a { max-height: min(18lh, 50vh); }").export ());
+        Assertions.assertEquals (".a{max-height:clamp(1lh,10vh,18lh)}", new CssProcessor ().load (".a { max-height: clamp(1lh, 10vh, 18lh); }").export ());
+        // Within @media and nested rules.
+        Assertions.assertEquals ("@media (min-width:10px){.a{max-height:18lh}}", new CssProcessor ().load ("@media (min-width: 10px) { .a { max-height: 18lh; } }").export ());
+    }
+
+    @Test
+    public void testCssUnitsUntouched() throws Exception {
+        // Strings, URLs, identifiers and selectors are left alone.
+        Assertions.assertEquals (".a{content:\"18lh\"}", new CssProcessor ().load (".a { content: \"18lh\"; }").export ());
+        Assertions.assertEquals (".a{background:url(/img/18lh.png)}", new CssProcessor ().load (".a { background: url(/img/18lh.png); }").export ());
+        Assertions.assertEquals (".a{animation-name:x18lh}", new CssProcessor ().load (".a { animation-name: x18lh; }").export ());
+        Assertions.assertEquals (".col-2lh{color:red}", new CssProcessor ().load (".col-2lh { color: red; }").export ());
+        Assertions.assertEquals (".a{color:red}", new CssProcessor ().load ("/* 18lh; } */ .a { color: red; }").export ());
+    }
+
+    @Test
+    public void testCssUnitsRemapAndDeclarations() throws Exception {
+        CssProcessor processor = new CssProcessor ().load (".a { max-height: 18lh; }");
+        processor.remap (v -> "prefix-" + v);
+        Assertions.assertEquals (".prefix-a{max-height:18lh}", processor.export ());
+        Assertions.assertEquals ("18lh", processor.declarations ().get (".prefix-a").get ("max-height"));
+    }
+
+    @Test
+    public void testCssUnitsCombine() throws Exception {
+        CssProcessor processor = new CssProcessor ().combine (Combine.MERGE).load (".a { max-height: 18lh; }").load (".a { line-height: 2rlh; } .b { height: 3lh; }");
+        Assertions.assertEquals (".a{max-height:18lh;line-height:2rlh}.b{height:3lh}", processor.export ());
+    }
+
+    /**
+     * What the parser can't read is reported rather than dropped silently.
+     */
+    @Test
+    public void testCssWarnings() throws Exception {
+        CssProcessor processor = new CssProcessor ().load (".a { color: red; } .b { width: calc(1px + ); } .c { color: blue; }");
+        Assertions.assertFalse (processor.warnings ().isEmpty ());
+        Assertions.assertTrue (processor.export ().contains (".a{color:red}"));
+
+        processor = new CssProcessor ().load (".a { color: red; max-height: 18lh; }");
+        Assertions.assertTrue (processor.warnings ().isEmpty ());
+    }
+
 
     protected String load(String name) throws Exception {
         StringBuilder sb = new StringBuilder();

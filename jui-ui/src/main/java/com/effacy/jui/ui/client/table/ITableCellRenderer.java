@@ -15,6 +15,8 @@
  ******************************************************************************/
 package com.effacy.jui.ui.client.table;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -22,6 +24,8 @@ import java.util.function.Function;
 import com.effacy.jui.core.client.component.IComponent;
 import com.effacy.jui.core.client.dom.IUIEventHandler;
 import com.effacy.jui.core.client.dom.UIEvent;
+import com.effacy.jui.core.client.dom.builder.NodeBuilder.NodeContext;
+import com.effacy.jui.core.client.dom.builder.Wrap;
 import com.effacy.jui.core.client.dom.renderer.IDataRenderer;
 
 import elemental2.dom.Element;
@@ -62,6 +66,11 @@ public interface ITableCellRenderer<D> {
          * disposes of them when the row is re-rendered or removed.
          * <p>
          * The default visits none.
+         * <p>
+         * A handler that wraps another handler must forward this to the handler it
+         * wraps (as {@link ITableCellRenderer#convert(Function, ITableCellRenderer)}
+         * does), otherwise the wrapped handler's components are never attached and
+         * receive no events.
          * 
          * @param visitor
          *                to visit each component.
@@ -106,7 +115,13 @@ public interface ITableCellRenderer<D> {
     /**
      * Creates a cell renderer from a data renderer.
      * <p>
-     * If the data renderer returns a handle then that handler will be used.
+     * If the data renderer returns a handle then that handler will be used. If that
+     * handle is a {@link NodeContext} (as for a renderer built from a DOM builder)
+     * then the components lodged in it (for example with {@code Cpt.$}) are
+     * reported through {@link ITableCellHandler#forEachComponent(Consumer)}, so
+     * the table adopts and releases them as it does for a
+     * {@link com.effacy.jui.ui.client.table.renderer.BuilderTableCellRenderer}.
+     * The cell is cleared before the data renderer renders into it.
      * 
      * @param renderer
      *                 the data renderer to use.
@@ -118,14 +133,27 @@ public interface ITableCellRenderer<D> {
             @Override
             public ITableCellHandler<D> render(Element el, D data) {
                 if (renderer != null) {
+                    Wrap.$ (el).clear ();
                     IUIEventHandler handler = renderer.render (el, data);
                     if (handler == null)
                         return null;
+                    List<IComponent> components = new ArrayList<> ();
+                    if (handler instanceof NodeContext) {
+                        ((NodeContext) handler).forEachLodgement (object -> {
+                            if (object instanceof IComponent)
+                                components.add ((IComponent) object);
+                        });
+                    }
                     return new ITableCellHandler<D> () {
 
                         @Override
                         public boolean handleUIEvent(UIEvent e, D data) {
                             return handler.handleEvent (e);
+                        }
+
+                        @Override
+                        public void forEachComponent(Consumer<IComponent> visitor) {
+                            components.forEach (visitor);
                         }
 
                     };

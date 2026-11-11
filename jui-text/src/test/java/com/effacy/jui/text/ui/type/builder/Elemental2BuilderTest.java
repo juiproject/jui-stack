@@ -47,6 +47,28 @@ class Elemental2BuilderTest {
     }
 
     @Test
+    void refusesUnsafeLinkAddresses() {
+        for (String url : new String[] { "javascript:alert%281%29", "JaVaScRiPt:alert%281%29", "java\tscript:alert%281%29", "vbscript:msgbox%281%29", "data:text/html,x" }) {
+            FakeElement root = new FakeElement("div");
+            new MarkdownParser().parse(new TestElemental2Builder(root), "[site](" + url + ")");
+
+            // Drawn as the text without a link.
+            FakeElement p = childElement(root, 0);
+            assertEquals(1, p.children().size(), url);
+            assertEquals("site", childText(p, 0).text(), url);
+        }
+    }
+
+    @Test
+    void refusesUnsafeMappedLinkAddresses() {
+        // The rule applies to the address after mapping.
+        FakeElement root = new FakeElement("div");
+        new MarkdownParser().parse(new TestElemental2Builder(root).urlMapper(u -> "javascript:alert(1)"), "[site](http://example.com)");
+        FakeElement p = childElement(root, 0);
+        assertEquals("site", childText(p, 0).text());
+    }
+
+    @Test
     void buildsInlineCodeSpan() {
         FakeElement root = new FakeElement("div");
         Elemental2Builder builder = new TestElemental2Builder(root);

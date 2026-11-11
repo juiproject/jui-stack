@@ -68,11 +68,11 @@ Larger UI building blocks. Construct via the matching `…Creator`. To build you
 
 | Component | Creator | Description |
 |---|---|---|
-| `TabNavigator` | `TabNavigatorCreator` | Tabbed navigation across child components; participates in the navigation/breadcrumb hierarchy. Variants: `HORIZONTAL`, `HORIZONTAL_UNDERLINE`, `HORIZONTAL_BAR`, `VERTICAL`, `VERTICAL_ICON`, `VERTICAL_ALT`, `VERTICAL_COMPACT`. |
+| `TabNavigator` | `TabNavigatorCreator` | Tabbed navigation across child components; participates in the navigation/breadcrumb hierarchy. Variants: `HORIZONTAL`, `HORIZONTAL_UNDERLINE`, `HORIZONTAL_BAR`, `VERTICAL`, `VERTICAL_ICON`, `VERTICAL_ALT`, `VERTICAL_COMPACT`. `Config.tools(IComponent...)` (or `tools(...)` before render) draws components at the strip's far end (right of a horizontal strip, foot of a vertical one), disposed of with the navigator. |
 | `CardNavigator` | — | A stack of named "cards" navigated by reference (e.g. gallery → detail → sub-detail); breadcrumb-aware, lazily activates cards. |
-| `TabCollection` | — | Lower-level collection of tabs used by the navigators. |
+| `TabCollection` | — | Lower-level collection of tabs used by the navigators. `group(...).hidden()` declares a group whose tabs are navigable (by reference, deep link, `activate`) but not drawn. |
 
-See [ess_navigation.md](https://github.com/juiproject/jui-stack/blob/main/docs/ess_navigation.md).
+See [ess_navigation.md](https://github.com/juiproject/jui-stack/blob/main/docs/ess_navigation.md) and the navigation package's README (tools and hidden groups).
 
 ### Data display (`…client.table`, `…client.gallery`)
 
@@ -90,7 +90,7 @@ Tables and galleries are driven by **stores** (`PaginatedStore`, `ISearchStore`,
 
 | Component | Creator | Description |
 |---|---|---|
-| `Button` | `ButtonCreator` | Standard button component — label, icon, and a handler with async completion callback. For lightweight inline buttons prefer the `Btn` fragment. |
+| `Button` | `ButtonCreator` | Standard button component — label, icon, and a handler with async completion callback. Can carry options (`option(label, text, code, handler)`, `iconOption(...)`) shown in a menu beneath it: the whole button opens them (menu button) or, with `split()`, a chevron beside its action does (split button). For lightweight inline buttons prefer the `Btn` fragment. |
 
 ### Modals & dialogs (`…client.modal`)
 

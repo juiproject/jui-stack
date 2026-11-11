@@ -29,6 +29,13 @@ public class BtnTest extends AbstractDomTest {
 
 `AbstractDomTest` ensures the `GWTTestBridge` is installed before building content.
 
+Properties the builder sets on an element (through `DomNodes.setProperty`, as it does for `disabled` and `checked`) are recorded on the fake element (`FakeElement.properties()`) and asserted with `propertyEquals`:
+
+```java
+build(Btn.$("Save").disable(true))
+    .child("button", c -> c.propertyEquals("disabled", true));
+```
+
 ## Registering `GWT.create(...)`
 
 Where a type requires a specific test implementation, register it explicitly:

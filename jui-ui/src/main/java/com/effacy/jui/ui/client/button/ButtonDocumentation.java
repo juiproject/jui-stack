@@ -15,6 +15,8 @@
  ******************************************************************************/
 package com.effacy.jui.ui.client.button;
 
+import com.effacy.jui.core.client.component.ComponentCreator;
+import com.effacy.jui.core.client.dom.builder.Div;
 import com.effacy.jui.platform.util.client.StringSupport;
 import com.effacy.jui.ui.client.NotificationDialog;
 import com.effacy.jui.ui.client.button.Button.Config.Behaviour;
@@ -55,6 +57,18 @@ public class ButtonDocumentation {
             option.value (Button.Config.Behaviour.DISABLE, "Disable the button until the handler callback returns");
             option.value (Button.Config.Behaviour.NORMAL, "No change in visual state");
             option.value (Button.Config.Behaviour.WAIT, "Display a waiting state (with a visual spinner) until the handler callback returns");
+        })
+        .option ("option", option -> {
+            option.description ("Adds an option (label, a line saying what it is, a short code shown before the label and a handler). Options show in a menu beneath the button in the order added; choosing one closes the menu then runs its handler. Without split() the whole button opens the menu (and its own handler is not used).");
+            option.valueType ("(String,String,String,Invoker)");
+        })
+        .option ("iconOption", option -> {
+            option.description ("As option but with an icon in place of the code.");
+            option.valueType ("(String,String,String,Invoker)");
+        })
+        .option ("split", option -> {
+            option.description ("With options, the button keeps its own handler as its action and a chevron beside it (divided by a hairline) opens the options.");
+            option.valueType ("boolean");
         })
         .style ("LINK", style -> {
             style.css ("Button.css","Button_Override.css");
@@ -275,6 +289,59 @@ public class ButtonDocumentation {
                 "  .style (Button.Config.Style.LINK)",
                 "  .build ();",
                 "button.disable ();"
+            ));
+        })
+        .example (ButtonCreator.config ().testId ("btn-11").label ("Add requirement").icon (FontAwesome.plus ()).split ()
+            .handler (() -> NotificationDialog.alert ("Add requirement", "The button's own action.", t -> {}))
+            .option ("Requirement", "Something the system must do", "REQ", () -> NotificationDialog.alert ("Option chosen", "Requirement", t -> {}))
+            .option ("Rule", "A rule that governs the requirements", "RULE", () -> NotificationDialog.alert ("Option chosen", "Rule", t -> {}))
+            .option ("Constraint", null, "CON", () -> NotificationDialog.alert ("Option chosen", "Constraint", t -> {}))
+            .iconOption ("Non-functional requirement", "How well the system must do it", FontAwesome.gauge (), () -> NotificationDialog.alert ("Option chosen", "Non-functional requirement", t -> {}))
+            .build (), detail -> {
+            detail.description ("Split button: the button runs its own action and the chevron opens the options.");
+            detail.code (StringSupport.compose (
+                "ButtonCreator.config ()",
+                "  .label (\"Add requirement\")",
+                "  .icon (FontAwesome.plus ())",
+                "  .split ()",
+                "  .handler (() -> ...)",
+                "  .option (\"Requirement\", \"Something the system must do\", \"REQ\", () -> ...)",
+                "  .option (\"Rule\", \"A rule that governs the requirements\", \"RULE\", () -> ...)",
+                "  .option (\"Constraint\", null, \"CON\", () -> ...)",
+                "  .iconOption (\"Non-functional requirement\", \"How well the system must do it\", FontAwesome.gauge (), () -> ...)",
+                "  .build ();"
+            ));
+        })
+        .example (ButtonCreator.config ().testId ("btn-12").label ("Add").variant (Button.Config.Variant.OUTLINED)
+            .option ("Requirement", "Something the system must do", "REQ", () -> NotificationDialog.alert ("Option chosen", "Requirement", t -> {}))
+            .option ("Rule", "A rule that governs the requirements", "RULE", () -> NotificationDialog.alert ("Option chosen", "Rule", t -> {}))
+            .build (), detail -> {
+            detail.description ("Menu button: the whole button opens the options (the button's own handler is not used).");
+            detail.code (StringSupport.compose (
+                "ButtonCreator.config ()",
+                "  .label (\"Add\")",
+                "  .variant (Button.Config.Variant.OUTLINED)",
+                "  .option (\"Requirement\", \"Something the system must do\", \"REQ\", () -> ...)",
+                "  .option (\"Rule\", \"A rule that governs the requirements\", \"RULE\", () -> ...)",
+                "  .build ();"
+            ));
+        })
+        .example (() -> ComponentCreator.build (root -> {
+            Div.$ (root).css ("overflow: hidden; height: 3em; padding: 0.25em; border: 1px dashed var(--jui-role-border-default);").$ (box -> {
+                ButtonCreator.$ (box, cfg -> cfg.testId ("btn-13").label ("Add").split ()
+                    .handler (() -> NotificationDialog.alert ("Add", "The button's own action.", t -> {}))
+                    .option ("Requirement", "Something the system must do", "REQ", () -> NotificationDialog.alert ("Option chosen", "Requirement", t -> {}))
+                    .option ("Rule", "A rule that governs the requirements", "RULE", () -> NotificationDialog.alert ("Option chosen", "Rule", t -> {})));
+            });
+        }), detail -> {
+            detail.description ("Split button in a container that clips its overflow (outlined): the menu is placed against the window so is not clipped.");
+            detail.code (StringSupport.compose (
+                "Div.$ (root).css (\"overflow: hidden; height: 3em;\").$ (box -> {",
+                "  ButtonCreator.$ (box, cfg -> cfg.label (\"Add\").split ()",
+                "    .handler (() -> ...)",
+                "    .option (\"Requirement\", \"Something the system must do\", \"REQ\", () -> ...)",
+                "    .option (\"Rule\", \"A rule that governs the requirements\", \"RULE\", () -> ...));",
+                "});"
             ));
         })
         .build ();

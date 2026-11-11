@@ -29,6 +29,8 @@ import com.effacy.jui.core.client.component.layout.ActionBarLayout.HAlignment;
 import com.effacy.jui.core.client.component.layout.VertLayout;
 import com.effacy.jui.core.client.dom.builder.Cpt;
 import com.effacy.jui.core.client.dom.builder.Div;
+import com.effacy.jui.core.client.dom.builder.DomBuilder;
+import com.effacy.jui.core.client.dom.renderer.DomBuilderDataRenderer;
 import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.css.Insets;
 import com.effacy.jui.core.client.dom.css.Length;
@@ -42,13 +44,15 @@ import com.effacy.jui.ui.client.control.TextControlCreator;
 import com.effacy.jui.ui.client.fragments.Btn;
 import com.effacy.jui.ui.client.panel.SplitPanel;
 import com.effacy.jui.ui.client.table.Table;
+import com.effacy.jui.ui.client.table.ITableCellRenderer;
 import com.effacy.jui.ui.client.table.TableCreator;
 import com.effacy.jui.ui.client.table.renderer.BuilderTableCellRenderer;
 
 /**
  * Components placed in table cells with {@code Cpt.$}: a {@link Button} in a
  * table with a row click handler (which also has a check control, a text
- * control and a display-only component per row) and in one without. It reports the last click and (on demand) the
+ * control and a display-only component and a button from an
+ * {@code ITableCellRenderer.create (IDataRenderer)} cell per row) and in one without. It reports the last click and (on demand) the
  * number of buttons in the first table that are still live (created and not
  * yet disposed), and has actions to re-render its rows in place, to reverse
  * their order and to reload it with fewer rows (see the playground IT
@@ -87,16 +91,23 @@ public class GalleryExamples_TableComponents extends SplitPanel {
         }), new ActionBarLayout.Data (0));
         // The count is only shown on demand (Count), as showing it while rows render
         // changes the layout, which renders the rows again.
-        int[] counts = new int[2];
+        int[] counts = new int[4];
         ValueStateVariable<Integer> live = new ValueStateVariable<> (0);
         addOther (StateComponentCreator.build (live, (s, el) -> {
             Div.$ (el).testId ("tablecpts.live").text (s.value () + " live");
+        }), new ActionBarLayout.Data (0));
+        ValueStateVariable<Integer> drLive = new ValueStateVariable<> (0);
+        addOther (StateComponentCreator.build (drLive, (s, el) -> {
+            Div.$ (el).testId ("tablecpts.drlive").text (s.value () + " data renderer live");
         }), new ActionBarLayout.Data (0));
 
         // Re-renders the rows in place (the records are unchanged), reloads with
         // fewer rows and shows the live count.
         addOther (ComponentCreator.build (el -> {
-            Btn.$ (el, "Count").testId ("tablecpts.count").onclick (() -> live.assign (counts[0] - counts[1]));
+            Btn.$ (el, "Count").testId ("tablecpts.count").onclick (() -> {
+                live.assign (counts[0] - counts[1]);
+                drLive.assign (counts[2] - counts[3]);
+            });
             Btn.$ (el, "Refresh").testId ("tablecpts.refresh").onclick (() -> store.refresh ());
             Btn.$ (el, "Reverse").testId ("tablecpts.reverse").onclick (() -> store.reverse ());
             Btn.$ (el, "Reload 5").testId ("tablecpts.reload").onclick (() -> store.refresh (records.subList (0, 5)));
@@ -123,6 +134,20 @@ public class GalleryExamples_TableComponents extends SplitPanel {
                     btn.addListener (IDisposeListener.create (c -> counts[1]++));
                     Cpt.$ (cell, btn);
                 }));
+            });
+            cfg.header ("Data renderer", header -> {
+                // A cell rendered by a data renderer (through
+                // ITableCellRenderer.create (IDataRenderer)) rather than a builder.
+                header.renderer (ITableCellRenderer.create (new DomBuilderDataRenderer<SampleRecord> (r -> DomBuilder.div (d -> {
+                    Button btn = ButtonCreator.build (b -> {
+                        b.testId ("tablecpts.dr.open");
+                        b.label ("Open");
+                        b.handler (() -> lastClick.assign ("dr:" + r.getName ()));
+                    });
+                    counts[2]++;
+                    btn.addListener (IDisposeListener.create (c -> counts[3]++));
+                    Cpt.$ (d, btn);
+                }).build ())));
             });
             cfg.header ("Check", header -> {
                 header.renderer (BuilderTableCellRenderer.create ((cell, r) -> {

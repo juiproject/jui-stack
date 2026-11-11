@@ -68,6 +68,8 @@ Div.$(parent)
     .style("cssClass1", "cssClass2")  // CSS classes (prefer styles().xxx() — obfuscated names)
     .id("uniqueId")                    // id attribute
     .attr("data-key", "value")         // arbitrary attribute
+    .disabled(true)                    // disabled/checked: set as a property on any element;
+                                       // attr("disabled", v) means set for any v but "false"
     .text("content")                   // text content
     .by("refName")                     // reference for later extraction
     .css("margin-top: 1em;")           // inline style (string)

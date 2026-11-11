@@ -562,6 +562,10 @@ public class DomBuilderFormattedTextRenderer {
         FormatType[] formats = segment.formatting();
         String link = segment.link();
 
+        // A refused address (see SafeLinks) is drawn as the text without a link.
+        if ((link != null) && !link.isEmpty() && !SafeLinks.isSafe(link))
+            link = null;
+
         // Collect effective formats (excluding the link marker).
         List<FormatType> effectiveFormats = new ArrayList<>();
         for (FormatType fmt : formats) {

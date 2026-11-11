@@ -43,6 +43,7 @@ import com.effacy.jui.text.type.builder.IEventBuilder;
 import com.effacy.jui.text.ui.fragment.FLine;
 import com.effacy.jui.text.ui.fragment.FText;
 import com.effacy.jui.text.ui.type.FormattedTextStyles;
+import com.effacy.jui.text.ui.type.SafeLinks;
 
 /**
  * An {@link IEventBuilder} that builds into a JUI
@@ -459,6 +460,10 @@ public class DomBuilderBuilder implements IEventBuilder<IDomInsertableContainer<
             ElementBuilder a = A.$(target);
             if ((label != null) && !label.isEmpty())
                 a.text(label);
+        } else if (!SafeLinks.isSafe(url)) {
+            // A refused address (see SafeLinks): the text without a link.
+            if ((label != null) && !label.isEmpty())
+                text(label);
         } else if (url.startsWith("http")) {
             ElementBuilder a = A.$(target, url);
             a.attr("target", "_blank");

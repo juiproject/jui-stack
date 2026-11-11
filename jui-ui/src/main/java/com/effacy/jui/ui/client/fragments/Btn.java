@@ -449,7 +449,8 @@ public class Btn {
             ElementBuilder btn = com.effacy.jui.core.client.dom.builder.Button.$ (parent);
             btn.style(styles().fragment());
             if (disabled) {
-                btn.attr("disabled", "disabled");
+                // Sets the disabled property on the button (so it can't be clicked).
+                btn.disabled(true);
                 btn.style(styles().disabled());
             }
             if (attributes != null)

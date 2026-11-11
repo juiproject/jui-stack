@@ -95,7 +95,7 @@ Multiple lines within a single block are separated by `<br>` elements.
 
 ### Links
 
-External links (`http...`) receive `target="_blank"`. Internal links are rendered as plain `<a>` elements.
+External links (`http...`) receive `target="_blank"`. Internal links are rendered as plain `<a>` elements. A link whose address `SafeLinks` refuses (a scheme other than `http`, `https`, `mailto` or `tel`, such as `javascript:`) is rendered as its text without a link; for `Elemental2Builder` the check applies to the address after `urlMapper`. See *Safe link addresses* in the [type README](../../../type/README.md).
 
 ## CSS requirements
 

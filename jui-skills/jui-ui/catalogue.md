@@ -90,7 +90,7 @@ Tables and galleries are driven by **stores** (`PaginatedStore`, `ISearchStore`,
 
 | Component | Creator | Description |
 |---|---|---|
-| `Button` | `ButtonCreator` | Standard button component — label, icon, and a handler with async completion callback. For lightweight inline buttons prefer the `Btn` fragment. |
+| `Button` | `ButtonCreator` | Standard button component — label, icon, and a handler with async completion callback. Can carry options (`option(label, text, code, handler)`, `iconOption(...)`) shown in a menu beneath it: the whole button opens them (menu button) or, with `split()`, a chevron beside its action does (split button). For lightweight inline buttons prefer the `Btn` fragment. |
 
 ### Modals & dialogs (`…client.modal`)
 

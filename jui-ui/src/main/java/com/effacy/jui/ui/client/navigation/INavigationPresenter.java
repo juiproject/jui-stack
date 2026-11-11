@@ -133,6 +133,11 @@ public interface INavigationPresenter {
      * Called on first render and again whenever the set changes shape. It may
      * arrive <b>before the presenter has rendered</b> — the navigator does not
      * know or care — so hold it and draw on render rather than assuming a DOM.
+     * <p>
+     * Groups the navigator declares hidden are not included (nor are their items
+     * passed to {@link #update(Item)}): their items are navigable but not drawn.
+     * Where one of them is active, {@link #activate(String)} carries a reference
+     * the presenter has not been given, and nothing should show as active.
      *
      * @param groups
      *               the items, grouped, in order.

@@ -38,6 +38,7 @@ import com.effacy.jui.core.client.component.layout.ILayout.ActivateOutcome;
 import com.effacy.jui.core.client.component.layout.LayoutData;
 import com.effacy.jui.core.client.dom.INodeProvider;
 import com.effacy.jui.core.client.dom.UIEventType;
+import com.effacy.jui.core.client.dom.builder.Cpt;
 import com.effacy.jui.core.client.dom.builder.Div;
 import com.effacy.jui.core.client.dom.builder.Em;
 import com.effacy.jui.core.client.dom.builder.H6;
@@ -59,6 +60,7 @@ import com.effacy.jui.core.client.navigation.INavigationHandler;
 import com.effacy.jui.core.client.navigation.INavigationHandlerProvider;
 import com.effacy.jui.core.client.navigation.INavigationHandlerWithProvider;
 import com.effacy.jui.core.client.navigation.NavigationHandler;
+import com.effacy.jui.platform.css.client.CssDeclaration;
 import com.effacy.jui.platform.css.client.CssResource;
 import com.effacy.jui.platform.util.client.Promise;
 import com.effacy.jui.platform.util.client.StringSupport;
@@ -601,6 +603,41 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         }
 
         /**
+         * See {@link #tools(IComponent...)}.
+         */
+        private List<IComponent> tools = new ArrayList<> ();
+
+        /**
+         * Adds components to draw at the far end of the tab strip: at the right of a
+         * horizontal strip (centred in its height) and at the foot of a vertical one.
+         * Use it for a selector, a button or a count that belongs on the row of tabs.
+         * <p>
+         * The components are rendered with the navigator and disposed of with it.
+         * They are laid over the strip rather than placed in it, so the variants'
+         * styling of the tabs does not reach them, nor does the strip clip them (a
+         * menu they open drops down over the body). The inset from the strip's end
+         * is the CSS variable {@code --cpt-tabnavigator-tools-inset} (default
+         * {@code --jui-space-5}).
+         * <p>
+         * The tools belong to the built-in strip: they are hidden with it (see
+         * {@link TabNavigator#hideNavigation()}) and with a configured
+         * {@link #presenter(INavigationPresenter)}, which replaces it.
+         *
+         * @param components
+         *                   the components to add (after any added already).
+         * @return this configuration.
+         */
+        public Config tools(IComponent... components) {
+            if (components != null) {
+                for (IComponent component : components) {
+                    if (component != null)
+                        tools.add (component);
+                }
+            }
+            return this;
+        }
+
+        /**
          * {@inheritDoc}
          *
          * @see com.effacy.jui.core.client.component.Component.Config#build(com.effacy.jui.core.client.component.layout.LayoutData[])
@@ -646,6 +683,19 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
      */
     public ITabGroupConfig group(String label) {
         return config().tabs.group (label);
+    }
+
+    /**
+     * Adds components to draw at the far end of the tab strip. See
+     * {@link Config#tools(IComponent...)}.
+     * <p>
+     * This must be done before rendering (otherwise the components are not drawn).
+     *
+     * @param components
+     *                   the components to add.
+     */
+    public void tools(IComponent... components) {
+        config ().tools (components);
     }
 
     /**
@@ -1198,8 +1248,8 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
      */
     public void hideNavigation() {
         navigationHidden = true;
-        if (tabHolderEl != null)
-            JQuery.$(tabHolderEl).hide();
+        if (navigationEl () != null)
+            JQuery.$(navigationEl ()).hide();
     }
 
     /**
@@ -1210,8 +1260,19 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         // Only where there is a built-in strip to show. With the drawing delegated
         // to a presenter the holder is empty, and showing it would open a band of
         // nothing above the body.
-        if ((tabHolderEl != null) && (defaultPresenter != null))
-            JQuery.$(tabHolderEl).show();
+        if ((navigationEl () != null) && (defaultPresenter != null))
+            JQuery.$(navigationEl ()).show();
+    }
+
+    /**
+     * The element holding the built-in strip: the strip and its tools together
+     * where there are tools (see {@link Config#tools(IComponent...)}), otherwise
+     * the strip itself.
+     */
+    private Element navigationEl() {
+        if (stripEl != null)
+            return stripEl;
+        return tabHolderEl;
     }
 
     /************************************************************************
@@ -1310,11 +1371,15 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
     }
 
     /**
-     * Describes the tab set for presentation.
+     * Describes the tab set for presentation. Hidden groups (see
+     * {@link ITabGroupConfig#hidden(boolean)}) are left out: their tabs are
+     * navigable but not drawn.
      */
     protected List<INavigationPresenter.Group> _describe() {
         List<INavigationPresenter.Group> groups = new ArrayList<> ();
         for (TabGroupConfig group : config ().tabs.getTabGroups ()) {
+            if (group.hidden)
+                continue;
             List<INavigationPresenter.Item> items = new ArrayList<> ();
             for (TabConfig tab : group.getTabs ())
                 items.add (_describe (tab, group.idx));
@@ -1331,12 +1396,15 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
     }
 
     /**
-     * Notifies the presenters that one tab has changed.
+     * Notifies the presenters that one tab has changed (unless it belongs to a
+     * hidden group, which the presenters were never told of).
      */
     protected void _updated(String ref) {
         if ((ref == null) || presenters.isEmpty ())
             return;
         for (TabGroupConfig group : config ().tabs.getTabGroups ()) {
+            if (group.hidden)
+                continue;
             for (TabConfig tab : group.getTabs ()) {
                 if (ref.equals (tab.reference)) {
                     INavigationPresenter.Item item = _describe (tab, group.idx);
@@ -1497,6 +1565,11 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
     private Element tabHolderEl;
 
     /**
+     * The cell holding the strip and its tools, where there are tools.
+     */
+    private Element stripEl;
+
+    /**
      * Redraws the navigation from configuration, wherever it is being drawn.
      * <p>
      * The presenters are handed items, not state, so whatever is active has to be
@@ -1645,10 +1718,34 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
             // Build out DOM structure.
             Div.$ (root).$ (wrap -> {
                 wrap.style (styles ().wrap (), orientation);
-                Header.$ (wrap).$ (tabs -> {
-                    tabs.style (styles ().tabs (), orientation);
-                    tabs.use (n -> tabHolderEl = (Element) n);
-                });
+                if (data.tools.isEmpty ()) {
+                    Header.$ (wrap).$ (tabs -> {
+                        tabs.style (styles ().tabs (), orientation);
+                        tabs.use (n -> tabHolderEl = (Element) n);
+                    });
+                } else {
+                    // The tools are laid over the far end of the strip, in the one
+                    // grid cell, rather than placed in it: the variants style every
+                    // list in the strip as its tabs and some clip the strip, which
+                    // would restyle and clip the tools (and any menu they open). See
+                    // ToolsCSS.
+                    ToolsCSS tools = ToolsCSS.instance ();
+                    Div.$ (wrap).$ (strip -> {
+                        strip.style (tools.strip ());
+                        strip.use (n -> stripEl = (Element) n);
+                        Header.$ (strip).$ (tabs -> {
+                            tabs.style (styles ().tabs (), orientation);
+                            tabs.use (n -> tabHolderEl = (Element) n);
+                        });
+                        Div.$ (strip).$ (cell -> {
+                            cell.style (tools.tools ());
+                            if (config ().getOrientation () == Config.Orientation.VERTICAL)
+                                cell.style (tools.bottom ());
+                            cell.testRef ("tools");
+                            Cpt.$ (cell, data.tools.toArray (new IComponent[data.tools.size ()]));
+                        });
+                    });
+                }
                 Div.$ (wrap).$ (body -> {
                     if (data.minHeight != null)
                         body.css (CSS.MIN_HEIGHT, data.minHeight);
@@ -1675,7 +1772,7 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
 
         // Hide navigation.
         if (navigationHidden)
-            JQuery.$ (tabHolderEl).hide();
+            JQuery.$ (navigationEl ()).hide();
 
         // Assign activators.
         config().tabs.getTabGroups().forEach(group -> {
@@ -1725,8 +1822,8 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
         // is there.
         if (config ().getPresenter () != null) {
             presenters.add (config ().getPresenter ());
-            if (tabHolderEl != null)
-                JQuery.$ (tabHolderEl).hide ();
+            if (navigationEl () != null)
+                JQuery.$ (navigationEl ()).hide ();
         } else {
             defaultPresenter = new DefaultNavigationPresenter ();
             presenters.add (defaultPresenter);
@@ -2112,6 +2209,50 @@ public class TabNavigator extends Component<TabNavigator.Config> implements INav
          * Use to collapse the tab set.
          */
         public String collapse();
+    }
+
+    /**
+     * Styles for the strip and its tools (see {@link Config#tools(IComponent...)}).
+     * A stylesheet of its own, used only where there are tools, so that no variant
+     * changes and navigators without tools are built as they always were.
+     */
+    public static interface IToolsCSS extends CssDeclaration {
+
+        /**
+         * The grid cell holding the strip and the tools, standing in the wrap where
+         * the strip would.
+         */
+        public String strip();
+
+        /**
+         * The cell for the tools, laid over the strip's far end (the right of a
+         * horizontal strip).
+         */
+        public String tools();
+
+        /**
+         * Places the tools cell at the foot of a vertical strip.
+         */
+        public String bottom();
+    }
+
+    /**
+     * See {@link IToolsCSS}.
+     */
+    @CssResource({
+        "com/effacy/jui/ui/client/navigation/TabNavigator_Tools.css"
+    })
+    public static abstract class ToolsCSS implements IToolsCSS {
+
+        private static ToolsCSS STYLES;
+
+        public static ToolsCSS instance() {
+            if (STYLES == null) {
+                STYLES = (ToolsCSS) GWT.create (ToolsCSS.class);
+                STYLES.ensureInjected ();
+            }
+            return STYLES;
+        }
     }
 
     /**

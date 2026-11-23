@@ -1326,6 +1326,10 @@ The other calls in the batch are processed as normal and rejections are logged o
 
 A body that is not a call or a (non-empty) array of calls at all (not JSON, `[]`, `[1,2]`) is answered with HTTP 400 (Bad Request).
 
+#### Calls whose transaction fails to commit
+
+Where the router runs a remote method in a transaction (see `Router.setEnforceTransactions(...)` and `RemoteMethod.transaction()`) that transaction is committed once the method returns. Should the commit fail (an optimistic lock failure, a deadlock, the transaction having been marked as rollback only) the changes are rolled back, so the call is answered as an error and not with what the method returned. The exception from the commit is treated as would be one thrown by the method: it is logged, offered for retry (see below) and passed to the error handler (see `IActionErrorHandler.handleError(...)`) for the response.
+
 #### Retrying failed calls
 
 A call that fails with an exception the action declares as worth retrying (see `IActionErrorHandler.retryError(...)`, such as for a deadlock or a lock wait timeout) can be retried by the router. This is off by default and is configured on the router:

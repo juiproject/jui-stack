@@ -22,6 +22,8 @@ import com.effacy.jui.core.client.component.layout.ActionBarLayout.HAlignment;
 import com.effacy.jui.core.client.dom.builder.A;
 import com.effacy.jui.core.client.dom.builder.Div;
 import com.effacy.jui.core.client.dom.builder.Input;
+import com.effacy.jui.core.client.dom.builder.Label;
+import com.effacy.jui.core.client.dom.builder.Span;
 import com.effacy.jui.core.client.dom.css.Insets;
 import com.effacy.jui.core.client.dom.css.Length;
 import com.effacy.jui.core.client.state.ValueStateVariable;
@@ -43,7 +45,9 @@ import com.effacy.jui.ui.client.table.renderer.BuilderTableCellRenderer;
  * last click (and the selection) so the order of cell and row clicks can be
  * observed (see the playground IT {@code TableClicksITTest}). The row menus, and
  * a hover and a click-activated menu outside the table, also hold a native
- * checkbox and link (which must keep their default action).
+ * checkbox and link (which must keep their default action). The click-activated
+ * menu outside the table also holds a checkbox wrapped in a label and one with a
+ * {@code label for=} (a click on either label toggles the menu once).
  */
 public class GalleryExamples_TableClicks extends SplitPanel {
 
@@ -75,11 +79,17 @@ public class GalleryExamples_TableClicks extends SplitPanel {
         }), new ActionBarLayout.Data (0));
 
         // A click-activated menu (outside the table) holding a native checkbox and
-        // link.
+        // link, and labelled checkboxes.
         addOther (ComponentCreator.build (el -> {
             MenuFragment menu = Menu.$ (MenuActivator.$ (el).clickToActivate ());
             Input.$ (menu, "checkbox").testId ("tableclicks.outside.clickcheck");
             A.$ (menu, "#outside-click-link").testId ("tableclicks.outside.clicklink").text ("Outside click link");
+            Label.$ (menu).testId ("tableclicks.outside.wrappedlabel").$ (l -> {
+                Input.$ (l, "checkbox").testId ("tableclicks.outside.wrappedcheck");
+                Span.$ (l).text ("Wrapped");
+            });
+            Input.$ (menu, "checkbox").id ("tableclicks_outside_forcheck").testId ("tableclicks.outside.forcheck");
+            Label.$ (menu).attr ("for", "tableclicks_outside_forcheck").testId ("tableclicks.outside.forlabel").text ("For");
         }), new ActionBarLayout.Data (0));
 
         Table<SampleRecord> table = TableCreator.build (cfg -> {

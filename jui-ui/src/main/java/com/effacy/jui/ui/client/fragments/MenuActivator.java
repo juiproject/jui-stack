@@ -25,6 +25,9 @@ import com.effacy.jui.ui.client.fragments.Menu.MenuFragment;
 import com.effacy.jui.ui.client.icon.FontAwesome;
 
 import elemental2.dom.Element;
+import elemental2.dom.Event;
+import elemental2.dom.HTMLLabelElement;
+import jsinterop.base.Js;
 
 public class MenuActivator {
 
@@ -74,6 +77,8 @@ public class MenuActivator {
          * When click-activated any click within the activator that no menu item
          * handles toggles the menu. This includes clicks on native content placed in
          * the menu (such as links and inputs), which keep their default action.
+         * A click on a label whose control is in the menu toggles the menu once (the
+         * browser passes the click on to the control and only that click toggles).
          * 
          * @return this fragment instance.
          */
@@ -146,7 +151,7 @@ public class MenuActivator {
             // They are not claimed (which would prevent their default action) so links
             // and inputs placed in the menu keep working.
             root.apply (n -> ((Element) n).addEventListener ("click", e -> {
-                if (clickToActivate)
+                if (clickToActivate && !passedToLabelControl ((Element) n, e))
                     handler.toggle ();
                 e.stopPropagation ();
             }));
@@ -156,6 +161,37 @@ public class MenuActivator {
                     container.style ("hoverable");
                 super.buildInto (container);
             });
+        }
+
+        /**
+         * Determines if the click is on a label whose activation the browser passes on
+         * (as a second click) to the label's control within the activator. Only that
+         * second click should toggle the menu (otherwise the menu toggles twice and
+         * stays open).
+         * 
+         * @param activator
+         *                  the activator element.
+         * @param e
+         *                  the click event.
+         * @return {@code true} if the click will be passed on.
+         */
+        protected boolean passedToLabelControl(Element activator, Event e) {
+            if (!(e.target instanceof Element))
+                return false;
+            Element target = (Element) e.target;
+            Element label = target.closest ("label");
+            if ((label == null) || !activator.contains (label))
+                return false;
+            Element control = Js.<HTMLLabelElement>uncheckedCast (label).control;
+            if ((control == null) || !activator.contains (control))
+                return false;
+            // The browser does not pass on clicks on interactive content within the
+            // label (which includes the control itself), nor clicks to a disabled
+            // control.
+            Element interactive = target.closest ("a,button,input,select,textarea");
+            if ((interactive != null) && label.contains (interactive))
+                return false;
+            return !Js.isTruthy (Js.asPropertyMap (control).get ("disabled"));
         }
 
         @Override

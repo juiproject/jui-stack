@@ -94,13 +94,57 @@ public abstract class QueryProcessor<CTX, V, Q extends Query<V>> implements IQue
             return result;
         } catch (Throwable e) {
             onAfterProcess (context, (Q) query, null, true);
-            if (e instanceof ProcessorException)
-                throw (ProcessorException) e;
-            LOG.error ("Uncaught exception from query processor", e);
-            throw new ProcessorException ();
+            throwFor (e);
+            // Should an override of throwFor(Throwable) not throw.
+            throw new ProcessorException (e);
         } finally {
             RouterLogger.outdent ();
         }
+    }
+
+    /**
+     * Converts an exception thrown while processing a query to a
+     * {@link ProcessorException} and throws that.
+     * <p>
+     * A {@link ProcessorException} is thrown as it is. Anything else is logged
+     * (see {@link #log(Throwable)}) and thrown as a {@link ProcessorException}
+     * whose cause is the exception.
+     * <p>
+     * Override to decide what is thrown for a given exception. For example, to
+     * mark a failure that could be temporary (such as lock contention) as one
+     * to retry (see {@link ProcessorException#retry()}):
+     * 
+     * <pre>
+     * protected void throwFor(Throwable e) throws ProcessorException {
+     *     if (e instanceof LockTimeoutException)
+     *         throw new ProcessorException (e).retry ();
+     *     super.throwFor (e);
+     * }
+     * </pre>
+     * 
+     * An override is expected to throw. Should it return then a
+     * {@link ProcessorException} whose cause is the exception is thrown.
+     * 
+     * @param e
+     *          the exception to convert.
+     * @throws ProcessorException
+     *                            the associated compliant exception.
+     */
+    protected void throwFor(Throwable e) throws ProcessorException {
+        if (e instanceof ProcessorException)
+            throw (ProcessorException) e;
+        log (e);
+        throw new ProcessorException (e);
+    }
+
+    /**
+     * Logs an uncaught exception (see {@link #throwFor(Throwable)}).
+     * 
+     * @param e
+     *          the exception.
+     */
+    protected void log(Throwable e) {
+        LOG.error ("Uncaught exception from query processor", e);
     }
 
     /**

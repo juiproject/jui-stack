@@ -174,11 +174,12 @@ public class AnnotatedActionHandler extends ActionMetadata implements IActionHan
                 if (remoteMethodAnnotation.validationPrefix ().length () > 0)
                     validationPrefix = remoteMethodAnnotation.validationPrefix ();
 
-                // Obtain any error handler.
+                // Obtain any error handler (that for the action unless the
+                // method declares its own).
                 IActionErrorHandler errorHandler = actionMethodErrorHandler;
                 if (!remoteMethodAnnotation.errorHandler ().isInterface ()) {
                     try {
-                        actionMethodErrorHandler = remoteMethodAnnotation.errorHandler ().getDeclaredConstructor().newInstance();
+                        errorHandler = remoteMethodAnnotation.errorHandler ().getDeclaredConstructor ().newInstance ();
                     } catch (Throwable e) {
                         LOG.error ("Failed to create error handler for method \"" + methodName + "\" on \"" + klass.getSimpleName () + ", skipping...", e);
                     }

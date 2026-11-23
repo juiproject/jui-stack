@@ -1326,6 +1326,32 @@ The other calls in the batch are processed as normal and rejections are logged o
 
 A body that is not a call or a (non-empty) array of calls at all (not JSON, `[]`, `[1,2]`) is answered with HTTP 400 (Bad Request).
 
+#### Retrying failed calls
+
+A call that fails with an exception the action declares as worth retrying (see `IActionErrorHandler.retryError(...)`, such as for a deadlock or a lock wait timeout) can be retried by the router. This is off by default and is configured on the router:
+
+```java
+public ApplicationRPC() {
+    ...
+    setRetryCount (5);        // Retry a failing call up to 5 times.
+    setRetryDelay (100);      // Wait 100ms before the first retry...
+    setRetryMaxDelay (2000);  // ...doubling with each retry, up to 2s.
+    setRetryJitter (1);       // Randomise the wait (full jitter).
+    ...
+}
+```
+
+| Setter | Description | Default |
+|--------|-------------|---------|
+| `setRetryCount(int)` | The number of times a failing call is retried. | `0` (no retries) |
+| `setRetryDelay(int)` | The delay (ms) before a retry. With a maximum delay this is the base delay (that before the first retry). | `100` |
+| `setRetryMaxDelay(int)` | Turns on exponential backoff: the delay doubles with each retry from the base delay up to this maximum (ms). | `0` (every retry waits the base delay) |
+| `setRetryJitter(double)` | The proportion of the delay that is randomised: for a delay `d` and jitter `j` the wait is a random time between `d * (1 - j)` and `d`. Use `1` for "full jitter" and `0.5` for "equal jitter". | `0` (no jitter) |
+
+Calls that fail together on the same contention will, with a fixed delay, retry together and collide again. Backoff with jitter spreads them out, so is recommended wherever retries are used under load.
+
+Each retry is logged (at info) as `Retry,count=…,delay=…,cause=…,request=…` where `count` is the number of retries remaining and `delay` is the delay being waited. For a policy other than the above override `Router.retryDelay(int attempt)`, which returns the delay (ms) to wait before the given retry (starting from 1).
+
 #### Router logging
 
 Logging in the RPC Transport is performed by static methods on `RouterLogger`. These are called from within the `Executor` to facilitate tracing through to processing. 

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 import org.apache.commons.beanutils.BeanUtils;
@@ -244,9 +245,22 @@ public class Router implements IRouterMetadata {
     private int retryCount = 0;
 
     /**
-     * The delay in milliseconds between retries.
+     * The delay in milliseconds before the first retry (the base delay).
      */
     private int retryDelay = 100;
+
+    /**
+     * The maximum delay in milliseconds between retries. When positive the delay
+     * doubles with each retry up to this, otherwise every retry waits the base
+     * delay.
+     */
+    private int retryMaxDelay = 0;
+
+    /**
+     * The proportion of the delay that is randomised (from 0 for none to 1 for
+     * all of it).
+     */
+    private double retryJitter = 0;
 
     /**
      * Determines if CSRF tokens should be used.
@@ -542,14 +556,75 @@ public class Router implements IRouterMetadata {
     }
 
     /**
-     * Specifies the number of milliseconds between retries (only valid if
-     * {@link #setRetryCount(int)} has been set to a value greater than 1).
+     * Specifies the number of milliseconds to wait before a retry (only relevant
+     * if {@link #setRetryCount(int)} has been set to a value of at least 1).
+     * <p>
+     * On its own this is the delay before every retry. With a maximum delay (see
+     * {@link #setRetryMaxDelay(int)}) it is the base delay, being that before the
+     * first retry and doubling with each retry after. The default is 100.
      * 
      * @param retryDelay
      *                   the delay in milliseconds.
      */
     public void setRetryDelay(int retryDelay) {
         this.retryDelay = Math.max (0, retryDelay);
+    }
+
+    /**
+     * Turns on exponential backoff between retries: the delay starts at the base
+     * delay (see {@link #setRetryDelay(int)}) and doubles with each retry, up to
+     * the maximum given here.
+     * <p>
+     * The default is 0, for no backoff (every retry waits the base delay).
+     * 
+     * @param retryMaxDelay
+     *                      the maximum delay in milliseconds (zero or less for
+     *                      no backoff).
+     */
+    public void setRetryMaxDelay(int retryMaxDelay) {
+        this.retryMaxDelay = Math.max (0, retryMaxDelay);
+    }
+
+    /**
+     * Specifies how much of the delay before a retry is randomised, so that
+     * requests that failed together don't retry together. Given a delay of
+     * {@code d} milliseconds (the base delay, or the backed-off delay) and a
+     * jitter of {@code j} the retry waits a random time between
+     * {@code d * (1 - j)} and {@code d}.
+     * <p>
+     * A value of 1 is "full jitter" (anywhere from no wait to the whole delay)
+     * and 0.5 is "equal jitter" (at least half the delay). The default is 0, for
+     * no jitter.
+     * 
+     * @param retryJitter
+     *                    the proportion of the delay to randomise (from 0 to 1,
+     *                    values outside of this are brought into it).
+     */
+    public void setRetryJitter(double retryJitter) {
+        this.retryJitter = Math.max (0, Math.min (1, retryJitter));
+    }
+
+    /**
+     * Determines how long to wait before a retry. This applies the configured
+     * base delay, backoff and jitter (see {@link #setRetryDelay(int)},
+     * {@link #setRetryMaxDelay(int)} and {@link #setRetryJitter(double)}) and may
+     * be overridden to apply a different policy.
+     * 
+     * @param attempt
+     *                the retry that is about to be made (1 for the first retry
+     *                of a request, 2 for the second, etc).
+     * @return the delay in milliseconds (zero or less for no delay).
+     */
+    protected long retryDelay(int attempt) {
+        long delay = retryDelay;
+        if (retryMaxDelay > 0) {
+            for (int i = 1; (i < attempt) && (delay < retryMaxDelay); i++)
+                delay *= 2;
+            delay = Math.min (delay, retryMaxDelay);
+        }
+        if (retryJitter > 0)
+            delay -= ThreadLocalRandom.current ().nextLong (Math.round (delay * retryJitter) + 1);
+        return delay;
     }
 
     /**
@@ -652,29 +727,29 @@ public class Router implements IRouterMetadata {
             long logPerformanceStart = System.currentTimeMillis ();
 
             int retryCount = this.retryCount;
+            int attempt = 0;
             Throwable cause = null;
             try {
-                LOOP: do {
+                LOOP: while (true) {
                     try {
                         return processOnce (action, request, methodMetadata.isTransactional ());
                     } catch (RuntimeException e1) {
                         cause = e1.getCause ();
-                        if (!action.retryError (request, cause)) {
-                            retryCount = 0;
-                        } else {
-                            logInfo("Retry,count=" + retryCount + ",delay=" + retryDelay + ",cause=" + cause.getClass().getSimpleName() + ",request=" + request);
-                            try {
-                                if (retryDelay > 0)
-                                    Thread.sleep (retryDelay);
-                            } catch (InterruptedException e2) {
-                                break LOOP;
-                            }
+                        if ((attempt >= retryCount) || !action.retryError (request, cause))
+                            break LOOP;
+                        long delay = retryDelay (++attempt);
+                        logInfo ("Retry,count=" + (retryCount - attempt + 1) + ",delay=" + delay + ",cause=" + cause.getClass ().getSimpleName () + ",request=" + request);
+                        try {
+                            if (delay > 0)
+                                Thread.sleep (delay);
+                        } catch (InterruptedException e2) {
+                            break LOOP;
                         }
                     } catch (PassThroughException e) {
                         cause = e.exception ();
                         break LOOP;
                     }
-                } while (retryCount-- > 0);
+                }
             } finally {
                 RouterLogger.performance (System.currentTimeMillis () - logPerformanceStart);
             }

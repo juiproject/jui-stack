@@ -799,7 +799,8 @@ public class Router implements IRouterMetadata {
      *                      if the action indicates being transactional.
      * @return The return value.
      * @throws RuntimeException
-     *                          On error.
+     *                          On error (wrapping the exception from the handler
+     *                          or from the transaction failing to commit).
      */
     protected String processOnce(final IActionHandler action, final ExtendedRemoteCallRequest request, boolean transactional) throws PassThroughException {
         TransactionResponse response = processTransactional (new TransactionCallback<TransactionResponse> () {
@@ -824,8 +825,16 @@ public class Router implements IRouterMetadata {
      * Process the callback in a transaction if transactions are available and
      * supported.
      * <p>
-     * This will always return a return value even when the transaction is marked as
-     * rollback.
+     * The value from the callback is returned only when the transaction commits.
+     * Should the callback complete and the transaction then fail to commit (an
+     * optimistic lock failure, a deadlock, having been marked as rollback only,
+     * etc) that value is discarded, since the changes it reports on have been
+     * rolled back, and the exception from the commit is thrown wrapped in a
+     * {@link RuntimeException} (as its cause). This is as an exception from a
+     * handler is passed (see
+     * {@link #processToJson(IActionHandler, ExtendedRemoteCallRequest)}) so the
+     * exception from the commit is treated as an error of the call: it is logged,
+     * offered for retry and passed to the action to be handled.
      * 
      * @param cb
      *                      the callback (if no transactions are available passed
@@ -835,9 +844,12 @@ public class Router implements IRouterMetadata {
      * @param readOnly
      *                      if the execution may be considered as read only.
      * @return the result.
+     * @throws RuntimeException
+     *                          from the callback (as thrown) or wrapping the
+     *                          exception from a commit that failed.
      */
     protected <V> V processTransactional(final TransactionCallback<V> cb, boolean transactional, boolean readOnly) {
-        final Bucket<V> returnValue = new Bucket<V> ();
+        final Bucket<Boolean> completed = new Bucket<Boolean> ();
         try {
             RouterLogger.indent ("Router.processTransactional(): tx=(" + enforceTransactions + " and " + transactional + "), ro=" + readOnly);
             if (enforceTransactions && transactional) {
@@ -851,7 +863,7 @@ public class Router implements IRouterMetadata {
                             try {
                                 RouterLogger.indent ("Router.processTransactional->doInTransaction (tx_template=" + RouterLogger.format (template) + ")");
                                 V value = cb.doInTransaction (status);
-                                returnValue.set (value);
+                                completed.set (true);
                                 return value;
                             } finally {
                                 RouterLogger.outdent ();
@@ -864,8 +876,11 @@ public class Router implements IRouterMetadata {
             ROUTER_TX.set (new RouterTransaction (TransactionMode.NONE));
             return cb.doInTransaction (null);
         } catch (RuntimeException e) {
-            if (returnValue.get () != null)
-                return returnValue.get ();
+            // With the callback having completed this is the transaction
+            // failing to commit, so there are no changes for the value from the
+            // callback to report on.
+            if (Boolean.TRUE.equals (completed.get ()))
+                throw new RuntimeException (e);
             throw e;
         } finally {
             ROUTER_TX.set (null);

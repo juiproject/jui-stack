@@ -216,6 +216,46 @@ public class TableClicksITTest extends AbstractIT {
         Assertions.assertEquals ("outside-click-link", currentUrl ().getRef ());
     }
 
+    @Test
+    public void clickMenuLabelTogglesOnce() throws Exception {
+        HtmlPage page = openTableClicks ();
+        String activator = "//*[@test-id='tableclicks.outside.wrappedcheck']/ancestor::div[contains(@class,'juiMenuActivator')][1]";
+
+        // (1) A click on a label wrapping a checkbox toggles the checkbox and the menu
+        // (once, so it closes), as does a direct click on the checkbox. The label
+        // itself is clicked (not its text) as HtmlUnit only passes a click on a
+        // label's content to the control when nothing stops its propagation (which
+        // the menu does); browsers pass it on regardless.
+        HtmlCheckBoxInput wrapped = page.getFirstByXPath ("//*[@test-id='tableclicks.outside.wrappedcheck']");
+        Assertions.assertNotNull (wrapped, "Unable to find the wrapped checkbox");
+        Assertions.assertFalse (wrapped.isChecked ());
+        click (page, activator + "/em");
+        Assertions.assertTrue (isOpen (page, activator));
+        click (page, "//*[@test-id='tableclicks.outside.wrappedlabel']");
+        Assertions.assertTrue (wrapped.isChecked ());
+        Assertions.assertFalse (isOpen (page, activator));
+        click (page, activator + "/em");
+        Assertions.assertTrue (isOpen (page, activator));
+        click (page, "//*[@test-id='tableclicks.outside.wrappedcheck']");
+        Assertions.assertFalse (wrapped.isChecked ());
+        Assertions.assertFalse (isOpen (page, activator));
+
+        // (2) The same for a label that references its checkbox with for=.
+        HtmlCheckBoxInput referenced = page.getFirstByXPath ("//*[@test-id='tableclicks.outside.forcheck']");
+        Assertions.assertNotNull (referenced, "Unable to find the referenced checkbox");
+        Assertions.assertFalse (referenced.isChecked ());
+        click (page, activator + "/em");
+        Assertions.assertTrue (isOpen (page, activator));
+        click (page, "//*[@test-id='tableclicks.outside.forlabel']");
+        Assertions.assertTrue (referenced.isChecked ());
+        Assertions.assertFalse (isOpen (page, activator));
+        click (page, activator + "/em");
+        Assertions.assertTrue (isOpen (page, activator));
+        click (page, "//*[@test-id='tableclicks.outside.forcheck']");
+        Assertions.assertFalse (referenced.isChecked ());
+        Assertions.assertFalse (isOpen (page, activator));
+    }
+
     /**
      * Opens the "Table clicks" example under Galleries (waiting for each part to
      * render rather than for a fixed time).

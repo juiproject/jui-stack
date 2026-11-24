@@ -28,6 +28,13 @@ import jsinterop.base.JsPropertyMap;
  * {@code mermaid} is rendered (in the editor and the source-editor preview) as a diagram,
  * and round-trips to ```` ```mermaid ... ``` ```` Markdown.
  * <p>
+ * <b>Security.</b> Diagrams are rendered with Mermaid's {@code strict} security level
+ * by default: markup in labels is stripped of script, and {@code click} directives cannot
+ * run script or link to {@code javascript:} addresses. A diagram written by one person
+ * therefore cannot run script in the browser of another who views it. An application that
+ * trusts every author of its diagrams can opt into {@code loose} with
+ * {@link #securityLevel(SecurityLevel)}.
+ * <p>
  * <b>Note.</b> The Mermaid JS API is version-sensitive; this targets the v10/v11 Promise
  * API ({@code mermaid.render(id, text) -> {svg}}). Pin {@link #CDN_URL} as needed.
  */
@@ -44,6 +51,58 @@ public class Mermaid implements IFenceRenderer {
             return;
         INSTALLED = true;
         Fences.register(new Mermaid());
+    }
+
+    /**
+     * The Mermaid security levels this plugin supports (Mermaid's {@code securityLevel}
+     * configuration).
+     */
+    public enum SecurityLevel {
+
+        /**
+         * Markup in labels is stripped of script and {@code click} directives cannot run
+         * script (the default).
+         */
+        STRICT("strict"),
+
+        /**
+         * {@code click} directives are honoured, including links to {@code javascript:}
+         * addresses. This lets the author of a diagram run script in the browser of anyone
+         * who views it, so only use it where every author is trusted.
+         */
+        LOOSE("loose");
+
+        private String value;
+
+        private SecurityLevel(String value) {
+            this.value = value;
+        }
+
+        /**
+         * The value Mermaid expects for {@code securityLevel}.
+         */
+        public String value() {
+            return value;
+        }
+    }
+
+    private static SecurityLevel SECURITY_LEVEL = SecurityLevel.STRICT;
+
+    /**
+     * Sets the security level diagrams are rendered with. The default is
+     * {@link SecurityLevel#STRICT}; ask for {@link SecurityLevel#LOOSE} only where every
+     * author of a diagram is trusted.
+     * <p>
+     * Takes effect for diagrams rendered after the call (diagrams already on screen keep
+     * the rendering they have).
+     *
+     * @param level
+     *              the security level ({@code null} restores the default).
+     */
+    public static void securityLevel(SecurityLevel level) {
+        SECURITY_LEVEL = (level == null) ? SecurityLevel.STRICT : level;
+        if (LOADED)
+            initialize();
     }
 
     /************************************************************************
@@ -140,14 +199,7 @@ public class Mermaid implements IFenceRenderer {
             PENDING.add(then);
             ScriptInjector.injectFromUrl(CDN_URL, (Optional<Exception> outcome) -> {
                 if (!outcome.isPresent()) {
-                    try {
-                        JsPropertyMap<Object> config = JsPropertyMap.of();
-                        config.set("startOnLoad", false);
-                        config.set("securityLevel", "loose");
-                        MermaidApi.initialize(config);
-                    } catch (Throwable e) {
-                        // Initialization is best-effort; render() will surface failures.
-                    }
+                    initialize();
                     LOADED = true;
                 }
                 List<Runnable> queued = PENDING;
@@ -157,6 +209,20 @@ public class Mermaid implements IFenceRenderer {
             });
         } else {
             PENDING.add(then);
+        }
+    }
+
+    /**
+     * Configures the loaded library with the current settings.
+     */
+    private static void initialize() {
+        try {
+            JsPropertyMap<Object> config = JsPropertyMap.of();
+            config.set("startOnLoad", false);
+            config.set("securityLevel", SECURITY_LEVEL.value());
+            MermaidApi.initialize(config);
+        } catch (Throwable e) {
+            // Initialization is best-effort; render() will surface failures.
         }
     }
 

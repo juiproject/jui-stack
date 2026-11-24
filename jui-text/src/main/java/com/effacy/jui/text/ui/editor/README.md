@@ -296,6 +296,30 @@ Mermaid.editor((anchor, content, apply, remove) -> {
 });
 ```
 
+#### Security level
+
+A diagram is written by one person and read by others, so it must not be able to run script in the reader's browser. `Mermaid` therefore renders with Mermaid's `strict` security level by default. Markup in labels is stripped of script (event handlers, `<script>`, `javascript:` links), and `click` directives cannot run script. An application whose diagram authors are all trusted can opt into `loose`:
+
+```java
+Mermaid.securityLevel(Mermaid.SecurityLevel.LOOSE);
+```
+
+In `loose`, `click X "javascript:…"` links survive into the SVG and run when the node is clicked, so only use it where every author is trusted.
+
+To check the default, render this diagram in the editor, then click each node:
+
+````
+```mermaid
+graph TD
+  A["<img src=x onerror=alert('label')>"] --> B["<a href=javascript:alert('anchor')>link</a>"]
+  B --> C
+  click A call alert('call')
+  click C href "javascript:alert('href')"
+```
+````
+
+Nothing should alert, and the SVG should contain no `onerror` attribute and no `javascript:` address. Under `LOOSE`, clicking `C` alerts `href`.
+
 ### Adding a plugin
 
 1. Implement `IFenceRenderer` for your info string.
